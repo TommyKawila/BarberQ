@@ -37,7 +37,7 @@ export const dictionary = {
     "booking.noSlots": "วันนี้ช่างหยุด หรือไม่มีคิวที่จองได้",
 
     "admin.title": "แอดมิน",
-    "admin.unlockHint": "ใส่ token เข้าสู่ระบบ หรือเปิดลิงก์ /a/<token>",
+    "admin.unlockHint": "เปิดลิงก์ /saeb /tide /nat หรือใส่ token",
     "admin.unlock": "ปลดล็อก",
     "admin.todayTap": "วันนี้ · แตะเพื่อบล็อก",
     "admin.refresh": "รีเฟรช",
@@ -150,7 +150,7 @@ export const dictionary = {
     "booking.noSlots": "Barber is off today or no slots available",
 
     "admin.title": "Admin",
-    "admin.unlockHint": "Enter your login token or open your /a/<token> link",
+    "admin.unlockHint": "Open /saeb /tide /nat or enter your token",
     "admin.unlock": "Unlock",
     "admin.todayTap": "Today · tap to block",
     "admin.refresh": "Refresh",

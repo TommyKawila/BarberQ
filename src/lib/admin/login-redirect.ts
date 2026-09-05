@@ -16,6 +16,6 @@ export async function redirectWithToken(req: Request, token: string): Promise<Ne
     return NextResponse.redirect(new URL("/", req.url));
   }
   return NextResponse.redirect(
-    new URL(`/admin#token=${encodeURIComponent(token)}`, req.url),
+    new URL(`/admin?token=${encodeURIComponent(token)}`, req.url),
   );
 }

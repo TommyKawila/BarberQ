@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ADMIN_TOKEN_KEY } from "@/lib/admin-auth";
+import { readLoginTokenFromUrl } from "@/lib/admin/read-login-token";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import type { StaffRole } from "@/lib/data/types";
 
@@ -21,15 +22,10 @@ interface ApiError {
   error?: { code?: string; message?: string };
 }
 
-function readTokenFromHash(): string | null {
-  if (typeof window === "undefined") return null;
-  const hash = window.location.hash.replace(/^#/, "");
-  if (!hash) return null;
-  const params = new URLSearchParams(hash);
-  const token = params.get("token")?.trim();
-  if (!token) return null;
-  window.history.replaceState(null, "", window.location.pathname + window.location.search);
-  return token;
+function authHeadersFor(token: string | null): HeadersInit {
+  const headers: HeadersInit = {};
+  if (token) headers["x-admin-token"] = token;
+  return headers;
 }
 
 export function useAdminSession() {
@@ -42,56 +38,51 @@ export function useAdminSession() {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tokenReady, setTokenReady] = useState(false);
+  const bootstrappedRef = useRef(false);
 
-  useEffect(() => {
-    const fromHash = readTokenFromHash();
-    if (fromHash) setAdminToken(fromHash);
-  }, [setAdminToken]);
+  const authHeaders = useMemo(() => authHeadersFor(adminToken), [adminToken]);
 
-  const authHeaders = useMemo((): HeadersInit => {
-    const headers: HeadersInit = {};
-    if (adminToken) headers["x-admin-token"] = adminToken;
-    return headers;
-  }, [adminToken]);
+  const loadSession = useCallback(
+    async (tokenOverride?: string | null) => {
+      const token = tokenOverride ?? adminToken;
+      setLoading(true);
+      const res = await fetch("/api/staff/me", { headers: authHeadersFor(token) });
+      const json = (await res.json()) as { staff?: AdminSession } & AdminMeta & ApiError;
+      setMeta({
+        prototypeMode: json.prototypeMode ?? true,
+        adminAuthRequired: json.adminAuthRequired ?? false,
+      });
 
-  const loadSession = useCallback(async () => {
-    setLoading(true);
-    const res = await fetch("/api/staff/me", { headers: authHeaders });
-    const json = (await res.json()) as { staff?: AdminSession } & AdminMeta & ApiError;
-    setMeta({
-      prototypeMode: json.prototypeMode ?? true,
-      adminAuthRequired: json.adminAuthRequired ?? false,
-    });
+      if (!res.ok) {
+        setSession(null);
+        if (res.status === 401 && token) setAdminToken(null);
+        setError(json.error?.message ?? null);
+        setLoading(false);
+        return;
+      }
 
-    if (!res.ok) {
-      setSession(null);
-      if (res.status === 401) setAdminToken(null);
-      setError(json.error?.message ?? null);
+      setError(null);
+      setSession(json.staff ?? null);
       setLoading(false);
-      return;
-    }
-
-    setError(null);
-    setSession(json.staff ?? null);
-    setLoading(false);
-  }, [authHeaders, setAdminToken]);
+    },
+    [adminToken, setAdminToken],
+  );
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      await Promise.resolve();
-      if (cancelled) return;
-      await loadSession();
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [loadSession]);
+    if (bootstrappedRef.current) return;
+    bootstrappedRef.current = true;
+    const fromUrl = readLoginTokenFromUrl();
+    if (fromUrl) setAdminToken(fromUrl);
+    setTokenReady(true);
+    void loadSession(fromUrl);
+  }, [loadSession, setAdminToken]);
 
   function unlock() {
     const next = tokenInput.trim();
     if (!next) return;
     setAdminToken(next);
+    void loadSession(next);
   }
 
   function signOut() {
@@ -100,7 +91,7 @@ export function useAdminSession() {
   }
 
   const isSuperAdmin = session?.role === "super_admin";
-  const needsUnlock = meta.adminAuthRequired && !adminToken;
+  const needsUnlock = tokenReady && meta.adminAuthRequired && !adminToken && !session;
 
   return {
     tokenInput,
@@ -109,7 +100,7 @@ export function useAdminSession() {
     setAdminToken,
     session,
     meta,
-    loading,
+    loading: loading || !tokenReady,
     error,
     setError,
     authHeaders,
