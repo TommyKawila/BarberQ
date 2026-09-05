@@ -41,6 +41,45 @@ export interface ShopSettings {
   shopName: string | null;
 }
 
+export type StaffRole = "barber" | "super_admin";
+
+export interface Staff {
+  id: string;
+  name: string;
+  role: StaffRole;
+  token: string;
+  barberId: string | null;
+  active: boolean;
+  createdAt: Date;
+}
+
+export interface CreateStaffInput {
+  name: string;
+  role: StaffRole;
+  barberId?: string | null;
+}
+
+export interface RecurringBreak {
+  id: string;
+  barberId: string;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+  createdAt: Date;
+}
+
+export interface CreateRecurringBreakInput {
+  barberId: string;
+  weekday: number;
+  startTime: string;
+  endTime: string;
+}
+
+export interface UpdateBarberInput {
+  offDays?: number[];
+  slotDuration?: number;
+}
+
 export interface BookingStore {
   listBarbers(): Promise<Barber[]>;
   getBarber(barberId: string): Promise<Barber | null>;
@@ -49,9 +88,18 @@ export interface BookingStore {
   cancelAppointment(appointmentId: string, customerRef: string): Promise<Appointment>;
   getAppointment(appointmentId: string): Promise<Appointment | null>;
   createBlock(input: CreateBlockInput): Promise<TimeBlock>;
+  getBlock(id: string): Promise<TimeBlock | null>;
   removeBlock(id: string): Promise<void>;
   listDayAppointments(from: Date, to: Date): Promise<Appointment[]>;
   listDayBlocks(from: Date, to: Date): Promise<TimeBlock[]>;
   getShopSettings(): Promise<ShopSettings>;
   setShopSettings(input: ShopSettings): Promise<void>;
+  getStaffByToken(token: string): Promise<Staff | null>;
+  listStaff(): Promise<Staff[]>;
+  createStaff(input: CreateStaffInput): Promise<Staff>;
+  deactivateStaff(staffId: string): Promise<void>;
+  updateBarber(barberId: string, input: UpdateBarberInput): Promise<Barber>;
+  listRecurringBreaks(barberId: string): Promise<RecurringBreak[]>;
+  createRecurringBreak(input: CreateRecurringBreakInput): Promise<RecurringBreak>;
+  deleteRecurringBreak(breakId: string): Promise<void>;
 }

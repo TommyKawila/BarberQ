@@ -7,6 +7,7 @@ import { barberLabel, type AdminColumn, type AdminSlot } from "@/types/booking";
 interface QuickBlockGridProps {
   columns: AdminColumn[];
   pendingKey: string | null;
+  editableBarberId?: string | null;
   onToggle: (barberId: string, slot: AdminSlot) => void;
 }
 
@@ -20,12 +21,20 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
   return "bg-emerald-700 text-white";
 }
 
-export function QuickBlockGrid({ columns, pendingKey, onToggle }: QuickBlockGridProps) {
+export function QuickBlockGrid({
+  columns,
+  pendingKey,
+  editableBarberId = null,
+  onToggle,
+}: QuickBlockGridProps) {
   const { locale, t } = useI18n();
 
   return (
     <div className="grid grid-cols-3 gap-2">
-      {columns.map((column) => (
+      {columns.map((column) => {
+        const canEdit =
+          editableBarberId === null || column.barber.id === editableBarberId;
+        return (
         <div key={column.barber.id} className="flex flex-col gap-2">
           <div className="rounded-lg bg-zinc-900 px-1 py-2 text-center">
             <div className="text-sm font-semibold">
@@ -43,17 +52,20 @@ export function QuickBlockGrid({ columns, pendingKey, onToggle }: QuickBlockGrid
               const pending = pendingKey === key;
               const pastFree = slot.kind === "free" && !slot.available;
               const booked = slot.kind === "booked";
+              const locked = slot.kind === "blocked" && slot.reason === "break";
               const label =
                 slot.kind === "booked"
                   ? slot.customerName
                   : slot.kind === "blocked"
-                    ? slot.reason || t("admin.walkIn")
+                    ? slot.reason === "break"
+                      ? t("admin.break")
+                      : slot.reason || t("admin.walkIn")
                     : t("admin.free");
               return (
                 <button
                   key={slot.startTime}
                   type="button"
-                  disabled={pending || booked || pastFree}
+                  disabled={pending || booked || pastFree || locked || !canEdit}
                   onClick={() => onToggle(column.barber.id, slot)}
                   className={`min-h-14 rounded-lg px-1 py-2 text-left transition disabled:cursor-default ${slotClass(slot, pending)}`}
                 >
@@ -64,7 +76,8 @@ export function QuickBlockGrid({ columns, pendingKey, onToggle }: QuickBlockGrid
             })
           )}
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

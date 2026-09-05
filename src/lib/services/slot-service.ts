@@ -1,5 +1,6 @@
 import { addDays, addMinutes } from "date-fns";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
+import type { RecurringBreak } from "@/lib/data/types";
 import type { Barber, BusyInterval, Slot } from "@/types/booking";
 
 export const SHOP_TIMEZONE = "Asia/Bangkok";
@@ -55,10 +56,24 @@ export function canCancelAt(startTime: string, now: Date = new Date()): boolean 
   return new Date(startTime).getTime() - now.getTime() >= CANCEL_LEAD_MINUTES * 60_000;
 }
 
+export function recurringBreaksForDate(
+  dateISO: string,
+  breaks: RecurringBreak[],
+): { start: Date; end: Date }[] {
+  const weekday = getBangkokWeekday(dateISO);
+  return breaks
+    .filter((item) => item.weekday === weekday)
+    .map((item) => ({
+      start: fromZonedTime(`${dateISO}T${item.startTime}:00`, SHOP_TIMEZONE),
+      end: fromZonedTime(`${dateISO}T${item.endTime}:00`, SHOP_TIMEZONE),
+    }));
+}
+
 export function generateSlots(input: {
   dateISO: string;
   barber: Pick<Barber, "off_days" | "slot_duration_minutes">;
   busy: BusyInterval[];
+  recurringBreaks?: RecurringBreak[];
   now: Date;
 }): Slot[] {
   const weekday = getBangkokWeekday(input.dateISO);
@@ -69,10 +84,14 @@ export function generateSlots(input: {
   const { open, close } = getShopHours(input.dateISO);
   const closeAt = fromZonedTime(`${input.dateISO}T${close}:00`, SHOP_TIMEZONE);
   const duration = input.barber.slot_duration_minutes;
-  const busyRanges = input.busy.map((item) => ({
-    start: new Date(item.start_time),
-    end: new Date(item.end_time),
-  }));
+  const breakRanges = recurringBreaksForDate(input.dateISO, input.recurringBreaks ?? []);
+  const busyRanges = [
+    ...input.busy.map((item) => ({
+      start: new Date(item.start_time),
+      end: new Date(item.end_time),
+    })),
+    ...breakRanges,
+  ];
 
   const slots: Slot[] = [];
   let start = fromZonedTime(`${input.dateISO}T${open}:00`, SHOP_TIMEZONE);

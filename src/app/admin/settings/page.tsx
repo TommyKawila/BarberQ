@@ -1,24 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ShopNameLockup } from "@/components/layout/ShopNameLockup";
-import { useBrowserStorage } from "@/lib/browser-storage";
+import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { FitLogoError, fitLogoFile } from "@/lib/image/fit-logo";
 import { normalizeShopName } from "@/lib/shop/shop-name";
 
-const ADMIN_KEY = "barberq_admin_key";
-
 interface ApiError {
   error?: { code?: string; message?: string };
-}
-
-interface AdminMeta {
-  prototypeMode: boolean;
-  adminKeyRequired: boolean;
 }
 
 interface SettingsResponse {
@@ -28,13 +21,18 @@ interface SettingsResponse {
 
 export default function AdminSettingsPage() {
   const { t } = useI18n();
+  const {
+    tokenInput,
+    setTokenInput,
+    session,
+    meta,
+    loading,
+    authHeaders,
+    unlock,
+    isSuperAdmin,
+    needsUnlock,
+  } = useAdminSession();
   const { logoDataUrl, shopName, setLogoDataUrl, setShopName, refresh } = useShopBrand();
-  const [keyInput, setKeyInput] = useState("");
-  const [adminKey, setAdminKey] = useBrowserStorage(ADMIN_KEY);
-  const [meta, setMeta] = useState<AdminMeta>({
-    prototypeMode: true,
-    adminKeyRequired: false,
-  });
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? logoDataUrl;
   const [shopNameDraft, setShopNameDraft] = useState("");
@@ -48,26 +46,9 @@ export default function AdminSettingsPage() {
   const [nameError, setNameError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const res = await fetch("/api/barbers");
-      const json = (await res.json()) as AdminMeta & ApiError;
-      if (cancelled) return;
-      setMeta({
-        prototypeMode: json.prototypeMode ?? true,
-        adminKeyRequired: json.adminKeyRequired ?? false,
-      });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const putSettings = useCallback(
     async (body: { logoDataUrl?: string | null; shopName?: string | null }) => {
-      const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (adminKey) headers["x-admin-key"] = adminKey;
+      const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers,
@@ -75,7 +56,6 @@ export default function AdminSettingsPage() {
       });
       const json = (await res.json()) as SettingsResponse & ApiError;
       if (!res.ok) {
-        if (res.status === 401) setAdminKey(null);
         throw new Error(json.error?.message ?? t("admin.updateFailed"));
       }
       setLogoDataUrl(json.logoDataUrl ?? null);
@@ -83,7 +63,7 @@ export default function AdminSettingsPage() {
       await refresh();
       return json;
     },
-    [adminKey, refresh, setAdminKey, setLogoDataUrl, setShopName, t],
+    [authHeaders, refresh, setLogoDataUrl, setShopName, t],
   );
 
   const saveLogo = useCallback(
@@ -143,27 +123,44 @@ export default function AdminSettingsPage() {
 
   const previewShopName = normalizeShopName(shopNameInput);
 
-  if (meta.adminKeyRequired && !adminKey) {
+  if (loading) {
+    return (
+      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
+        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
+      </section>
+    );
+  }
+
+  if (needsUnlock) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.settings")}</h1>
         <p className="text-sm text-zinc-400">{t("admin.unlockHint")}</p>
         <input
           type="password"
-          value={keyInput}
-          onChange={(event) => setKeyInput(event.target.value)}
+          value={tokenInput}
+          onChange={(event) => setTokenInput(event.target.value)}
           className="min-h-12 rounded-xl bg-zinc-900 px-3 outline-none ring-amber-400 focus:ring-2"
         />
         <button
           type="button"
-          onClick={() => {
-            const next = keyInput.trim();
-            if (next) setAdminKey(next);
-          }}
+          onClick={unlock}
           className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950"
         >
           {t("admin.unlock")}
         </button>
+      </section>
+    );
+  }
+
+  if (!isSuperAdmin) {
+    return (
+      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
+        <h1 className="text-2xl font-semibold">{t("admin.settings")}</h1>
+        <p className="text-sm text-red-400">{t("admin.forbiddenSuperAdminOnly")}</p>
+        <Link href="/admin" className="text-sm text-amber-400 underline">
+          {t("admin.backToBoard")}
+        </Link>
       </section>
     );
   }
@@ -178,6 +175,7 @@ export default function AdminSettingsPage() {
             </span>
           ) : null}
           <h1 className="text-xl font-semibold">{t("admin.settings")}</h1>
+          {session ? <p className="mt-1 text-xs text-zinc-500">{session.name}</p> : null}
         </div>
         <Link
           href="/admin"

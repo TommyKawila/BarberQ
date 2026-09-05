@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertAdmin } from "@/lib/admin-auth";
+import { assertStaff, assertSuperAdmin } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import type { ShopSettings } from "@/lib/data/types";
@@ -20,7 +20,8 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
-    assertAdmin(req);
+    const staff = await assertStaff(req);
+    assertSuperAdmin(staff);
     const body = await readJson<{
       logoDataUrl?: string | null;
       shopName?: string | null;

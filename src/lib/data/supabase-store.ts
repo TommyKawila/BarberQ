@@ -1,8 +1,22 @@
 import { createServiceClient } from "@/lib/supabase/server";
+import { generateStaffToken } from "@/lib/data/staff-seed";
 import {
   StoreConflict,
   type BookingStore,
+  type CreateRecurringBreakInput,
+  type CreateStaffInput,
+  type RecurringBreak,
+  type Staff,
+  type StaffRole,
+  type UpdateBarberInput,
 } from "@/lib/data/types";
+import {
+  countBreaksForWeekday,
+  normalizeOffDays,
+  validateOffDays,
+  validateRecurringBreakInput,
+  validateSlotDuration,
+} from "@/lib/schedule/validation";
 import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
 
 function mapRpcError(error: { message?: string; code?: string }): never {
@@ -22,6 +36,50 @@ function mapRpcError(error: { message?: string; code?: string }): never {
   }
   if (error.code === "23P01") throw new StoreConflict("SLOT_TAKEN");
   throw new Error(message || "Unexpected store error");
+}
+
+interface StaffRow {
+  id: string;
+  name: string;
+  role: StaffRole;
+  token: string;
+  barber_id: string | null;
+  active: boolean;
+  created_at: string;
+}
+
+function mapStaff(row: StaffRow): Staff {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    token: row.token,
+    barberId: row.barber_id,
+    active: row.active,
+    createdAt: new Date(row.created_at),
+  };
+}
+
+interface RecurringBreakRow {
+  id: string;
+  barber_id: string;
+  weekday: number;
+  start_time: string;
+  end_time: string;
+  created_at: string;
+}
+
+function mapRecurringBreak(row: RecurringBreakRow): RecurringBreak {
+  const startTime = row.start_time.slice(0, 5);
+  const endTime = row.end_time.slice(0, 5);
+  return {
+    id: row.id,
+    barberId: row.barber_id,
+    weekday: row.weekday,
+    startTime,
+    endTime,
+    createdAt: new Date(row.created_at),
+  };
 }
 
 export const supabaseStore: BookingStore = {
@@ -100,6 +158,17 @@ export const supabaseStore: BookingStore = {
     return data as TimeBlock;
   },
 
+  async getBlock(id) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("blocked_slots")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as TimeBlock | null) ?? null;
+  },
+
   async removeBlock(id) {
     const supabase = createServiceClient();
     const { error } = await supabase.from("blocked_slots").delete().eq("id", id);
@@ -153,6 +222,127 @@ export const supabaseStore: BookingStore = {
         updated_at: new Date().toISOString(),
       })
       .eq("id", 1);
+    if (error) throw new Error(error.message);
+  },
+
+  async getStaffByToken(token) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("staff")
+      .select("*")
+      .eq("token", token)
+      .eq("active", true)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? mapStaff(data as StaffRow) : null;
+  },
+
+  async listStaff() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("staff")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as StaffRow[]).map(mapStaff);
+  },
+
+  async createStaff(input: CreateStaffInput) {
+    const name = input.name.trim();
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+    if (input.barberId) {
+      const barber = await supabaseStore.getBarber(input.barberId);
+      if (!barber) throw new StoreConflict("BARBER_NOT_FOUND");
+    }
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("staff")
+      .insert({
+        name,
+        role: input.role,
+        token: generateStaffToken(),
+        barber_id: input.barberId ?? null,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return mapStaff(data as StaffRow);
+  },
+
+  async deactivateStaff(staffId) {
+    const supabase = createServiceClient();
+    const { error } = await supabase
+      .from("staff")
+      .update({ active: false })
+      .eq("id", staffId);
+    if (error) throw new Error(error.message);
+  },
+
+  async updateBarber(barberId, input: UpdateBarberInput) {
+    const barber = await supabaseStore.getBarber(barberId);
+    if (!barber) throw new StoreConflict("BARBER_NOT_FOUND");
+    const update: Record<string, unknown> = {};
+    if (input.offDays !== undefined) {
+      const offDays = normalizeOffDays(input.offDays);
+      if (validateOffDays(offDays)) throw new StoreConflict("INVALID_RANGE");
+      update.off_days = offDays;
+    }
+    if (input.slotDuration !== undefined) {
+      if (validateSlotDuration(input.slotDuration)) throw new StoreConflict("INVALID_RANGE");
+      update.slot_duration_minutes = input.slotDuration;
+    }
+    if (Object.keys(update).length === 0) return barber;
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("barbers")
+      .update(update)
+      .eq("id", barberId)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Barber;
+  },
+
+  async listRecurringBreaks(barberId) {
+    const barber = await supabaseStore.getBarber(barberId);
+    if (!barber) throw new StoreConflict("BARBER_NOT_FOUND");
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("recurring_breaks")
+      .select("*")
+      .eq("barber_id", barberId)
+      .order("weekday")
+      .order("start_time");
+    if (error) throw new Error(error.message);
+    return ((data ?? []) as RecurringBreakRow[]).map(mapRecurringBreak);
+  },
+
+  async createRecurringBreak(input: CreateRecurringBreakInput) {
+    const barber = await supabaseStore.getBarber(input.barberId);
+    if (!barber) throw new StoreConflict("BARBER_NOT_FOUND");
+    if (validateRecurringBreakInput(input)) throw new StoreConflict("INVALID_RANGE");
+    const existing = await supabaseStore.listRecurringBreaks(input.barberId);
+    if (countBreaksForWeekday(existing, input.weekday) >= 3) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("recurring_breaks")
+      .insert({
+        barber_id: input.barberId,
+        weekday: input.weekday,
+        start_time: input.startTime,
+        end_time: input.endTime,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return mapRecurringBreak(data as RecurringBreakRow);
+  },
+
+  async deleteRecurringBreak(breakId) {
+    const supabase = createServiceClient();
+    const { error } = await supabase.from("recurring_breaks").delete().eq("id", breakId);
     if (error) throw new Error(error.message);
   },
 };

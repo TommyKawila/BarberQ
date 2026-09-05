@@ -1,0 +1,22 @@
+insert into staff (id, name, role, token, barber_id) values
+  (
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    'Saeb',
+    'super_admin',
+    'saeb_admin_xyz123',
+    '11111111-1111-4111-8111-111111111111'
+  ),
+  (
+    'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
+    'Tide',
+    'barber',
+    'tide_admin_abc456',
+    '22222222-2222-4222-8222-222222222222'
+  ),
+  (
+    'cccccccc-cccc-4ccc-8ccc-cccccccccccc',
+    'Nat',
+    'barber',
+    'nat_admin_def789',
+    '33333333-3333-4333-8333-333333333333'
+  );

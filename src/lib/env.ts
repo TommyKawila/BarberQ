@@ -30,5 +30,8 @@ export function getEnv(key: EnvKey): string {
 }
 
 export function isAdminKeyRequired(): boolean {
-  return Boolean(getOptionalEnv("ADMIN_SECRET_KEY"));
+  return !(
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
 }

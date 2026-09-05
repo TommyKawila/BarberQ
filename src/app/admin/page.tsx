@@ -3,75 +3,53 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
-import { useBrowserStorage } from "@/lib/browser-storage";
+import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { dateISOFromInstant } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot } from "@/types/booking";
-
-const ADMIN_KEY = "barberq_admin_key";
 
 interface ApiError {
   error?: { code?: string; message?: string };
 }
 
-interface AdminMeta {
-  prototypeMode: boolean;
-  adminKeyRequired: boolean;
-}
-
 export default function AdminPage() {
   const { t } = useI18n();
-  const [keyInput, setKeyInput] = useState("");
-  const [adminKey, setAdminKey] = useBrowserStorage(ADMIN_KEY);
+  const {
+    tokenInput,
+    setTokenInput,
+    session,
+    meta,
+    loading,
+    error,
+    setError,
+    authHeaders,
+    loadSession,
+    unlock,
+    isSuperAdmin,
+    needsUnlock,
+  } = useAdminSession();
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [meta, setMeta] = useState<AdminMeta>({
-    prototypeMode: true,
-    adminKeyRequired: false,
-  });
   const [dateISO] = useState(() => dateISOFromInstant(new Date()));
 
   const loadDay = useCallback(async () => {
-    const headers: HeadersInit = {};
-    if (adminKey) headers["x-admin-key"] = adminKey;
-    const res = await fetch(`/api/block?date=${encodeURIComponent(dateISO)}`, { headers });
+    const res = await fetch(`/api/block?date=${encodeURIComponent(dateISO)}`, {
+      headers: authHeaders,
+    });
     const json = (await res.json()) as {
       columns?: AdminColumn[];
-      prototypeMode?: boolean;
-      adminKeyRequired?: boolean;
     } & ApiError;
     if (!res.ok) {
       setError(json.error?.message ?? t("admin.loadFailed"));
-      if (res.status === 401) setAdminKey(null);
+      if (res.status === 401) void loadSession();
       return;
     }
     setError(null);
     setColumns(json.columns ?? []);
-    setMeta({
-      prototypeMode: json.prototypeMode ?? true,
-      adminKeyRequired: json.adminKeyRequired ?? false,
-    });
-  }, [adminKey, dateISO, setAdminKey, t]);
+  }, [authHeaders, dateISO, loadSession, setError, t]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      const res = await fetch("/api/barbers");
-      const json = (await res.json()) as AdminMeta & ApiError;
-      if (cancelled) return;
-      setMeta({
-        prototypeMode: json.prototypeMode ?? true,
-        adminKeyRequired: json.adminKeyRequired ?? false,
-      });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (meta.adminKeyRequired && !adminKey) return;
+    if (loading || needsUnlock) return;
     let cancelled = false;
     void (async () => {
       await Promise.resolve();
@@ -85,16 +63,10 @@ export default function AdminPage() {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [adminKey, loadDay, meta.adminKeyRequired]);
-
-  function unlock() {
-    const next = keyInput.trim();
-    if (!next) return;
-    setAdminKey(next);
-  }
+  }, [loadDay, loading, needsUnlock]);
 
   async function onToggle(barberId: string, slot: AdminSlot) {
-    if (meta.adminKeyRequired && !adminKey) return;
+    if (needsUnlock) return;
     const key = `${barberId}:${slot.startTime}`;
     setPendingKey(key);
     setError(null);
@@ -116,8 +88,7 @@ export default function AdminPage() {
       }),
     );
 
-    const headers: HeadersInit = { "Content-Type": "application/json" };
-    if (adminKey) headers["x-admin-key"] = adminKey;
+    const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
 
     try {
       const res =
@@ -152,15 +123,23 @@ export default function AdminPage() {
     }
   }
 
-  if (meta.adminKeyRequired && !adminKey) {
+  if (loading) {
+    return (
+      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
+        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
+      </section>
+    );
+  }
+
+  if (needsUnlock) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.title")}</h1>
         <p className="text-sm text-zinc-400">{t("admin.unlockHint")}</p>
         <input
           type="password"
-          value={keyInput}
-          onChange={(event) => setKeyInput(event.target.value)}
+          value={tokenInput}
+          onChange={(event) => setTokenInput(event.target.value)}
           className="min-h-12 rounded-xl bg-zinc-900 px-3 outline-none ring-amber-400 focus:ring-2"
         />
         <button
@@ -174,6 +153,8 @@ export default function AdminPage() {
     );
   }
 
+  const editableBarberId = isSuperAdmin ? null : session?.barberId ?? null;
+
   return (
     <div className="flex flex-col gap-4 px-3 py-4">
       <header className="flex items-start justify-between gap-2">
@@ -184,16 +165,44 @@ export default function AdminPage() {
             </span>
           ) : null}
           <h1 className="text-xl font-semibold">{t("admin.todayTap")}</h1>
+          {session ? (
+            <p className="mt-1 text-xs text-zinc-500">
+              {session.name}
+              {session.role === "super_admin" ? ` · ${t("admin.roleSuperAdmin")}` : ` · ${t("admin.roleBarber")}`}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-col items-end gap-2">
           <p className="text-xs text-zinc-500">{dateISO}</p>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
             <Link
-              href="/admin/settings"
+              href="/guide"
               className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
             >
-              {t("admin.settings")}
+              {t("admin.guide")}
             </Link>
+            <Link
+              href="/admin/my-schedule"
+              className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
+            >
+              {t("admin.mySchedule")}
+            </Link>
+            {isSuperAdmin ? (
+              <>
+                <Link
+                  href="/admin/staff"
+                  className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
+                >
+                  {t("admin.staffManagement")}
+                </Link>
+                <Link
+                  href="/admin/settings"
+                  className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
+                >
+                  {t("admin.settings")}
+                </Link>
+              </>
+            ) : null}
             <button
               type="button"
               onClick={() => void loadDay()}
@@ -213,6 +222,7 @@ export default function AdminPage() {
       <QuickBlockGrid
         columns={columns}
         pendingKey={pendingKey}
+        editableBarberId={editableBarberId}
         onToggle={(id, slot) => void onToggle(id, slot)}
       />
     </div>

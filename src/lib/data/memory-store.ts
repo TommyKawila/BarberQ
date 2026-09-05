@@ -1,9 +1,22 @@
 import { intervalsOverlap } from "@/lib/services/slot-service";
 import { BARBER_SEED } from "@/lib/data/seed";
+import { generateStaffToken, STAFF_SEED } from "@/lib/data/staff-seed";
 import {
   StoreConflict,
   type BookingStore,
+  type CreateRecurringBreakInput,
+  type CreateStaffInput,
+  type RecurringBreak,
+  type Staff,
+  type UpdateBarberInput,
 } from "@/lib/data/types";
+import {
+  countBreaksForWeekday,
+  normalizeOffDays,
+  validateOffDays,
+  validateRecurringBreakInput,
+  validateSlotDuration,
+} from "@/lib/schedule/validation";
 import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
 
 const GLOBAL_KEY = "__barberq_memory_store__";
@@ -13,6 +26,8 @@ interface MemoryState {
   blocks: TimeBlock[];
   logoDataUrl: string | null;
   shopName: string | null;
+  staff: Staff[];
+  recurringBreaks: RecurringBreak[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -20,7 +35,25 @@ type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
 function getState(): MemoryState {
   const g = globalThis as GlobalStore;
   if (!g[GLOBAL_KEY]) {
-    g[GLOBAL_KEY] = { appointments: [], blocks: [], logoDataUrl: null, shopName: null };
+    g[GLOBAL_KEY] = {
+      appointments: [],
+      blocks: [],
+      logoDataUrl: null,
+      shopName: null,
+      staff: STAFF_SEED.map((row) => ({
+        id: row.id,
+        name: row.name,
+        role: row.role,
+        token: row.token,
+        barberId: row.barber_id,
+        active: true,
+        createdAt: new Date(),
+      })),
+      recurringBreaks: [],
+    };
+  }
+  if (!g[GLOBAL_KEY].recurringBreaks) {
+    g[GLOBAL_KEY].recurringBreaks = [];
   }
   return g[GLOBAL_KEY];
 }
@@ -175,6 +208,10 @@ export const memoryStore: BookingStore = {
     });
   },
 
+  async getBlock(id) {
+    return getState().blocks.find((b) => b.id === id) ?? null;
+  },
+
   async removeBlock(id) {
     const state = getState();
     const idx = state.blocks.findIndex((b) => b.id === id);
@@ -205,5 +242,90 @@ export const memoryStore: BookingStore = {
     const state = getState();
     state.logoDataUrl = input.logoDataUrl;
     state.shopName = input.shopName;
+  },
+
+  async getStaffByToken(token) {
+    const row = getState().staff.find((s) => s.active && s.token === token);
+    return row ?? null;
+  },
+
+  async listStaff() {
+    return [...getState().staff].sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    );
+  },
+
+  async createStaff(input: CreateStaffInput) {
+    const name = input.name.trim();
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+    if (input.role === "barber" && input.barberId && !getBarberSync(input.barberId)) {
+      throw new StoreConflict("BARBER_NOT_FOUND");
+    }
+    const row: Staff = {
+      id: uuid(),
+      name,
+      role: input.role,
+      token: generateStaffToken(),
+      barberId: input.barberId ?? null,
+      active: true,
+      createdAt: new Date(),
+    };
+    getState().staff.push(row);
+    return row;
+  },
+
+  async deactivateStaff(staffId) {
+    const state = getState();
+    const idx = state.staff.findIndex((s) => s.id === staffId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    state.staff[idx] = { ...state.staff[idx], active: false };
+  },
+
+  async updateBarber(barberId, input: UpdateBarberInput) {
+    const barber = getBarberSync(barberId);
+    if (!barber) throw new StoreConflict("BARBER_NOT_FOUND");
+    if (input.offDays !== undefined) {
+      const offDays = normalizeOffDays(input.offDays);
+      if (validateOffDays(offDays)) throw new StoreConflict("INVALID_RANGE");
+      barber.off_days = offDays;
+    }
+    if (input.slotDuration !== undefined) {
+      if (validateSlotDuration(input.slotDuration)) throw new StoreConflict("INVALID_RANGE");
+      barber.slot_duration_minutes = input.slotDuration;
+    }
+    return { ...barber, off_days: [...barber.off_days] };
+  },
+
+  async listRecurringBreaks(barberId) {
+    if (!getBarberSync(barberId)) throw new StoreConflict("BARBER_NOT_FOUND");
+    return getState()
+      .recurringBreaks.filter((item) => item.barberId === barberId)
+      .sort((a, b) => a.weekday - b.weekday || a.startTime.localeCompare(b.startTime));
+  },
+
+  async createRecurringBreak(input: CreateRecurringBreakInput) {
+    if (!getBarberSync(input.barberId)) throw new StoreConflict("BARBER_NOT_FOUND");
+    if (validateRecurringBreakInput(input)) throw new StoreConflict("INVALID_RANGE");
+    const existing = getState().recurringBreaks.filter((item) => item.barberId === input.barberId);
+    if (countBreaksForWeekday(existing, input.weekday) >= 3) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const row: RecurringBreak = {
+      id: uuid(),
+      barberId: input.barberId,
+      weekday: input.weekday,
+      startTime: input.startTime,
+      endTime: input.endTime,
+      createdAt: new Date(),
+    };
+    getState().recurringBreaks.push(row);
+    return row;
+  },
+
+  async deleteRecurringBreak(breakId) {
+    const state = getState();
+    const idx = state.recurringBreaks.findIndex((item) => item.id === breakId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    state.recurringBreaks.splice(idx, 1);
   },
 };

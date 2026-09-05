@@ -7,6 +7,7 @@ import {
   generateSlots,
   getBookableDates,
   intervalsOverlap,
+  recurringBreaksForDate,
 } from "@/lib/services/slot-service";
 import type {
   AdminColumn,
@@ -92,8 +93,11 @@ export async function getAvailableSlots(
     const barber = await store.getBarber(barberId);
     if (!barber) throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     const range = dayRangeUtc(dateISO);
-    const busy = await store.getBusyIntervals(barberId, range.from, range.to);
-    return generateSlots({ dateISO, barber, busy, now });
+    const [busy, recurringBreaks] = await Promise.all([
+      store.getBusyIntervals(barberId, range.from, range.to),
+      store.listRecurringBreaks(barberId),
+    ]);
+    return generateSlots({ dateISO, barber, busy, recurringBreaks, now });
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
@@ -237,20 +241,32 @@ export async function getAdminDay(
     const store = getStore();
     const barbers = await listBarbers();
     const range = dayRangeUtc(dateISO);
-    const [booked, blocked] = await Promise.all([
+    const [booked, blocked, allBreaks] = await Promise.all([
       store.listDayAppointments(range.from, range.to),
       store.listDayBlocks(range.from, range.to),
+      Promise.all(barbers.map((barber) => store.listRecurringBreaks(barber.id))),
     ]);
+    const breaksByBarber = new Map(
+      barbers.map((barber, index) => [barber.id, allBreaks[index] ?? []]),
+    );
 
     return barbers.map((barber) => {
       const barberBooked = booked.filter((row) => row.barber_id === barber.id);
       const barberBlocked = blocked.filter((row) => row.barber_id === barber.id);
+      const recurringBreaks = breaksByBarber.get(barber.id) ?? [];
+      const breakRanges = recurringBreaksForDate(dateISO, recurringBreaks);
       const busy = [
         ...barberBooked.map((row) => ({ start_time: row.start_time, end_time: row.end_time })),
         ...barberBlocked.map((row) => ({ start_time: row.start_time, end_time: row.end_time })),
       ];
 
-      const slots: AdminSlot[] = generateSlots({ dateISO, barber, busy, now }).map((slot) => {
+      const slots: AdminSlot[] = generateSlots({
+        dateISO,
+        barber,
+        busy,
+        recurringBreaks,
+        now,
+      }).map((slot) => {
         const slotStart = new Date(slot.startTime);
         const slotEnd = new Date(slot.endTime);
         const appointment = barberBooked.find((row) =>
@@ -264,6 +280,12 @@ export async function getAdminDay(
         );
         if (block) {
           return { ...slot, kind: "blocked", blockId: block.id, reason: block.reason };
+        }
+        const onBreak = breakRanges.some((item) =>
+          intervalsOverlap(slotStart, slotEnd, item.start, item.end),
+        );
+        if (onBreak) {
+          return { ...slot, kind: "blocked", reason: "break", available: false };
         }
         return { ...slot, kind: "free" };
       });
