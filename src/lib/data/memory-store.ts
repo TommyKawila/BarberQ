@@ -11,6 +11,7 @@ const GLOBAL_KEY = "__barberq_memory_store__";
 interface MemoryState {
   appointments: Appointment[];
   blocks: TimeBlock[];
+  logoDataUrl: string | null;
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -18,7 +19,7 @@ type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
 function getState(): MemoryState {
   const g = globalThis as GlobalStore;
   if (!g[GLOBAL_KEY]) {
-    g[GLOBAL_KEY] = { appointments: [], blocks: [] };
+    g[GLOBAL_KEY] = { appointments: [], blocks: [], logoDataUrl: null };
   }
   return g[GLOBAL_KEY];
 }
@@ -192,5 +193,13 @@ export const memoryStore: BookingStore = {
       const s = new Date(b.start_time);
       return s >= from && s <= to;
     });
+  },
+
+  async getShopSettings() {
+    return { logoDataUrl: getState().logoDataUrl };
+  },
+
+  async setShopSettings(input) {
+    getState().logoDataUrl = input.logoDataUrl;
   },
 };

@@ -1,7 +1,8 @@
 "use client";
 
 import { format, parseISO } from "date-fns";
-import { th } from "date-fns/locale";
+import { enUS, th } from "date-fns/locale";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { getBangkokWeekday } from "@/lib/services/slot-service";
 import type { Barber } from "@/types/booking";
 
@@ -13,8 +14,13 @@ interface DateSelectorProps {
 }
 
 const WEEKDAY_TH = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+const WEEKDAY_EN = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function DateSelector({ dates, value, barber, onChange }: DateSelectorProps) {
+  const { locale } = useI18n();
+  const weekdays = locale === "th" ? WEEKDAY_TH : WEEKDAY_EN;
+  const dateLocale = locale === "th" ? th : enUS;
+
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
       {dates.map((dateISO) => {
@@ -36,9 +42,9 @@ export function DateSelector({ dates, value, barber, onChange }: DateSelectorPro
                   : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
             }`}
           >
-            <span className="text-[11px] font-medium">{WEEKDAY_TH[weekday]}</span>
+            <span className="text-[11px] font-medium">{weekdays[weekday]}</span>
             <span className="text-lg font-semibold leading-none">{format(day, "d")}</span>
-            <span className="text-[10px]">{format(day, "MMM", { locale: th })}</span>
+            <span className="text-[10px]">{format(day, "MMM", { locale: dateLocale })}</span>
           </button>
         );
       })}

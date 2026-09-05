@@ -128,4 +128,27 @@ export const supabaseStore: BookingStore = {
     if (error) throw new Error(error.message);
     return (data ?? []) as TimeBlock[];
   },
+
+  async getShopSettings() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_settings")
+      .select("logo_data_url")
+      .eq("id", 1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { logoDataUrl: (data?.logo_data_url as string | null) ?? null };
+  },
+
+  async setShopSettings(input) {
+    const supabase = createServiceClient();
+    const { error } = await supabase
+      .from("shop_settings")
+      .update({
+        logo_data_url: input.logoDataUrl,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", 1);
+    if (error) throw new Error(error.message);
+  },
 };

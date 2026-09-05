@@ -36,6 +36,10 @@ export interface CreateBlockInput {
   reason: string;
 }
 
+export interface ShopSettings {
+  logoDataUrl: string | null;
+}
+
 export interface BookingStore {
   listBarbers(): Promise<Barber[]>;
   getBarber(barberId: string): Promise<Barber | null>;
@@ -47,4 +51,6 @@ export interface BookingStore {
   removeBlock(id: string): Promise<void>;
   listDayAppointments(from: Date, to: Date): Promise<Appointment[]>;
   listDayBlocks(from: Date, to: Date): Promise<TimeBlock[]>;
+  getShopSettings(): Promise<ShopSettings>;
+  setShopSettings(input: ShopSettings): Promise<void>;
 }

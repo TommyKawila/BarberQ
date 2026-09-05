@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import { barberLabel, type AdminColumn, type AdminSlot } from "@/types/booking";
 
@@ -20,16 +21,22 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
 }
 
 export function QuickBlockGrid({ columns, pendingKey, onToggle }: QuickBlockGridProps) {
+  const { locale, t } = useI18n();
+
   return (
     <div className="grid grid-cols-3 gap-2">
       {columns.map((column) => (
         <div key={column.barber.id} className="flex flex-col gap-2">
           <div className="rounded-lg bg-zinc-900 px-1 py-2 text-center">
-            <div className="text-sm font-semibold">{barberLabel(column.barber.name)}</div>
-            <div className="text-[10px] text-zinc-400">{column.barber.slot_duration_minutes} นาที</div>
+            <div className="text-sm font-semibold">
+              {barberLabel(column.barber.name, locale)}
+            </div>
+            <div className="text-[10px] text-zinc-400">
+              {column.barber.slot_duration_minutes} {t("common.minutes")}
+            </div>
           </div>
           {column.slots.length === 0 ? (
-            <p className="px-1 text-center text-xs text-zinc-500">หยุด</p>
+            <p className="px-1 text-center text-xs text-zinc-500">{t("admin.off")}</p>
           ) : (
             column.slots.map((slot) => {
               const key = `${column.barber.id}:${slot.startTime}`;
@@ -40,8 +47,8 @@ export function QuickBlockGrid({ columns, pendingKey, onToggle }: QuickBlockGrid
                 slot.kind === "booked"
                   ? slot.customerName
                   : slot.kind === "blocked"
-                    ? slot.reason || "Walk-in"
-                    : "ว่าง";
+                    ? slot.reason || t("admin.walkIn")
+                    : t("admin.free");
               return (
                 <button
                   key={slot.startTime}

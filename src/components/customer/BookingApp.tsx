@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
+import { enUS, th } from "date-fns/locale";
 import { BarberSelector } from "@/components/customer/BarberSelector";
 import { DateSelector } from "@/components/customer/DateSelector";
 import { SlotPicker } from "@/components/customer/SlotPicker";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { useCustomerIdentity } from "@/lib/identity/mock-identity";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import {
   canCancelAt,
   formatSlotTime,
@@ -25,6 +27,7 @@ interface ApiError {
 }
 
 export function BookingApp() {
+  const { locale, t } = useI18n();
   const { ready, identity } = useCustomerIdentity();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -89,12 +92,12 @@ export function BookingApp() {
         const current = selectedStartRef.current;
         if (current && !fresh.some((s) => s.startTime === current && s.available)) {
           setSelectedStart(null);
-          setMessage("ช่วงเวลาที่เลือกไม่ว่างแล้ว กรุณาเลือกเวลาใหม่");
+          setMessage(t("booking.slotUnavailable"));
         }
       }
       return fresh;
     },
-    [],
+    [t],
   );
 
   const silentRefresh = useCallback(async () => {
@@ -175,18 +178,18 @@ export function BookingApp() {
       if (!res.ok || !json.appointment) {
         const code = json.error?.code;
         if (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") {
-          setMessage("ช่วงเวลานี้ถูกจองไปแล้ว กรุณาเลือกเวลาใหม่");
+          setMessage(t("booking.slotTaken"));
           setSelectedStart(null);
           void silentRefresh();
         } else {
-          setMessage(json.error?.message ?? "จองไม่สำเร็จ");
+          setMessage(json.error?.message ?? t("booking.failed"));
         }
         return;
       }
       setPhone((phone ?? "").trim());
       setLastBookingRaw(JSON.stringify(json.appointment));
     } catch {
-      setMessage("จองไม่สำเร็จ");
+      setMessage(t("booking.failed"));
     } finally {
       setSubmitting(false);
     }
@@ -204,12 +207,12 @@ export function BookingApp() {
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
-        setMessage(json.error?.message ?? "ยกเลิกไม่สำเร็จ");
+        setMessage(json.error?.message ?? t("booking.cancelFailed"));
         return;
       }
       setLastBookingRaw(null);
     } catch {
-      setMessage("ยกเลิกไม่สำเร็จ");
+      setMessage(t("booking.cancelFailed"));
     } finally {
       setSubmitting(false);
     }
@@ -221,8 +224,10 @@ export function BookingApp() {
     setMessage(null);
   }
 
+  const dateLocale = locale === "th" ? th : enUS;
+
   if (!ready) {
-    return <p className="px-4 py-16 text-center text-sm text-zinc-400">กำลังโหลด…</p>;
+    return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
   }
 
   if (booked) {
@@ -231,6 +236,7 @@ export function BookingApp() {
       new Date(booked.start_time),
       SHOP_TIMEZONE,
       "EEEE d MMM yyyy",
+      { locale: dateLocale },
     );
     const cancellable = canCancelAt(booked.start_time);
 
@@ -238,33 +244,34 @@ export function BookingApp() {
       <section className="flex flex-col gap-4 px-4 py-8">
         {prototypeMode ? (
           <span className="self-start rounded bg-zinc-800 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-400">
-            Prototype mode
+            {t("common.prototypeMode")}
           </span>
         ) : null}
         <div className="rounded-2xl bg-zinc-900 p-5">
-          <p className="text-xs font-semibold tracking-[0.2em] text-amber-400">BARBERQ</p>
-          <h1 className="mt-2 text-xl font-semibold">Booking confirmed</h1>
+          <h1 className="text-xl font-semibold">{t("booking.confirmed")}</h1>
           <dl className="mt-4 space-y-3 text-sm">
             <div>
-              <dt className="text-zinc-500">Barber</dt>
-              <dd className="font-medium">{barber ? barberLabel(barber.name) : "—"}</dd>
+              <dt className="text-zinc-500">{t("booking.barber")}</dt>
+              <dd className="font-medium">
+                {barber ? barberLabel(barber.name, locale) : "—"}
+              </dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Date</dt>
+              <dt className="text-zinc-500">{t("booking.date")}</dt>
               <dd>{dateLabel}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Time</dt>
+              <dt className="text-zinc-500">{t("booking.time")}</dt>
               <dd className="text-lg font-semibold">
                 {formatSlotTime(booked.start_time)} – {formatSlotTime(booked.end_time)}
               </dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Name</dt>
+              <dt className="text-zinc-500">{t("booking.name")}</dt>
               <dd>{booked.customer_name}</dd>
             </div>
             <div>
-              <dt className="text-zinc-500">Phone</dt>
+              <dt className="text-zinc-500">{t("booking.phone")}</dt>
               <dd>{booked.customer_phone}</dd>
             </div>
           </dl>
@@ -276,19 +283,17 @@ export function BookingApp() {
               onClick={() => void cancelBooking()}
               className="min-h-12 rounded-xl bg-red-500 font-semibold text-white disabled:opacity-40"
             >
-              {submitting ? "Cancelling…" : "Cancel Booking"}
+              {submitting ? t("booking.cancelling") : t("booking.cancel")}
             </button>
             {!cancellable ? (
-              <p className="text-xs text-zinc-500">
-                Cancellation allowed only 30+ minutes before start time.
-              </p>
+              <p className="text-xs text-zinc-500">{t("booking.cancelPolicy")}</p>
             ) : null}
             <button
               type="button"
               onClick={bookAnother}
               className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300"
             >
-              Book another
+              {t("booking.bookAnother")}
             </button>
           </div>
         </div>
@@ -303,20 +308,19 @@ export function BookingApp() {
       <header>
         {prototypeMode ? (
           <span className="mb-2 inline-block rounded bg-zinc-800 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-400">
-            Prototype mode
+            {t("common.prototypeMode")}
           </span>
         ) : null}
-        <p className="text-xs font-semibold tracking-[0.25em] text-amber-400">BARBERQ</p>
-        <h1 className="mt-1 text-2xl font-semibold">Book a haircut</h1>
+        <h1 className="text-2xl font-semibold">{t("booking.title")}</h1>
       </header>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-zinc-400">Barber</h2>
+        <h2 className="text-sm font-medium text-zinc-400">{t("booking.barber")}</h2>
         <BarberSelector barbers={barbers} value={barberId} onChange={setBarberId} />
       </section>
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-zinc-400">Date</h2>
+        <h2 className="text-sm font-medium text-zinc-400">{t("booking.date")}</h2>
         <DateSelector
           dates={dates}
           value={activeDate}
@@ -327,10 +331,11 @@ export function BookingApp() {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-sm font-medium text-zinc-400">Time</h2>
+          <h2 className="text-sm font-medium text-zinc-400">{t("booking.time")}</h2>
           {lastUpdated ? (
             <p className="text-[10px] text-zinc-600">
-              อัปเดต {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm:ss")}
+              {t("booking.lastUpdated")}{" "}
+              {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm:ss")}
             </p>
           ) : null}
         </div>
@@ -352,21 +357,21 @@ export function BookingApp() {
       {selectedSlot ? (
         <section className="flex flex-col gap-3 rounded-2xl bg-zinc-900 p-4">
           <label className="flex flex-col gap-1 text-sm">
-            Name
+            {t("booking.name")}
             <input
               value={customerName}
               onChange={(event) => setCustomerName(event.target.value)}
-              placeholder="Your name"
+              placeholder={t("booking.namePlaceholder")}
               className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
             />
           </label>
           <label className="flex flex-col gap-1 text-sm">
-            Phone
+            {t("booking.phone")}
             <input
               value={phone ?? ""}
               onChange={(event) => setPhone(event.target.value)}
               inputMode="tel"
-              placeholder="0812345678"
+              placeholder={t("booking.phonePlaceholder")}
               className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
             />
           </label>
@@ -378,8 +383,8 @@ export function BookingApp() {
             className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
           >
             {submitting
-              ? "Booking…"
-              : `Confirm ${formatSlotTime(selectedSlot.startTime)} – ${formatSlotTime(selectedSlot.endTime)}`}
+              ? t("booking.booking")
+              : `${t("booking.confirm")} ${formatSlotTime(selectedSlot.startTime)} – ${formatSlotTime(selectedSlot.endTime)}`}
           </button>
         </section>
       ) : null}

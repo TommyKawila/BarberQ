@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { barberLabel, type Barber } from "@/types/booking";
 
 interface BarberSelectorProps {
@@ -9,6 +10,8 @@ interface BarberSelectorProps {
 }
 
 export function BarberSelector({ barbers, value, onChange }: BarberSelectorProps) {
+  const { locale, t } = useI18n();
+
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
       {barbers.map((barber) => {
@@ -24,9 +27,11 @@ export function BarberSelector({ barbers, value, onChange }: BarberSelectorProps
                 : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
             }`}
           >
-            <div className="text-sm font-semibold leading-tight">{barberLabel(barber.name)}</div>
+            <div className="text-sm font-semibold leading-tight">
+              {barberLabel(barber.name, locale)}
+            </div>
             <div className={`mt-1 text-xs ${selected ? "text-zinc-800" : "text-zinc-400"}`}>
-              {barber.slot_duration_minutes} นาที
+              {barber.slot_duration_minutes} {t("common.minutes")}
             </div>
           </button>
         );

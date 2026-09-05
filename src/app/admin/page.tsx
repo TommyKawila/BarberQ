@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { useBrowserStorage } from "@/lib/browser-storage";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { dateISOFromInstant } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot } from "@/types/booking";
 
@@ -18,6 +20,7 @@ interface AdminMeta {
 }
 
 export default function AdminPage() {
+  const { t } = useI18n();
   const [keyInput, setKeyInput] = useState("");
   const [adminKey, setAdminKey] = useBrowserStorage(ADMIN_KEY);
   const [columns, setColumns] = useState<AdminColumn[]>([]);
@@ -39,7 +42,7 @@ export default function AdminPage() {
       adminKeyRequired?: boolean;
     } & ApiError;
     if (!res.ok) {
-      setError(json.error?.message ?? "Failed to load");
+      setError(json.error?.message ?? t("admin.loadFailed"));
       if (res.status === 401) setAdminKey(null);
       return;
     }
@@ -49,7 +52,7 @@ export default function AdminPage() {
       prototypeMode: json.prototypeMode ?? true,
       adminKeyRequired: json.adminKeyRequired ?? false,
     });
-  }, [adminKey, dateISO, setAdminKey]);
+  }, [adminKey, dateISO, setAdminKey, t]);
 
   useEffect(() => {
     let cancelled = false;
@@ -137,13 +140,13 @@ export default function AdminPage() {
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setColumns(previous);
-        setError(json.error?.message ?? "Update failed");
+        setError(json.error?.message ?? t("admin.updateFailed"));
         return;
       }
       await loadDay();
     } catch {
       setColumns(previous);
-      setError("Update failed");
+      setError(t("admin.updateFailed"));
     } finally {
       setPendingKey(null);
     }
@@ -152,8 +155,8 @@ export default function AdminPage() {
   if (meta.adminKeyRequired && !adminKey) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <h1 className="text-2xl font-semibold">Admin</h1>
-        <p className="text-sm text-zinc-400">Enter shop key to open today&apos;s board</p>
+        <h1 className="text-2xl font-semibold">{t("admin.title")}</h1>
+        <p className="text-sm text-zinc-400">{t("admin.unlockHint")}</p>
         <input
           type="password"
           value={keyInput}
@@ -165,7 +168,7 @@ export default function AdminPage() {
           onClick={unlock}
           className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950"
         >
-          Unlock
+          {t("admin.unlock")}
         </button>
       </section>
     );
@@ -177,27 +180,34 @@ export default function AdminPage() {
         <div>
           {meta.prototypeMode ? (
             <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
-              Prototype mode
+              {t("common.prototypeMode")}
             </span>
           ) : null}
-          <p className="text-xs font-semibold tracking-[0.2em] text-amber-400">BARBERQ</p>
-          <h1 className="text-xl font-semibold">Today · tap to block</h1>
+          <h1 className="text-xl font-semibold">{t("admin.todayTap")}</h1>
         </div>
         <div className="flex flex-col items-end gap-2">
           <p className="text-xs text-zinc-500">{dateISO}</p>
-          <button
-            type="button"
-            onClick={() => void loadDay()}
-            className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
-          >
-            Refresh
-          </button>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/settings"
+              className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
+            >
+              {t("admin.settings")}
+            </Link>
+            <button
+              type="button"
+              onClick={() => void loadDay()}
+              className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
+            >
+              {t("admin.refresh")}
+            </button>
+          </div>
         </div>
       </header>
       <div className="flex gap-2 text-[11px] text-zinc-400">
-        <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">Open</span>
-        <span className="rounded bg-red-600 px-2 py-0.5 text-white">Walk-in</span>
-        <span className="rounded bg-sky-700 px-2 py-0.5 text-white">Booked</span>
+        <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>
+        <span className="rounded bg-red-600 px-2 py-0.5 text-white">{t("admin.walkIn")}</span>
+        <span className="rounded bg-sky-700 px-2 py-0.5 text-white">{t("admin.booked")}</span>
       </div>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
       <QuickBlockGrid

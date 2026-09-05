@@ -75,7 +75,8 @@ export const BARBER_THAI_NAME: Record<string, string> = {
   Nat: "นัด",
 };
 
-export function barberLabel(name: string): string {
+export function barberLabel(name: string, locale: "th" | "en" = "th"): string {
+  if (locale === "en") return name;
   const thai = BARBER_THAI_NAME[name];
   return thai ? `${thai} · ${name}` : name;
 }

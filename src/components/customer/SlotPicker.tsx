@@ -1,5 +1,6 @@
 "use client";
 
+import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import type { Slot } from "@/types/booking";
 
@@ -11,15 +12,15 @@ interface SlotPickerProps {
 }
 
 export function SlotPicker({ slots, value, loading, onChange }: SlotPickerProps) {
+  const { t } = useI18n();
+
   if (loading) {
-    return <p className="py-8 text-center text-sm text-zinc-400">กำลังโหลดคิวว่าง…</p>;
+    return <p className="py-8 text-center text-sm text-zinc-400">{t("booking.slotsLoading")}</p>;
   }
 
   if (slots.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-zinc-400">
-        วันนี้ช่างหยุด หรือไม่มีคิวที่จองได้
-      </p>
+      <p className="py-8 text-center text-sm text-zinc-400">{t("booking.noSlots")}</p>
     );
   }
 
