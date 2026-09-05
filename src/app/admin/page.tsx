@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -166,10 +167,7 @@ export default function AdminPage() {
           ) : null}
           <h1 className="text-xl font-semibold">{t("admin.todayTap")}</h1>
           {session ? (
-            <p className="mt-1 text-xs text-zinc-500">
-              {session.name}
-              {session.role === "super_admin" ? ` · ${t("admin.roleSuperAdmin")}` : ` · ${t("admin.roleBarber")}`}
-            </p>
+            <AdminSessionBadge name={session.name} role={session.role} />
           ) : null}
         </div>
         <div className="flex flex-col items-end gap-2">
