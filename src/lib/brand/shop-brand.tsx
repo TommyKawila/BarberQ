@@ -4,8 +4,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 interface ShopBrandContextValue {
   logoDataUrl: string | null;
+  shopName: string | null;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
+  setShopName: (value: string | null) => void;
   refresh: () => Promise<void>;
 }
 
@@ -13,14 +15,19 @@ const ShopBrandContext = createContext<ShopBrandContextValue | null>(null);
 
 export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [shopName, setShopName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
     try {
       const res = await fetch("/api/settings");
       if (!res.ok) return;
-      const json = (await res.json()) as { logoDataUrl?: string | null };
+      const json = (await res.json()) as {
+        logoDataUrl?: string | null;
+        shopName?: string | null;
+      };
       setLogoDataUrl(json.logoDataUrl ?? null);
+      setShopName(json.shopName ?? null);
     } catch {
       /* ignore */
     } finally {
@@ -41,8 +48,15 @@ export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ logoDataUrl, loading, setLogoDataUrl, refresh }),
-    [logoDataUrl, loading, refresh],
+    () => ({
+      logoDataUrl,
+      shopName,
+      loading,
+      setLogoDataUrl,
+      setShopName,
+      refresh,
+    }),
+    [logoDataUrl, shopName, loading, refresh],
   );
 
   return <ShopBrandContext.Provider value={value}>{children}</ShopBrandContext.Provider>;

@@ -4,6 +4,7 @@ export const dictionary = {
     "common.minutes": "นาที",
     "common.prototypeMode": "Prototype mode",
     "common.brand": "BARBERQ",
+    "common.byBrand": "by BARBERQ",
 
     "booking.title": "จองคิวตัดผม",
     "booking.barber": "ช่าง",
@@ -48,12 +49,19 @@ export const dictionary = {
     "admin.logoSaved": "บันทึกโลโก้แล้ว",
     "admin.logoInvalid": "รูปไม่ถูกต้อง กรุณาเลือกไฟล์ใหม่",
     "admin.backToBoard": "กลับบอร์ด",
+    "admin.shopName": "ชื่อร้าน",
+    "admin.shopNameHint": "ชื่อที่แสดงใน header เช่น PHINX STUDIO by BARBERQ",
+    "admin.shopNamePlaceholder": "PHINX STUDIO",
+    "admin.saveShopName": "บันทึกชื่อร้าน",
+    "admin.shopNameSaved": "บันทึกชื่อร้านแล้ว",
+    "admin.shopNameInvalid": "ชื่อร้านต้องมี 1–40 ตัวอักษร",
   },
   en: {
     "common.loading": "Loading…",
     "common.minutes": "min",
     "common.prototypeMode": "Prototype mode",
     "common.brand": "BARBERQ",
+    "common.byBrand": "by BARBERQ",
 
     "booking.title": "Book a haircut",
     "booking.barber": "Barber",
@@ -98,6 +106,12 @@ export const dictionary = {
     "admin.logoSaved": "Logo saved",
     "admin.logoInvalid": "Invalid image. Please choose another file.",
     "admin.backToBoard": "Back to board",
+    "admin.shopName": "Shop name",
+    "admin.shopNameHint": "Shown in the header as SHOP NAME by BARBERQ",
+    "admin.shopNamePlaceholder": "PHINX STUDIO",
+    "admin.saveShopName": "Save shop name",
+    "admin.shopNameSaved": "Shop name saved",
+    "admin.shopNameInvalid": "Shop name must be 1–40 characters",
   },
 } as const;
 

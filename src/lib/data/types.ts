@@ -38,6 +38,7 @@ export interface CreateBlockInput {
 
 export interface ShopSettings {
   logoDataUrl: string | null;
+  shopName: string | null;
 }
 
 export interface BookingStore {

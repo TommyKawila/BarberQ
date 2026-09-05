@@ -12,6 +12,7 @@ interface MemoryState {
   appointments: Appointment[];
   blocks: TimeBlock[];
   logoDataUrl: string | null;
+  shopName: string | null;
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -19,7 +20,7 @@ type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
 function getState(): MemoryState {
   const g = globalThis as GlobalStore;
   if (!g[GLOBAL_KEY]) {
-    g[GLOBAL_KEY] = { appointments: [], blocks: [], logoDataUrl: null };
+    g[GLOBAL_KEY] = { appointments: [], blocks: [], logoDataUrl: null, shopName: null };
   }
   return g[GLOBAL_KEY];
 }
@@ -196,10 +197,13 @@ export const memoryStore: BookingStore = {
   },
 
   async getShopSettings() {
-    return { logoDataUrl: getState().logoDataUrl };
+    const state = getState();
+    return { logoDataUrl: state.logoDataUrl, shopName: state.shopName };
   },
 
   async setShopSettings(input) {
-    getState().logoDataUrl = input.logoDataUrl;
+    const state = getState();
+    state.logoDataUrl = input.logoDataUrl;
+    state.shopName = input.shopName;
   },
 };

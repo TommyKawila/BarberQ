@@ -133,11 +133,14 @@ export const supabaseStore: BookingStore = {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("shop_settings")
-      .select("logo_data_url")
+      .select("logo_data_url, shop_name")
       .eq("id", 1)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { logoDataUrl: (data?.logo_data_url as string | null) ?? null };
+    return {
+      logoDataUrl: (data?.logo_data_url as string | null) ?? null,
+      shopName: (data?.shop_name as string | null) ?? null,
+    };
   },
 
   async setShopSettings(input) {
@@ -146,6 +149,7 @@ export const supabaseStore: BookingStore = {
       .from("shop_settings")
       .update({
         logo_data_url: input.logoDataUrl,
+        shop_name: input.shopName,
         updated_at: new Date().toISOString(),
       })
       .eq("id", 1);
