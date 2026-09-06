@@ -47,24 +47,30 @@ export function useAdminSession() {
     async (tokenOverride?: string | null) => {
       const token = tokenOverride ?? adminToken;
       setLoading(true);
-      const res = await fetch("/api/staff/me", { headers: authHeadersFor(token) });
-      const json = (await res.json()) as { staff?: AdminSession } & AdminMeta & ApiError;
-      setMeta({
-        prototypeMode: json.prototypeMode ?? true,
-        adminAuthRequired: json.adminAuthRequired ?? false,
-      });
+      try {
+        const res = await fetch("/api/staff/me", { headers: authHeadersFor(token) });
+        const json = (await res.json()) as { staff?: AdminSession } & AdminMeta & ApiError;
+        setMeta({
+          prototypeMode: json.prototypeMode ?? true,
+          adminAuthRequired: json.adminAuthRequired ?? false,
+        });
 
-      if (!res.ok) {
+        if (!res.ok) {
+          setSession(null);
+          if (res.status === 401 && token) setAdminToken(null);
+          setError(json.error?.message ?? null);
+          setLoading(false);
+          return;
+        }
+
+        setError(null);
+        setSession(json.staff ?? null);
+      } catch {
         setSession(null);
-        if (res.status === 401 && token) setAdminToken(null);
-        setError(json.error?.message ?? null);
+        setError("Connection failed");
+      } finally {
         setLoading(false);
-        return;
       }
-
-      setError(null);
-      setSession(json.staff ?? null);
-      setLoading(false);
     },
     [adminToken, setAdminToken],
   );

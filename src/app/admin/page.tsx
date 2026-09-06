@@ -34,35 +34,53 @@ export default function AdminPage() {
   const [dateISO] = useState(() => dateISOFromInstant(new Date()));
 
   const loadDay = useCallback(async () => {
-    const res = await fetch(`/api/block?date=${encodeURIComponent(dateISO)}`, {
-      headers: authHeaders,
-    });
-    const json = (await res.json()) as {
-      columns?: AdminColumn[];
-    } & ApiError;
-    if (!res.ok) {
-      setError(json.error?.message ?? t("admin.loadFailed"));
-      if (res.status === 401) void loadSession();
-      return;
+    try {
+      const res = await fetch(`/api/block?date=${encodeURIComponent(dateISO)}`, {
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as {
+        columns?: AdminColumn[];
+      } & ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.loadFailed"));
+        if (res.status === 401) void loadSession();
+        return;
+      }
+      setError(null);
+      setColumns(json.columns ?? []);
+    } catch {
+      setError(t("admin.networkError"));
     }
-    setError(null);
-    setColumns(json.columns ?? []);
   }, [authHeaders, dateISO, loadSession, setError, t]);
 
   useEffect(() => {
     if (loading || needsUnlock) return;
     let cancelled = false;
+
+    async function refresh() {
+      if (cancelled || document.hidden) return;
+      await loadDay();
+    }
+
     void (async () => {
       await Promise.resolve();
       if (cancelled) return;
-      await loadDay();
+      await refresh();
     })();
+
     const timer = window.setInterval(() => {
-      void loadDay();
+      void refresh();
     }, 10_000);
+
+    function onVisible() {
+      if (!document.hidden) void refresh();
+    }
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       cancelled = true;
       window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [loadDay, loading, needsUnlock]);
 
