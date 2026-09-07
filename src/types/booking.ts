@@ -1,11 +1,25 @@
 export type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "no_show";
 
+export type BarberRole = "owner" | "barber";
+
 export interface Barber {
   id: string;
   name: string;
   slot_duration_minutes: number;
   off_days: number[];
   created_at: string;
+  line_id?: string | null;
+  role?: BarberRole;
+  shop_id?: string | null;
+}
+
+export interface Shop {
+  id: string;
+  name: string;
+  status: "active" | "suspended" | "cancelled";
+  subscribed_until: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Appointment {

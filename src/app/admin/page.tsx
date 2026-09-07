@@ -7,7 +7,7 @@ import { enUS, th } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
-import { useAdminSession } from "@/lib/admin/use-admin-session";
+import { useAdminLineAuth } from "@/lib/admin/use-admin-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot } from "@/types/booking";
@@ -18,25 +18,13 @@ interface ApiError {
 
 export default function AdminPage() {
   const { locale, t } = useI18n();
-  const {
-    tokenInput,
-    setTokenInput,
-    session,
-    meta,
-    loading,
-    error,
-    setError,
-    authHeaders,
-    loadSession,
-    unlock,
-    isSuperAdmin,
-    needsUnlock,
-  } = useAdminSession();
+  const { ready, profile, error: authError, authHeaders, mockMode } = useAdminLineAuth();
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
   const [latePendingKey, setLatePendingKey] = useState<string | null>(null);
   const [cancelPendingKey, setCancelPendingKey] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
   const todayISO = dateISOFromInstant(new Date());
   const isToday = dateISO === todayISO;
@@ -51,6 +39,11 @@ export default function AdminPage() {
       ),
     [dateISO, dateLocale],
   );
+
+  useEffect(() => {
+    if (!ready || profile || mockMode) return;
+    window.location.href = "/admin/login";
+  }, [mockMode, profile, ready]);
 
   function shiftDay(days: number) {
     const noon = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
@@ -67,7 +60,6 @@ export default function AdminPage() {
       } & ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.loadFailed"));
-        if (res.status === 401) void loadSession();
         return;
       }
       setError(null);
@@ -75,10 +67,10 @@ export default function AdminPage() {
     } catch {
       setError(t("admin.networkError"));
     }
-  }, [authHeaders, dateISO, loadSession, setError, t]);
+  }, [authHeaders, dateISO, t]);
 
   useEffect(() => {
-    if (loading || needsUnlock) return;
+    if (!ready || !profile) return;
     let cancelled = false;
 
     async function refresh() {
@@ -86,12 +78,7 @@ export default function AdminPage() {
       await loadDay();
     }
 
-    void (async () => {
-      await Promise.resolve();
-      if (cancelled) return;
-      await refresh();
-    })();
-
+    void refresh();
     const timer = window.setInterval(() => {
       void refresh();
     }, 10_000);
@@ -106,10 +93,10 @@ export default function AdminPage() {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [loadDay, loading, needsUnlock]);
+  }, [loadDay, profile, ready]);
 
   async function onToggle(barberId: string, slot: AdminSlot) {
-    if (needsUnlock) return;
+    if (!profile) return;
     const key = `${barberId}:${slot.startTime}`;
     setPendingKey(key);
     setError(null);
@@ -167,7 +154,7 @@ export default function AdminPage() {
   }
 
   async function onOutcome(_barberId: string, slot: AdminSlot, outcome: "completed" | "no_show") {
-    if (needsUnlock || !slot.appointmentId) return;
+    if (!profile || !slot.appointmentId) return;
     const key = `${_barberId}:${slot.startTime}`;
     setOutcomePendingKey(key);
     setError(null);
@@ -191,7 +178,7 @@ export default function AdminPage() {
   }
 
   async function onLateCalled(_barberId: string, slot: AdminSlot) {
-    if (needsUnlock || !slot.appointmentId) return;
+    if (!profile || !slot.appointmentId) return;
     const key = `${_barberId}:${slot.startTime}`;
     setLatePendingKey(key);
     setError(null);
@@ -214,7 +201,7 @@ export default function AdminPage() {
   }
 
   async function onCancel(_barberId: string, slot: AdminSlot) {
-    if (needsUnlock || !slot.appointmentId) return;
+    if (!profile || !slot.appointmentId) return;
     const key = `${_barberId}:${slot.startTime}`;
     setCancelPendingKey(key);
     setError(null);
@@ -236,43 +223,24 @@ export default function AdminPage() {
     }
   }
 
-  if (loading) {
+  if (!ready || !profile) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <p className="text-sm text-zinc-400">{t("common.loading")}</p>
+        {authError ? <p className="text-sm text-red-400">{authError}</p> : null}
       </section>
     );
   }
 
-  if (needsUnlock) {
-    return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <h1 className="text-2xl font-semibold">{t("admin.title")}</h1>
-        <p className="text-sm text-zinc-400">{t("admin.unlockHint")}</p>
-        <input
-          type="password"
-          value={tokenInput}
-          onChange={(event) => setTokenInput(event.target.value)}
-          className="min-h-12 rounded-xl bg-zinc-900 px-3 outline-none ring-amber-400 focus:ring-2"
-        />
-        <button
-          type="button"
-          onClick={unlock}
-          className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950"
-        >
-          {t("admin.unlock")}
-        </button>
-      </section>
-    );
-  }
-
-  const editableBarberId = isSuperAdmin ? null : session?.barberId ?? null;
+  const isOwner = profile.role === "owner";
+  const editableBarberId = isOwner ? null : profile.barberId;
+  const badgeRole = isOwner ? "super_admin" : "barber";
 
   return (
     <div className="flex flex-col gap-4 px-3 py-4">
       <header className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          {meta.prototypeMode ? (
+          {mockMode ? (
             <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
               {t("common.prototypeMode")}
             </span>
@@ -305,9 +273,7 @@ export default function AdminPage() {
             {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
           </h1>
           <p className="text-sm text-zinc-400">{displayDate}</p>
-          {session ? (
-            <AdminSessionBadge name={session.name} role={session.role} />
-          ) : null}
+          <AdminSessionBadge name={profile.displayName || profile.barberName} role={badgeRole} />
         </div>
         <div className="flex flex-col items-end gap-2">
           <div className="flex flex-wrap justify-end gap-2">
@@ -329,7 +295,7 @@ export default function AdminPage() {
             >
               {t("admin.mySchedule")}
             </Link>
-            {isSuperAdmin ? (
+            {isOwner ? (
               <>
                 <Link
                   href="/admin/staff"

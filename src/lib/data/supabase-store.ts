@@ -4,6 +4,7 @@ import {
   StoreConflict,
   type BookingStore,
   type CreateRecurringBreakInput,
+  type CreateShopInput,
   type CreateStaffInput,
   type RecurringBreak,
   type Staff,
@@ -17,7 +18,7 @@ import {
   validateRecurringBreakInput,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
-import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
+import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
 
 function mapRpcError(error: { message?: string; code?: string }): never {
@@ -467,5 +468,58 @@ export const supabaseStore: BookingStore = {
     const supabase = createServiceClient();
     const { error } = await supabase.from("recurring_breaks").delete().eq("id", breakId);
     if (error) throw new Error(error.message);
+  },
+
+  async listShops() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shops")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Shop[];
+  },
+
+  async createShop(input: CreateShopInput) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("create_shop_with_owner", {
+      p_shop_name: input.name,
+      p_owner_line_id: input.ownerLineId,
+      p_owner_name: input.ownerName,
+      p_subscription_months: input.subscriptionMonths,
+    });
+    if (error) throw new Error(error.message);
+
+    const result = data as { shop_id?: string } | null;
+    const shopId = result?.shop_id;
+    if (!shopId) throw new Error("Shop creation failed");
+
+    const { data: shop, error: shopError } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (shopError) throw new Error(shopError.message);
+    if (!shop) throw new Error("Shop not found after creation");
+    return shop as Shop;
+  },
+
+  async getBarberByLineId(lineId) {
+    const trimmed = lineId.trim();
+    if (!trimmed) return null;
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("get_barber_by_line_id", {
+      p_line_id: trimmed,
+    });
+    if (error) {
+      const { data: fallback, error: fallbackError } = await supabase
+        .from("barbers")
+        .select("*")
+        .eq("line_id", trimmed)
+        .maybeSingle();
+      if (fallbackError) throw new Error(fallbackError.message);
+      return (fallback as Barber | null) ?? null;
+    }
+    return (data as Barber | null) ?? null;
   },
 };

@@ -1,4 +1,4 @@
-import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
+import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
 
 export type StoreErrorCode =
@@ -85,6 +85,13 @@ export interface UpdateBarberInput {
   slotDuration?: number;
 }
 
+export interface CreateShopInput {
+  name: string;
+  ownerLineId: string;
+  ownerName: string;
+  subscriptionMonths: number;
+}
+
 export interface BookingStore {
   listBarbers(): Promise<Barber[]>;
   getBarber(barberId: string): Promise<Barber | null>;
@@ -114,4 +121,7 @@ export interface BookingStore {
   listRecurringBreaks(barberId: string): Promise<RecurringBreak[]>;
   createRecurringBreak(input: CreateRecurringBreakInput): Promise<RecurringBreak>;
   deleteRecurringBreak(breakId: string): Promise<void>;
+  listShops(): Promise<Shop[]>;
+  createShop(input: CreateShopInput): Promise<Shop>;
+  getBarberByLineId(lineId: string): Promise<Barber | null>;
 }

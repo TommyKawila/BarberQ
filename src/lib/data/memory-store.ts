@@ -6,6 +6,7 @@ import {
   StoreConflict,
   type BookingStore,
   type CreateRecurringBreakInput,
+  type CreateShopInput,
   type CreateStaffInput,
   type RecurringBreak,
   type Staff,
@@ -18,9 +19,12 @@ import {
   validateRecurringBreakInput,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
-import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
+import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
 
 const GLOBAL_KEY = "__barberq_memory_store__";
+
+const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
+const MOCK_OWNER_LINE_ID = "mock-owner-line-id";
 
 interface MemoryState {
   appointments: Appointment[];
@@ -31,6 +35,7 @@ interface MemoryState {
   phone: string | null;
   staff: Staff[];
   recurringBreaks: RecurringBreak[];
+  shops: Shop[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -55,10 +60,32 @@ function getState(): MemoryState {
         createdAt: new Date(),
       })),
       recurringBreaks: [],
+      shops: [
+        {
+          id: DEFAULT_SHOP_ID,
+          name: "PHINX STUDIO",
+          status: "active",
+          subscribed_until: null,
+          created_at: nowIso(),
+          updated_at: nowIso(),
+        },
+      ],
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
     g[GLOBAL_KEY].recurringBreaks = [];
+  }
+  if (!g[GLOBAL_KEY].shops) {
+    g[GLOBAL_KEY].shops = [
+      {
+        id: DEFAULT_SHOP_ID,
+        name: "PHINX STUDIO",
+        status: "active",
+        subscribed_until: null,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+    ];
   }
   if (g[GLOBAL_KEY].lineUrl === undefined) g[GLOBAL_KEY].lineUrl = null;
   if (g[GLOBAL_KEY].phone === undefined) g[GLOBAL_KEY].phone = null;
@@ -85,10 +112,13 @@ function uuid(): string {
   return crypto.randomUUID();
 }
 
-const barbers: Barber[] = BARBER_SEED.map((b) => ({
+const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
   ...b,
   off_days: [...b.off_days],
   created_at: nowIso(),
+  shop_id: DEFAULT_SHOP_ID,
+  role: index === 0 ? "owner" : "barber",
+  line_id: index === 0 ? MOCK_OWNER_LINE_ID : null,
 }));
 
 function getBarberSync(barberId: string): Barber | undefined {
@@ -432,5 +462,53 @@ export const memoryStore: BookingStore = {
     const idx = state.recurringBreaks.findIndex((item) => item.id === breakId);
     if (idx === -1) throw new StoreConflict("NOT_FOUND");
     state.recurringBreaks.splice(idx, 1);
+  },
+
+  async listShops() {
+    return [...getState().shops].sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  },
+
+  async createShop(input: CreateShopInput) {
+    const name = input.name.trim();
+    const ownerLineId = input.ownerLineId.trim();
+    if (!name || !ownerLineId) throw new StoreConflict("INVALID_RANGE");
+    if (barbers.some((b) => b.line_id === ownerLineId)) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+
+    const now = nowIso();
+    const shop: Shop = {
+      id: uuid(),
+      name,
+      status: "active",
+      subscribed_until: new Date(
+        Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      created_at: now,
+      updated_at: now,
+    };
+    getState().shops.push(shop);
+
+    barbers.push({
+      id: uuid(),
+      name: input.ownerName.trim() || "Owner",
+      slot_duration_minutes: 30,
+      off_days: [],
+      created_at: now,
+      line_id: ownerLineId,
+      role: "owner",
+      shop_id: shop.id,
+    });
+
+    return shop;
+  },
+
+  async getBarberByLineId(lineId) {
+    const trimmed = lineId.trim();
+    if (!trimmed) return null;
+    const barber = barbers.find((b) => b.line_id === trimmed);
+    return barber ? { ...barber, off_days: [...barber.off_days] } : null;
   },
 };
