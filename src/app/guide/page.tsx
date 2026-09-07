@@ -40,7 +40,7 @@ export default function GuidePage() {
         <p className="text-xs uppercase tracking-wide text-zinc-500">BarberQ</p>
         <h1 className="mt-1 text-2xl font-bold">คู่มือใช้งาน</h1>
         <p className="mt-2 text-sm text-zinc-400">
-          ระบบจองคิวตัดผม + บอร์ดจัดการคิวสำหรับช่าง (เวอร์ชันทดลอง ยังไม่เชื่อม LINE)
+          ระบบจองคิวตัดผม + บอร์ดช่าง + สรุปคิว (เวอร์ชันทดลอง ยังไม่ส่งแจ้งเตือน LINE อัตโนมัติ)
         </p>
       </header>
 
@@ -60,6 +60,8 @@ export default function GuidePage() {
         {[
           ["#customer", "ลูกค้า"],
           ["#admin", "Admin"],
+          ["#board", "บอร์ด"],
+          ["#stats", "สรุปคิว"],
           ["#schedule", "ตารางเวลา"],
           ["#saeb", "Super Admin"],
           ["#feedback", "Feedback"],
@@ -86,7 +88,10 @@ export default function GuidePage() {
         <p className="rounded-xl bg-zinc-900 p-3 text-zinc-400">
           <strong className="text-zinc-200">เวลาเปิดร้าน:</strong> จ–ศ 10:30–20:00 · ส–อา 10:00–20:00
           <br />
-          <strong className="text-zinc-200">ยกเลิก:</strong> ก่อนเวลานัดอย่างน้อย 30 นาที
+          <strong className="text-zinc-200">ยกเลิก:</strong> ต้องกดก่อนเวลานัดอย่างน้อย 60 นาที
+          (หน้าจอง หรือลิงก์ /c/…) เลยแล้วให้ติดต่อร้านทาง LINE หรือโทร
+          <br />
+          <strong className="text-zinc-200">มาสาย:</strong> ได้ไม่เกิน 10 นาที — ร้านจะโทรก่อน ค่อยปล่อยคิว
           <br />
           สลับภาษาไทย/อังกฤษได้ที่ header
         </p>
@@ -120,22 +125,43 @@ export default function GuidePage() {
       </Section>
 
       <Section id="board" title="3) บอร์ดวันนี้">
-        <p>กดช่องเวลาเพื่อบล็อก/ปล่อย Walk-in</p>
+        <p>กดช่องว่างเพื่อบล็อก/ปล่อย Walk-in</p>
         <div className="space-y-2 rounded-xl bg-zinc-900 p-3">
           <LegendRow color="bg-emerald-700" label="ว่าง — ลูกค้าจองได้" />
-          <LegendRow color="bg-red-600" label="Walk-in — ช่างบล็อกไว้" />
+          <LegendRow color="bg-red-600" label="Walk-in / พัก — ช่างบล็อกไว้" />
           <LegendRow color="bg-sky-700" label="จองแล้ว — เห็นชื่อลูกค้า" />
-          <LegendRow color="bg-red-600" label="พัก — เวลาพักประจำ" />
+          <LegendRow color="bg-yellow-600" label="เลท — เลยนัด 10 นาที กดโทร + กดโทรแล้ว" />
+          <LegendRow color="bg-amber-500" label="เสร็จแล้ว — กดหลังเวลาจบคิว" />
+          <LegendRow color="bg-orange-700" label="ไม่มา — ปล่อยช่องให้ Walk-in ได้" />
         </div>
+        <p>
+          คิวที่เลยเวลาแล้วจะมีปุ่ม <strong className="text-zinc-200">เสร็จ / ไม่มา</strong>
+          <br />
+          เลทเกิน 10 นาที: กดเบอร์โทรลูกค้าก่อน แล้วกด &quot;โทรแล้ว&quot; ถ้าไม่มาค่อยกดไม่มา
+        </p>
         <p>
           <strong className="text-zinc-200">Tide / Nat:</strong> แก้ได้เฉพาะคอลัมน์ตัวเอง
           <br />
           <strong className="text-zinc-200">Saeb:</strong> แก้ได้ทุกคอลัมน์
         </p>
-        <p className="text-zinc-500">บอร์ดรีเฟรชอัตโนมัติทุก 10 วินาที</p>
+        <p className="text-zinc-500">บอร์ดรีเฟรชอัตโนมัติทุก 10 วินาที (หยุดตอนสลับแอป)</p>
       </Section>
 
-      <Section id="schedule" title="4) ตารางเวลาของฉัน">
+      <Section id="stats" title="4) สรุปคิว">
+        <p>
+          จากบอร์ดกด <Link href="/admin/stats" className="text-amber-400 underline">สรุปคิว</Link>
+        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>สลับวันนี้ / สัปดาห์ / เดือน</li>
+          <li>ดูจำนวนลูกค้า จอง ยกเลิก ใช้บริการจริง</li>
+          <li>ชาร์ตรายชั่วโมง และช่วงที่บล็อก Walk-in</li>
+        </ul>
+        <p className="text-zinc-500">
+          Tide / Nat เห็นแค่คิวตัวเอง · Saeb เห็นทุกช่าง
+        </p>
+      </Section>
+
+      <Section id="schedule" title="5) ตารางเวลาของฉัน">
         <p>กด &quot;ตารางเวลาของฉัน&quot; จากบอร์ด Admin</p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
@@ -153,13 +179,13 @@ export default function GuidePage() {
         <p className="text-zinc-500">Walk-in รายวันยังตั้งจากบอร์ดหลักเหมือนเดิม</p>
       </Section>
 
-      <Section id="saeb" title="5) เฉพาะ Saeb — Super Admin">
+      <Section id="saeb" title="6) เฉพาะ Saeb — Super Admin">
         <ul className="list-disc space-y-1 pl-5">
           <li>
             <Link href="/admin/settings" className="text-amber-400 underline">
               ตั้งค่า
             </Link>
-            {" — ชื่อร้าน + โลโก้"}
+            {" — ชื่อร้าน, โลโก้, LINE ร้าน, เบอร์โทรร้าน"}
           </li>
           <li>
             <Link href="/admin/staff" className="text-amber-400 underline">
@@ -167,24 +193,30 @@ export default function GuidePage() {
             </Link>
             {" — ลิงก์ login / เพิ่ม-ปิด staff"}
           </li>
+          <li>
+            <Link href="/admin/stats" className="text-amber-400 underline">
+              สรุปคิว
+            </Link>
+            {" — ดูทุกช่าง"}
+          </li>
         </ul>
       </Section>
 
       <Section id="missing" title="ยังไม่มีในระบบ">
         <ul className="list-disc space-y-1 pl-5 text-zinc-500">
-          <li>แจ้งเตือน LINE ก่อนถึงเวลานัด</li>
-          <li>ลูกค้ายกเลิกผ่าน LINE</li>
-          <li>Login ด้วย LINE ID</li>
-          <li>รายงานรายได้</li>
+          <li>แจ้งเตือน LINE อัตโนมัติ 30 นาทีก่อนคิว</li>
+          <li>ปุ่มยกเลิกในแชท LINE (ตอนนี้ยกเลิกได้ที่เว็บ + ลิงก์ /c/…)</li>
+          <li>จองหลายคิวให้เพื่อนในครั้งเดียว</li>
+          <li>Login ด้วย LINE ID / รหัสผ่าน</li>
         </ul>
       </Section>
 
       <Section id="feedback" title="ช่วยลอง + บอกความคิดเห็น">
         <ul className="list-disc space-y-1 pl-5">
-          <li>จองคิว + ช่างกด Walk-in แล้วดูฝั่งลูกค้าอัปเดตไหม</li>
-          <li>ตั้งวันหยุด + เวลาพัก แล้วลองจองช่วงนั้น</li>
-          <li>ความยาวคิว 30/45/60 นาทีโอเคไหม?</li>
-          <li>อยากได้แจ้งเตือน LINE ก่อนนัดกี่นาที?</li>
+          <li>จองคิว แล้วยกเลิกก่อน/หลัง 60 นาที</li>
+          <li>ช่างกด Walk-in / เสร็จ / ไม่มา แล้วดูสรุปคิวอัปเดตไหม</li>
+          <li>คิวเลทเกิน 10 นาที ขึ้นปุ่มโทรไหม</li>
+          <li>ตั้ง LINE + เบอร์ร้าน แล้วลูกค้าเห็นปุ่มติดต่อไหม</li>
           <li>มีอะไรอยากได้เพิ่มอีก?</li>
         </ul>
         <p className="mt-3 text-zinc-500">เจอบั๊ก: แคปหน้าจอ + บอกว่าทำอะไรก่อนเกิด</p>
@@ -194,6 +226,7 @@ export default function GuidePage() {
         <p className="font-semibold text-zinc-200">ลิงก์สำคัญ</p>
         <div className="mt-2 space-y-1 text-amber-400">
           <Link href="/" className="block underline">จองคิว</Link>
+          <Link href="/admin/stats" className="block underline">สรุปคิว</Link>
           <Link href="/saeb" className="block underline">/saeb</Link>
           <Link href="/tide" className="block underline">/tide</Link>
           <Link href="/nat" className="block underline">/nat</Link>

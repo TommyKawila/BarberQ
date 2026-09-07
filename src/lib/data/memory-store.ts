@@ -1,4 +1,5 @@
-import { intervalsOverlap } from "@/lib/services/slot-service";
+import { CANCEL_LEAD_MINUTES, intervalsOverlap } from "@/lib/services/slot-service";
+import { isBlockingStatus, isOccupyingStatus, type AppointmentOutcome } from "@/lib/appointment-status";
 import { BARBER_SEED } from "@/lib/data/seed";
 import { generateStaffToken, STAFF_SEED } from "@/lib/data/staff-seed";
 import {
@@ -26,6 +27,8 @@ interface MemoryState {
   blocks: TimeBlock[];
   logoDataUrl: string | null;
   shopName: string | null;
+  lineUrl: string | null;
+  phone: string | null;
   staff: Staff[];
   recurringBreaks: RecurringBreak[];
 }
@@ -40,6 +43,8 @@ function getState(): MemoryState {
       blocks: [],
       logoDataUrl: null,
       shopName: null,
+      lineUrl: null,
+      phone: null,
       staff: STAFF_SEED.map((row) => ({
         id: row.id,
         name: row.name,
@@ -55,6 +60,8 @@ function getState(): MemoryState {
   if (!g[GLOBAL_KEY].recurringBreaks) {
     g[GLOBAL_KEY].recurringBreaks = [];
   }
+  if (g[GLOBAL_KEY].lineUrl === undefined) g[GLOBAL_KEY].lineUrl = null;
+  if (g[GLOBAL_KEY].phone === undefined) g[GLOBAL_KEY].phone = null;
   return g[GLOBAL_KEY];
 }
 
@@ -97,7 +104,7 @@ function overlapsBusy(
 ): "SLOT_TAKEN" | "SLOT_BLOCKED" | null {
   const state = getState();
   for (const a of state.appointments) {
-    if (a.barber_id !== barberId || a.status !== "confirmed") continue;
+    if (a.barber_id !== barberId || !isBlockingStatus(a.status)) continue;
     if (excludeAppointmentId && a.id === excludeAppointmentId) continue;
     if (
       intervalsOverlap(start, end, new Date(a.start_time), new Date(a.end_time))
@@ -130,7 +137,7 @@ export const memoryStore: BookingStore = {
     const state = getState();
     const intervals: BusyInterval[] = [];
     for (const a of state.appointments) {
-      if (a.barber_id !== barberId || a.status !== "confirmed") continue;
+      if (a.barber_id !== barberId || !isBlockingStatus(a.status)) continue;
       const s = new Date(a.start_time);
       const e = new Date(a.end_time);
       if (intervalsOverlap(s, e, from, to)) {
@@ -164,6 +171,7 @@ export const memoryStore: BookingStore = {
         end_time: input.endTime.toISOString(),
         status: "confirmed",
         created_at: nowIso(),
+        cancel_token: uuid().replace(/-/g, ""),
       };
       getState().appointments.push(row);
       return row;
@@ -177,16 +185,59 @@ export const memoryStore: BookingStore = {
     const row = state.appointments[idx];
     if (row.customer_ref !== customerRef) throw new StoreConflict("NOT_OWNER");
     if (row.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
-    if (new Date(row.start_time).getTime() - Date.now() < 30 * 60_000) {
+    if (new Date(row.start_time).getTime() - Date.now() < CANCEL_LEAD_MINUTES * 60_000) {
       throw new StoreConflict("TOO_LATE");
     }
-    const updated = { ...row, status: "cancelled" as const };
+    const updated = {
+      ...row,
+      status: "cancelled" as const,
+      cancelled_at: nowIso(),
+    };
     state.appointments[idx] = updated;
     return updated;
   },
 
   async getAppointment(appointmentId) {
     return getState().appointments.find((a) => a.id === appointmentId) ?? null;
+  },
+
+  async getAppointmentByCancelToken(token) {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    return getState().appointments.find((a) => a.cancel_token === trimmed) ?? null;
+  },
+
+  async cancelAppointmentByToken(token) {
+    const state = getState();
+    const trimmed = token.trim();
+    const idx = state.appointments.findIndex((a) => a.cancel_token === trimmed);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
+    if (new Date(row.start_time).getTime() - Date.now() < CANCEL_LEAD_MINUTES * 60_000) {
+      throw new StoreConflict("TOO_LATE");
+    }
+    const updated = {
+      ...row,
+      status: "cancelled" as const,
+      cancelled_at: nowIso(),
+    };
+    state.appointments[idx] = updated;
+    return updated;
+  },
+
+  async markLateCalled(appointmentId) {
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.id === appointmentId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
+    const updated = {
+      ...row,
+      late_called_at: row.late_called_at ?? nowIso(),
+    };
+    state.appointments[idx] = updated;
+    return updated;
   },
 
   async createBlock(input) {
@@ -220,10 +271,35 @@ export const memoryStore: BookingStore = {
 
   async listDayAppointments(from, to) {
     return getState().appointments.filter((a) => {
-      if (a.status !== "confirmed") return false;
+      if (!isOccupyingStatus(a.status)) return false;
       const s = new Date(a.start_time);
       return s >= from && s <= to;
     });
+  },
+
+  async listAppointmentsInRange(from, to) {
+    return getState().appointments.filter((a) => {
+      const s = new Date(a.start_time);
+      return s >= from && s <= to;
+    });
+  },
+
+  async markAppointmentOutcome(appointmentId, outcome: AppointmentOutcome) {
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.id === appointmentId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
+    if (new Date(row.end_time).getTime() > Date.now()) {
+      throw new StoreConflict("INVALID_OUTCOME");
+    }
+    const updated = {
+      ...row,
+      status: outcome,
+      completed_at: outcome === "completed" ? nowIso() : row.completed_at,
+    };
+    state.appointments[idx] = updated;
+    return updated;
   },
 
   async listDayBlocks(from, to) {
@@ -235,13 +311,20 @@ export const memoryStore: BookingStore = {
 
   async getShopSettings() {
     const state = getState();
-    return { logoDataUrl: state.logoDataUrl, shopName: state.shopName };
+    return {
+      logoDataUrl: state.logoDataUrl,
+      shopName: state.shopName,
+      lineUrl: state.lineUrl ?? null,
+      phone: state.phone ?? null,
+    };
   },
 
   async setShopSettings(input) {
     const state = getState();
     state.logoDataUrl = input.logoDataUrl;
     state.shopName = input.shopName;
+    state.lineUrl = input.lineUrl;
+    state.phone = input.phone;
   },
 
   async getStaffByToken(token) {

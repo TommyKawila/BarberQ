@@ -18,6 +18,7 @@ import {
   validateSlotDuration,
 } from "@/lib/schedule/validation";
 import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
+import type { AppointmentOutcome } from "@/lib/appointment-status";
 
 function mapRpcError(error: { message?: string; code?: string }): never {
   const message = error.message ?? "";
@@ -30,6 +31,7 @@ function mapRpcError(error: { message?: string; code?: string }): never {
     "NOT_CANCELLABLE",
     "TOO_LATE",
     "INVALID_RANGE",
+    "INVALID_OUTCOME",
   ];
   for (const code of codes) {
     if (message.includes(code)) throw new StoreConflict(code);
@@ -135,6 +137,37 @@ export const supabaseStore: BookingStore = {
     return data as Appointment;
   },
 
+  async cancelAppointmentByToken(token) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("cancel_appointment_by_token", {
+      p_cancel_token: token,
+    });
+    if (error) mapRpcError(error);
+    return data as Appointment;
+  },
+
+  async getAppointmentByCancelToken(token) {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("cancel_token", trimmed)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as Appointment | null) ?? null;
+  },
+
+  async markLateCalled(appointmentId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("mark_late_called", {
+      p_appointment_id: appointmentId,
+    });
+    if (error) mapRpcError(error);
+    return data as Appointment;
+  },
+
   async getAppointment(appointmentId) {
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -180,11 +213,32 @@ export const supabaseStore: BookingStore = {
     const { data, error } = await supabase
       .from("appointments")
       .select("*")
-      .eq("status", "confirmed")
+      .in("status", ["confirmed", "completed", "no_show"])
       .gte("start_time", from.toISOString())
       .lte("start_time", to.toISOString());
     if (error) throw new Error(error.message);
     return (data ?? []) as Appointment[];
+  },
+
+  async listAppointmentsInRange(from, to) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .gte("start_time", from.toISOString())
+      .lte("start_time", to.toISOString());
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Appointment[];
+  },
+
+  async markAppointmentOutcome(appointmentId, outcome: AppointmentOutcome) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("mark_appointment_outcome", {
+      p_appointment_id: appointmentId,
+      p_status: outcome,
+    });
+    if (error) mapRpcError(error);
+    return data as Appointment;
   },
 
   async listDayBlocks(from, to) {
@@ -202,13 +256,15 @@ export const supabaseStore: BookingStore = {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("shop_settings")
-      .select("logo_data_url, shop_name")
+      .select("logo_data_url, shop_name, shop_line_url, shop_phone")
       .eq("id", 1)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return {
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
       shopName: (data?.shop_name as string | null) ?? null,
+      lineUrl: (data?.shop_line_url as string | null) ?? null,
+      phone: (data?.shop_phone as string | null) ?? null,
     };
   },
 
@@ -219,6 +275,8 @@ export const supabaseStore: BookingStore = {
       .update({
         logo_data_url: input.logoDataUrl,
         shop_name: input.shopName,
+        shop_line_url: input.lineUrl,
+        shop_phone: input.phone,
         updated_at: new Date().toISOString(),
       })
       .eq("id", 1);

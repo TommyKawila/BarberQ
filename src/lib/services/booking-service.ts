@@ -2,11 +2,13 @@ import { addMinutes } from "date-fns";
 import { getStore, StoreConflict } from "@/lib/data";
 import {
   canCancelAt,
+  CANCEL_LEAD_MINUTES,
   dateISOFromInstant,
   dayRangeUtc,
   generateSlots,
   getBookableDates,
   intervalsOverlap,
+  isLate,
   recurringBreaksForDate,
 } from "@/lib/services/slot-service";
 import type {
@@ -38,13 +40,14 @@ function mapStoreError(error: unknown): BookingError {
       SLOT_TAKEN: ["This slot is already booked", 409],
       SLOT_BLOCKED: ["This slot is blocked", 409],
       TOO_LATE: [
-        "Cancellations must be at least 30 minutes before start time",
+        `Cancellations must be at least ${CANCEL_LEAD_MINUTES} minutes before start time`,
         400,
       ],
       NOT_OWNER: ["You can only cancel your own booking", 403],
       NOT_CANCELLABLE: ["This booking cannot be cancelled", 400],
       NOT_FOUND: ["Appointment not found", 404],
       INVALID_RANGE: ["Invalid time range", 400],
+      INVALID_OUTCOME: ["Cannot mark outcome yet", 400],
     };
     const entry = map[error.code];
     if (entry) return new BookingError(error.code, entry[0], entry[1]);
@@ -179,7 +182,7 @@ export async function cancelBooking(
     if (!canCancelAt(existing.start_time)) {
       throw new BookingError(
         "TOO_LATE",
-        "Cancellations must be at least 30 minutes before start time",
+        `Cancellations must be at least ${CANCEL_LEAD_MINUTES} minutes before start time`,
         400,
       );
     }
@@ -229,6 +232,58 @@ export async function removeBlock(id: string): Promise<void> {
   }
 }
 
+export async function cancelBookingByToken(token: string): Promise<Appointment> {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    throw new BookingError("INVALID_TOKEN", "Cancel token is required", 400);
+  }
+  try {
+    const existing = await getStore().getAppointmentByCancelToken(trimmed);
+    if (!existing) throw new BookingError("NOT_FOUND", "Appointment not found", 404);
+    if (!canCancelAt(existing.start_time)) {
+      throw new BookingError(
+        "TOO_LATE",
+        `Cancellations must be at least ${CANCEL_LEAD_MINUTES} minutes before start time`,
+        400,
+      );
+    }
+    return await getStore().cancelAppointmentByToken(trimmed);
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+export async function markLateCalled(appointmentId: string): Promise<Appointment> {
+  if (!isUuid(appointmentId)) {
+    throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
+  }
+  try {
+    return await getStore().markLateCalled(appointmentId);
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+export async function markAppointmentOutcome(
+  appointmentId: string,
+  outcome: "completed" | "no_show",
+): Promise<Appointment> {
+  if (!isUuid(appointmentId)) {
+    throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
+  }
+  if (outcome !== "completed" && outcome !== "no_show") {
+    throw new BookingError("INVALID_OUTCOME", "Invalid outcome", 400);
+  }
+  try {
+    return await getStore().markAppointmentOutcome(appointmentId, outcome);
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
 export async function getAdminDay(
   dateISO: string,
   now: Date = new Date(),
@@ -269,17 +324,26 @@ export async function getAdminDay(
       }).map((slot) => {
         const slotStart = new Date(slot.startTime);
         const slotEnd = new Date(slot.endTime);
-        const appointment = barberBooked.find((row) =>
-          intervalsOverlap(slotStart, slotEnd, new Date(row.start_time), new Date(row.end_time)),
-        );
-        if (appointment) {
-          return { ...slot, kind: "booked", customerName: appointment.customer_name };
-        }
         const block = barberBlocked.find((row) =>
           intervalsOverlap(slotStart, slotEnd, new Date(row.start_time), new Date(row.end_time)),
         );
         if (block) {
           return { ...slot, kind: "blocked", blockId: block.id, reason: block.reason };
+        }
+        const appointment = barberBooked.find((row) =>
+          intervalsOverlap(slotStart, slotEnd, new Date(row.start_time), new Date(row.end_time)),
+        );
+        if (appointment) {
+          return {
+            ...slot,
+            kind: "booked",
+            customerName: appointment.customer_name,
+            customerPhone: appointment.customer_phone,
+            appointmentId: appointment.id,
+            status: appointment.status,
+            isLate: appointment.status === "confirmed" && isLate(appointment.start_time, now),
+            lateCalledAt: appointment.late_called_at ?? null,
+          };
         }
         const onBreak = breakRanges.some((item) =>
           intervalsOverlap(slotStart, slotEnd, item.start, item.end),

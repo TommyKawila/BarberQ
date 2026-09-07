@@ -5,7 +5,9 @@ import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { BarberSelector } from "@/components/customer/BarberSelector";
 import { DateSelector } from "@/components/customer/DateSelector";
+import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { SlotPicker } from "@/components/customer/SlotPicker";
+import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { useCustomerIdentity } from "@/lib/identity/mock-identity";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -29,6 +31,7 @@ interface ApiError {
 export function BookingApp() {
   const { locale, t } = useI18n();
   const { ready, identity } = useCustomerIdentity();
+  const { lineUrl, phone: shopPhone } = useShopBrand();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [prototypeMode, setPrototypeMode] = useState(true);
@@ -203,7 +206,11 @@ export function BookingApp() {
       const res = await fetch("/api/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appointmentId: booked.id, customerRef: identity.ref }),
+        body: JSON.stringify(
+          booked.cancel_token
+            ? { cancelToken: booked.cancel_token }
+            : { appointmentId: booked.id, customerRef: identity.ref },
+        ),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
@@ -286,8 +293,14 @@ export function BookingApp() {
               {submitting ? t("booking.cancelling") : t("booking.cancel")}
             </button>
             {!cancellable ? (
+              <div className="space-y-3">
+                <p className="text-xs text-amber-400">{t("booking.cancelTooLate")}</p>
+                <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
+              </div>
+            ) : (
               <p className="text-xs text-zinc-500">{t("booking.cancelPolicy")}</p>
-            ) : null}
+            )}
+            {cancellable ? <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} /> : null}
             <button
               type="button"
               onClick={bookAnother}

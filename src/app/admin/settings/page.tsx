@@ -9,6 +9,12 @@ import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { FitLogoError, fitLogoFile } from "@/lib/image/fit-logo";
 import { normalizeShopName } from "@/lib/shop/shop-name";
+import {
+  isValidShopLineUrl,
+  isValidShopPhone,
+  normalizeShopLineUrl,
+  normalizeShopPhone,
+} from "@/lib/shop/shop-contact";
 
 interface ApiError {
   error?: { code?: string; message?: string };
@@ -17,6 +23,8 @@ interface ApiError {
 interface SettingsResponse {
   logoDataUrl?: string | null;
   shopName?: string | null;
+  lineUrl?: string | null;
+  phone?: string | null;
 }
 
 export default function AdminSettingsPage() {
@@ -32,22 +40,35 @@ export default function AdminSettingsPage() {
     isSuperAdmin,
     needsUnlock,
   } = useAdminSession();
-  const { logoDataUrl, shopName, setLogoDataUrl, setShopName, refresh } = useShopBrand();
+  const { logoDataUrl, shopName, lineUrl, phone, setLogoDataUrl, setShopName, setLineUrl, setPhone, refresh } = useShopBrand();
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? logoDataUrl;
   const [shopNameDraft, setShopNameDraft] = useState("");
   const [shopNameDirty, setShopNameDirty] = useState(false);
   const shopNameInput = shopNameDirty ? shopNameDraft : (shopName ?? "");
+  const [lineUrlDraft, setLineUrlDraft] = useState("");
+  const [phoneDraft, setPhoneDraft] = useState("");
+  const [contactDirty, setContactDirty] = useState(false);
+  const lineUrlInput = contactDirty ? lineUrlDraft : (lineUrl ?? "");
+  const phoneInput = contactDirty ? phoneDraft : (phone ?? "");
   const [savingLogo, setSavingLogo] = useState(false);
   const [savingName, setSavingName] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
   const [logoMessage, setLogoMessage] = useState<string | null>(null);
   const [nameMessage, setNameMessage] = useState<string | null>(null);
+  const [contactMessage, setContactMessage] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [contactError, setContactError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const putSettings = useCallback(
-    async (body: { logoDataUrl?: string | null; shopName?: string | null }) => {
+    async (body: {
+      logoDataUrl?: string | null;
+      shopName?: string | null;
+      lineUrl?: string | null;
+      phone?: string | null;
+    }) => {
       const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
       const res = await fetch("/api/settings", {
         method: "PUT",
@@ -60,10 +81,12 @@ export default function AdminSettingsPage() {
       }
       setLogoDataUrl(json.logoDataUrl ?? null);
       setShopName(json.shopName ?? null);
+      setLineUrl(json.lineUrl ?? null);
+      setPhone(json.phone ?? null);
       await refresh();
       return json;
     },
-    [authHeaders, refresh, setLogoDataUrl, setShopName, t],
+    [authHeaders, refresh, setLogoDataUrl, setShopName, setLineUrl, setPhone, t],
   );
 
   const saveLogo = useCallback(
@@ -104,6 +127,33 @@ export default function AdminSettingsPage() {
       setSavingName(false);
     }
   }, [putSettings, shopNameInput, t]);
+
+  const saveContact = useCallback(async () => {
+    setSavingContact(true);
+    setContactError(null);
+    setContactMessage(null);
+    const nextLine = normalizeShopLineUrl(lineUrlInput);
+    const nextPhone = normalizeShopPhone(phoneInput);
+    if (!isValidShopLineUrl(nextLine)) {
+      setContactError(t("admin.shopLineInvalid"));
+      setSavingContact(false);
+      return;
+    }
+    if (!isValidShopPhone(nextPhone)) {
+      setContactError(t("admin.shopPhoneInvalid"));
+      setSavingContact(false);
+      return;
+    }
+    try {
+      await putSettings({ lineUrl: nextLine, phone: nextPhone });
+      setContactDirty(false);
+      setContactMessage(t("admin.contactSaved"));
+    } catch (err) {
+      setContactError(err instanceof Error ? err.message : t("admin.updateFailed"));
+    } finally {
+      setSavingContact(false);
+    }
+  }, [lineUrlInput, phoneInput, putSettings, t]);
 
   async function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -215,6 +265,46 @@ export default function AdminSettingsPage() {
         </button>
         {nameMessage ? <p className="mt-3 text-sm text-emerald-400">{nameMessage}</p> : null}
         {nameError ? <p className="mt-3 text-sm text-red-400">{nameError}</p> : null}
+      </section>
+
+      <section className="rounded-2xl bg-zinc-900 p-4">
+        <h2 className="text-sm font-semibold">{t("admin.contactTitle")}</h2>
+        <p className="mt-1 text-sm text-zinc-400">{t("admin.contactHint")}</p>
+        <label className="mt-4 flex flex-col gap-1 text-sm">
+          {t("admin.shopLineUrl")}
+          <input
+            value={lineUrlInput}
+            onChange={(event) => {
+              setContactDirty(true);
+              setLineUrlDraft(event.target.value);
+            }}
+            placeholder={t("admin.shopLinePlaceholder")}
+            className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+          />
+        </label>
+        <label className="mt-3 flex flex-col gap-1 text-sm">
+          {t("admin.shopPhone")}
+          <input
+            value={phoneInput}
+            onChange={(event) => {
+              setContactDirty(true);
+              setPhoneDraft(event.target.value);
+            }}
+            inputMode="tel"
+            placeholder={t("booking.phonePlaceholder")}
+            className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+          />
+        </label>
+        <button
+          type="button"
+          disabled={savingContact}
+          onClick={() => void saveContact()}
+          className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+        >
+          {t("admin.saveContact")}
+        </button>
+        {contactMessage ? <p className="mt-3 text-sm text-emerald-400">{contactMessage}</p> : null}
+        {contactError ? <p className="mt-3 text-sm text-red-400">{contactError}</p> : null}
       </section>
 
       <section className="rounded-2xl bg-zinc-900 p-4">

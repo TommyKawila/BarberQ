@@ -1,4 +1,5 @@
 import type { Appointment, Barber, BusyInterval, TimeBlock } from "@/types/booking";
+import type { AppointmentOutcome } from "@/lib/appointment-status";
 
 export type StoreErrorCode =
   | "BARBER_NOT_FOUND"
@@ -8,7 +9,8 @@ export type StoreErrorCode =
   | "NOT_OWNER"
   | "NOT_CANCELLABLE"
   | "TOO_LATE"
-  | "INVALID_RANGE";
+  | "INVALID_RANGE"
+  | "INVALID_OUTCOME";
 
 export class StoreConflict extends Error {
   readonly code: StoreErrorCode;
@@ -39,6 +41,8 @@ export interface CreateBlockInput {
 export interface ShopSettings {
   logoDataUrl: string | null;
   shopName: string | null;
+  lineUrl: string | null;
+  phone: string | null;
 }
 
 export type StaffRole = "barber" | "super_admin";
@@ -92,6 +96,11 @@ export interface BookingStore {
   removeBlock(id: string): Promise<void>;
   listDayAppointments(from: Date, to: Date): Promise<Appointment[]>;
   listDayBlocks(from: Date, to: Date): Promise<TimeBlock[]>;
+  listAppointmentsInRange(from: Date, to: Date): Promise<Appointment[]>;
+  markAppointmentOutcome(appointmentId: string, outcome: AppointmentOutcome): Promise<Appointment>;
+  cancelAppointmentByToken(token: string): Promise<Appointment>;
+  getAppointmentByCancelToken(token: string): Promise<Appointment | null>;
+  markLateCalled(appointmentId: string): Promise<Appointment>;
   getShopSettings(): Promise<ShopSettings>;
   setShopSettings(input: ShopSettings): Promise<void>;
   getStaffByToken(token: string): Promise<Staff | null>;

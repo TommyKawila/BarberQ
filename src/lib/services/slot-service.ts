@@ -5,7 +5,8 @@ import type { Barber, BusyInterval, Slot } from "@/types/booking";
 
 export const SHOP_TIMEZONE = "Asia/Bangkok";
 export const BOOKING_WINDOW_DAYS = 7;
-export const CANCEL_LEAD_MINUTES = 30;
+export const CANCEL_LEAD_MINUTES = 60;
+export const LATE_GRACE_MINUTES = 10;
 
 export function getBangkokWeekday(dateISO: string): number {
   const noon = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
@@ -54,6 +55,10 @@ export function formatSlotTime(iso: string): string {
 
 export function canCancelAt(startTime: string, now: Date = new Date()): boolean {
   return new Date(startTime).getTime() - now.getTime() >= CANCEL_LEAD_MINUTES * 60_000;
+}
+
+export function isLate(startTime: string, now: Date = new Date()): boolean {
+  return now.getTime() - new Date(startTime).getTime() >= LATE_GRACE_MINUTES * 60_000;
 }
 
 export function recurringBreaksForDate(

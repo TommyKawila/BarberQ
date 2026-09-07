@@ -5,9 +5,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 interface ShopBrandContextValue {
   logoDataUrl: string | null;
   shopName: string | null;
+  lineUrl: string | null;
+  phone: string | null;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
   setShopName: (value: string | null) => void;
+  setLineUrl: (value: string | null) => void;
+  setPhone: (value: string | null) => void;
   refresh: () => Promise<void>;
 }
 
@@ -16,6 +20,8 @@ const ShopBrandContext = createContext<ShopBrandContextValue | null>(null);
 export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [shopName, setShopName] = useState<string | null>(null);
+  const [lineUrl, setLineUrl] = useState<string | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -25,9 +31,13 @@ export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
       const json = (await res.json()) as {
         logoDataUrl?: string | null;
         shopName?: string | null;
+        lineUrl?: string | null;
+        phone?: string | null;
       };
       setLogoDataUrl(json.logoDataUrl ?? null);
       setShopName(json.shopName ?? null);
+      setLineUrl(json.lineUrl ?? null);
+      setPhone(json.phone ?? null);
     } catch {
       /* ignore */
     } finally {
@@ -51,12 +61,16 @@ export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
     () => ({
       logoDataUrl,
       shopName,
+      lineUrl,
+      phone,
       loading,
       setLogoDataUrl,
       setShopName,
+      setLineUrl,
+      setPhone,
       refresh,
     }),
-    [logoDataUrl, shopName, loading, refresh],
+    [logoDataUrl, shopName, lineUrl, phone, loading, refresh],
   );
 
   return <ShopBrandContext.Provider value={value}>{children}</ShopBrandContext.Provider>;

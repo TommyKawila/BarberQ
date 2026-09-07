@@ -31,6 +31,8 @@ export default function AdminPage() {
   } = useAdminSession();
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
+  const [latePendingKey, setLatePendingKey] = useState<string | null>(null);
   const [dateISO] = useState(() => dateISOFromInstant(new Date()));
 
   const loadDay = useCallback(async () => {
@@ -142,6 +144,53 @@ export default function AdminPage() {
     }
   }
 
+  async function onOutcome(_barberId: string, slot: AdminSlot, outcome: "completed" | "no_show") {
+    if (needsUnlock || !slot.appointmentId) return;
+    const key = `${_barberId}:${slot.startTime}`;
+    setOutcomePendingKey(key);
+    setError(null);
+    try {
+      const res = await fetch(`/api/appointments/${slot.appointmentId}/outcome`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ outcome }),
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        return;
+      }
+      await loadDay();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setOutcomePendingKey(null);
+    }
+  }
+
+  async function onLateCalled(_barberId: string, slot: AdminSlot) {
+    if (needsUnlock || !slot.appointmentId) return;
+    const key = `${_barberId}:${slot.startTime}`;
+    setLatePendingKey(key);
+    setError(null);
+    try {
+      const res = await fetch(`/api/appointments/${slot.appointmentId}/late-called`, {
+        method: "PATCH",
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        return;
+      }
+      await loadDay();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setLatePendingKey(null);
+    }
+  }
+
   if (loading) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
@@ -192,6 +241,12 @@ export default function AdminPage() {
           <p className="text-xs text-zinc-500">{dateISO}</p>
           <div className="flex flex-wrap justify-end gap-2">
             <Link
+              href="/admin/stats"
+              className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
+            >
+              {t("admin.stats")}
+            </Link>
+            <Link
               href="/guide"
               className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
             >
@@ -233,13 +288,20 @@ export default function AdminPage() {
         <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>
         <span className="rounded bg-red-600 px-2 py-0.5 text-white">{t("admin.walkIn")}</span>
         <span className="rounded bg-sky-700 px-2 py-0.5 text-white">{t("admin.booked")}</span>
+        <span className="rounded bg-yellow-600 px-2 py-0.5 text-zinc-950">{t("admin.late")}</span>
+        <span className="rounded bg-amber-500 px-2 py-0.5 text-zinc-950">{t("admin.completed")}</span>
+        <span className="rounded bg-orange-700 px-2 py-0.5 text-white">{t("admin.noShow")}</span>
       </div>
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
       <QuickBlockGrid
         columns={columns}
         pendingKey={pendingKey}
+        outcomePendingKey={outcomePendingKey}
+        latePendingKey={latePendingKey}
         editableBarberId={editableBarberId}
         onToggle={(id, slot) => void onToggle(id, slot)}
+        onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
+        onLateCalled={(id, slot) => void onLateCalled(id, slot)}
       />
     </div>
   );

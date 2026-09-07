@@ -1,4 +1,4 @@
-export type AppointmentStatus = "confirmed" | "cancelled" | "completed";
+export type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "no_show";
 
 export interface Barber {
   id: string;
@@ -18,6 +18,10 @@ export interface Appointment {
   end_time: string;
   status: AppointmentStatus;
   created_at: string;
+  completed_at?: string | null;
+  cancelled_at?: string | null;
+  cancel_token?: string | null;
+  late_called_at?: string | null;
 }
 
 export interface TimeBlock {
@@ -45,6 +49,11 @@ export type AdminSlotKind = "free" | "booked" | "blocked";
 export interface AdminSlot extends Slot {
   kind: AdminSlotKind;
   customerName?: string;
+  customerPhone?: string;
+  appointmentId?: string;
+  status?: AppointmentStatus;
+  isLate?: boolean;
+  lateCalledAt?: string | null;
   blockId?: string;
   reason?: string;
 }
