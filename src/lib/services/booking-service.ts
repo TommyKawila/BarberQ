@@ -64,12 +64,18 @@ function isUuid(value: string): boolean {
 
 const BARBER_ORDER = ["Saeb", "Tide", "Nat"];
 
-export async function listBarbers(): Promise<Barber[]> {
+function sortBarbers(barbers: Barber[]): Barber[] {
+  return barbers.sort(
+    (a, b) => BARBER_ORDER.indexOf(a.name) - BARBER_ORDER.indexOf(b.name),
+  );
+}
+
+export async function listBarbers(shopId?: string): Promise<Barber[]> {
   try {
-    const barbers = await getStore().listBarbers();
-    return barbers.sort(
-      (a, b) => BARBER_ORDER.indexOf(a.name) - BARBER_ORDER.indexOf(b.name),
-    );
+    const barbers = shopId
+      ? await getStore().listBarbersByShop(shopId)
+      : await getStore().listBarbers();
+    return sortBarbers(barbers);
   } catch (error) {
     throw mapStoreError(error);
   }
@@ -175,6 +181,32 @@ export async function listCustomerBookings(customerLineId: string): Promise<Appo
   } catch (error) {
     throw mapStoreError(error);
   }
+}
+
+export async function listCustomerBookingsForShop(
+  customerLineId: string,
+  shopId: string,
+): Promise<Appointment[]> {
+  const appointments = await listCustomerBookings(customerLineId);
+  const barbers = await getStore().listBarbersByShop(shopId);
+  const barberIds = new Set(barbers.map((b) => b.id));
+  return appointments.filter((a) => barberIds.has(a.barber_id));
+}
+
+async function assertBarberInShop(barberId: string, shopId: string): Promise<Barber> {
+  const barber = await getStore().getBarber(barberId);
+  if (!barber || barber.shop_id !== shopId) {
+    throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+  }
+  return barber;
+}
+
+export async function createBookingForShop(
+  shopId: string,
+  input: CreateBookingInput,
+): Promise<Appointment> {
+  await assertBarberInShop(input.barberId, shopId);
+  return createBooking(input);
 }
 
 export async function cancelBooking(
@@ -311,6 +343,7 @@ export async function markAppointmentOutcome(
 
 export async function getAdminDay(
   dateISO: string,
+  shopId: string,
   now: Date = new Date(),
 ): Promise<AdminColumn[]> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
@@ -319,13 +352,16 @@ export async function getAdminDay(
 
   try {
     const store = getStore();
-    const barbers = await listBarbers();
+    const barbers = await listBarbers(shopId);
     const range = dayRangeUtc(dateISO);
-    const [booked, blocked, allBreaks] = await Promise.all([
+    const barberIds = new Set(barbers.map((b) => b.id));
+    const [allBooked, allBlocked, allBreaks] = await Promise.all([
       store.listDayAppointments(range.from, range.to),
       store.listDayBlocks(range.from, range.to),
       Promise.all(barbers.map((barber) => store.listRecurringBreaks(barber.id))),
     ]);
+    const booked = allBooked.filter((row) => barberIds.has(row.barber_id));
+    const blocked = allBlocked.filter((row) => barberIds.has(row.barber_id));
     const breaksByBarber = new Map(
       barbers.map((barber, index) => [barber.id, allBreaks[index] ?? []]),
     );

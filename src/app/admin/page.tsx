@@ -9,6 +9,7 @@ import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { useAdminLineAuth } from "@/lib/admin/use-admin-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot } from "@/types/booking";
 
@@ -18,6 +19,7 @@ interface ApiError {
 
 export default function AdminPage() {
   const { locale, t } = useI18n();
+  const { shopApi, shopPath } = useShopSlug();
   const { ready, profile, error: authError, authHeaders, mockMode } = useAdminLineAuth();
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
@@ -42,8 +44,8 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!ready || profile || mockMode) return;
-    window.location.href = "/admin/login";
-  }, [mockMode, profile, ready]);
+    window.location.href = shopPath("/admin/login");
+  }, [mockMode, profile, ready, shopPath]);
 
   function shiftDay(days: number) {
     const noon = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
@@ -52,7 +54,7 @@ export default function AdminPage() {
 
   const loadDay = useCallback(async () => {
     try {
-      const res = await fetch(`/api/block?date=${encodeURIComponent(dateISO)}`, {
+      const res = await fetch(shopApi(`/block?date=${encodeURIComponent(dateISO)}`), {
         headers: authHeaders,
       });
       const json = (await res.json()) as {
@@ -67,7 +69,7 @@ export default function AdminPage() {
     } catch {
       setError(t("admin.networkError"));
     }
-  }, [authHeaders, dateISO, t]);
+  }, [authHeaders, dateISO, shopApi, t]);
 
   useEffect(() => {
     if (!ready || !profile) return;
@@ -123,12 +125,12 @@ export default function AdminPage() {
     try {
       const res =
         slot.kind === "blocked"
-          ? await fetch("/api/block", {
+          ? await fetch(shopApi("/block"), {
               method: "DELETE",
               headers,
               body: JSON.stringify({ id: slot.blockId }),
             })
-          : await fetch("/api/block", {
+          : await fetch(shopApi("/block"), {
               method: "POST",
               headers,
               body: JSON.stringify({
@@ -278,7 +280,7 @@ export default function AdminPage() {
         <div className="flex flex-col items-end gap-2">
           <div className="flex flex-wrap justify-end gap-2">
             <Link
-              href="/admin/stats"
+              href={shopPath("/admin/stats")}
               className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
             >
               {t("admin.stats")}
@@ -290,7 +292,7 @@ export default function AdminPage() {
               {t("admin.guide")}
             </Link>
             <Link
-              href="/admin/my-schedule"
+              href={shopPath("/admin/my-schedule")}
               className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
             >
               {t("admin.mySchedule")}
@@ -298,13 +300,13 @@ export default function AdminPage() {
             {isOwner ? (
               <>
                 <Link
-                  href="/admin/staff"
+                  href={shopPath("/admin/staff")}
                   className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
                 >
                   {t("admin.staffManagement")}
                 </Link>
                 <Link
-                  href="/admin/settings"
+                  href={shopPath("/admin/settings")}
                   className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
                 >
                   {t("admin.settings")}

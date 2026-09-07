@@ -11,6 +11,7 @@ import { StatCard } from "@/components/admin/charts/StatCard";
 import { TrendBars } from "@/components/admin/charts/TrendBars";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant } from "@/lib/services/slot-service";
 import type { StatsRange, StatsReport } from "@/lib/services/stats-service";
 
@@ -35,6 +36,7 @@ export default function AdminStatsPage() {
     isSuperAdmin,
     needsUnlock,
   } = useAdminSession();
+  const { shopApi, shopPath } = useShopSlug();
 
   const [range, setRange] = useState<StatsRange>("day");
   const [dateISO] = useState(() => dateISOFromInstant(new Date()));
@@ -45,7 +47,7 @@ export default function AdminStatsPage() {
     setLoadingStats(true);
     try {
       const res = await fetch(
-        `/api/stats?range=${encodeURIComponent(range)}&date=${encodeURIComponent(dateISO)}`,
+        shopApi(`/stats?range=${encodeURIComponent(range)}&date=${encodeURIComponent(dateISO)}`),
         { headers: authHeaders },
       );
       const json = (await res.json()) as StatsReport & ApiError;
@@ -60,7 +62,7 @@ export default function AdminStatsPage() {
     } finally {
       setLoadingStats(false);
     }
-  }, [authHeaders, dateISO, range, setError, t]);
+  }, [authHeaders, dateISO, range, setError, shopApi, t]);
 
   useEffect(() => {
     if (loading || needsUnlock) return;
@@ -122,7 +124,7 @@ export default function AdminStatsPage() {
           <p className="text-xs text-zinc-500">{report?.range.label ?? dateISO}</p>
           <div className="flex flex-wrap justify-end gap-2">
             <Link
-              href="/admin"
+              href={shopPath("/admin")}
               className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
             >
               {t("admin.backToBoard")}

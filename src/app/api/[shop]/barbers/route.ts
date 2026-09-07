@@ -2,15 +2,19 @@ import { NextResponse } from "next/server";
 import { isAdminAuthRequired } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { isPrototypeMode } from "@/lib/data";
+import { resolveShopParam } from "@/lib/shop/api-route";
 import { listBarbers } from "@/lib/services/booking-service";
-
-const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ shop: string }> },
+) {
   try {
-    const barbers = await listBarbers(DEFAULT_SHOP_ID);
+    const { shop: shopSlug } = await params;
+    const shop = await resolveShopParam(shopSlug);
+    const barbers = await listBarbers(shop.id);
     const adminAuthRequired = isAdminAuthRequired();
     return NextResponse.json({
       barbers,

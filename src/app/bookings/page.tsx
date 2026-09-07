@@ -8,6 +8,7 @@ import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useLineAuth } from "@/lib/line/use-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import {
   canCancelAt,
   formatSlotTime,
@@ -22,6 +23,7 @@ interface ApiError {
 export default function MyBookingsPage() {
   const { locale, t } = useI18n();
   const { ready, profile, login, mockMode } = useLineAuth();
+  const { shopApi, shopPath } = useShopSlug();
   const { lineUrl, phone: shopPhone } = useShopBrand();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -34,8 +36,8 @@ export default function MyBookingsPage() {
     let cancelled = false;
     void (async () => {
       const [bookingsRes, barbersRes] = await Promise.all([
-        fetch(`/api/bookings?lineId=${encodeURIComponent(profile.userId)}`),
-        fetch("/api/barbers"),
+        fetch(shopApi(`/bookings?lineId=${encodeURIComponent(profile.userId)}`)),
+        fetch(shopApi("/barbers")),
       ]);
       if (cancelled) return;
       const bookingsJson = (await bookingsRes.json()) as { appointments?: Appointment[] };
@@ -47,7 +49,7 @@ export default function MyBookingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [ready, profile]);
+  }, [ready, profile, shopApi]);
 
   async function handleCancel(apt: Appointment) {
     if (!apt.cancel_token) return;
@@ -154,7 +156,7 @@ export default function MyBookingsPage() {
         </div>
       )}
 
-      <Link href="/" className="mt-4 text-center text-sm text-amber-400 underline">
+      <Link href={shopPath("/")} className="mt-4 text-center text-sm text-amber-400 underline">
         {t("booking.bookAnother")}
       </Link>
     </div>

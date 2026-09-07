@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { StaffRole } from "@/lib/data/types";
 import { barberLabel, type Barber } from "@/types/booking";
 
@@ -36,6 +37,7 @@ export default function AdminStaffPage() {
     isSuperAdmin,
     needsUnlock,
   } = useAdminSession();
+  const { shopApi, shopPath } = useShopSlug();
   const [staff, setStaff] = useState<StaffRow[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [name, setName] = useState("");
@@ -60,7 +62,7 @@ export default function AdminStaffPage() {
     if (loading || needsUnlock || !isSuperAdmin) return;
     let cancelled = false;
     void (async () => {
-      const barberRes = await fetch("/api/barbers");
+      const barberRes = await fetch(shopApi("/barbers"));
       const barberJson = (await barberRes.json()) as { barbers?: Barber[] };
       if (cancelled) return;
       setBarbers(barberJson.barbers ?? []);
@@ -167,7 +169,7 @@ export default function AdminStaffPage() {
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.staffManagement")}</h1>
         <p className="text-sm text-red-400">{t("admin.forbiddenSuperAdminOnly")}</p>
-        <Link href="/admin" className="text-sm text-amber-400 underline">
+        <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
           {t("admin.backToBoard")}
         </Link>
       </section>
@@ -190,7 +192,7 @@ export default function AdminStaffPage() {
           {session ? <p className="mt-1 text-xs text-zinc-500">{session.name}</p> : null}
         </div>
         <Link
-          href="/admin"
+          href={shopPath("/admin")}
           className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
         >
           {t("admin.backToBoard")}

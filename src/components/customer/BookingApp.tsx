@@ -9,6 +9,7 @@ import { SlotPicker } from "@/components/customer/SlotPicker";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { useLineAuth } from "@/lib/line/use-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import {
   formatSlotTime,
   getBangkokWeekday,
@@ -26,6 +27,7 @@ interface ApiError {
 
 export function BookingApp() {
   const { t } = useI18n();
+  const { shopApi, shopPath } = useShopSlug();
   const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -74,7 +76,7 @@ export function BookingApp() {
         setSelectedStart(null);
       }
       const res = await fetch(
-        `/api/slots?barberId=${encodeURIComponent(targetBarberId)}&date=${encodeURIComponent(targetDate)}`,
+        shopApi(`/slots?barberId=${encodeURIComponent(targetBarberId)}&date=${encodeURIComponent(targetDate)}`),
       );
       const json = (await res.json()) as { slots?: Slot[] };
       const fresh = json.slots ?? [];
@@ -91,7 +93,7 @@ export function BookingApp() {
       }
       return fresh;
     },
-    [t],
+    [shopApi, t],
   );
 
   const silentRefresh = useCallback(async () => {
@@ -103,7 +105,7 @@ export function BookingApp() {
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const res = await fetch("/api/barbers");
+      const res = await fetch(shopApi("/barbers"));
       const json = (await res.json()) as {
         barbers?: Barber[];
         prototypeMode?: boolean;
@@ -116,7 +118,7 @@ export function BookingApp() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [shopApi]);
 
   useEffect(() => {
     if (!barberId || !activeDate) return;
@@ -157,7 +159,7 @@ export function BookingApp() {
     setSubmitting(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/bookings", {
+      const res = await fetch(shopApi("/bookings"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -182,7 +184,7 @@ export function BookingApp() {
         return;
       }
       setPhone((phone ?? "").trim());
-      window.location.href = "/bookings";
+      window.location.href = shopPath("/bookings");
     } catch {
       setMessage(t("booking.failed"));
     } finally {
@@ -243,13 +245,13 @@ export function BookingApp() {
                 {t("booking.hello").replace("{name}", profile.displayName)}
               </p>
             </div>
-            <Link href="/bookings" className="shrink-0 text-sm text-amber-400 underline">
+            <Link href={shopPath("/bookings")} className="shrink-0 text-sm text-amber-400 underline">
               {t("booking.myBookings")}
             </Link>
           </div>
         ) : (
           <div className="mt-2 flex justify-end">
-            <Link href="/bookings" className="text-sm text-amber-400 underline">
+            <Link href={shopPath("/bookings")} className="text-sm text-amber-400 underline">
               {t("booking.myBookings")}
             </Link>
           </div>

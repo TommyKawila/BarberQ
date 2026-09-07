@@ -11,8 +11,10 @@ import {
   type CreateStaffInput,
   type RecurringBreak,
   type Staff,
+  type ShopSettings,
   type UpdateBarberInput,
 } from "@/lib/data/types";
+import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
 import {
   countBreaksForWeekday,
   normalizeOffDays,
@@ -20,7 +22,7 @@ import {
   validateRecurringBreakInput,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
-import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
+import { slugifyShopName } from "@/lib/shop/slug";
 
 const GLOBAL_KEY = "__barberq_memory_store__";
 
@@ -30,10 +32,7 @@ const MOCK_OWNER_LINE_ID = "mock-owner-line-id";
 interface MemoryState {
   appointments: Appointment[];
   blocks: TimeBlock[];
-  logoDataUrl: string | null;
-  shopName: string | null;
-  lineUrl: string | null;
-  phone: string | null;
+  shopSettings: Record<string, ShopSettings>;
   staff: Staff[];
   recurringBreaks: RecurringBreak[];
   shops: Shop[];
@@ -47,10 +46,7 @@ function getState(): MemoryState {
     g[GLOBAL_KEY] = {
       appointments: [],
       blocks: [],
-      logoDataUrl: null,
-      shopName: null,
-      lineUrl: null,
-      phone: null,
+      shopSettings: {},
       staff: STAFF_SEED.map((row) => ({
         id: row.id,
         name: row.name,
@@ -65,12 +61,20 @@ function getState(): MemoryState {
         {
           id: DEFAULT_SHOP_ID,
           name: "PHINX STUDIO",
+          slug: "phinxstudio",
           status: "active",
           subscribed_until: null,
           created_at: nowIso(),
           updated_at: nowIso(),
         },
       ],
+    };
+    g[GLOBAL_KEY].shopSettings[DEFAULT_SHOP_ID] = {
+      shopId: DEFAULT_SHOP_ID,
+      logoDataUrl: null,
+      shopName: "PHINX STUDIO",
+      lineUrl: null,
+      phone: null,
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
@@ -81,6 +85,7 @@ function getState(): MemoryState {
       {
         id: DEFAULT_SHOP_ID,
         name: "PHINX STUDIO",
+        slug: "phinxstudio",
         status: "active",
         subscribed_until: null,
         created_at: nowIso(),
@@ -88,8 +93,27 @@ function getState(): MemoryState {
       },
     ];
   }
-  if (g[GLOBAL_KEY].lineUrl === undefined) g[GLOBAL_KEY].lineUrl = null;
-  if (g[GLOBAL_KEY].phone === undefined) g[GLOBAL_KEY].phone = null;
+  if (!g[GLOBAL_KEY].shopSettings) {
+    g[GLOBAL_KEY].shopSettings = {
+      [DEFAULT_SHOP_ID]: {
+        shopId: DEFAULT_SHOP_ID,
+        logoDataUrl: null,
+        shopName: "PHINX STUDIO",
+        lineUrl: null,
+        phone: null,
+      },
+    };
+  }
+  const legacy = g[GLOBAL_KEY] as MemoryState & {
+    lineUrl?: string | null;
+    phone?: string | null;
+    logoDataUrl?: string | null;
+    shopName?: string | null;
+  };
+  delete legacy.lineUrl;
+  delete legacy.phone;
+  delete legacy.logoDataUrl;
+  delete legacy.shopName;
   return g[GLOBAL_KEY];
 }
 
@@ -160,6 +184,14 @@ function overlapsBusy(
 }
 
 export const memoryStore: BookingStore = {
+  async getShopBySlug(slug) {
+    return getState().shops.find((s) => s.slug === slug) ?? null;
+  },
+
+  async listBarbersByShop(shopId) {
+    return barbers.filter((b) => b.shop_id === shopId);
+  },
+
   async listBarbers() {
     return [...barbers];
   },
@@ -366,22 +398,28 @@ export const memoryStore: BookingStore = {
     });
   },
 
-  async getShopSettings() {
+  async getShopSettings(shopId) {
     const state = getState();
-    return {
-      logoDataUrl: state.logoDataUrl,
-      shopName: state.shopName,
-      lineUrl: state.lineUrl ?? null,
-      phone: state.phone ?? null,
-    };
+    return (
+      state.shopSettings[shopId] ?? {
+        shopId,
+        logoDataUrl: null,
+        shopName: null,
+        lineUrl: null,
+        phone: null,
+      }
+    );
   },
 
-  async setShopSettings(input) {
+  async setShopSettings(shopId, input) {
     const state = getState();
-    state.logoDataUrl = input.logoDataUrl;
-    state.shopName = input.shopName;
-    state.lineUrl = input.lineUrl;
-    state.phone = input.phone;
+    state.shopSettings[shopId] = {
+      shopId,
+      logoDataUrl: input.logoDataUrl,
+      shopName: input.shopName,
+      lineUrl: input.lineUrl,
+      phone: input.phone,
+    };
   },
 
   async getStaffByToken(token) {
@@ -487,6 +525,7 @@ export const memoryStore: BookingStore = {
       const shop: Shop = {
         id: uuid(),
         name,
+        slug: slugifyShopName(name),
         status: "pending",
         subscribed_until: new Date(
           Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
@@ -497,6 +536,13 @@ export const memoryStore: BookingStore = {
         updated_at: now,
       };
       getState().shops.push(shop);
+      getState().shopSettings[shop.id] = {
+        shopId: shop.id,
+        logoDataUrl: null,
+        shopName: name,
+        lineUrl: null,
+        phone: null,
+      };
       return shop;
     }
 
@@ -507,6 +553,7 @@ export const memoryStore: BookingStore = {
     const shop: Shop = {
       id: uuid(),
       name,
+      slug: slugifyShopName(name),
       status: "active",
       subscribed_until: new Date(
         Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
@@ -517,6 +564,13 @@ export const memoryStore: BookingStore = {
       updated_at: now,
     };
     getState().shops.push(shop);
+    getState().shopSettings[shop.id] = {
+      shopId: shop.id,
+      logoDataUrl: null,
+      shopName: name,
+      lineUrl: null,
+      phone: null,
+    };
 
     barbers.push({
       id: uuid(),

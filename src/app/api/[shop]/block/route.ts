@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import {
-  assertStaff,
+  assertStaffForShop,
   canManageBarber,
   isAdminAuthRequired,
 } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore, isPrototypeMode } from "@/lib/data";
 import { isAdminKeyRequired } from "@/lib/env";
+import { resolveShopParam } from "@/lib/shop/api-route";
 import {
   createBlock,
   getAdminDay,
@@ -15,17 +16,19 @@ import {
 import { BookingError } from "@/lib/services/booking-service";
 import { dateISOFromInstant } from "@/lib/services/slot-service";
 
-const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
-
 export const runtime = "nodejs";
 
-export async function GET(req: Request) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ shop: string }> },
+) {
   try {
-    const staff = await assertStaff(req);
+    const { shop: shopSlug } = await params;
+    const shop = await resolveShopParam(shopSlug);
+    const staff = await assertStaffForShop(req, shop.id);
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date") ?? dateISOFromInstant(new Date());
-    const shopId = staff.shopId || DEFAULT_SHOP_ID;
-    const columns = await getAdminDay(date, shopId);
+    const columns = await getAdminDay(date, shop.id);
     return NextResponse.json({
       date,
       columns,
@@ -44,9 +47,14 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ shop: string }> },
+) {
   try {
-    const staff = await assertStaff(req);
+    const { shop: shopSlug } = await params;
+    const shop = await resolveShopParam(shopSlug);
+    const staff = await assertStaffForShop(req, shop.id);
     const body = await readJson<{
       barberId?: string;
       startTime?: string;
@@ -55,6 +63,10 @@ export async function POST(req: Request) {
     }>(req);
 
     const barberId = body.barberId ?? "";
+    const barber = await getStore().getBarber(barberId);
+    if (!barber || barber.shop_id !== shop.id) {
+      throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+    }
     if (!canManageBarber(staff, barberId)) {
       throw new BookingError("FORBIDDEN", "Cannot manage other barbers", 403);
     }
@@ -71,17 +83,27 @@ export async function POST(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ shop: string }> },
+) {
   try {
-    const staff = await assertStaff(req);
+    const { shop: shopSlug } = await params;
+    const shop = await resolveShopParam(shopSlug);
+    const staff = await assertStaffForShop(req, shop.id);
     const body = await readJson<{ id?: string }>(req);
     const id = body.id ?? "";
 
+    const block = await getStore().getBlock(id);
+    if (!block) {
+      throw new BookingError("NOT_FOUND", "Block not found", 404);
+    }
+    const barber = await getStore().getBarber(block.barber_id);
+    if (!barber || barber.shop_id !== shop.id) {
+      throw new BookingError("FORBIDDEN", "Cannot delete other shop blocks", 403);
+    }
+
     if (staff.role === "barber") {
-      const block = await getStore().getBlock(id);
-      if (!block) {
-        throw new BookingError("NOT_FOUND", "Block not found", 404);
-      }
       if (block.barber_id !== staff.barberId) {
         throw new BookingError("FORBIDDEN", "Cannot delete other barber blocks", 403);
       }

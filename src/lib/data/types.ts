@@ -44,6 +44,7 @@ export interface CreateBlockInput {
 }
 
 export interface ShopSettings {
+  shopId: string;
   logoDataUrl: string | null;
   shopName: string | null;
   lineUrl: string | null;
@@ -109,6 +110,8 @@ export interface ShopInvitePreview {
 }
 
 export interface BookingStore {
+  getShopBySlug(slug: string): Promise<Shop | null>;
+  listBarbersByShop(shopId: string): Promise<Barber[]>;
   listBarbers(): Promise<Barber[]>;
   getBarber(barberId: string): Promise<Barber | null>;
   getBusyIntervals(barberId: string, from: Date, to: Date): Promise<BusyInterval[]>;
@@ -127,8 +130,8 @@ export interface BookingStore {
   getAppointmentByCancelToken(token: string): Promise<Appointment | null>;
   markLateCalled(appointmentId: string): Promise<Appointment>;
   listCustomerAppointments(customerLineId: string): Promise<Appointment[]>;
-  getShopSettings(): Promise<ShopSettings>;
-  setShopSettings(input: ShopSettings): Promise<void>;
+  getShopSettings(shopId: string): Promise<ShopSettings>;
+  setShopSettings(shopId: string, input: Omit<ShopSettings, "shopId">): Promise<void>;
   getStaffByToken(token: string): Promise<Staff | null>;
   listStaff(): Promise<Staff[]>;
   createStaff(input: CreateStaffInput): Promise<Staff>;

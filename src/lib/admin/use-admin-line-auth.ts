@@ -87,7 +87,7 @@ export function useAdminLineAuth() {
 
   const login = useCallback(() => {
     if (!ready || mockMode) return;
-    liff.login({ redirectUri: `${window.location.origin}/admin/login` });
+    liff.login({ redirectUri: `${window.location.origin}${window.location.pathname}` });
   }, [mockMode, ready]);
 
   const authHeaders = useMemo(() => authHeadersFor(profile?.lineId ?? null), [profile?.lineId]);

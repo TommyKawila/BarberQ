@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { assertStaff, assertSuperAdmin } from "@/lib/admin-auth";
+import { assertStaffForShop, assertSuperAdmin } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import type { ShopSettings } from "@/lib/data/types";
 import { isValidLogoDataUrl } from "@/lib/image/fit-logo";
+import { resolveShopParam } from "@/lib/shop/api-route";
 import { isValidShopName, normalizeShopName } from "@/lib/shop/shop-name";
 import {
   isValidShopLineUrl,
@@ -13,13 +14,16 @@ import {
 } from "@/lib/shop/shop-contact";
 import { BookingError } from "@/lib/services/booking-service";
 
-const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
-
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ shop: string }> },
+) {
   try {
-    const settings = await getStore().getShopSettings(DEFAULT_SHOP_ID);
+    const { shop: shopSlug } = await params;
+    const shop = await resolveShopParam(shopSlug);
+    const settings = await getStore().getShopSettings(shop.id);
     const { shopId: _shopId, ...publicSettings } = settings;
     return NextResponse.json(publicSettings);
   } catch (error) {
@@ -27,9 +31,14 @@ export async function GET() {
   }
 }
 
-export async function PUT(req: Request) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ shop: string }> },
+) {
   try {
-    const staff = await assertStaff(req);
+    const { shop: shopSlug } = await params;
+    const shop = await resolveShopParam(shopSlug);
+    const staff = await assertStaffForShop(req, shop.id);
     assertSuperAdmin(staff);
     const body = await readJson<{
       logoDataUrl?: string | null;
@@ -38,8 +47,7 @@ export async function PUT(req: Request) {
       phone?: string | null;
     }>(req);
 
-    const shopId = staff.shopId || DEFAULT_SHOP_ID;
-    const current = await getStore().getShopSettings(shopId);
+    const current = await getStore().getShopSettings(shop.id);
     const next: Omit<ShopSettings, "shopId"> = {
       logoDataUrl: current.logoDataUrl,
       shopName: current.shopName,
@@ -79,7 +87,7 @@ export async function PUT(req: Request) {
       next.phone = phone;
     }
 
-    await getStore().setShopSettings(shopId, next);
+    await getStore().setShopSettings(shop.id, next);
     return NextResponse.json(next);
   } catch (error) {
     return jsonError(error);

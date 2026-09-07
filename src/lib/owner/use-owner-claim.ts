@@ -67,7 +67,7 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
   }, [inviteCode, mockMode, ready]);
 
   const claim = useCallback(async () => {
-    if (!profile || !inviteCode || claiming || claimed) return false;
+    if (!profile || !inviteCode || claiming || claimed) return null;
     setClaiming(true);
     setError(null);
     try {
@@ -80,16 +80,19 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
           displayName: profile.displayName,
         }),
       });
-      const json = (await res.json()) as { error?: { code?: string; message?: string } };
+      const json = (await res.json()) as {
+        error?: { code?: string; message?: string };
+        shop?: { slug?: string };
+      };
       if (!res.ok) {
         setError(json.error?.code ?? json.error?.message ?? "Claim failed");
-        return false;
+        return null;
       }
       setClaimed(true);
-      return true;
+      return json.shop?.slug ?? null;
     } catch {
       setError("Claim failed");
-      return false;
+      return null;
     } finally {
       setClaiming(false);
     }

@@ -10,10 +10,20 @@ export default async function CancelPage({
 }) {
   const { token } = await params;
   const store = getStore();
-  const [appointment, settings, barbers] = await Promise.all([
-    store.getAppointmentByCancelToken(token),
-    store.getShopSettings(),
-    store.listBarbers(),
+  const appointment = await store.getAppointmentByCancelToken(token);
+  const barber = appointment ? await store.getBarber(appointment.barber_id) : null;
+  const shopId = barber?.shop_id;
+  const [settings, barbers] = await Promise.all([
+    shopId
+      ? store.getShopSettings(shopId)
+      : Promise.resolve({
+          shopId: "",
+          logoDataUrl: null,
+          shopName: null,
+          lineUrl: null,
+          phone: null,
+        }),
+    shopId ? store.listBarbersByShop(shopId) : store.listBarbers(),
   ]);
 
   return (

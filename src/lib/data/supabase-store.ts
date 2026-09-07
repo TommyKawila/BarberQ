@@ -91,6 +91,27 @@ function mapRecurringBreak(row: RecurringBreakRow): RecurringBreak {
 }
 
 export const supabaseStore: BookingStore = {
+  async getShopBySlug(slug) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("slug", slug)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as Shop | null) ?? null;
+  },
+
+  async listBarbersByShop(shopId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("barbers")
+      .select("*")
+      .eq("shop_id", shopId);
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Barber[];
+  },
+
   async listBarbers() {
     const supabase = createServiceClient();
     const { data, error } = await supabase.from("barbers").select("*");
@@ -323,15 +344,16 @@ export const supabaseStore: BookingStore = {
     return (data ?? []) as TimeBlock[];
   },
 
-  async getShopSettings() {
+  async getShopSettings(shopId) {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("shop_settings")
-      .select("logo_data_url, shop_name, shop_line_url, shop_phone")
-      .eq("id", 1)
+      .select("shop_id, logo_data_url, shop_name, shop_line_url, shop_phone")
+      .eq("shop_id", shopId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return {
+      shopId,
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
       shopName: (data?.shop_name as string | null) ?? null,
       lineUrl: (data?.shop_line_url as string | null) ?? null,
@@ -339,18 +361,18 @@ export const supabaseStore: BookingStore = {
     };
   },
 
-  async setShopSettings(input) {
+  async setShopSettings(shopId, input) {
     const supabase = createServiceClient();
     const { error } = await supabase
       .from("shop_settings")
-      .update({
+      .upsert({
+        shop_id: shopId,
         logo_data_url: input.logoDataUrl,
         shop_name: input.shopName,
         shop_line_url: input.lineUrl,
         shop_phone: input.phone,
         updated_at: new Date().toISOString(),
-      })
-      .eq("id", 1);
+      });
     if (error) throw new Error(error.message);
   },
 

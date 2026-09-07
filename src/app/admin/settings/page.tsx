@@ -7,6 +7,7 @@ import { ShopNameLockup } from "@/components/layout/ShopNameLockup";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { FitLogoError, fitLogoFile } from "@/lib/image/fit-logo";
 import { normalizeShopName } from "@/lib/shop/shop-name";
 import {
@@ -40,6 +41,7 @@ export default function AdminSettingsPage() {
     isSuperAdmin,
     needsUnlock,
   } = useAdminSession();
+  const { shopApi, shopPath } = useShopSlug();
   const { logoDataUrl, shopName, lineUrl, phone, setLogoDataUrl, setShopName, setLineUrl, setPhone, refresh } = useShopBrand();
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? logoDataUrl;
@@ -70,7 +72,7 @@ export default function AdminSettingsPage() {
       phone?: string | null;
     }) => {
       const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
-      const res = await fetch("/api/settings", {
+      const res = await fetch(shopApi("/settings"), {
         method: "PUT",
         headers,
         body: JSON.stringify(body),
@@ -86,7 +88,7 @@ export default function AdminSettingsPage() {
       await refresh();
       return json;
     },
-    [authHeaders, refresh, setLogoDataUrl, setShopName, setLineUrl, setPhone, t],
+    [authHeaders, refresh, setLogoDataUrl, setShopName, setLineUrl, setPhone, shopApi, t],
   );
 
   const saveLogo = useCallback(
@@ -208,7 +210,7 @@ export default function AdminSettingsPage() {
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.settings")}</h1>
         <p className="text-sm text-red-400">{t("admin.forbiddenSuperAdminOnly")}</p>
-        <Link href="/admin" className="text-sm text-amber-400 underline">
+        <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
           {t("admin.backToBoard")}
         </Link>
       </section>
@@ -228,7 +230,7 @@ export default function AdminSettingsPage() {
           {session ? <p className="mt-1 text-xs text-zinc-500">{session.name}</p> : null}
         </div>
         <Link
-          href="/admin"
+          href={shopPath("/admin")}
           className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
         >
           {t("admin.backToBoard")}

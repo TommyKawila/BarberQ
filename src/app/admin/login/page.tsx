@@ -4,15 +4,17 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAdminLineAuth } from "@/lib/admin/use-admin-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
 export default function AdminLoginPage() {
   const { ready, profile, login, error } = useAdminLineAuth();
   const router = useRouter();
   const { t } = useI18n();
+  const { shopPath } = useShopSlug();
 
   useEffect(() => {
-    if (profile) router.replace("/admin");
-  }, [profile, router]);
+    if (profile) router.replace(shopPath("/admin"));
+  }, [profile, router, shopPath]);
 
   if (!ready) {
     return (

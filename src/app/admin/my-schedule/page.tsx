@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import type { Barber } from "@/types/booking";
@@ -44,6 +45,7 @@ export default function MySchedulePage() {
     unlock,
     needsUnlock,
   } = useAdminSession();
+  const { shopPath } = useShopSlug();
 
   const barberId = session?.barberId ?? null;
   const [barber, setBarber] = useState<Barber | null>(null);
@@ -231,7 +233,7 @@ export default function MySchedulePage() {
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.mySchedule")}</h1>
         <p className="text-sm text-red-400">{t("admin.noBarberLinked")}</p>
-        <Link href="/admin" className="text-sm text-amber-400 underline">
+        <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
           {t("admin.backToBoard")}
         </Link>
       </section>
@@ -251,7 +253,7 @@ export default function MySchedulePage() {
           {barber ? <p className="mt-1 text-xs text-zinc-500">{barber.name}</p> : null}
         </div>
         <Link
-          href="/admin"
+          href={shopPath("/admin")}
           className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
         >
           {t("admin.backToBoard")}

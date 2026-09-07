@@ -171,7 +171,7 @@ export async function getStatsReport(
   const toRange = dayRangeUtc(rangeMeta.to);
 
   const store = getStore();
-  const allBarbers = await listBarbers();
+  const allBarbers = await listBarbers(staff.shopId);
   const barbers =
     staff.role === "super_admin"
       ? allBarbers

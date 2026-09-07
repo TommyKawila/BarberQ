@@ -17,7 +17,13 @@ interface ShopBrandContextValue {
 
 const ShopBrandContext = createContext<ShopBrandContextValue | null>(null);
 
-export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
+export function ShopBrandProvider({
+  children,
+  shopSlug,
+}: {
+  children: React.ReactNode;
+  shopSlug: string;
+}) {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
   const [shopName, setShopName] = useState<string | null>(null);
   const [lineUrl, setLineUrl] = useState<string | null>(null);
@@ -26,7 +32,7 @@ export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch("/api/settings");
+      const res = await fetch(`/api/${shopSlug}/settings`);
       if (!res.ok) return;
       const json = (await res.json()) as {
         logoDataUrl?: string | null;
@@ -43,7 +49,7 @@ export function ShopBrandProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [shopSlug]);
 
   useEffect(() => {
     let cancelled = false;
