@@ -16,8 +16,10 @@ export interface Barber {
 export interface Shop {
   id: string;
   name: string;
-  status: "active" | "suspended" | "cancelled";
+  status: "pending" | "active" | "suspended" | "cancelled";
   subscribed_until: string | null;
+  invite_token?: string | null;
+  invite_expires_at?: string | null;
   created_at: string;
   updated_at: string;
 }

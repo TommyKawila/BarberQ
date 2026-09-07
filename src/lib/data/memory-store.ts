@@ -6,6 +6,7 @@ import {
   StoreConflict,
   type BookingStore,
   type CreateRecurringBreakInput,
+  type ClaimOwnerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
   type RecurringBreak,
@@ -110,6 +111,10 @@ function nowIso(): string {
 
 function uuid(): string {
   return crypto.randomUUID();
+}
+
+function inviteToken(): string {
+  return crypto.randomUUID().replace(/-/g, "");
 }
 
 const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
@@ -472,13 +477,33 @@ export const memoryStore: BookingStore = {
 
   async createShop(input: CreateShopInput) {
     const name = input.name.trim();
-    const ownerLineId = input.ownerLineId.trim();
-    if (!name || !ownerLineId) throw new StoreConflict("INVALID_RANGE");
-    if (barbers.some((b) => b.line_id === ownerLineId)) {
-      throw new StoreConflict("INVALID_RANGE");
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+
+    const ownerLineId = input.ownerLineId?.trim() ?? "";
+    const now = nowIso();
+
+    if (!ownerLineId) {
+      const token = inviteToken();
+      const shop: Shop = {
+        id: uuid(),
+        name,
+        status: "pending",
+        subscribed_until: new Date(
+          Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
+        ).toISOString(),
+        invite_token: token,
+        invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: now,
+        updated_at: now,
+      };
+      getState().shops.push(shop);
+      return shop;
     }
 
-    const now = nowIso();
+    if (barbers.some((b) => b.line_id === ownerLineId)) {
+      throw new StoreConflict("LINE_ID_TAKEN");
+    }
+
     const shop: Shop = {
       id: uuid(),
       name,
@@ -486,11 +511,59 @@ export const memoryStore: BookingStore = {
       subscribed_until: new Date(
         Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
       ).toISOString(),
+      invite_token: null,
+      invite_expires_at: null,
       created_at: now,
       updated_at: now,
     };
     getState().shops.push(shop);
 
+    barbers.push({
+      id: uuid(),
+      name: input.ownerName?.trim() || "Owner",
+      slot_duration_minutes: 30,
+      off_days: [],
+      created_at: now,
+      line_id: ownerLineId,
+      role: "owner",
+      shop_id: shop.id,
+    });
+
+    return shop;
+  },
+
+  async getShopInvitePreview(token) {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    const shop = getState().shops.find((s) => s.invite_token === trimmed);
+    if (!shop) return null;
+    const expired = shop.invite_expires_at
+      ? new Date(shop.invite_expires_at).getTime() < Date.now()
+      : false;
+    return {
+      shopName: shop.name,
+      expired,
+      claimed: shop.status !== "pending",
+    };
+  },
+
+  async claimOwnerInvite(input) {
+    const token = input.inviteToken.trim();
+    const ownerLineId = input.ownerLineId.trim();
+    if (!token || !ownerLineId) throw new StoreConflict("INVALID_RANGE");
+
+    const state = getState();
+    const shop = state.shops.find((s) => s.invite_token === token);
+    if (!shop) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (shop.status !== "pending") throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+    if (shop.invite_expires_at && new Date(shop.invite_expires_at).getTime() < Date.now()) {
+      throw new StoreConflict("INVITE_EXPIRED");
+    }
+    if (barbers.some((b) => b.line_id === ownerLineId)) {
+      throw new StoreConflict("LINE_ID_TAKEN");
+    }
+
+    const now = nowIso();
     barbers.push({
       id: uuid(),
       name: input.ownerName.trim() || "Owner",
@@ -502,7 +575,12 @@ export const memoryStore: BookingStore = {
       shop_id: shop.id,
     });
 
-    return shop;
+    shop.status = "active";
+    shop.invite_token = null;
+    shop.invite_expires_at = null;
+    shop.updated_at = now;
+
+    return { ...shop };
   },
 
   async getBarberByLineId(lineId) {

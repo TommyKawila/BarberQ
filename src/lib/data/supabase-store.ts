@@ -4,6 +4,7 @@ import {
   StoreConflict,
   type BookingStore,
   type CreateRecurringBreakInput,
+  type ClaimOwnerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
   type RecurringBreak,
@@ -33,6 +34,10 @@ function mapRpcError(error: { message?: string; code?: string }): never {
     "TOO_LATE",
     "INVALID_RANGE",
     "INVALID_OUTCOME",
+    "INVITE_NOT_FOUND",
+    "INVITE_EXPIRED",
+    "INVITE_ALREADY_CLAIMED",
+    "LINE_ID_TAKEN",
   ];
   for (const code of codes) {
     if (message.includes(code)) throw new StoreConflict(code);
@@ -482,13 +487,36 @@ export const supabaseStore: BookingStore = {
 
   async createShop(input: CreateShopInput) {
     const supabase = createServiceClient();
+    const ownerLineId = input.ownerLineId?.trim() ?? "";
+
+    if (!ownerLineId) {
+      const { data, error } = await supabase.rpc("create_shop_invite", {
+        p_shop_name: input.name,
+        p_subscription_months: input.subscriptionMonths,
+      });
+      if (error) mapRpcError(error);
+
+      const result = data as { shop_id?: string } | null;
+      const shopId = result?.shop_id;
+      if (!shopId) throw new Error("Shop creation failed");
+
+      const { data: shop, error: shopError } = await supabase
+        .from("shops")
+        .select("*")
+        .eq("id", shopId)
+        .maybeSingle();
+      if (shopError) throw new Error(shopError.message);
+      if (!shop) throw new Error("Shop not found after creation");
+      return shop as Shop;
+    }
+
     const { data, error } = await supabase.rpc("create_shop_with_owner", {
       p_shop_name: input.name,
-      p_owner_line_id: input.ownerLineId,
-      p_owner_name: input.ownerName,
+      p_owner_line_id: ownerLineId,
+      p_owner_name: input.ownerName ?? "Owner",
       p_subscription_months: input.subscriptionMonths,
     });
-    if (error) throw new Error(error.message);
+    if (error) mapRpcError(error);
 
     const result = data as { shop_id?: string } | null;
     const shopId = result?.shop_id;
@@ -501,6 +529,53 @@ export const supabaseStore: BookingStore = {
       .maybeSingle();
     if (shopError) throw new Error(shopError.message);
     if (!shop) throw new Error("Shop not found after creation");
+    return shop as Shop;
+  },
+
+  async getShopInvitePreview(token) {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("get_shop_by_invite_token", {
+      p_invite_token: trimmed,
+    });
+    if (error) throw new Error(error.message);
+
+    const result = data as {
+      found?: boolean;
+      shop_name?: string;
+      expired?: boolean;
+      claimed?: boolean;
+    } | null;
+    if (!result?.found) return null;
+
+    return {
+      shopName: result.shop_name ?? "",
+      expired: Boolean(result.expired),
+      claimed: Boolean(result.claimed),
+    };
+  },
+
+  async claimOwnerInvite(input: ClaimOwnerInviteInput) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("claim_owner_invite", {
+      p_invite_token: input.inviteToken.trim(),
+      p_owner_line_id: input.ownerLineId.trim(),
+      p_owner_name: input.ownerName.trim() || "Owner",
+    });
+    if (error) mapRpcError(error);
+
+    const result = data as { shop_id?: string } | null;
+    const shopId = result?.shop_id;
+    if (!shopId) throw new StoreConflict("INVITE_NOT_FOUND");
+
+    const { data: shop, error: shopError } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (shopError) throw new Error(shopError.message);
+    if (!shop) throw new StoreConflict("INVITE_NOT_FOUND");
     return shop as Shop;
   },
 

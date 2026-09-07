@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStore } from "@/lib/data";
+import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import { assertSuperAdminToken } from "@/lib/superadmin/auth";
 
 export async function GET(req: Request) {
@@ -26,18 +27,21 @@ export async function POST(req: Request) {
     };
 
     const { shopName, ownerLineId, ownerName, subscriptionMonths } = body;
-    if (!shopName || !ownerLineId || !subscriptionMonths) {
+    if (!shopName || !subscriptionMonths) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
     const shop = await getStore().createShop({
       name: shopName,
-      ownerLineId,
+      ownerLineId: ownerLineId?.trim() || undefined,
       ownerName: ownerName || "Owner",
       subscriptionMonths,
     });
 
-    return NextResponse.json({ shop }, { status: 201 });
+    const inviteUrl =
+      shop.invite_token ? buildOwnerInviteUrl(shop.invite_token) : undefined;
+
+    return NextResponse.json({ shop, inviteUrl }, { status: 201 });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create shop" },

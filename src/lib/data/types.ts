@@ -10,7 +10,11 @@ export type StoreErrorCode =
   | "NOT_CANCELLABLE"
   | "TOO_LATE"
   | "INVALID_RANGE"
-  | "INVALID_OUTCOME";
+  | "INVALID_OUTCOME"
+  | "INVITE_NOT_FOUND"
+  | "INVITE_EXPIRED"
+  | "INVITE_ALREADY_CLAIMED"
+  | "LINE_ID_TAKEN";
 
 export class StoreConflict extends Error {
   readonly code: StoreErrorCode;
@@ -87,9 +91,21 @@ export interface UpdateBarberInput {
 
 export interface CreateShopInput {
   name: string;
+  ownerLineId?: string;
+  ownerName?: string;
+  subscriptionMonths: number;
+}
+
+export interface ClaimOwnerInviteInput {
+  inviteToken: string;
   ownerLineId: string;
   ownerName: string;
-  subscriptionMonths: number;
+}
+
+export interface ShopInvitePreview {
+  shopName: string;
+  expired: boolean;
+  claimed: boolean;
 }
 
 export interface BookingStore {
@@ -123,5 +139,7 @@ export interface BookingStore {
   deleteRecurringBreak(breakId: string): Promise<void>;
   listShops(): Promise<Shop[]>;
   createShop(input: CreateShopInput): Promise<Shop>;
+  getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
+  claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;
   getBarberByLineId(lineId: string): Promise<Barber | null>;
 }

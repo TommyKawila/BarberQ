@@ -45,6 +45,18 @@ export const dictionary = {
     "booking.hello": "สวัสดี, {name}",
     "booking.noBookings": "ยังไม่มีคิวที่จองไว้",
 
+    "owner.joinTitle": "ยืนยันเจ้าของร้าน",
+    "owner.joinHint": "คุณกำลังจะเป็นเจ้าของร้าน {name}",
+    "owner.claiming": "กำลังยืนยัน…",
+    "owner.claimSuccess": "ยืนยันสำเร็จ กำลังเข้าสู่ระบบ…",
+    "owner.inviteExpired": "ลิงก์เชิญหมดอายุแล้ว กรุณาติดต่อ BarberQ",
+    "owner.inviteClaimed": "ลิงก์นี้ถูกใช้งานแล้ว",
+    "owner.inviteInvalid": "ลิงก์เชิญไม่ถูกต้อง",
+
+    "superadmin.inviteUrl": "ลิงก์เชิญเจ้าของร้าน",
+    "superadmin.copyLink": "คัดลอกลิงก์",
+    "superadmin.pending": "รอเจ้าของร้าน",
+
     "admin.title": "แอดมิน",
     "admin.unlockHint": "เปิดลิงก์ /saeb /tide /nat หรือใส่ token",
     "admin.unlock": "ปลดล็อก",
@@ -211,6 +223,18 @@ export const dictionary = {
     "booking.myBookings": "My Bookings",
     "booking.hello": "Hi, {name}",
     "booking.noBookings": "No bookings yet",
+
+    "owner.joinTitle": "Confirm shop ownership",
+    "owner.joinHint": "You are joining as owner of {name}",
+    "owner.claiming": "Confirming…",
+    "owner.claimSuccess": "Confirmed. Redirecting…",
+    "owner.inviteExpired": "This invite link has expired. Contact BarberQ.",
+    "owner.inviteClaimed": "This invite link has already been used",
+    "owner.inviteInvalid": "Invalid invite link",
+
+    "superadmin.inviteUrl": "Owner invite link",
+    "superadmin.copyLink": "Copy link",
+    "superadmin.pending": "Awaiting owner",
 
     "admin.title": "Admin",
     "admin.unlockHint": "Open /saeb /tide /nat or enter your token",
