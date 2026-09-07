@@ -29,6 +29,7 @@ export interface CreateAppointmentInput {
   customerPhone: string;
   startTime: Date;
   endTime: Date;
+  customerLineId?: string;
 }
 
 export interface CreateBlockInput {
@@ -90,6 +91,7 @@ export interface BookingStore {
   getBusyIntervals(barberId: string, from: Date, to: Date): Promise<BusyInterval[]>;
   createAppointment(input: CreateAppointmentInput): Promise<Appointment>;
   cancelAppointment(appointmentId: string, customerRef: string): Promise<Appointment>;
+  staffCancelAppointment(appointmentId: string): Promise<Appointment>;
   getAppointment(appointmentId: string): Promise<Appointment | null>;
   createBlock(input: CreateBlockInput): Promise<TimeBlock>;
   getBlock(id: string): Promise<TimeBlock | null>;
@@ -101,6 +103,7 @@ export interface BookingStore {
   cancelAppointmentByToken(token: string): Promise<Appointment>;
   getAppointmentByCancelToken(token: string): Promise<Appointment | null>;
   markLateCalled(appointmentId: string): Promise<Appointment>;
+  listCustomerAppointments(customerLineId: string): Promise<Appointment[]>;
   getShopSettings(): Promise<ShopSettings>;
   setShopSettings(input: ShopSettings): Promise<void>;
   getStaffByToken(token: string): Promise<Staff | null>;

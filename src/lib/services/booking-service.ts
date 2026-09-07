@@ -157,9 +157,22 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
       customerPhone: phone,
       startTime: start,
       endTime: end,
+      customerLineId: input.customerLineId,
     });
   } catch (error) {
     if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+export async function listCustomerBookings(customerLineId: string): Promise<Appointment[]> {
+  const lineId = customerLineId.trim();
+  if (!lineId) {
+    throw new BookingError("INVALID_LINE_ID", "Line ID is required", 400);
+  }
+  try {
+    return await getStore().listCustomerAppointments(lineId);
+  } catch (error) {
     throw mapStoreError(error);
   }
 }
@@ -187,6 +200,18 @@ export async function cancelBooking(
       );
     }
     return await store.cancelAppointment(appointmentId, customerRef.trim());
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+export async function staffCancelBooking(appointmentId: string): Promise<Appointment> {
+  if (!isUuid(appointmentId)) {
+    throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
+  }
+  try {
+    return await getStore().staffCancelAppointment(appointmentId);
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
@@ -339,6 +364,7 @@ export async function getAdminDay(
             kind: "booked",
             customerName: appointment.customer_name,
             customerPhone: appointment.customer_phone,
+            customerLineId: appointment.customer_line_id ?? null,
             appointmentId: appointment.id,
             status: appointment.status,
             isLate: appointment.status === "confirmed" && isLate(appointment.start_time, now),

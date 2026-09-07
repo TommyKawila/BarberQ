@@ -122,9 +122,34 @@ export const supabaseStore: BookingStore = {
       p_customer_name: input.customerName,
       p_customer_phone: input.customerPhone,
       p_start_time: input.startTime.toISOString(),
+      p_customer_line_id: input.customerLineId ?? null,
     });
-    if (error) mapRpcError(error);
-    return data as Appointment;
+    if (!error) return data as Appointment;
+
+    const missingLineParam =
+      error.code === "PGRST202" ||
+      (error.message ?? "").includes("p_customer_line_id");
+    if (!missingLineParam) mapRpcError(error);
+
+    const { data: legacy, error: legacyError } = await supabase.rpc("create_appointment", {
+      p_barber_id: input.barberId,
+      p_customer_ref: input.customerRef,
+      p_customer_name: input.customerName,
+      p_customer_phone: input.customerPhone,
+      p_start_time: input.startTime.toISOString(),
+    });
+    if (legacyError) mapRpcError(legacyError);
+    const appointment = legacy as Appointment;
+    if (!input.customerLineId) return appointment;
+
+    const { data: patched, error: patchError } = await supabase
+      .from("appointments")
+      .update({ customer_line_id: input.customerLineId })
+      .eq("id", appointment.id)
+      .select("*")
+      .maybeSingle();
+    if (patchError) throw new Error(patchError.message);
+    return (patched as Appointment | null) ?? appointment;
   },
 
   async cancelAppointment(appointmentId, customerRef) {
@@ -135,6 +160,34 @@ export const supabaseStore: BookingStore = {
     });
     if (error) mapRpcError(error);
     return data as Appointment;
+  },
+
+  async staffCancelAppointment(appointmentId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("staff_cancel_appointment", {
+      p_appointment_id: appointmentId,
+    });
+    if (!error) return data as Appointment;
+    const missingRpc =
+      error.code === "PGRST202" ||
+      error.code === "42883" ||
+      (error.message ?? "").includes("staff_cancel_appointment");
+    if (!missingRpc) mapRpcError(error);
+
+    const existing = await this.getAppointment(appointmentId);
+    if (!existing) throw new StoreConflict("NOT_FOUND");
+    if (existing.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
+
+    const { data: updated, error: updateError } = await supabase
+      .from("appointments")
+      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+      .eq("id", appointmentId)
+      .eq("status", "confirmed")
+      .select("*")
+      .maybeSingle();
+    if (updateError) throw new Error(updateError.message);
+    if (!updated) throw new StoreConflict("NOT_CANCELLABLE");
+    return updated as Appointment;
   },
 
   async cancelAppointmentByToken(token) {
@@ -166,6 +219,18 @@ export const supabaseStore: BookingStore = {
     });
     if (error) mapRpcError(error);
     return data as Appointment;
+  },
+
+  async listCustomerAppointments(customerLineId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("appointments")
+      .select("*")
+      .eq("customer_line_id", customerLineId)
+      .neq("status", "cancelled")
+      .order("start_time", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as Appointment[];
   },
 
   async getAppointment(appointmentId) {

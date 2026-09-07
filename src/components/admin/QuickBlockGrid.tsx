@@ -9,10 +9,12 @@ interface QuickBlockGridProps {
   pendingKey: string | null;
   outcomePendingKey?: string | null;
   latePendingKey?: string | null;
+  cancelPendingKey?: string | null;
   editableBarberId?: string | null;
   onToggle: (barberId: string, slot: AdminSlot) => void;
   onOutcome?: (barberId: string, slot: AdminSlot, outcome: "completed" | "no_show") => void;
   onLateCalled?: (barberId: string, slot: AdminSlot) => void;
+  onCancel?: (barberId: string, slot: AdminSlot) => void;
 }
 
 function slotClass(slot: AdminSlot, pending: boolean): string {
@@ -44,10 +46,12 @@ export function QuickBlockGrid({
   pendingKey,
   outcomePendingKey = null,
   latePendingKey = null,
+  cancelPendingKey = null,
   editableBarberId = null,
   onToggle,
   onOutcome,
   onLateCalled,
+  onCancel,
 }: QuickBlockGridProps) {
   const { locale, t } = useI18n();
   const now = Date.now();
@@ -75,12 +79,19 @@ export function QuickBlockGrid({
               const pending = pendingKey === key;
               const outcomePending = outcomePendingKey === key;
               const latePending = latePendingKey === key;
+              const cancelPending = cancelPendingKey === key;
               const pastFree = slot.kind === "free" && !slot.available;
               const booked = slot.kind === "booked";
               const locked = slot.kind === "blocked" && slot.reason === "break";
               const markable = canMarkOutcome(slot, now) && canEdit && onOutcome;
               const lateConfirmed =
                 booked && slot.status === "confirmed" && Boolean(slot.isLate) && canEdit;
+              const staffCancellable =
+                booked &&
+                slot.status === "confirmed" &&
+                Boolean(slot.appointmentId) &&
+                canEdit &&
+                Boolean(onCancel);
               const label =
                 slot.kind === "booked"
                   ? slot.status === "completed"
@@ -96,14 +107,19 @@ export function QuickBlockGrid({
                       : slot.reason || t("admin.walkIn")
                     : t("admin.free");
 
-              if (markable || lateConfirmed) {
+              if (markable || lateConfirmed || staffCancellable) {
                 return (
                   <div
                     key={slot.startTime}
-                    className={`min-h-14 rounded-lg px-1.5 py-2 text-left ${slotClass(slot, outcomePending || latePending)}`}
+                    className={`min-h-14 rounded-lg px-1.5 py-2 text-left ${slotClass(slot, outcomePending || latePending || cancelPending)}`}
                   >
                     <div className="text-xs font-bold">{formatSlotTime(slot.startTime)}</div>
                     <div className="truncate text-[11px] font-medium leading-tight">{slot.customerName}</div>
+                    {slot.customerLineId ? (
+                      <div className="truncate text-[10px] text-zinc-300/80">
+                        Line: {slot.customerLineId.slice(0, 8)}…
+                      </div>
+                    ) : null}
                     {slot.customerPhone ? (
                       <a
                         href={`tel:${slot.customerPhone}`}
@@ -148,6 +164,16 @@ export function QuickBlockGrid({
                             ✗ {t("admin.markNoShow")}
                           </button>
                         </div>
+                      ) : null}
+                      {staffCancellable && !markable ? (
+                        <button
+                          type="button"
+                          disabled={cancelPending}
+                          onClick={() => onCancel?.(column.barber.id, slot)}
+                          className="rounded bg-zinc-950/50 px-1.5 py-1 text-[9px] font-semibold hover:bg-zinc-950/70 disabled:opacity-50"
+                        >
+                          {t("admin.cancelBooking")}
+                        </button>
                       ) : null}
                     </div>
                   </div>

@@ -172,6 +172,7 @@ export const memoryStore: BookingStore = {
         status: "confirmed",
         created_at: nowIso(),
         cancel_token: uuid().replace(/-/g, ""),
+        customer_line_id: input.customerLineId ?? null,
       };
       getState().appointments.push(row);
       return row;
@@ -188,6 +189,21 @@ export const memoryStore: BookingStore = {
     if (new Date(row.start_time).getTime() - Date.now() < CANCEL_LEAD_MINUTES * 60_000) {
       throw new StoreConflict("TOO_LATE");
     }
+    const updated = {
+      ...row,
+      status: "cancelled" as const,
+      cancelled_at: nowIso(),
+    };
+    state.appointments[idx] = updated;
+    return updated;
+  },
+
+  async staffCancelAppointment(appointmentId) {
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.id === appointmentId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
     const updated = {
       ...row,
       status: "cancelled" as const,
@@ -238,6 +254,12 @@ export const memoryStore: BookingStore = {
     };
     state.appointments[idx] = updated;
     return updated;
+  },
+
+  async listCustomerAppointments(customerLineId) {
+    return getState().appointments.filter(
+      (apt) => apt.customer_line_id === customerLineId && apt.status !== "cancelled",
+    );
   },
 
   async createBlock(input) {

@@ -1,7 +1,6 @@
 import { Noto_Sans_Thai } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 import { AppHeader } from "@/components/layout/AppHeader";
-import { MockIdentityProvider } from "@/lib/identity/mock-identity";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
 import { ShopBrandProvider } from "@/lib/brand/shop-brand";
 import "./globals.css";
@@ -30,12 +29,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full bg-zinc-950 text-zinc-50">
         <LocaleProvider>
           <ShopBrandProvider>
-            <MockIdentityProvider>
-              <div className="mx-auto min-h-full w-full max-w-lg pb-[env(safe-area-inset-bottom)]">
-                <AppHeader />
-                {children}
-              </div>
-            </MockIdentityProvider>
+            <div className="mx-auto min-h-full w-full max-w-lg pb-[env(safe-area-inset-bottom)]">
+              <AppHeader />
+              {children}
+            </div>
           </ShopBrandProvider>
         </LocaleProvider>
       </body>

@@ -22,6 +22,7 @@ export interface Appointment {
   cancelled_at?: string | null;
   cancel_token?: string | null;
   late_called_at?: string | null;
+  customer_line_id?: string | null;
 }
 
 export interface TimeBlock {
@@ -50,6 +51,7 @@ export interface AdminSlot extends Slot {
   kind: AdminSlotKind;
   customerName?: string;
   customerPhone?: string;
+  customerLineId?: string | null;
   appointmentId?: string;
   status?: AppointmentStatus;
   isLate?: boolean;
@@ -69,6 +71,7 @@ export interface CreateBookingInput {
   customerName: string;
   customerPhone: string;
   customerRef: string;
+  customerLineId?: string;
 }
 
 export interface ApiErrorBody {

@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { addDays } from "date-fns";
+import { enUS, th } from "date-fns/locale";
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { useAdminSession } from "@/lib/admin/use-admin-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { dateISOFromInstant } from "@/lib/services/slot-service";
+import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot } from "@/types/booking";
 
 interface ApiError {
@@ -14,7 +17,7 @@ interface ApiError {
 }
 
 export default function AdminPage() {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const {
     tokenInput,
     setTokenInput,
@@ -33,7 +36,26 @@ export default function AdminPage() {
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
   const [latePendingKey, setLatePendingKey] = useState<string | null>(null);
-  const [dateISO] = useState(() => dateISOFromInstant(new Date()));
+  const [cancelPendingKey, setCancelPendingKey] = useState<string | null>(null);
+  const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
+  const todayISO = dateISOFromInstant(new Date());
+  const isToday = dateISO === todayISO;
+  const dateLocale = locale === "th" ? th : enUS;
+  const displayDate = useMemo(
+    () =>
+      formatInTimeZone(
+        fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE),
+        SHOP_TIMEZONE,
+        "EEEE d MMMM yyyy",
+        { locale: dateLocale },
+      ),
+    [dateISO, dateLocale],
+  );
+
+  function shiftDay(days: number) {
+    const noon = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
+    setDateISO(dateISOFromInstant(addDays(noon, days)));
+  }
 
   const loadDay = useCallback(async () => {
     try {
@@ -191,6 +213,29 @@ export default function AdminPage() {
     }
   }
 
+  async function onCancel(_barberId: string, slot: AdminSlot) {
+    if (needsUnlock || !slot.appointmentId) return;
+    const key = `${_barberId}:${slot.startTime}`;
+    setCancelPendingKey(key);
+    setError(null);
+    try {
+      const res = await fetch(`/api/appointments/${slot.appointmentId}/cancel`, {
+        method: "PATCH",
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        return;
+      }
+      await loadDay();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setCancelPendingKey(null);
+    }
+  }
+
   if (loading) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
@@ -226,19 +271,45 @@ export default function AdminPage() {
   return (
     <div className="flex flex-col gap-4 px-3 py-4">
       <header className="flex items-start justify-between gap-2">
-        <div>
+        <div className="min-w-0">
           {meta.prototypeMode ? (
             <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
               {t("common.prototypeMode")}
             </span>
           ) : null}
-          <h1 className="text-xl font-semibold">{t("admin.todayTap")}</h1>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => shiftDay(-1)}
+              className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200"
+            >
+              {t("admin.previousDay")}
+            </button>
+            <button
+              type="button"
+              disabled={isToday}
+              onClick={() => setDateISO(todayISO)}
+              className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-40"
+            >
+              {t("admin.today")}
+            </button>
+            <button
+              type="button"
+              onClick={() => shiftDay(1)}
+              className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200"
+            >
+              {t("admin.nextDay")}
+            </button>
+          </div>
+          <h1 className="mt-2 text-xl font-semibold">
+            {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
+          </h1>
+          <p className="text-sm text-zinc-400">{displayDate}</p>
           {session ? (
             <AdminSessionBadge name={session.name} role={session.role} />
           ) : null}
         </div>
         <div className="flex flex-col items-end gap-2">
-          <p className="text-xs text-zinc-500">{dateISO}</p>
           <div className="flex flex-wrap justify-end gap-2">
             <Link
               href="/admin/stats"
@@ -298,10 +369,12 @@ export default function AdminPage() {
         pendingKey={pendingKey}
         outcomePendingKey={outcomePendingKey}
         latePendingKey={latePendingKey}
+        cancelPendingKey={cancelPendingKey}
         editableBarberId={editableBarberId}
         onToggle={(id, slot) => void onToggle(id, slot)}
         onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
         onLateCalled={(id, slot) => void onLateCalled(id, slot)}
+        onCancel={(id, slot) => void onCancel(id, slot)}
       />
     </div>
   );

@@ -1,27 +1,23 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
-import { enUS, th } from "date-fns/locale";
 import { BarberSelector } from "@/components/customer/BarberSelector";
 import { DateSelector } from "@/components/customer/DateSelector";
-import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { SlotPicker } from "@/components/customer/SlotPicker";
-import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useBrowserStorage } from "@/lib/browser-storage";
-import { useCustomerIdentity } from "@/lib/identity/mock-identity";
+import { useLineAuth } from "@/lib/line/use-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import {
-  canCancelAt,
   formatSlotTime,
   getBangkokWeekday,
   getBookableDates,
   SHOP_TIMEZONE,
 } from "@/lib/services/slot-service";
-import { barberLabel, type Appointment, type Barber, type Slot } from "@/types/booking";
+import { type Barber, type Slot } from "@/types/booking";
 
 const PHONE_KEY = "barberq_phone";
-const LAST_BOOKING_KEY = "barberq_last_booking";
 const POLL_MS = 10_000;
 
 interface ApiError {
@@ -29,9 +25,8 @@ interface ApiError {
 }
 
 export function BookingApp() {
-  const { locale, t } = useI18n();
-  const { ready, identity } = useCustomerIdentity();
-  const { lineUrl, phone: shopPhone } = useShopBrand();
+  const { t } = useI18n();
+  const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [prototypeMode, setPrototypeMode] = useState(true);
@@ -42,7 +37,6 @@ export function BookingApp() {
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useBrowserStorage(PHONE_KEY);
-  const [lastBookingRaw, setLastBookingRaw] = useBrowserStorage(LAST_BOOKING_KEY);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -58,14 +52,11 @@ export function BookingApp() {
     submittingRef.current = submitting;
   }, [submitting]);
 
-  const booked = useMemo(() => {
-    if (!lastBookingRaw) return null;
-    try {
-      return JSON.parse(lastBookingRaw) as Appointment;
-    } catch {
-      return null;
+  useEffect(() => {
+    if (profile?.displayName && !customerName) {
+      setCustomerName(profile.displayName);
     }
-  }, [lastBookingRaw]);
+  }, [profile, customerName]);
 
   const selectedBarber = barbers.find((item) => item.id === barberId) ?? null;
   const activeDate = useMemo(() => {
@@ -142,7 +133,7 @@ export function BookingApp() {
   }, [barberId, activeDate, selectedBarber, loadSlots]);
 
   useEffect(() => {
-    if (booked || !barberId || !activeDate) return;
+    if (!barberId || !activeDate) return;
     if (selectedBarber?.off_days.includes(getBangkokWeekday(activeDate))) return;
 
     const tick = () => {
@@ -159,10 +150,10 @@ export function BookingApp() {
       window.removeEventListener("visibilitychange", tick);
       window.removeEventListener("focus", tick);
     };
-  }, [booked, barberId, activeDate, selectedBarber, silentRefresh]);
+  }, [barberId, activeDate, selectedBarber, silentRefresh]);
 
   async function submitBooking() {
-    if (!barberId || !selectedStart || !identity) return;
+    if (!barberId || !selectedStart || !profile) return;
     setSubmitting(true);
     setMessage(null);
     try {
@@ -174,10 +165,11 @@ export function BookingApp() {
           startTime: selectedStart,
           customerName,
           customerPhone: phone ?? "",
-          customerRef: identity.ref,
+          customerRef: profile.userId,
+          customerLineId: profile.userId,
         }),
       });
-      const json = (await res.json()) as { appointment?: Appointment } & ApiError;
+      const json = (await res.json()) as { appointment?: { id: string } } & ApiError;
       if (!res.ok || !json.appointment) {
         const code = json.error?.code;
         if (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") {
@@ -190,7 +182,7 @@ export function BookingApp() {
         return;
       }
       setPhone((phone ?? "").trim());
-      setLastBookingRaw(JSON.stringify(json.appointment));
+      window.location.href = "/bookings";
     } catch {
       setMessage(t("booking.failed"));
     } finally {
@@ -198,120 +190,28 @@ export function BookingApp() {
     }
   }
 
-  async function cancelBooking() {
-    if (!booked || !identity) return;
-    setSubmitting(true);
-    setMessage(null);
-    try {
-      const res = await fetch("/api/cancel", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          booked.cancel_token
-            ? { cancelToken: booked.cancel_token }
-            : { appointmentId: booked.id, customerRef: identity.ref },
-        ),
-      });
-      const json = (await res.json()) as ApiError;
-      if (!res.ok) {
-        setMessage(json.error?.message ?? t("booking.cancelFailed"));
-        return;
-      }
-      setLastBookingRaw(null);
-    } catch {
-      setMessage(t("booking.cancelFailed"));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  function bookAnother() {
-    setLastBookingRaw(null);
-    setSelectedStart(null);
-    setMessage(null);
-  }
-
-  const dateLocale = locale === "th" ? th : enUS;
-
   if (!ready) {
     return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
   }
 
-  if (booked) {
-    const barber = barbers.find((b) => b.id === booked.barber_id);
-    const dateLabel = formatInTimeZone(
-      new Date(booked.start_time),
-      SHOP_TIMEZONE,
-      "EEEE d MMM yyyy",
-      { locale: dateLocale },
-    );
-    const cancellable = canCancelAt(booked.start_time);
-
+  if (!profile && !mockMode) {
     return (
       <section className="flex flex-col gap-4 px-4 py-8">
-        {prototypeMode ? (
-          <span className="self-start rounded bg-zinc-800 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-400">
-            {t("common.prototypeMode")}
-          </span>
-        ) : null}
-        <div className="rounded-2xl bg-zinc-900 p-5">
-          <h1 className="text-xl font-semibold">{t("booking.confirmed")}</h1>
-          <dl className="mt-4 space-y-3 text-sm">
-            <div>
-              <dt className="text-zinc-500">{t("booking.barber")}</dt>
-              <dd className="font-medium">
-                {barber ? barberLabel(barber.name, locale) : "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">{t("booking.date")}</dt>
-              <dd>{dateLabel}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">{t("booking.time")}</dt>
-              <dd className="text-lg font-semibold">
-                {formatSlotTime(booked.start_time)} – {formatSlotTime(booked.end_time)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">{t("booking.name")}</dt>
-              <dd>{booked.customer_name}</dd>
-            </div>
-            <div>
-              <dt className="text-zinc-500">{t("booking.phone")}</dt>
-              <dd>{booked.customer_phone}</dd>
-            </div>
-          </dl>
-          {message ? <p className="mt-4 text-sm text-red-400">{message}</p> : null}
-          <div className="mt-5 flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={submitting || !cancellable}
-              onClick={() => void cancelBooking()}
-              className="min-h-12 rounded-xl bg-red-500 font-semibold text-white disabled:opacity-40"
-            >
-              {submitting ? t("booking.cancelling") : t("booking.cancel")}
-            </button>
-            {!cancellable ? (
-              <div className="space-y-3">
-                <p className="text-xs text-amber-400">{t("booking.cancelTooLate")}</p>
-                <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
-              </div>
-            ) : (
-              <p className="text-xs text-zinc-500">{t("booking.cancelPolicy")}</p>
-            )}
-            {cancellable ? <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} /> : null}
-            <button
-              type="button"
-              onClick={bookAnother}
-              className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300"
-            >
-              {t("booking.bookAnother")}
-            </button>
-          </div>
-        </div>
+        <h1 className="text-2xl font-semibold">{t("booking.title")}</h1>
+        <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
+        <button
+          type="button"
+          onClick={login}
+          className="min-h-12 rounded-xl bg-[#06C755] font-semibold text-white"
+        >
+          {t("booking.loginWithLine")}
+        </button>
       </section>
     );
+  }
+
+  if (!profile) {
+    return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
   }
 
   const selectedSlot = slots.find((slot) => slot.startTime === selectedStart);
@@ -325,6 +225,35 @@ export function BookingApp() {
           </span>
         ) : null}
         <h1 className="text-2xl font-semibold">{t("booking.title")}</h1>
+        {profile.displayName ? (
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2">
+              {profile.pictureUrl ? (
+                <img
+                  src={profile.pictureUrl}
+                  alt=""
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-amber-400">
+                  {profile.displayName.charAt(0)}
+                </span>
+              )}
+              <p className="truncate text-sm text-zinc-300">
+                {t("booking.hello").replace("{name}", profile.displayName)}
+              </p>
+            </div>
+            <Link href="/bookings" className="shrink-0 text-sm text-amber-400 underline">
+              {t("booking.myBookings")}
+            </Link>
+          </div>
+        ) : (
+          <div className="mt-2 flex justify-end">
+            <Link href="/bookings" className="text-sm text-amber-400 underline">
+              {t("booking.myBookings")}
+            </Link>
+          </div>
+        )}
       </header>
 
       <section className="flex flex-col gap-2">
@@ -391,7 +320,7 @@ export function BookingApp() {
           {message ? <p className="text-sm text-red-400">{message}</p> : null}
           <button
             type="button"
-            disabled={submitting || !identity}
+            disabled={submitting || !profile}
             onClick={() => void submitBooking()}
             className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
           >
