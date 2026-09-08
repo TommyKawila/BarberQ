@@ -110,11 +110,16 @@ export default function GuidePage() {
           <li>คิวของคุณจะเชื่อมกับ LINE ID ของคุณ ไม่หายแม้เปลี่ยนเครื่อง</li>
         </ul>
         <p className="rounded-xl bg-zinc-900 p-3 text-zinc-400">
-          <strong className="text-zinc-200">ลิงก์ที่ส่งลูกค้าใน LINE:</strong> ใช้ LIFF URL จะล็อกอินได้ทันที
+          <strong className="text-zinc-200">LIFF Endpoint URL (LINE Console):</strong> ตั้งเป็น{" "}
+          <span className="text-zinc-300">https://barber-q-pi.vercel.app</span> (ไม่ใส่ /phinxstudio)
           <br />
+          <strong className="text-zinc-200">ลิงก์ที่ส่งลูกค้าใน LINE:</strong>{" "}
           <span className="text-amber-400">https://liff.line.me/2011489694-gV1vPUNC/phinxstudio</span>
           <br />
-          ลิงก์ Vercel ธรรมดา (<span className="text-zinc-300">/phinxstudio</span>) ใช้ได้หลังแก้ระบบ แต่ LIFF URL ลื่นกว่าในแอป LINE
+          ถ้า Endpoint ตั้งเป็น /phinxstudio อยู่แล้ว ใช้แค่{" "}
+          <span className="text-amber-400">https://liff.line.me/2011489694-gV1vPUNC</span> (ไม่ต่อ /phinxstudio ซ้ำ)
+          <br />
+          ลิงก์ Vercel ธรรมดา (<span className="text-zinc-300">/phinxstudio</span>) ใช้ได้เช่นกัน
         </p>
         <p className="text-zinc-500">
           หมายเหตุ: ใน prototype mode (local dev) ระบบจะข้ามขั้นตอน Line Login
