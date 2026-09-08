@@ -649,4 +649,11 @@ export const memoryStore: BookingStore = {
     const barber = barbers.find((b) => b.line_id === trimmed);
     return barber ? { ...barber, off_days: [...barber.off_days] } : null;
   },
+
+  async getBarberByLineIdInShop(lineId, shopId) {
+    const trimmed = lineId.trim();
+    if (!trimmed) return null;
+    const barber = barbers.find((b) => b.line_id === trimmed && b.shop_id === shopId);
+    return barber ? { ...barber, off_days: [...barber.off_days] } : null;
+  },
 };

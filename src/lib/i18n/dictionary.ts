@@ -44,6 +44,7 @@ export const dictionary = {
     "booking.myBookings": "คิวของฉัน",
     "booking.hello": "สวัสดี, {name}",
     "booking.noBookings": "ยังไม่มีคิวที่จองไว้",
+    "booking.manageShop": "จัดการร้าน",
 
     "owner.joinTitle": "ยืนยันเจ้าของร้าน",
     "owner.joinHint": "คุณกำลังจะเป็นเจ้าของร้าน {name}",
@@ -223,6 +224,7 @@ export const dictionary = {
     "booking.myBookings": "My Bookings",
     "booking.hello": "Hi, {name}",
     "booking.noBookings": "No bookings yet",
+    "booking.manageShop": "Manage shop",
 
     "owner.joinTitle": "Confirm shop ownership",
     "owner.joinHint": "You are joining as owner of {name}",

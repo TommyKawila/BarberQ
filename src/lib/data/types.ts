@@ -151,4 +151,5 @@ export interface BookingStore {
   getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;
   getBarberByLineId(lineId: string): Promise<Barber | null>;
+  getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;
 }

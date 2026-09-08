@@ -31,6 +31,7 @@ export function BookingApp() {
   const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [isShopStaff, setIsShopStaff] = useState(false);
   const [prototypeMode, setPrototypeMode] = useState(true);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [dateISO, setDateISO] = useState<string | null>(dates[0] ?? null);
@@ -59,6 +60,25 @@ export function BookingApp() {
       setCustomerName(profile.displayName);
     }
   }, [profile, customerName]);
+
+  useEffect(() => {
+    if (!profile?.userId) {
+      setIsShopStaff(false);
+      return;
+    }
+    let cancelled = false;
+    void fetch(shopApi(`/staff-me?lineId=${encodeURIComponent(profile.userId)}`))
+      .then(async (res) => {
+        const json = (await res.json()) as { staff?: { barberId: string } | null };
+        if (!cancelled) setIsShopStaff(Boolean(json.staff));
+      })
+      .catch(() => {
+        if (!cancelled) setIsShopStaff(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile?.userId, shopApi]);
 
   const selectedBarber = barbers.find((item) => item.id === barberId) ?? null;
   const activeDate = useMemo(() => {
@@ -245,12 +265,24 @@ export function BookingApp() {
                 {t("booking.hello").replace("{name}", profile.displayName)}
               </p>
             </div>
-            <Link href={shopPath("/bookings")} className="shrink-0 text-sm text-amber-400 underline">
-              {t("booking.myBookings")}
-            </Link>
+            <div className="flex shrink-0 flex-col items-end gap-1">
+              {isShopStaff ? (
+                <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
+                  {t("booking.manageShop")}
+                </Link>
+              ) : null}
+              <Link href={shopPath("/bookings")} className="text-sm text-amber-400 underline">
+                {t("booking.myBookings")}
+              </Link>
+            </div>
           </div>
         ) : (
-          <div className="mt-2 flex justify-end">
+          <div className="mt-2 flex flex-col items-end gap-1">
+            {isShopStaff ? (
+              <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
+                {t("booking.manageShop")}
+              </Link>
+            ) : null}
             <Link href={shopPath("/bookings")} className="text-sm text-amber-400 underline">
               {t("booking.myBookings")}
             </Link>

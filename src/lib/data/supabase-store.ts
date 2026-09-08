@@ -631,4 +631,18 @@ export const supabaseStore: BookingStore = {
     }
     return (data as Barber | null) ?? null;
   },
+
+  async getBarberByLineIdInShop(lineId, shopId) {
+    const trimmed = lineId.trim();
+    if (!trimmed) return null;
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("barbers")
+      .select("*")
+      .eq("line_id", trimmed)
+      .eq("shop_id", shopId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as Barber | null) ?? null;
+  },
 };

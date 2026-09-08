@@ -108,6 +108,7 @@ export default function GuidePage() {
           <li>ขอลิงก์ LIFF ของร้านจาก Super Admin (ปุ่มคัดลอกบนการ์ดร้าน)</li>
           <li>ใน LINE Official Account ของร้าน ตั้งริชเมนูหรือปุ่มข้อความ คำว่า กดจองคิว</li>
           <li>วาง LIFF URL ที่มี slug ท้าย เช่น /phinxstudio</li>
+          <li>เจ้าของร้านและช่างกดปุ่มเดียวกัน แล้วกด «จัดการร้าน» ที่หน้าจอง</li>
         </ol>
         <p className="rounded-xl bg-zinc-900 p-3 text-zinc-400">
           Endpoint ใน LINE Developers ของ BarberQ ต้องเป็นโดเมนราก{" "}
@@ -193,6 +194,8 @@ export default function GuidePage() {
         </ul>
         <p className="text-zinc-500">
           การเป็น Owner: รับลิงก์เชิญจาก Super Admin → กดลิงก์ → เข้าสู่ระบบด้วย LINE → เป็น Owner
+          <br />
+          ครั้งถัดไปกดปุ่ม «กดจองคิว» อันเดียวกับลูกค้า แล้วกด «จัดการร้าน» ที่หน้าจอง
         </p>
       </Section>
 
