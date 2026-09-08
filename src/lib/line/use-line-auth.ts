@@ -22,6 +22,10 @@ function loadMockProfile(): LineProfile {
   }
 }
 
+function getLoginRedirectUri(): string {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
 export function useLineAuth() {
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
   const mockMode = !liffId;
@@ -40,21 +44,22 @@ export function useLineAuth() {
 
     let cancelled = false;
     void liff
-      .init({ liffId })
-      .then(() => {
+      .init({ liffId, withLoginOnExternalBrowser: true })
+      .then(async () => {
         if (cancelled) return;
-        setReady(true);
         setIsInClient(liff.isInClient());
-        if (liff.isLoggedIn()) return liff.getProfile();
-        return null;
-      })
-      .then((p) => {
-        if (cancelled || !p) return;
-        setProfile({
-          userId: p.userId,
-          displayName: p.displayName,
-          pictureUrl: p.pictureUrl,
-        });
+        if (liff.isLoggedIn()) {
+          const p = await liff.getProfile();
+          if (cancelled) return;
+          setProfile({
+            userId: p.userId,
+            displayName: p.displayName,
+            pictureUrl: p.pictureUrl,
+          });
+          setReady(true);
+          return;
+        }
+        liff.login({ redirectUri: getLoginRedirectUri() });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -68,9 +73,9 @@ export function useLineAuth() {
   }, [liffId, mockMode]);
 
   const login = useCallback(() => {
-    if (!ready || mockMode) return;
-    liff.login();
-  }, [ready, mockMode]);
+    if (mockMode) return;
+    liff.login({ redirectUri: getLoginRedirectUri() });
+  }, [mockMode]);
 
   const logout = useCallback(() => {
     if (!ready || mockMode) return;

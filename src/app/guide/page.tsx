@@ -109,6 +109,13 @@ export default function GuidePage() {
           <li>จองได้หลายคิว และดูคิวทั้งหมดได้ที่ &quot;คิวของฉัน&quot;</li>
           <li>คิวของคุณจะเชื่อมกับ LINE ID ของคุณ ไม่หายแม้เปลี่ยนเครื่อง</li>
         </ul>
+        <p className="rounded-xl bg-zinc-900 p-3 text-zinc-400">
+          <strong className="text-zinc-200">ลิงก์ที่ส่งลูกค้าใน LINE:</strong> ใช้ LIFF URL จะล็อกอินได้ทันที
+          <br />
+          <span className="text-amber-400">https://liff.line.me/2011489694-gV1vPUNC/phinxstudio</span>
+          <br />
+          ลิงก์ Vercel ธรรมดา (<span className="text-zinc-300">/phinxstudio</span>) ใช้ได้หลังแก้ระบบ แต่ LIFF URL ลื่นกว่าในแอป LINE
+        </p>
         <p className="text-zinc-500">
           หมายเหตุ: ใน prototype mode (local dev) ระบบจะข้ามขั้นตอน Line Login
         </p>
