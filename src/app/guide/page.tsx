@@ -119,7 +119,8 @@ export default function GuidePage() {
           ถ้า Endpoint ตั้งเป็น /phinxstudio อยู่แล้ว ใช้แค่{" "}
           <span className="text-amber-400">https://liff.line.me/2011489694-gV1vPUNC</span> (ไม่ต่อ /phinxstudio ซ้ำ)
           <br />
-          ลิงก์ Vercel ธรรมดา (<span className="text-zinc-300">/phinxstudio</span>) ใช้ได้เช่นกัน
+          ลิงก์ Vercel ธรรมดา (<span className="text-zinc-300">/phinxstudio</span> หรือ{" "}
+          <span className="text-zinc-300">/testshop</span>) login แล้วต้องกลับหน้าร้านเดิม
         </p>
         <p className="text-zinc-500">
           หมายเหตุ: ใน prototype mode (local dev) ระบบจะข้ามขั้นตอน Line Login

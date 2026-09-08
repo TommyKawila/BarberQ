@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import liff from "@line/liff";
+import { saveLiffReturnPath } from "@/lib/line/liff-return";
 
 const MOCK_OWNER_LINE_ID = "mock-owner-line-id";
 
@@ -87,7 +88,8 @@ export function useAdminLineAuth() {
 
   const login = useCallback(() => {
     if (!ready || mockMode) return;
-    liff.login({ redirectUri: `${window.location.origin}${window.location.pathname}` });
+    saveLiffReturnPath(window.location.pathname);
+    liff.login({ redirectUri: window.location.origin });
   }, [mockMode, ready]);
 
   const authHeaders = useMemo(() => authHeadersFor(profile?.lineId ?? null), [profile?.lineId]);

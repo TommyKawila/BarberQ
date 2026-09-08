@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
+import { saveLiffReturnPath } from "@/lib/line/liff-return";
 
 const REF_KEY = "barberq_customer_ref";
 
@@ -22,8 +23,9 @@ function loadMockProfile(): LineProfile {
   }
 }
 
-function getLoginRedirectUri(): string {
-  return `${window.location.origin}${window.location.pathname}`;
+function startLiffLogin() {
+  saveLiffReturnPath(window.location.pathname);
+  liff.login({ redirectUri: window.location.origin });
 }
 
 export function useLineAuth() {
@@ -44,7 +46,7 @@ export function useLineAuth() {
 
     let cancelled = false;
     void liff
-      .init({ liffId, withLoginOnExternalBrowser: true })
+      .init({ liffId })
       .then(async () => {
         if (cancelled) return;
         setIsInClient(liff.isInClient());
@@ -59,7 +61,7 @@ export function useLineAuth() {
           setReady(true);
           return;
         }
-        liff.login({ redirectUri: getLoginRedirectUri() });
+        startLiffLogin();
       })
       .catch((err: unknown) => {
         if (cancelled) return;
@@ -74,7 +76,7 @@ export function useLineAuth() {
 
   const login = useCallback(() => {
     if (mockMode) return;
-    liff.login({ redirectUri: getLoginRedirectUri() });
+    startLiffLogin();
   }, [mockMode]);
 
   const logout = useCallback(() => {

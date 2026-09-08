@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isSafeReturnPath, LIFF_RETURN_COOKIE } from "@/lib/line/liff-return";
 
 const DEFAULT_SHOP = "phinxstudio";
 
@@ -13,9 +14,39 @@ function redirectWithoutLiffParams(request: NextRequest, pathname: string) {
   return NextResponse.redirect(url);
 }
 
+function liffReturnPathFromCookie(request: NextRequest): string | null {
+  const raw = request.cookies.get(LIFF_RETURN_COOKIE)?.value;
+  if (!raw) return null;
+  let path = raw;
+  try {
+    path = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  if (!isSafeReturnPath(path) || path === "/") return null;
+  return path;
+}
+
 export function middleware(request: NextRequest) {
   const url = request.nextUrl;
   const path = url.pathname;
+
+  if (
+    path === "/" &&
+    url.searchParams.get("code") &&
+    url.searchParams.get("liffClientId")
+  ) {
+    const returnPath = liffReturnPathFromCookie(request);
+    if (returnPath) {
+      const dest = new URL(returnPath, request.url);
+      url.searchParams.forEach((value, key) => {
+        dest.searchParams.set(key, value);
+      });
+      const res = NextResponse.redirect(dest);
+      res.cookies.set(LIFF_RETURN_COOKIE, "", { path: "/", maxAge: 0 });
+      return res;
+    }
+  }
 
   const liffState = url.searchParams.get("liff.state");
   if (liffState) {
