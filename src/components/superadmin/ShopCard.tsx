@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import type { Shop } from "@/types/booking";
 
@@ -17,8 +18,34 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
+function CopyRow({
+  label,
+  value,
+  copied,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  copied: boolean;
+  onCopy: () => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-zinc-300">{label}</p>
+      <p className="break-all text-xs text-zinc-500">{value}</p>
+      <button
+        type="button"
+        onClick={onCopy}
+        className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold"
+      >
+        {copied ? "Copied!" : "คัดลอก"}
+      </button>
+    </div>
+  );
+}
+
 export function ShopCard({ shop }: ShopCardProps) {
-  const [copied, setCopied] = useState(false);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const expires = shop.subscribed_until
     ? new Date(shop.subscribed_until).toLocaleDateString("th-TH")
     : "—";
@@ -26,11 +53,12 @@ export function ShopCard({ shop }: ShopCardProps) {
     ? new Date(shop.invite_expires_at).toLocaleDateString("th-TH")
     : null;
   const inviteUrl = shop.invite_token ? buildOwnerInviteUrl(shop.invite_token) : null;
+  const webUrl = shop.slug ? buildShopWebUrl(shop.slug) : null;
+  const liffUrl = shop.slug ? buildShopLiffUrl(shop.slug) : null;
 
-  async function handleCopy() {
-    if (!inviteUrl) return;
-    const ok = await copyText(inviteUrl);
-    if (ok) setCopied(true);
+  async function handleCopy(key: string, value: string) {
+    const ok = await copyText(value);
+    if (ok) setCopiedKey(key);
   }
 
   const statusClass =
@@ -58,16 +86,34 @@ export function ShopCard({ shop }: ShopCardProps) {
           {shop.status}
         </span>
       </div>
+      {shop.slug ? (
+        <div className="mt-3 space-y-3 border-t border-zinc-800 pt-3">
+          {liffUrl ? (
+            <CopyRow
+              label="LIFF กดจองคิว (ติดบน OA ร้าน)"
+              value={liffUrl}
+              copied={copiedKey === "liff"}
+              onCopy={() => void handleCopy("liff", liffUrl)}
+            />
+          ) : null}
+          {webUrl ? (
+            <CopyRow
+              label="ลิงก์เว็บ"
+              value={webUrl}
+              copied={copiedKey === "web"}
+              onCopy={() => void handleCopy("web", webUrl)}
+            />
+          ) : null}
+        </div>
+      ) : null}
       {inviteUrl ? (
-        <div className="mt-3 space-y-2">
-          <p className="break-all text-xs text-zinc-400">{inviteUrl}</p>
-          <button
-            type="button"
-            onClick={() => void handleCopy()}
-            className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs font-semibold"
-          >
-            {copied ? "Copied!" : "Copy Invite Link"}
-          </button>
+        <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
+          <CopyRow
+            label="Invite Owner"
+            value={inviteUrl}
+            copied={copiedKey === "invite"}
+            onCopy={() => void handleCopy("invite", inviteUrl)}
+          />
         </div>
       ) : null}
     </div>

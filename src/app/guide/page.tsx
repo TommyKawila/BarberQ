@@ -59,6 +59,7 @@ export default function GuidePage() {
       <nav className="flex flex-wrap gap-2 text-xs">
         {[
           ["#customer", "ลูกค้า"],
+          ["#shop-oa", "ปุ่ม OA ร้าน"],
           ["#line-login", "Line Login"],
           ["#my-bookings", "คิวของฉัน"],
           ["#admin", "Admin"],
@@ -98,6 +99,19 @@ export default function GuidePage() {
           <strong className="text-zinc-200">มาสาย:</strong> ได้ไม่เกิน 10 นาที — ร้านจะโทรก่อน ค่อยปล่อยคิว
           <br />
           สลับภาษาไทย/อังกฤษได้ที่ header
+        </p>
+      </Section>
+
+      <Section id="shop-oa" title="ติดปุ่มกดจองคิวบน Line OA ของร้าน">
+        <p>ลูกค้าเข้าจองจาก OA ร้านที่มีอยู่แล้ว ไม่ต้องสร้าง LIFF ของร้านเอง</p>
+        <ol className="list-decimal space-y-1 pl-5">
+          <li>ขอลิงก์ LIFF ของร้านจาก Super Admin (ปุ่มคัดลอกบนการ์ดร้าน)</li>
+          <li>ใน LINE Official Account ของร้าน ตั้งริชเมนูหรือปุ่มข้อความ คำว่า กดจองคิว</li>
+          <li>วาง LIFF URL ที่มี slug ท้าย เช่น /phinxstudio</li>
+        </ol>
+        <p className="rounded-xl bg-zinc-900 p-3 text-zinc-400">
+          Endpoint ใน LINE Developers ของ BarberQ ต้องเป็นโดเมนราก{" "}
+          <span className="text-zinc-300">https://barber-q-pi.vercel.app</span> ไม่ใส่ path ร้าน
         </p>
       </Section>
 
