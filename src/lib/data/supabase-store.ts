@@ -507,6 +507,18 @@ export const supabaseStore: BookingStore = {
     return (data ?? []) as Shop[];
   },
 
+  async listShopOwners() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("barbers")
+      .select("shop_id, name")
+      .eq("role", "owner");
+    if (error) throw new Error(error.message);
+    return (data ?? [])
+      .filter((row) => row.shop_id)
+      .map((row) => ({ shopId: row.shop_id as string, name: row.name as string }));
+  },
+
   async createShop(input: CreateShopInput) {
     const supabase = createServiceClient();
     const ownerLineId = input.ownerLineId?.trim() ?? "";

@@ -45,6 +45,9 @@ export function ShopCard({ shop }: ShopCardProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="font-semibold">{shop.name}</h3>
+          <p className="text-xs text-zinc-400">
+            Owner: {shop.ownerName ?? "รอ claim"}
+          </p>
           <p className="text-xs text-zinc-400">Status: {shop.status}</p>
           <p className="text-xs text-zinc-400">Expires: {expires}</p>
           {shop.status === "pending" && inviteExpires ? (

@@ -513,6 +513,12 @@ export const memoryStore: BookingStore = {
     );
   },
 
+  async listShopOwners() {
+    return barbers
+      .filter((b) => b.role === "owner" && b.shop_id)
+      .map((b) => ({ shopId: b.shop_id!, name: b.name }));
+  },
+
   async createShop(input: CreateShopInput) {
     const name = input.name.trim();
     if (!name) throw new StoreConflict("INVALID_RANGE");

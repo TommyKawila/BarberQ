@@ -109,6 +109,11 @@ export interface ShopInvitePreview {
   claimed: boolean;
 }
 
+export interface ShopOwnerSummary {
+  shopId: string;
+  name: string;
+}
+
 export interface BookingStore {
   getShopBySlug(slug: string): Promise<Shop | null>;
   listBarbersByShop(shopId: string): Promise<Barber[]>;
@@ -141,6 +146,7 @@ export interface BookingStore {
   createRecurringBreak(input: CreateRecurringBreakInput): Promise<RecurringBreak>;
   deleteRecurringBreak(breakId: string): Promise<void>;
   listShops(): Promise<Shop[]>;
+  listShopOwners(): Promise<ShopOwnerSummary[]>;
   createShop(input: CreateShopInput): Promise<Shop>;
   getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;

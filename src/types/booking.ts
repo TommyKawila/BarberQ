@@ -23,6 +23,7 @@ export interface Shop {
   invite_expires_at?: string | null;
   created_at: string;
   updated_at: string;
+  ownerName?: string | null;
 }
 
 export interface Appointment {

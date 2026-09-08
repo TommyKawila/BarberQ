@@ -6,8 +6,14 @@ import { assertSuperAdminToken } from "@/lib/superadmin/auth";
 export async function GET(req: Request) {
   try {
     assertSuperAdminToken(req.headers.get("x-superadmin-token"));
-    const shops = await getStore().listShops();
-    return NextResponse.json({ shops });
+    const store = getStore();
+    const [shops, owners] = await Promise.all([store.listShops(), store.listShopOwners()]);
+    const ownerByShop = new Map(owners.map((o) => [o.shopId, o.name]));
+    const shopsWithOwner = shops.map((shop) => ({
+      ...shop,
+      ownerName: ownerByShop.get(shop.id) ?? null,
+    }));
+    return NextResponse.json({ shops: shopsWithOwner });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unauthorized" },
