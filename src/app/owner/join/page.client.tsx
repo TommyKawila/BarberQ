@@ -1,8 +1,13 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOwnerClaim } from "@/lib/owner/use-owner-claim";
+import {
+  readStoredOwnerInvite,
+  resolveInviteCode,
+  restoreOwnerInviteUrl,
+} from "@/lib/owner/invite-session";
 import { useI18n } from "@/lib/i18n/locale-provider";
 
 interface InvitePreview {
@@ -15,23 +20,29 @@ export default function OwnerJoinPage() {
   const { t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const code = searchParams.get("code");
+  const search = searchParams.toString() ? `?${searchParams.toString()}` : "";
+
+  const inviteCode = useMemo(
+    () => resolveInviteCode(search, readStoredOwnerInvite()),
+    [search],
+  );
+
   const { ready, profile, login, claim, claiming, claimed, error, mockMode } = useOwnerClaim({
-    inviteCode: code,
+    inviteCode,
   });
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(true);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!code) {
+    if (!inviteCode) {
       setPreviewError("INVITE_NOT_FOUND");
       setLoadingPreview(false);
       return;
     }
 
     let cancelled = false;
-    void fetch(`/api/owner/invite?code=${encodeURIComponent(code)}`)
+    void fetch(`/api/owner/invite?code=${encodeURIComponent(inviteCode)}`)
       .then(async (res) => {
         if (cancelled) return;
         if (!res.ok) {
@@ -51,7 +62,12 @@ export default function OwnerJoinPage() {
     return () => {
       cancelled = true;
     };
-  }, [code]);
+  }, [inviteCode]);
+
+  useEffect(() => {
+    if (!inviteCode || !profile || !ready) return;
+    restoreOwnerInviteUrl(inviteCode);
+  }, [inviteCode, profile, ready]);
 
   useEffect(() => {
     if (!ready || !profile || !preview || preview.expired || preview.claimed || claimed) return;
@@ -68,7 +84,7 @@ export default function OwnerJoinPage() {
     );
   }
 
-  if (!code || previewError || !preview) {
+  if (!inviteCode || previewError || !preview) {
     return (
       <section className="flex min-h-full flex-col items-center justify-center gap-3 px-4 py-16">
         <p className="text-sm text-red-400">{t("owner.inviteInvalid")}</p>

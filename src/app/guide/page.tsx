@@ -271,6 +271,8 @@ export default function GuidePage() {
       <Section id="superadmin" title="9) Super Admin Dashboard">
         <p>
           เข้า <Link href="/superadmin" className="text-amber-400 underline">/superadmin</Link> ด้วย SUPERADMIN_TOKEN
+          {" · "}
+          <Link href="/pilot" className="text-amber-400 underline">/pilot</Link> Production Pilot checklist
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>ดูรายชื่อร้านทั้งหมด (PHINX STUDIO, TEST SHOP, etc.)</li>

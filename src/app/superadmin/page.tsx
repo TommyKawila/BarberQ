@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useState } from "react";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
@@ -58,8 +59,18 @@ export default function SuperAdminPage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
       <header>
-        <h1 className="text-2xl font-semibold">Shops Management</h1>
-        <p className="text-sm text-zinc-400">Active shops: {shops.length}</p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-semibold">Shops Management</h1>
+            <p className="text-sm text-zinc-400">Active shops: {shops.length}</p>
+          </div>
+          <Link
+            href="/pilot"
+            className="shrink-0 rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-medium text-amber-400"
+          >
+            Pilot Test
+          </Link>
+        </div>
       </header>
 
       <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />

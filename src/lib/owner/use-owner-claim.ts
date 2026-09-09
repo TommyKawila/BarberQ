@@ -4,6 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
+import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  clearOwnerInviteCode,
+  OWNER_JOIN_PATH,
+  prepareOwnerJoinForLiff,
+  saveOwnerInviteCode,
+} from "@/lib/owner/invite-session";
 
 export interface OwnerClaimProfile {
   userId: string;
@@ -31,6 +38,8 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
       setReady(true);
       return;
     }
+
+    prepareOwnerJoinForLiff();
 
     let cancelled = false;
     void liff
@@ -62,8 +71,9 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
 
   const login = useCallback(() => {
     if (!ready || mockMode || !inviteCode) return;
-    const redirectUri = `${window.location.origin}/owner/join?code=${encodeURIComponent(inviteCode)}`;
-    liff.login({ redirectUri });
+    saveOwnerInviteCode(inviteCode);
+    saveLiffReturnPath(OWNER_JOIN_PATH);
+    liff.login({ redirectUri: window.location.origin });
   }, [inviteCode, mockMode, ready]);
 
   const claim = useCallback(async () => {
@@ -91,6 +101,7 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
         return null;
       }
       setClaimed(true);
+      clearOwnerInviteCode();
       return json.shop?.slug ?? null;
     } catch {
       setError("Claim failed");
