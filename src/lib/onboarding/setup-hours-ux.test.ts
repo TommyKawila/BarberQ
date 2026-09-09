@@ -11,15 +11,30 @@ describe("setup hours UX copy", () => {
     );
   });
 
-  it("copy hours action copy", () => {
+  it("default hours section copy", () => {
+    assert.equal(dictionary.th["onboarding.defaultHoursTitle"], "เวลาเปิด-ปิดปกติ");
     assert.equal(
-      dictionary.th["onboarding.copyHoursToAll"],
-      "ใช้เวลาเดียวกันทุกวันที่เปิด",
+      dictionary.th["onboarding.defaultHoursDescription"],
+      "ตั้งเวลาหลักของร้าน แล้วเลือกวันที่ใช้เวลานี้",
     );
+    assert.equal(dictionary.th["onboarding.presetMonFri"], "จ.-ศ.");
+    assert.equal(dictionary.th["onboarding.presetMonSat"], "จ.-ส.");
+    assert.equal(dictionary.th["onboarding.presetAllDays"], "ทุกวัน");
     assert.equal(
-      dictionary.th["onboarding.copyHoursApplied"],
-      "ใช้เวลาเดียวกันกับวันที่เปิดแล้ว",
+      dictionary.th["onboarding.applyDefaultHours"],
+      "ใช้เวลานี้กับวันที่เลือก",
     );
+    assert.equal(dictionary.th["onboarding.hoursUpdated"], "อัปเดตเวลาแล้ว");
+  });
+
+  it("daily hours section copy", () => {
+    assert.equal(dictionary.th["onboarding.dailyHoursTitle"], "เวลาของแต่ละวัน");
+    assert.equal(
+      dictionary.th["onboarding.dailyHoursDescription"],
+      "แก้ไขเฉพาะวันที่เวลาไม่เหมือนปกติ",
+    );
+    assert.equal(dictionary.th["onboarding.shopOpen"], "ร้านเปิด");
+    assert.equal(dictionary.th["onboarding.editDay"], "แก้ไข");
   });
 
   it("day row labels", () => {

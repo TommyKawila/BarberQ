@@ -15,6 +15,15 @@ import {
   rollbackOptimisticToggle,
   shouldShowOwnerSlotDuration,
 } from "@/lib/onboarding/optimistic-bookable";
+import {
+  applyDefaultHoursToSelectedDays,
+  DEFAULT_TEMPLATE_CLOSE,
+  DEFAULT_TEMPLATE_OPEN,
+  formatHoursRange,
+  HOURS_PRESET_ALL_DAYS,
+  HOURS_PRESET_MON_FRI,
+  HOURS_PRESET_MON_SAT,
+} from "@/lib/onboarding/setup-hours";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { normalizeShopName } from "@/lib/shop/shop-name";
 import {
@@ -68,6 +77,10 @@ function SetupContent() {
 
   const [hours, setHours] = useState<ShopDayHours[]>(() => DEFAULT_SHOP_HOURS.map((d) => ({ ...d })));
   const [savingHours, setSavingHours] = useState(false);
+  const [defaultOpen, setDefaultOpen] = useState(DEFAULT_TEMPLATE_OPEN);
+  const [defaultClose, setDefaultClose] = useState(DEFAULT_TEMPLATE_CLOSE);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [editingDay, setEditingDay] = useState<number | null>(null);
 
   const ownerBarber = useMemo(
     () => barbers.find((b) => b.role === "owner") ?? null,
@@ -272,12 +285,18 @@ function SetupContent() {
     setHours((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
 
-  function applyHoursToAllOpen() {
-    const template = hours.find((d) => !d.closed) ?? hours[1];
-    setHours((prev) =>
-      prev.map((row) => (row.closed ? row : { ...row, open: template.open, close: template.close })),
+  function toggleSelectedDay(day: number) {
+    setSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
     );
-    setMessage(t("onboarding.copyHoursApplied"));
+  }
+
+  function applyDefaultHours() {
+    if (selectedDays.length === 0) return;
+    setHours((prev) =>
+      applyDefaultHoursToSelectedDays(prev, selectedDays, defaultOpen, defaultClose),
+    );
+    setMessage(t("onboarding.hoursUpdated"));
   }
 
   async function saveHours() {
@@ -549,77 +568,180 @@ function SetupContent() {
         ) : null}
 
         {step === "hours" ? (
-          <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-            <button
-              type="button"
-              onClick={applyHoursToAllOpen}
-              className="min-h-11 w-full rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200"
-            >
-              {t("onboarding.copyHoursToAll")}
-            </button>
-            <div className="mt-4 flex flex-col gap-3">
-              {SETUP_HOURS_DAYS.map((day) => {
-                const row = hours[day.value];
-                return (
-                  <div key={day.value} className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-medium">{t(day.key)}</span>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-xs text-zinc-500">{t("onboarding.dayClosed")}</span>
-                        <button
-                          type="button"
-                          role="switch"
-                          aria-checked={row.closed}
-                          onClick={() => updateHour(day.value, { closed: !row.closed })}
-                          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                            row.closed ? "bg-emerald-500" : "bg-zinc-700"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
-                              row.closed ? "translate-x-5" : "translate-x-0"
-                            }`}
-                          />
-                        </button>
-                      </div>
+          <div className="flex flex-col gap-5">
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <h2 className="font-semibold">{t("onboarding.defaultHoursTitle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.defaultHoursDescription")}</p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
+                  {t("onboarding.openTime")}
+                  <input
+                    type="time"
+                    value={defaultOpen}
+                    onChange={(e) => setDefaultOpen(e.target.value)}
+                    className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
+                  />
+                </label>
+                <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
+                  {t("onboarding.closeTime")}
+                  <input
+                    type="time"
+                    value={defaultClose}
+                    onChange={(e) => setDefaultClose(e.target.value)}
+                    className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
+                  />
+                </label>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDays([...HOURS_PRESET_MON_FRI])}
+                  className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300"
+                >
+                  {t("onboarding.presetMonFri")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDays([...HOURS_PRESET_MON_SAT])}
+                  className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300"
+                >
+                  {t("onboarding.presetMonSat")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDays([...HOURS_PRESET_ALL_DAYS])}
+                  className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300"
+                >
+                  {t("onboarding.presetAllDays")}
+                </button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {SETUP_HOURS_DAYS.map((day) => {
+                  const selected = selectedDays.includes(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => toggleSelectedDay(day.value)}
+                      className={`rounded-lg border px-3 py-1.5 text-xs ${
+                        selected
+                          ? "border-amber-400 bg-amber-400/10 text-amber-300"
+                          : "border-zinc-700 text-zinc-400"
+                      }`}
+                    >
+                      {t(day.key)}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                disabled={selectedDays.length === 0}
+                onClick={applyDefaultHours}
+                className="mt-4 min-h-11 w-full rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200 disabled:opacity-50"
+              >
+                {t("onboarding.applyDefaultHours")}
+              </button>
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <h2 className="font-semibold">{t("onboarding.dailyHoursTitle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.dailyHoursDescription")}</p>
+              <div className="mt-4 flex flex-col gap-2">
+                {SETUP_HOURS_DAYS.map((day) => {
+                  const row = hours[day.value];
+                  const expanded = editingDay === day.value;
+                  return (
+                    <div key={day.value} className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                      {expanded ? (
+                        <>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-sm font-medium">{t(day.key)}</span>
+                            <button
+                              type="button"
+                              onClick={() => setEditingDay(null)}
+                              className="text-xs text-zinc-500"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          <div className="mt-3 flex items-center justify-between gap-3">
+                            <span className="text-xs text-zinc-500">{t("onboarding.dayClosed")}</span>
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={row.closed}
+                              onClick={() => updateHour(day.value, { closed: !row.closed })}
+                              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                                row.closed ? "bg-emerald-500" : "bg-zinc-700"
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
+                                  row.closed ? "translate-x-5" : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          </div>
+                          {row.closed ? (
+                            <p className="mt-3 text-xs text-zinc-500">{t("onboarding.dayClosedHint")}</p>
+                          ) : (
+                            <div className="mt-3 grid grid-cols-2 gap-2">
+                              <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
+                                {t("onboarding.openTime")}
+                                <input
+                                  type="time"
+                                  value={row.open}
+                                  onChange={(e) => updateHour(day.value, { open: e.target.value })}
+                                  className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
+                                />
+                              </label>
+                              <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
+                                {t("onboarding.closeTime")}
+                                <input
+                                  type="time"
+                                  value={row.close}
+                                  onChange={(e) => updateHour(day.value, { close: e.target.value })}
+                                  className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{t(day.key)}</p>
+                            <p className="text-xs text-zinc-500">
+                              {row.closed
+                                ? t("onboarding.dayClosedHint")
+                                : `${formatHoursRange(row.open, row.close)} · ${t("onboarding.shopOpen")}`}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setEditingDay(day.value)}
+                            className="shrink-0 rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300"
+                          >
+                            {t("onboarding.editDay")}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {row.closed ? (
-                      <p className="mt-3 text-xs text-zinc-500">{t("onboarding.dayClosedHint")}</p>
-                    ) : (
-                      <div className="mt-3 grid grid-cols-2 gap-2">
-                        <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
-                          {t("onboarding.openTime")}
-                          <input
-                            type="time"
-                            value={row.open}
-                            onChange={(e) => updateHour(day.value, { open: e.target.value })}
-                            className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
-                          />
-                        </label>
-                        <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
-                          {t("onboarding.closeTime")}
-                          <input
-                            type="time"
-                            value={row.close}
-                            onChange={(e) => updateHour(day.value, { close: e.target.value })}
-                            className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
-                          />
-                        </label>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            </section>
+
             <button
               type="button"
               disabled={savingHours}
               onClick={() => void saveHours()}
-              className="mt-4 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+              className="mt-2 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
             >
               {t("onboarding.saveAndContinue")}
             </button>
-          </section>
+          </div>
         ) : null}
 
         {step === "link" ? (
