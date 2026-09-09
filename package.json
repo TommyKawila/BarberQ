@@ -11,7 +11,7 @@
     "test:security": "tsx --test src/lib/auth/auth-security.test.ts src/lib/env/env-hardening.test.ts src/lib/owner/invite-session.test.ts src/lib/owner/regenerate-invite.test.ts src/lib/owner/owner-claim-state.test.ts src/lib/superadmin/unlink-line.test.ts",
     "test:shop": "tsx --test src/lib/services/slot-hours.test.ts src/lib/auth/shop-setup.test.ts",
     "test:booking": "tsx --test src/lib/booking/customer-flow.test.ts",
-    "test:onboarding": "tsx --test src/lib/onboarding/activation.test.ts src/lib/onboarding/setup-team-ux.test.ts src/lib/onboarding/setup-hours-ux.test.ts src/lib/onboarding/setup-hours.test.ts"
+    "test:onboarding": "tsx --test src/lib/onboarding/activation.test.ts src/lib/onboarding/setup-team-ux.test.ts src/lib/onboarding/setup-hours-ux.test.ts src/lib/onboarding/setup-hours.test.ts src/lib/onboarding/setup-link-ux.test.ts"
   },
   "dependencies": {
     "@line/liff": "^2.31.0",

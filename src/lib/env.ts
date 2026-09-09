@@ -70,6 +70,10 @@ export function getOptionalLineOaAddUrl(): string | undefined {
   return readEnv("NEXT_PUBLIC_LINE_OA_ADD_URL");
 }
 
+export function getOptionalBarberqSupportLineUrl(): string | undefined {
+  return readEnv("NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL");
+}
+
 export function isAdminKeyRequired(): boolean {
   return !!(
     getOptionalEnv("NEXT_PUBLIC_SUPABASE_URL") &&

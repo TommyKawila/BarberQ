@@ -24,6 +24,7 @@ import {
   HOURS_PRESET_MON_FRI,
   HOURS_PRESET_MON_SAT,
 } from "@/lib/onboarding/setup-hours";
+import { getOptionalBarberqSupportLineUrl } from "@/lib/env";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { normalizeShopName } from "@/lib/shop/shop-name";
 import {
@@ -36,6 +37,18 @@ import { DEFAULT_SHOP_HOURS, normalizeShopHours, type ShopDayHours, type ShopHou
 import { barberLabel, type Barber } from "@/types/booking";
 
 type SetupStep = "profile" | "team" | "hours" | "link" | "test" | "ready";
+
+const OA_GUIDE_STEPS: MessageKey[] = [
+  "onboarding.oaStep1",
+  "onboarding.oaStep2",
+  "onboarding.oaStep3",
+  "onboarding.oaStep4",
+  "onboarding.oaStep5",
+  "onboarding.oaStep6",
+  "onboarding.oaStep7",
+  "onboarding.oaStep8",
+  "onboarding.oaStep9",
+];
 
 const SETUP_HOURS_DAYS: { value: number; key: MessageKey }[] = [
   { value: 1, key: "common.monday" },
@@ -350,6 +363,7 @@ function SetupContent() {
   }
 
   const act = activation;
+  const supportLineUrl = getOptionalBarberqSupportLineUrl();
 
   return (
     <AdminShell role={profile.role}>
@@ -745,36 +759,54 @@ function SetupContent() {
         ) : null}
 
         {step === "link" ? (
-          <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="font-semibold">{t("onboarding.bookingLinkTitle")}</h2>
-            <p className="mt-1 text-sm text-zinc-400">{t("onboarding.bookingLinkHint")}</p>
-            <p className="mt-3 break-all rounded-lg bg-zinc-950 p-3 text-xs text-zinc-300">{bookingUrl}</p>
-            <button
-              type="button"
-              onClick={() => void copyLink()}
-              className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950"
-            >
-              {copied ? t("onboarding.copied") : t("onboarding.copyLink")}
-            </button>
-            <div className="mt-4 rounded-lg border border-zinc-800 p-3 text-sm text-zinc-400">
-              <p className="font-medium text-zinc-200">{t("onboarding.oaGuideTitle")}</p>
-              <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs">
-                <li>{t("onboarding.oaStep1")}</li>
-                <li>{t("onboarding.oaStep2")}</li>
-                <li>{t("onboarding.oaStep3")}</li>
-                <li>{t("onboarding.oaStep4")}</li>
-                <li>{t("onboarding.oaStep5")}</li>
-                <li>{t("onboarding.oaStep6")}</li>
+          <div className="flex flex-col gap-5">
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <h2 className="font-semibold">{t("onboarding.bookingLinkTitle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.bookingLinkHint")}</p>
+              <p className="mt-4 break-all rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-300">
+                {bookingUrl}
+              </p>
+              <button
+                type="button"
+                onClick={() => void copyLink()}
+                className="mt-4 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950"
+              >
+                {copied ? t("onboarding.copied") : t("onboarding.copyBookingLink")}
+              </button>
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <h2 className="font-semibold">{t("onboarding.oaGuideTitle")}</h2>
+              <ol className="mt-3 list-decimal space-y-2 pl-4 text-sm text-zinc-400">
+                {OA_GUIDE_STEPS.map((key) => (
+                  <li key={key}>{t(key)}</li>
+                ))}
               </ol>
-            </div>
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <h2 className="font-semibold">{t("onboarding.oaHelpTitle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.oaHelpHint")}</p>
+              {supportLineUrl ? (
+                <a
+                  href={supportLineUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200"
+                >
+                  {t("onboarding.oaHelpCta")}
+                </a>
+              ) : null}
+            </section>
+
             <button
               type="button"
               onClick={() => goStep("test")}
-              className="mt-4 min-h-12 w-full rounded-xl border border-zinc-700 font-medium text-zinc-200"
+              className="mt-2 min-h-12 w-full rounded-xl border border-zinc-700 font-medium text-zinc-200"
             >
               {t("onboarding.saveAndContinue")}
             </button>
-          </section>
+          </div>
         ) : null}
 
         {step === "test" ? (
