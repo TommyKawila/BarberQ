@@ -11,19 +11,21 @@ describe("setup team UX copy", () => {
   it("owner bookable copy is clear", () => {
     assert.equal(
       dictionary.th["onboarding.ownerBookable"],
-      "ฉันตัดผมและรับคิวลูกค้าด้วย",
+      "คุณเป็นช่างในร้านด้วย",
     );
     assert.equal(
       dictionary.th["onboarding.ownerBookableHint"],
-      "เปิดข้อนี้ถ้าลูกค้าสามารถเลือกคุณเป็นช่างตอนจองคิว",
+      "เปิดข้อนี้ถ้าคุณตัดผมด้วย และต้องการให้ลูกค้าจองคิวกับคุณได้",
     );
     assert.equal(dictionary.th["onboarding.ownerRole"], "ผู้ดูแลร้าน");
   });
 
-  it("toggle ON/OFF labels render", () => {
-    assert.equal(dictionary.th["onboarding.ownerAcceptingOn"], "เปิดรับคิว");
-    assert.equal(dictionary.th["onboarding.ownerAcceptingOff"], "ไม่เปิดรับคิว");
-    assert.equal(dictionary.th["onboarding.ownerAcceptingLabel"], "เปิดรับจอง");
+  it("add barber section heading and hint", () => {
+    assert.equal(dictionary.th["onboarding.addBarberHeading"], "เพิ่มช่างในร้าน");
+    assert.equal(
+      dictionary.th["onboarding.addBarberHint"],
+      "เพิ่มช่างที่ลูกค้าสามารถเลือกจองคิวได้",
+    );
   });
 
   it("duration and barber name labels", () => {

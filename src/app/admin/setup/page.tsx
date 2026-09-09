@@ -402,12 +402,8 @@ function SetupContent() {
                 <p className="text-xs text-zinc-500">{t("onboarding.ownerRole")}</p>
                 <div className="mt-3 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-medium">{t("onboarding.ownerAcceptingLabel")}</p>
-                    <p className="text-xs text-zinc-500">
-                      {ownerBookable
-                        ? t("onboarding.ownerAcceptingOn")
-                        : t("onboarding.ownerAcceptingOff")}
-                    </p>
+                    <p className="text-sm font-medium">{t("onboarding.ownerBookable")}</p>
+                    <p className="text-xs text-zinc-500">{t("onboarding.ownerBookableHint")}</p>
                   </div>
                   <button
                     type="button"
@@ -426,7 +422,6 @@ function SetupContent() {
                     />
                   </button>
                 </div>
-                <p className="mt-2 text-xs text-zinc-400">{t("onboarding.ownerBookableHint")}</p>
                 {shouldShowOwnerSlotDuration(ownerBookable) ? (
                   <label className="mt-3 flex flex-col gap-1 text-sm">
                     {t("onboarding.slotDuration")}
@@ -458,6 +453,10 @@ function SetupContent() {
                     </p>
                   </div>
                 ))}
+            </div>
+            <div className="mt-6">
+              <h3 className="font-medium">{t("onboarding.addBarberHeading")}</h3>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.addBarberHint")}</p>
             </div>
             <div className="mt-4 flex flex-col gap-3">
               <label className="flex flex-col gap-1 text-sm">
