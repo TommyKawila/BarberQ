@@ -1,6 +1,11 @@
 import { addDays, addMinutes } from "date-fns";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import type { RecurringBreak } from "@/lib/data/types";
+import {
+  DEFAULT_SHOP_HOURS,
+  normalizeShopHours,
+  type ShopHours,
+} from "@/lib/shop/shop-hours";
 import type { Barber, BusyInterval, Slot } from "@/types/booking";
 
 export const SHOP_TIMEZONE = "Asia/Bangkok";
@@ -13,10 +18,23 @@ export function getBangkokWeekday(dateISO: string): number {
   return toZonedTime(noon, SHOP_TIMEZONE).getDay();
 }
 
+/** @deprecated Use resolveShopHoursForDate with per-shop hours */
 export function getShopHours(dateISO: string): { open: string; close: string } {
   const weekday = getBangkokWeekday(dateISO);
-  const isWeekend = weekday === 0 || weekday === 6;
-  return { open: isWeekend ? "10:00" : "10:30", close: "20:00" };
+  const day = DEFAULT_SHOP_HOURS[weekday];
+  if (day.closed) return { open: "00:00", close: "00:00" };
+  return { open: day.open, close: day.close };
+}
+
+export function resolveShopHoursForDate(
+  hours: ShopHours | null | undefined,
+  dateISO: string,
+): { open: string; close: string } | null {
+  const normalized = normalizeShopHours(hours);
+  const weekday = getBangkokWeekday(dateISO);
+  const day = normalized[weekday];
+  if (day.closed) return null;
+  return { open: day.open, close: day.close };
 }
 
 export function getBookableDates(now: Date = new Date()): string[] {
@@ -79,14 +97,18 @@ export function generateSlots(input: {
   barber: Pick<Barber, "off_days" | "slot_duration_minutes">;
   busy: BusyInterval[];
   recurringBreaks?: RecurringBreak[];
+  shopHours?: ShopHours | null;
   now: Date;
 }): Slot[] {
+  const shopDay = resolveShopHoursForDate(input.shopHours, input.dateISO);
+  if (!shopDay) return [];
+
   const weekday = getBangkokWeekday(input.dateISO);
   if (input.barber.off_days.includes(weekday)) {
     return [];
   }
 
-  const { open, close } = getShopHours(input.dateISO);
+  const { open, close } = shopDay;
   const closeAt = fromZonedTime(`${input.dateISO}T${close}:00`, SHOP_TIMEZONE);
   const duration = input.barber.slot_duration_minutes;
   const breakRanges = recurringBreaksForDate(input.dateISO, input.recurringBreaks ?? []);

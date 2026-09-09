@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertVerifiedCustomer } from "@/lib/auth/customer-auth";
 import { jsonError } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import { resolveShopParam } from "@/lib/shop/api-route";
@@ -12,11 +13,8 @@ export async function GET(
   try {
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
-    const lineId = new URL(req.url).searchParams.get("lineId")?.trim() ?? "";
-    if (!lineId) {
-      return NextResponse.json({ staff: null });
-    }
-    const barber = await getStore().getBarberByLineIdInShop(lineId, shop.id);
+    const customer = await assertVerifiedCustomer(req);
+    const barber = await getStore().getBarberByLineIdInShop(customer.userId, shop.id);
     if (!barber || (barber.role !== "owner" && barber.role !== "barber")) {
       return NextResponse.json({ staff: null });
     }

@@ -67,7 +67,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (path === "/bookings") {
-    return NextResponse.redirect(new URL(`/${DEFAULT_SHOP}/bookings`, request.url));
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   if (path === "/admin" || path.startsWith("/admin/")) {

@@ -11,6 +11,8 @@ import {
   isLate,
   recurringBreaksForDate,
 } from "@/lib/services/slot-service";
+import { normalizeShopHours } from "@/lib/shop/shop-hours";
+import type { StaffAuth } from "@/lib/admin-auth";
 import type {
   AdminColumn,
   AdminSlot,
@@ -48,6 +50,7 @@ function mapStoreError(error: unknown): BookingError {
       NOT_FOUND: ["Appointment not found", 404],
       INVALID_RANGE: ["Invalid time range", 400],
       INVALID_OUTCOME: ["Cannot mark outcome yet", 400],
+      LINE_ID_TAKEN: ["This LINE account is already linked", 409],
     };
     const entry = map[error.code];
     if (entry) return new BookingError(error.code, entry[0], entry[1]);
@@ -62,12 +65,8 @@ function isUuid(value: string): boolean {
   );
 }
 
-const BARBER_ORDER = ["Saeb", "Tide", "Nat"];
-
 function sortBarbers(barbers: Barber[]): Barber[] {
-  return barbers.sort(
-    (a, b) => BARBER_ORDER.indexOf(a.name) - BARBER_ORDER.indexOf(b.name),
-  );
+  return barbers.sort((a, b) => a.name.localeCompare(b.name, "th"));
 }
 
 export async function listBarbers(shopId?: string): Promise<Barber[]> {
@@ -79,6 +78,17 @@ export async function listBarbers(shopId?: string): Promise<Barber[]> {
   } catch (error) {
     throw mapStoreError(error);
   }
+}
+
+export async function listBookableBarbers(shopId: string): Promise<Barber[]> {
+  const barbers = await listBarbers(shopId);
+  return barbers.filter((b) => b.is_bookable !== false);
+}
+
+async function shopHoursForBarber(barber: Barber) {
+  if (!barber.shop_id) return normalizeShopHours(null);
+  const settings = await getStore().getShopSettings(barber.shop_id);
+  return normalizeShopHours(settings.hours);
 }
 
 export async function getAvailableSlots(
@@ -101,12 +111,16 @@ export async function getAvailableSlots(
     const store = getStore();
     const barber = await store.getBarber(barberId);
     if (!barber) throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+    if (barber.is_bookable === false) {
+      throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+    }
+    const shopHours = await shopHoursForBarber(barber);
     const range = dayRangeUtc(dateISO);
     const [busy, recurringBreaks] = await Promise.all([
       store.getBusyIntervals(barberId, range.from, range.to),
       store.listRecurringBreaks(barberId),
     ]);
-    return generateSlots({ dateISO, barber, busy, recurringBreaks, now });
+    return generateSlots({ dateISO, barber, busy, recurringBreaks, shopHours, now });
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
@@ -155,6 +169,9 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
     const store = getStore();
     const barber = await store.getBarber(input.barberId);
     if (!barber) throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+    if (barber.is_bookable === false) {
+      throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+    }
     const end = addMinutes(start, barber.slot_duration_minutes);
     return await store.createAppointment({
       barberId: input.barberId,
@@ -344,6 +361,7 @@ export async function markAppointmentOutcome(
 export async function getAdminDay(
   dateISO: string,
   shopId: string,
+  staff: StaffAuth,
   now: Date = new Date(),
 ): Promise<AdminColumn[]> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
@@ -352,7 +370,13 @@ export async function getAdminDay(
 
   try {
     const store = getStore();
-    const barbers = await listBarbers(shopId);
+    const allBarbers = await listBarbers(shopId);
+    const barbers =
+      staff.role === "owner"
+        ? allBarbers
+        : allBarbers.filter((b) => b.id === staff.barberId);
+    const settings = await store.getShopSettings(shopId);
+    const shopHours = normalizeShopHours(settings.hours);
     const range = dayRangeUtc(dateISO);
     const barberIds = new Set(barbers.map((b) => b.id));
     const [allBooked, allBlocked, allBreaks] = await Promise.all([
@@ -381,6 +405,7 @@ export async function getAdminDay(
         barber,
         busy,
         recurringBreaks,
+        shopHours,
         now,
       }).map((slot) => {
         const slotStart = new Date(slot.startTime);

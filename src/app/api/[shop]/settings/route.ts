@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaffForShop, assertSuperAdmin } from "@/lib/admin-auth";
+import { assertStaffForShop, assertShopOwner } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import type { ShopSettings } from "@/lib/data/types";
@@ -13,6 +13,8 @@ import {
   normalizeShopPhone,
 } from "@/lib/shop/shop-contact";
 import { BookingError } from "@/lib/services/booking-service";
+import { validateShopHours } from "@/lib/schedule/validation";
+import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 
 export const runtime = "nodejs";
 
@@ -39,12 +41,13 @@ export async function PUT(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertSuperAdmin(staff);
+    assertShopOwner(staff);
     const body = await readJson<{
       logoDataUrl?: string | null;
       shopName?: string | null;
       lineUrl?: string | null;
       phone?: string | null;
+      hours?: ShopHours;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -53,6 +56,7 @@ export async function PUT(
       shopName: current.shopName,
       lineUrl: current.lineUrl,
       phone: current.phone,
+      hours: current.hours,
     };
 
     if ("logoDataUrl" in body) {
@@ -85,6 +89,15 @@ export async function PUT(
         throw new BookingError("INVALID_PHONE", "Invalid shop phone", 400);
       }
       next.phone = phone;
+    }
+
+    if ("hours" in body && body.hours) {
+      const hours = normalizeShopHours(body.hours);
+      const hoursError = validateShopHours(hours);
+      if (hoursError) {
+        throw new BookingError("INVALID_HOURS", hoursError, 400);
+      }
+      next.hours = hours;
     }
 
     await getStore().setShopSettings(shop.id, next);

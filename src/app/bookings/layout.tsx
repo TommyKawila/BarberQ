@@ -1,14 +1,5 @@
-import { AppHeader } from "@/components/layout/AppHeader";
-import { ShopBrandProvider } from "@/lib/brand/shop-brand";
-import { ShopSlugProvider } from "@/lib/shop/shop-slug-context";
+import { redirect } from "next/navigation";
 
-export default function BookingsLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <ShopSlugProvider shopSlug="phinxstudio">
-      <ShopBrandProvider shopSlug="phinxstudio">
-        <AppHeader />
-        {children}
-      </ShopBrandProvider>
-    </ShopSlugProvider>
-  );
+export default function BookingsLayout() {
+  redirect("/");
 }

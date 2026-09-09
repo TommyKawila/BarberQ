@@ -7,9 +7,10 @@ import { listBarbers } from "@/lib/services/booking-service";
 import {
   dayRangeUtc,
   getBangkokWeekday,
-  getShopHours,
+  resolveShopHoursForDate,
   SHOP_TIMEZONE,
 } from "@/lib/services/slot-service";
+import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import type { Appointment, Barber, TimeBlock } from "@/types/booking";
 
 export type StatsRange = "day" | "week" | "month";
@@ -123,10 +124,17 @@ function blockMinutes(row: TimeBlock): number {
   return Math.max(0, differenceInMinutes(parseISO(row.end_time), parseISO(row.start_time)));
 }
 
-function openMinutesForBarber(dateISO: string, barber: Barber, breakMinutes: number): number {
+function openMinutesForBarber(
+  dateISO: string,
+  barber: Barber,
+  breakMinutes: number,
+  shopHours: ReturnType<typeof normalizeShopHours>,
+): number {
   const weekday = getBangkokWeekday(dateISO);
   if (barber.off_days.includes(weekday)) return 0;
-  const { open, close } = getShopHours(dateISO);
+  const hours = resolveShopHoursForDate(shopHours, dateISO);
+  if (!hours) return 0;
+  const { open, close } = hours;
   const openAt = fromZonedTime(`${dateISO}T${open}:00`, SHOP_TIMEZONE);
   const closeAt = fromZonedTime(`${dateISO}T${close}:00`, SHOP_TIMEZONE);
   const total = Math.max(0, differenceInMinutes(closeAt, openAt));
@@ -173,9 +181,11 @@ export async function getStatsReport(
   const store = getStore();
   const allBarbers = await listBarbers(staff.shopId);
   const barbers =
-    staff.role === "super_admin"
+    staff.role === "owner"
       ? allBarbers
       : allBarbers.filter((b) => b.id === staff.barberId);
+  const shopSettings = await store.getShopSettings(staff.shopId);
+  const shopHours = normalizeShopHours(shopSettings.hours);
 
   const barberIds = new Set(barbers.map((b) => b.id));
   const [appointments, blocks, allBreaks] = await Promise.all([
@@ -217,7 +227,7 @@ export async function getStatsReport(
   for (const dayISO of dayList) {
     for (const barber of barbers) {
       const breakMin = recurringBreakMinutes(dayISO, barber.id, breaksFlat);
-      availableMinutes += openMinutesForBarber(dayISO, barber, breakMin);
+      availableMinutes += openMinutesForBarber(dayISO, barber, breakMin, shopHours);
     }
   }
 
@@ -241,9 +251,10 @@ export async function getStatsReport(
 
   const shopHoursSet = new Set<number>();
   for (const dayISO of dayList) {
-    const { open, close } = getShopHours(dayISO);
-    const openH = Number(open.split(":")[0]);
-    const closeH = Number(close.split(":")[0]);
+    const resolved = resolveShopHoursForDate(shopHours, dayISO);
+    if (!resolved) continue;
+    const openH = Number(resolved.open.split(":")[0]);
+    const closeH = Number(resolved.close.split(":")[0]);
     for (let h = openH; h < closeH; h += 1) shopHoursSet.add(h);
   }
   const hours = [...shopHoursSet].sort((a, b) => a - b);

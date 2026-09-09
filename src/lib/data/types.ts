@@ -43,12 +43,15 @@ export interface CreateBlockInput {
   reason: string;
 }
 
+import type { ShopHours } from "@/lib/shop/shop-hours";
+
 export interface ShopSettings {
   shopId: string;
   logoDataUrl: string | null;
   shopName: string | null;
   lineUrl: string | null;
   phone: string | null;
+  hours: ShopHours | null;
 }
 
 export type StaffRole = "barber" | "super_admin";
@@ -88,6 +91,17 @@ export interface CreateRecurringBreakInput {
 export interface UpdateBarberInput {
   offDays?: number[];
   slotDuration?: number;
+  name?: string;
+  lineId?: string | null;
+  isBookable?: boolean;
+}
+
+export interface CreateBarberInput {
+  shopId: string;
+  name: string;
+  lineId?: string | null;
+  slotDuration?: number;
+  isBookable?: boolean;
 }
 
 export interface CreateShopInput {
@@ -142,6 +156,7 @@ export interface BookingStore {
   createStaff(input: CreateStaffInput): Promise<Staff>;
   deactivateStaff(staffId: string): Promise<void>;
   updateBarber(barberId: string, input: UpdateBarberInput): Promise<Barber>;
+  createBarber(input: CreateBarberInput): Promise<Barber>;
   listRecurringBreaks(barberId: string): Promise<RecurringBreak[]>;
   createRecurringBreak(input: CreateRecurringBreakInput): Promise<RecurringBreak>;
   deleteRecurringBreak(breakId: string): Promise<void>;

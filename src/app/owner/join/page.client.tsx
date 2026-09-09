@@ -56,7 +56,7 @@ export default function OwnerJoinPage() {
   useEffect(() => {
     if (!ready || !profile || !preview || preview.expired || preview.claimed || claimed) return;
     void claim().then((slug) => {
-      if (slug) router.replace(`/${slug}/admin`);
+      if (slug) router.replace(`/${slug}/admin/setup`);
     });
   }, [claim, claimed, preview, profile, ready, router]);
 

@@ -8,20 +8,31 @@ interface SlotPickerProps {
   slots: Slot[];
   value: string | null;
   loading?: boolean;
+  shopClosed?: boolean;
   onChange: (startTime: string) => void;
 }
 
-export function SlotPicker({ slots, value, loading, onChange }: SlotPickerProps) {
+export function SlotPicker({ slots, value, loading, shopClosed, onChange }: SlotPickerProps) {
   const { t } = useI18n();
 
   if (loading) {
     return <p className="py-8 text-center text-sm text-zinc-400">{t("booking.slotsLoading")}</p>;
   }
 
-  if (slots.length === 0) {
+  if (shopClosed) {
     return (
-      <p className="py-8 text-center text-sm text-zinc-400">{t("booking.noSlots")}</p>
+      <p className="py-8 text-center text-sm text-zinc-400">{t("booking.shopClosedDay")}</p>
     );
+  }
+
+  if (slots.length === 0) {
+    return <p className="py-8 text-center text-sm text-zinc-400">{t("booking.noSlots")}</p>;
+  }
+
+  const hasAvailable = slots.some((slot) => slot.available);
+
+  if (!hasAvailable) {
+    return <p className="py-8 text-center text-sm text-zinc-400">{t("booking.noSlots")}</p>;
   }
 
   return (
@@ -35,7 +46,7 @@ export function SlotPicker({ slots, value, loading, onChange }: SlotPickerProps)
             type="button"
             disabled={disabled}
             onClick={() => onChange(slot.startTime)}
-            className={`min-h-11 rounded-lg px-2 py-3 text-sm font-semibold transition ${
+            className={`min-h-12 rounded-lg px-2 py-3 text-sm font-semibold transition ${
               disabled
                 ? "cursor-not-allowed bg-zinc-900 text-zinc-600 line-through"
                 : selected

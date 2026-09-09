@@ -60,6 +60,7 @@ export default function GuidePage() {
         {[
           ["#customer", "ลูกค้า"],
           ["#shop-oa", "ปุ่ม OA ร้าน"],
+          ["#barberq-oa", "แจ้งเตือน"],
           ["#line-login", "Line Login"],
           ["#my-bookings", "คิวของฉัน"],
           ["#admin", "Admin"],
@@ -102,18 +103,29 @@ export default function GuidePage() {
         </p>
       </Section>
 
-      <Section id="shop-oa" title="ติดปุ่มกดจองคิวบน Line OA ของร้าน">
-        <p>ลูกค้าเข้าจองจาก OA ร้านที่มีอยู่แล้ว ไม่ต้องสร้าง LIFF ของร้านเอง</p>
+      <Section id="shop-oa" title="ติดปุ่มจองใน LINE ร้าน">
+        <p>ลูกค้าเข้าจองจาก OA ร้านที่มีอยู่แล้ว — ใช้ลิงก์จองจาก Super Admin หรือหน้า «ตั้งร้าน»</p>
         <ol className="list-decimal space-y-1 pl-5">
-          <li>ขอลิงก์ LIFF ของร้านจาก Super Admin (ปุ่มคัดลอกบนการ์ดร้าน)</li>
-          <li>ใน LINE Official Account ของร้าน ตั้งริชเมนูหรือปุ่มข้อความ คำว่า กดจองคิว</li>
-          <li>วาง LIFF URL ที่มี slug ท้าย เช่น /phinxstudio</li>
-          <li>เจ้าของร้านและช่างกดปุ่มเดียวกัน แล้วกด «จัดการร้าน» ที่หน้าจอง</li>
+          <li>เปิด LINE Official Account Manager</li>
+          <li>เลือก Rich Menu</li>
+          <li>เพิ่มพื้นที่หรือปุ่ม ตั้งชื่อ เช่น กดจองคิว</li>
+          <li>ตั้ง action เป็น Link</li>
+          <li>วางลิงก์จองของร้าน (ลงท้ายด้วย slug ร้าน เช่น /yourshop)</li>
+          <li>กดบันทึก</li>
         </ol>
         <p className="rounded-xl bg-zinc-900 p-3 text-zinc-400">
-          Endpoint ใน LINE Developers ของ BarberQ ต้องเป็นโดเมนราก{" "}
-          <span className="text-zinc-300">https://barber-q-pi.vercel.app</span> ไม่ใส่ path ร้าน
+          ตัวอย่างลิงก์: <span className="text-amber-400">https://liff.line.me/…/yourshop</span> หรือ{" "}
+          <span className="text-zinc-300">https://your-domain.com/yourshop</span>
         </p>
+      </Section>
+
+      <Section id="barberq-oa" title="แจ้งเตือนจาก OA BarberQ">
+        <p>ข้อความยืนยันจองส่งจาก Line OA ของ BarberQ ไม่ใช่ OA ของร้าน</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>ลูกค้าแอดเพื่อน BarberQ ครั้งหนึ่งหลังจอง (ปุ่มที่หน้าคิวของฉัน)</li>
+          <li>ยังไม่แอดเพื่อนก็จองในเว็บได้ตามปกติ แค่ยังไม่ได้รับข้อความ</li>
+          <li>คุยร้านเรื่องมาสาย / เลยเวลายกเลิก ยังใช้ LINE หรือโทรของร้านตามที่ตั้งใน settings</li>
+        </ul>
       </Section>
 
       <Section id="line-login" title="2) Line Login สำหรับลูกค้า">
@@ -311,12 +323,13 @@ export default function GuidePage() {
           <li>✅ Staff Cancellation — Owner ยกเลิกคิวจากบอร์ดได้</li>
           <li>✅ แสดง Line ID ของลูกค้าในบอร์ด Admin</li>
           <li>✅ แสดงชื่อและรูปโปรไฟล์ลูกค้าที่ header หลัง login</li>
+          <li>✅ ยืนยันจองทาง OA BarberQ + ปุ่มแอดเพื่อนที่คิวของฉัน</li>
         </ul>
       </Section>
 
       <Section id="missing" title="🚧 ยังไม่มีในระบบ (Roadmap)">
         <ul className="list-disc space-y-1 pl-5 text-zinc-500">
-          <li>แจ้งเตือน LINE อัตโนมัติ 30 นาทีก่อนคิว (Phase 2: Line OA Integration)</li>
+          <li>แจ้งเตือน LINE อัตโนมัติ 30 นาทีก่อนคิว</li>
           <li>ปุ่มยกเลิกในแชท LINE (ตอนนี้ยกเลิกได้ที่เว็บ + ลิงก์ /c/…)</li>
           <li>จองหลายคิวให้เพื่อนในครั้งเดียว (ตอนนี้จองได้ทีละคิว)</li>
           <li>ระบบ Subscription และ Payment (เริ่มจาก Pilot: PHINX STUDIO)</li>

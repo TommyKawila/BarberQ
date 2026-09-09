@@ -1,3 +1,5 @@
+import { isValidCustomerPhone, normalizeCustomerPhone } from "@/lib/booking/customer-flow";
+
 const PHONE_RE = /^0\d{8,9}$/;
 
 export function normalizeShopPhone(value: string | null | undefined): string | null {
@@ -10,6 +12,8 @@ export function isValidShopPhone(value: string | null): boolean {
   if (value === null) return true;
   return PHONE_RE.test(value);
 }
+
+export { normalizeCustomerPhone, isValidCustomerPhone };
 
 export function normalizeShopLineUrl(value: string | null | undefined): string | null {
   if (value === null || value === undefined) return null;

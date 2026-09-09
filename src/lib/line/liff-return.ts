@@ -1,6 +1,6 @@
 const RETURN_KEY = "barberq_liff_return";
 export const LIFF_RETURN_COOKIE = RETURN_KEY;
-const FALLBACK_PATH = "/phinxstudio";
+const FALLBACK_PATH = "/";
 
 export function isSafeReturnPath(path: string): boolean {
   return path.startsWith("/") && !path.startsWith("//") && !path.includes("://");

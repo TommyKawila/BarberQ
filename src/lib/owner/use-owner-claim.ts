@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
-
-const MOCK_OWNER_LINE_ID = "mock-owner-line-id";
+import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
+import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 
 export interface OwnerClaimProfile {
   userId: string;
@@ -73,10 +73,12 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
     try {
       const res = await fetch("/api/owner/claim", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getLineAuthHeaders(mockMode ? profile.userId : undefined),
+        },
         body: JSON.stringify({
           code: inviteCode,
-          lineId: profile.userId,
           displayName: profile.displayName,
         }),
       });
@@ -96,7 +98,7 @@ export function useOwnerClaim({ inviteCode }: UseOwnerClaimOptions) {
     } finally {
       setClaiming(false);
     }
-  }, [claiming, claimed, inviteCode, profile]);
+  }, [claiming, claimed, inviteCode, mockMode, profile]);
 
   return { ready, profile, login, claim, claiming, claimed, error, mockMode };
 }

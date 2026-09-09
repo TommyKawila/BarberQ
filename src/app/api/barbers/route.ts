@@ -1,24 +1,7 @@
-import { NextResponse } from "next/server";
-import { isAdminAuthRequired } from "@/lib/admin-auth";
-import { jsonError } from "@/lib/api-response";
-import { isPrototypeMode } from "@/lib/data";
-import { listBarbers } from "@/lib/services/booking-service";
-
-const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
+import { legacyApiGone } from "@/lib/auth/legacy-gone";
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  try {
-    const barbers = await listBarbers(DEFAULT_SHOP_ID);
-    const adminAuthRequired = isAdminAuthRequired();
-    return NextResponse.json({
-      barbers,
-      prototypeMode: isPrototypeMode(),
-      adminAuthRequired,
-      adminKeyRequired: adminAuthRequired,
-    });
-  } catch (error) {
-    return jsonError(error);
-  }
+  return legacyApiGone();
 }

@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
-import { getStore } from "@/lib/data";
+import { assertStaff } from "@/lib/admin-auth";
+import { jsonError } from "@/lib/api-response";
+
+export const runtime = "nodejs";
 
 export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const lineId = searchParams.get("lineId");
-
-  if (!lineId) {
-    return NextResponse.json({ error: "Missing lineId" }, { status: 400 });
+  try {
+    const staff = await assertStaff(req);
+    return NextResponse.json({
+      barberId: staff.barberId ?? staff.staffId,
+      barberName: staff.name,
+      role: staff.role,
+      shopId: staff.shopId,
+    });
+  } catch (error) {
+    return jsonError(error);
   }
-
-  const barber = await getStore().getBarberByLineId(lineId);
-  if (!barber) {
-    return NextResponse.json({ error: "Unauthorized - Line ID not found" }, { status: 403 });
-  }
-
-  return NextResponse.json({
-    barberId: barber.id,
-    barberName: barber.name,
-    role: barber.role ?? "barber",
-    shopId: barber.shop_id ?? null,
-  });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   assertStaff,
   isAdminAuthRequired,
+  type ShopStaffRole,
 } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { isPrototypeMode } from "@/lib/data";
@@ -12,12 +13,14 @@ export const runtime = "nodejs";
 export async function GET(req: Request) {
   try {
     const staff = await assertStaff(req);
+    const role: ShopStaffRole = staff.role;
     return NextResponse.json({
       staff: {
         staffId: staff.staffId,
         name: staff.name,
-        role: staff.role,
+        role,
         barberId: staff.barberId,
+        shopId: staff.shopId,
       },
       prototypeMode: isPrototypeMode(),
       adminAuthRequired: isAdminAuthRequired(),

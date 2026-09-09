@@ -6,6 +6,7 @@ import {
   StoreConflict,
   type BookingStore,
   type CreateRecurringBreakInput,
+  type CreateBarberInput,
   type ClaimOwnerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
@@ -22,6 +23,7 @@ import {
   validateRecurringBreakInput,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
+import { DEFAULT_SHOP_HOURS, normalizeShopHours } from "@/lib/shop/shop-hours";
 import { slugifyShopName } from "@/lib/shop/slug";
 
 const GLOBAL_KEY = "__barberq_memory_store__";
@@ -75,6 +77,7 @@ function getState(): MemoryState {
       shopName: "PHINX STUDIO",
       lineUrl: null,
       phone: null,
+      hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
@@ -101,6 +104,7 @@ function getState(): MemoryState {
         shopName: "PHINX STUDIO",
         lineUrl: null,
         phone: null,
+        hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
       },
     };
   }
@@ -148,6 +152,7 @@ const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
   shop_id: DEFAULT_SHOP_ID,
   role: index === 0 ? "owner" : "barber",
   line_id: index === 0 ? MOCK_OWNER_LINE_ID : null,
+  is_bookable: true,
 }));
 
 function getBarberSync(barberId: string): Barber | undefined {
@@ -400,13 +405,15 @@ export const memoryStore: BookingStore = {
 
   async getShopSettings(shopId) {
     const state = getState();
+    const existing = state.shopSettings[shopId];
     return (
-      state.shopSettings[shopId] ?? {
+      existing ?? {
         shopId,
         logoDataUrl: null,
         shopName: null,
         lineUrl: null,
         phone: null,
+        hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
       }
     );
   },
@@ -419,6 +426,7 @@ export const memoryStore: BookingStore = {
       shopName: input.shopName,
       lineUrl: input.lineUrl,
       phone: input.phone,
+      hours: input.hours,
     };
   },
 
@@ -471,7 +479,57 @@ export const memoryStore: BookingStore = {
       if (validateSlotDuration(input.slotDuration)) throw new StoreConflict("INVALID_RANGE");
       barber.slot_duration_minutes = input.slotDuration;
     }
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      if (!name) throw new StoreConflict("INVALID_RANGE");
+      if (
+        barbers.some(
+          (b) => b.shop_id === barber.shop_id && b.id !== barberId && b.name === name,
+        )
+      ) {
+        throw new StoreConflict("INVALID_RANGE");
+      }
+      barber.name = name;
+    }
+    if (input.lineId !== undefined) {
+      const lineId = input.lineId?.trim() || null;
+      if (lineId && barbers.some((b) => b.line_id === lineId && b.id !== barberId)) {
+        throw new StoreConflict("LINE_ID_TAKEN");
+      }
+      barber.line_id = lineId;
+    }
+    if (input.isBookable !== undefined) {
+      barber.is_bookable = input.isBookable;
+    }
     return { ...barber, off_days: [...barber.off_days] };
+  },
+
+  async createBarber(input: CreateBarberInput) {
+    const name = input.name.trim();
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+    const slotDuration = input.slotDuration ?? 30;
+    if (validateSlotDuration(slotDuration)) throw new StoreConflict("INVALID_RANGE");
+    const lineId = input.lineId?.trim() || null;
+    if (lineId && barbers.some((b) => b.line_id === lineId)) {
+      throw new StoreConflict("LINE_ID_TAKEN");
+    }
+    if (barbers.some((b) => b.shop_id === input.shopId && b.name === name)) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const now = nowIso();
+    const row: Barber = {
+      id: uuid(),
+      name,
+      slot_duration_minutes: slotDuration,
+      off_days: [],
+      created_at: now,
+      shop_id: input.shopId,
+      role: "barber",
+      line_id: lineId,
+      is_bookable: input.isBookable ?? true,
+    };
+    barbers.push(row);
+    return { ...row, off_days: [...row.off_days] };
   },
 
   async listRecurringBreaks(barberId) {
@@ -548,6 +606,7 @@ export const memoryStore: BookingStore = {
         shopName: name,
         lineUrl: null,
         phone: null,
+        hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
       };
       return shop;
     }
@@ -576,6 +635,7 @@ export const memoryStore: BookingStore = {
       shopName: name,
       lineUrl: null,
       phone: null,
+      hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
     };
 
     barbers.push({
@@ -587,6 +647,7 @@ export const memoryStore: BookingStore = {
       line_id: ownerLineId,
       role: "owner",
       shop_id: shop.id,
+      is_bookable: false,
     });
 
     return shop;
@@ -633,6 +694,7 @@ export const memoryStore: BookingStore = {
       line_id: ownerLineId,
       role: "owner",
       shop_id: shop.id,
+      is_bookable: false,
     });
 
     shop.status = "active";

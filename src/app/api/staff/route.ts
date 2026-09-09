@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   assertStaff,
-  assertSuperAdmin,
+  assertShopOwner,
+  type StaffAuth,
 } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
@@ -39,11 +40,31 @@ function serializeStaff(staff: {
   };
 }
 
+async function filterStaffForShop(shopId: string) {
+  const shopBarbers = await getStore().listBarbersByShop(shopId);
+  const barberIds = new Set(shopBarbers.map((b) => b.id));
+  const allStaff = await getStore().listStaff();
+  return allStaff.filter(
+    (row) => row.barberId === null || barberIds.has(row.barberId),
+  );
+}
+
+async function assertStaffBarberInShop(
+  auth: StaffAuth,
+  barberId: string | null | undefined,
+): Promise<void> {
+  if (!barberId) return;
+  const barber = await getStore().getBarber(barberId);
+  if (!barber || barber.shop_id !== auth.shopId) {
+    throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+  }
+}
+
 export async function GET(req: Request) {
   try {
     const auth = await assertStaff(req);
-    assertSuperAdmin(auth);
-    const staff = await getStore().listStaff();
+    assertShopOwner(auth);
+    const staff = await filterStaffForShop(auth.shopId);
     return NextResponse.json({
       staff: staff.map(serializeStaff),
     });
@@ -55,7 +76,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const auth = await assertStaff(req);
-    assertSuperAdmin(auth);
+    assertShopOwner(auth);
     const body = await readJson<{
       name?: string;
       role?: StaffRole;
@@ -69,6 +90,8 @@ export async function POST(req: Request) {
     if (body.role !== "barber" && body.role !== "super_admin") {
       throw new BookingError("INVALID_INPUT", "Invalid role", 400);
     }
+
+    await assertStaffBarberInShop(auth, body.barberId);
 
     const input: CreateStaffInput = {
       name,
@@ -90,10 +113,14 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   try {
     const auth = await assertStaff(req);
-    assertSuperAdmin(auth);
+    assertShopOwner(auth);
     const body = await readJson<{ staffId?: string }>(req);
     if (!body.staffId) {
       throw new BookingError("INVALID_INPUT", "staffId is required", 400);
+    }
+    const shopStaff = await filterStaffForShop(auth.shopId);
+    if (!shopStaff.some((row) => row.id === body.staffId)) {
+      throw new BookingError("NOT_FOUND", "Staff not found", 404);
     }
     await getStore().deactivateStaff(body.staffId);
     return NextResponse.json({ ok: true });

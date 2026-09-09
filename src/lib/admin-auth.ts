@@ -1,22 +1,31 @@
 import { getStore, isPrototypeMode } from "@/lib/data";
-import type { StaffRole } from "@/lib/data/types";
+import {
+  getBearerToken,
+  isLineAuthMockMode,
+  MOCK_OWNER_LINE_ID,
+  verifyLineAccessToken,
+} from "@/lib/auth/line-verify";
 import { BookingError } from "@/lib/services/booking-service";
+import type { Appointment, Barber } from "@/types/booking";
 
 export const ADMIN_TOKEN_KEY = "barberq_admin_token";
 const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
 
+export type ShopStaffRole = "owner" | "barber";
+
 export interface StaffAuth {
   staffId: string;
   name: string;
-  role: StaffRole;
+  role: ShopStaffRole;
   barberId: string | null;
   shopId: string;
+  lineId?: string | null;
 }
 
 const PROTOTYPE_STAFF: StaffAuth = {
   staffId: "prototype",
   name: "Prototype",
-  role: "super_admin",
+  role: "owner",
   barberId: null,
   shopId: DEFAULT_SHOP_ID,
 };
@@ -29,21 +38,18 @@ export function getAdminTokenFromRequest(req: Request): string {
   return req.headers.get("x-admin-token") ?? "";
 }
 
-export function getAdminLineIdFromRequest(req: Request): string {
-  return req.headers.get("x-admin-line-id") ?? "";
-}
-
 export async function getStaffFromLineId(lineId: string): Promise<StaffAuth | null> {
   if (!lineId) return null;
   const barber = await getStore().getBarberByLineId(lineId);
   if (!barber || !barber.shop_id) return null;
-  const isOwner = barber.role === "owner";
+  const role: ShopStaffRole = barber.role === "owner" ? "owner" : "barber";
   return {
     staffId: barber.id,
     name: barber.name,
-    role: isOwner ? "super_admin" : "barber",
-    barberId: isOwner ? null : barber.id,
+    role,
+    barberId: barber.id,
     shopId: barber.shop_id,
+    lineId,
   };
 }
 
@@ -56,37 +62,47 @@ export async function getStaffFromToken(token: string): Promise<StaffAuth | null
     const barber = await getStore().getBarber(staff.barberId);
     if (barber?.shop_id) shopId = barber.shop_id;
   }
+  const role: ShopStaffRole = staff.role === "super_admin" ? "owner" : "barber";
   return {
     staffId: staff.id,
     name: staff.name,
-    role: staff.role,
+    role,
     barberId: staff.barberId,
     shopId,
   };
 }
 
+async function getStaffFromBearer(req: Request): Promise<StaffAuth | null> {
+  const token = getBearerToken(req);
+  if (!token) return null;
+  const lineUser = await verifyLineAccessToken(token);
+  if (!lineUser) return null;
+  return getStaffFromLineId(lineUser.userId);
+}
+
 export async function assertStaff(req: Request): Promise<StaffAuth> {
-  const lineId = getAdminLineIdFromRequest(req);
-  if (lineId) {
-    const staff = await getStaffFromLineId(lineId);
+  const fromBearer = await getStaffFromBearer(req);
+  if (fromBearer) return fromBearer;
+
+  const legacyToken = getAdminTokenFromRequest(req);
+  if (legacyToken) {
+    const staff = await getStaffFromToken(legacyToken);
     if (!staff) {
-      throw new BookingError("UNAUTHORIZED", "Invalid line id", 401);
+      throw new BookingError("UNAUTHORIZED", "Invalid token", 401);
     }
     return staff;
   }
 
-  const token = getAdminTokenFromRequest(req);
-  if (!token) {
-    if (isPrototypeMode()) return PROTOTYPE_STAFF;
-    throw new BookingError("UNAUTHORIZED", "Missing token", 401);
+  if (isPrototypeMode() && isLineAuthMockMode()) {
+    const mockToken = getBearerToken(req);
+    if (mockToken === MOCK_OWNER_LINE_ID) {
+      const staff = await getStaffFromLineId(MOCK_OWNER_LINE_ID);
+      if (staff) return staff;
+    }
+    return PROTOTYPE_STAFF;
   }
 
-  const staff = await getStaffFromToken(token);
-  if (!staff) {
-    throw new BookingError("UNAUTHORIZED", "Invalid token", 401);
-  }
-
-  return staff;
+  throw new BookingError("UNAUTHORIZED", "Missing authorization", 401);
 }
 
 export async function assertStaffForShop(
@@ -100,15 +116,52 @@ export async function assertStaffForShop(
   return staff;
 }
 
-export function assertSuperAdmin(staff: StaffAuth): void {
-  if (staff.role !== "super_admin") {
-    throw new BookingError("FORBIDDEN", "Super admin required", 403);
+export function assertShopOwner(staff: StaffAuth): void {
+  if (staff.role !== "owner") {
+    throw new BookingError("FORBIDDEN", "Shop owner required", 403);
   }
 }
 
-export function canManageBarber(staff: StaffAuth, barberId: string): boolean {
-  if (staff.role === "super_admin") return true;
+/** @deprecated Use assertShopOwner for shop-scoped owner checks */
+export function assertSuperAdmin(staff: StaffAuth): void {
+  assertShopOwner(staff);
+}
+
+export async function canManageBarber(
+  staff: StaffAuth,
+  barberId: string,
+): Promise<boolean> {
+  if (!staff.shopId) return false;
+  const barber = await getStore().getBarber(barberId);
+  if (!barber || barber.shop_id !== staff.shopId) return false;
+  if (staff.role === "owner") return true;
   return staff.barberId === barberId;
+}
+
+export async function assertCanManageBarber(
+  staff: StaffAuth,
+  barberId: string,
+): Promise<Barber> {
+  const barber = await getStore().getBarber(barberId);
+  if (!barber || barber.shop_id !== staff.shopId) {
+    throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+  }
+  if (!(await canManageBarber(staff, barberId))) {
+    throw new BookingError("FORBIDDEN", "Cannot manage other barbers", 403);
+  }
+  return barber;
+}
+
+export async function assertCanManageAppointment(
+  staff: StaffAuth,
+  appointmentId: string,
+): Promise<{ appointment: Appointment; barber: Barber }> {
+  const appointment = await getStore().getAppointment(appointmentId);
+  if (!appointment) {
+    throw new BookingError("NOT_FOUND", "Appointment not found", 404);
+  }
+  const barber = await assertCanManageBarber(staff, appointment.barber_id);
+  return { appointment, barber };
 }
 
 export async function canManageBarberInShop(
@@ -117,8 +170,5 @@ export async function canManageBarberInShop(
   shopId: string,
 ): Promise<boolean> {
   if (staff.shopId !== shopId) return false;
-  if (staff.role === "super_admin") return true;
-  if (staff.barberId === barberId) return true;
-  const barber = await getStore().getBarber(barberId);
-  return barber?.shop_id === shopId && staff.barberId === barberId;
+  return canManageBarber(staff, barberId);
 }

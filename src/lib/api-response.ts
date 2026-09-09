@@ -10,9 +10,9 @@ export function jsonError(error: unknown): NextResponse {
       { status: error.status },
     );
   }
-  const message = error instanceof Error ? error.message : "Internal server error";
+  console.error(error);
   return NextResponse.json(
-    { error: { code: "INTERNAL", message } },
+    { error: { code: "INTERNAL", message: "Internal server error" } },
     { status: 500 },
   );
 }

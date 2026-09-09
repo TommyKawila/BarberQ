@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { assertStaff, canManageBarber } from "@/lib/admin-auth";
+import { assertStaff, assertCanManageAppointment } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
-import { getStore } from "@/lib/data";
 import {
   BookingError,
   markAppointmentOutcome,
@@ -23,14 +22,7 @@ export async function PATCH(
       throw new BookingError("INVALID_OUTCOME", "Invalid outcome", 400);
     }
 
-    const existing = await getStore().getAppointment(id);
-    if (!existing) {
-      throw new BookingError("NOT_FOUND", "Appointment not found", 404);
-    }
-    if (!canManageBarber(staff, existing.barber_id)) {
-      throw new BookingError("FORBIDDEN", "Cannot manage other barbers", 403);
-    }
-
+    await assertCanManageAppointment(staff, id);
     const appointment = await markAppointmentOutcome(id, outcome);
     return NextResponse.json({ appointment });
   } catch (error) {

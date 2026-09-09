@@ -11,6 +11,7 @@ export interface Barber {
   line_id?: string | null;
   role?: BarberRole;
   shop_id?: string | null;
+  is_bookable?: boolean;
 }
 
 export interface Shop {

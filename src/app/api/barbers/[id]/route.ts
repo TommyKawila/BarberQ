@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaff, canManageBarber } from "@/lib/admin-auth";
+import { assertStaff, assertCanManageBarber } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import {
@@ -27,13 +27,7 @@ export async function GET(
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
-    if (!canManageBarber(staff, id)) {
-      throw new BookingError("FORBIDDEN", "Cannot view other barbers", 403);
-    }
-    const barber = await getStore().getBarber(id);
-    if (!barber) {
-      throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
-    }
+    const barber = await assertCanManageBarber(staff, id);
     return NextResponse.json({ barber });
   } catch (error) {
     return jsonError(error);
@@ -50,14 +44,20 @@ export async function PATCH(
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
-    if (!canManageBarber(staff, id)) {
-      throw new BookingError("FORBIDDEN", "Cannot edit other barbers", 403);
-    }
+    await assertCanManageBarber(staff, id);
 
     const body = await readJson<{
       offDays?: number[];
       slotDuration?: number;
+      name?: string;
+      lineId?: string | null;
+      isBookable?: boolean;
     }>(req);
+
+    const isOwner = staff.role === "owner";
+    if (!isOwner && (body.name !== undefined || body.lineId !== undefined || body.isBookable !== undefined)) {
+      throw new BookingError("FORBIDDEN", "Shop owner required", 403);
+    }
 
     if (body.offDays !== undefined) {
       const offDays = normalizeOffDays(body.offDays);
@@ -72,10 +72,16 @@ export async function PATCH(
         throw new BookingError("INVALID_SLOT_DURATION", durationError, 400);
       }
     }
+    if (body.name !== undefined && !body.name.trim()) {
+      throw new BookingError("INVALID_NAME", "Barber name is required", 400);
+    }
 
     const barber = await getStore().updateBarber(id, {
       offDays: body.offDays !== undefined ? normalizeOffDays(body.offDays) : undefined,
       slotDuration: body.slotDuration,
+      name: isOwner ? body.name?.trim() : undefined,
+      lineId: isOwner ? body.lineId : undefined,
+      isBookable: isOwner ? body.isBookable : undefined,
     });
     return NextResponse.json({ barber });
   } catch (error) {

@@ -3,6 +3,7 @@
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import { barberLabel, type AdminColumn, type AdminSlot } from "@/types/booking";
+import Link from "next/link";
 
 interface QuickBlockGridProps {
   columns: AdminColumn[];
@@ -15,6 +16,9 @@ interface QuickBlockGridProps {
   onOutcome?: (barberId: string, slot: AdminSlot, outcome: "completed" | "no_show") => void;
   onLateCalled?: (barberId: string, slot: AdminSlot) => void;
   onCancel?: (barberId: string, slot: AdminSlot) => void;
+  bookingHref?: string;
+  onCopyBookingLink?: () => void;
+  bookingLinkCopied?: boolean;
 }
 
 function slotClass(slot: AdminSlot, pending: boolean): string {
@@ -52,17 +56,45 @@ export function QuickBlockGrid({
   onOutcome,
   onLateCalled,
   onCancel,
+  bookingHref,
+  onCopyBookingLink,
+  bookingLinkCopied = false,
 }: QuickBlockGridProps) {
   const { locale, t } = useI18n();
   const now = Date.now();
 
+  if (columns.length === 0) {
+    return (
+      <section className="flex flex-col items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-10 text-center">
+        <p className="text-sm text-zinc-400">{t("admin.noQueueToday")}</p>
+        {bookingHref ? (
+          <Link
+            href={bookingHref}
+            className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950"
+          >
+            {t("admin.nav.booking")}
+          </Link>
+        ) : null}
+        {onCopyBookingLink ? (
+          <button
+            type="button"
+            onClick={onCopyBookingLink}
+            className="rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200"
+          >
+            {bookingLinkCopied ? t("admin.bookingLinkCopied") : t("admin.copyBookingLink")}
+          </button>
+        ) : null}
+      </section>
+    );
+  }
+
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="flex gap-2 overflow-x-auto pb-1">
       {columns.map((column) => {
         const canEdit =
           editableBarberId === null || column.barber.id === editableBarberId;
         return (
-        <div key={column.barber.id} className="flex flex-col gap-2">
+        <div key={column.barber.id} className="flex min-w-[7.5rem] shrink-0 flex-col gap-2">
           <div className="rounded-lg bg-zinc-900 px-1 py-2 text-center">
             <div className="text-sm font-semibold">
               {barberLabel(column.barber.name, locale)}

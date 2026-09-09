@@ -21,7 +21,7 @@ export function BarberSelector({ barbers, value, onChange }: BarberSelectorProps
             key={barber.id}
             type="button"
             onClick={() => onChange(barber.id)}
-            className={`min-w-[6.5rem] flex-1 rounded-xl px-3 py-3 text-left transition ${
+            className={`min-h-11 min-w-[6.5rem] flex-1 rounded-xl px-3 py-3 text-left transition ${
               selected
                 ? "bg-amber-400 text-zinc-950"
                 : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"

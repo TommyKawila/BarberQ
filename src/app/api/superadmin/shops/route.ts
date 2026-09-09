@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getStore } from "@/lib/data";
+import { getShopActivationSummary } from "@/lib/onboarding/shop-activation-service";
 import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import { assertSuperAdminToken } from "@/lib/superadmin/auth";
 
@@ -9,10 +10,19 @@ export async function GET(req: Request) {
     const store = getStore();
     const [shops, owners] = await Promise.all([store.listShops(), store.listShopOwners()]);
     const ownerByShop = new Map(owners.map((o) => [o.shopId, o.name]));
-    const shopsWithOwner = shops.map((shop) => ({
-      ...shop,
-      ownerName: ownerByShop.get(shop.id) ?? null,
-    }));
+    const shopsWithOwner = await Promise.all(
+      shops.map(async (shop) => {
+        const activation = await getShopActivationSummary(shop);
+        return {
+          ...shop,
+          ownerName: ownerByShop.get(shop.id) ?? null,
+          claimed: activation.claimed,
+          setupReady: activation.ready,
+          hasFirstBooking: activation.hasFirstBooking,
+          bookableCount: activation.bookableCount,
+        };
+      }),
+    );
     return NextResponse.json({ shops: shopsWithOwner });
   } catch (err) {
     return NextResponse.json(

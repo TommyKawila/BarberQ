@@ -28,7 +28,7 @@ export async function GET(
     const staff = await assertStaffForShop(req, shop.id);
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date") ?? dateISOFromInstant(new Date());
-    const columns = await getAdminDay(date, shop.id);
+    const columns = await getAdminDay(date, shop.id, staff);
     return NextResponse.json({
       date,
       columns,
@@ -67,7 +67,7 @@ export async function POST(
     if (!barber || barber.shop_id !== shop.id) {
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
-    if (!canManageBarber(staff, barberId)) {
+    if (!(await canManageBarber(staff, barberId))) {
       throw new BookingError("FORBIDDEN", "Cannot manage other barbers", 403);
     }
 

@@ -28,6 +28,30 @@ export function validateSlotDuration(minutes: number): string | null {
   return null;
 }
 
+export function validateShopDayHours(day: {
+  closed: boolean;
+  open: string;
+  close: string;
+}): string | null {
+  if (day.closed) return null;
+  const open = parseTimeHHmm(day.open);
+  const close = parseTimeHHmm(day.close);
+  if (!open || !close) return "Invalid time format";
+  if (timeToMinutes(close) <= timeToMinutes(open)) {
+    return "Close time must be after open time";
+  }
+  return null;
+}
+
+export function validateShopHours(hours: { closed: boolean; open: string; close: string }[]): string | null {
+  if (hours.length !== 7) return "Shop hours must have 7 days";
+  for (const day of hours) {
+    const err = validateShopDayHours(day);
+    if (err) return err;
+  }
+  return null;
+}
+
 export function parseTimeHHmm(value: string): string | null {
   const trimmed = value.trim();
   if (!TIME_RE.test(trimmed)) return null;

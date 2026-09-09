@@ -3,6 +3,7 @@ import { generateStaffToken } from "@/lib/data/staff-seed";
 import {
   StoreConflict,
   type BookingStore,
+  type CreateBarberInput,
   type CreateRecurringBreakInput,
   type ClaimOwnerInviteInput,
   type CreateShopInput,
@@ -20,6 +21,7 @@ import {
   validateSlotDuration,
 } from "@/lib/schedule/validation";
 import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
+import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
 
 function mapRpcError(error: { message?: string; code?: string }): never {
@@ -348,7 +350,7 @@ export const supabaseStore: BookingStore = {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("shop_settings")
-      .select("shop_id, logo_data_url, shop_name, shop_line_url, shop_phone")
+      .select("shop_id, logo_data_url, shop_name, shop_line_url, shop_phone, hours")
       .eq("shop_id", shopId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -358,6 +360,7 @@ export const supabaseStore: BookingStore = {
       shopName: (data?.shop_name as string | null) ?? null,
       lineUrl: (data?.shop_line_url as string | null) ?? null,
       phone: (data?.shop_phone as string | null) ?? null,
+      hours: data?.hours ? normalizeShopHours(data.hours as import("@/lib/shop/shop-hours").ShopHours) : null,
     };
   },
 
@@ -371,6 +374,7 @@ export const supabaseStore: BookingStore = {
         shop_name: input.shopName,
         shop_line_url: input.lineUrl,
         shop_phone: input.phone,
+        hours: input.hours,
         updated_at: new Date().toISOString(),
       });
     if (error) throw new Error(error.message);
@@ -442,6 +446,22 @@ export const supabaseStore: BookingStore = {
       if (validateSlotDuration(input.slotDuration)) throw new StoreConflict("INVALID_RANGE");
       update.slot_duration_minutes = input.slotDuration;
     }
+    if (input.name !== undefined) {
+      const name = input.name.trim();
+      if (!name) throw new StoreConflict("INVALID_RANGE");
+      update.name = name;
+    }
+    if (input.lineId !== undefined) {
+      const lineId = input.lineId?.trim() || null;
+      if (lineId) {
+        const existing = await supabaseStore.getBarberByLineId(lineId);
+        if (existing && existing.id !== barberId) throw new StoreConflict("LINE_ID_TAKEN");
+      }
+      update.line_id = lineId;
+    }
+    if (input.isBookable !== undefined) {
+      update.is_bookable = input.isBookable;
+    }
     if (Object.keys(update).length === 0) return barber;
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -450,7 +470,47 @@ export const supabaseStore: BookingStore = {
       .eq("id", barberId)
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (error.code === "23505") {
+        if ((error.message ?? "").includes("line_id")) throw new StoreConflict("LINE_ID_TAKEN");
+        throw new StoreConflict("INVALID_RANGE");
+      }
+      throw new Error(error.message);
+    }
+    return data as Barber;
+  },
+
+  async createBarber(input: CreateBarberInput) {
+    const name = input.name.trim();
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+    const slotDuration = input.slotDuration ?? 30;
+    if (validateSlotDuration(slotDuration)) throw new StoreConflict("INVALID_RANGE");
+    const lineId = input.lineId?.trim() || null;
+    if (lineId) {
+      const existing = await supabaseStore.getBarberByLineId(lineId);
+      if (existing) throw new StoreConflict("LINE_ID_TAKEN");
+    }
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("barbers")
+      .insert({
+        shop_id: input.shopId,
+        name,
+        line_id: lineId,
+        role: "barber",
+        slot_duration_minutes: slotDuration,
+        off_days: [],
+        is_bookable: input.isBookable ?? true,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      if (error.code === "23505") {
+        if ((error.message ?? "").includes("line_id")) throw new StoreConflict("LINE_ID_TAKEN");
+        throw new StoreConflict("INVALID_RANGE");
+      }
+      throw new Error(error.message);
+    }
     return data as Barber;
   },
 

@@ -1,16 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import liff from "@line/liff";
 import { ADMIN_TOKEN_KEY } from "@/lib/admin-auth";
 import { readLoginTokenFromUrl } from "@/lib/admin/read-login-token";
 import { useBrowserStorage } from "@/lib/browser-storage";
-import type { StaffRole } from "@/lib/data/types";
+import { getLineAuthHeaders } from "@/lib/line/auth-headers";
+import type { ShopStaffRole } from "@/lib/admin-auth";
 
 export interface AdminSession {
   staffId: string;
   name: string;
-  role: StaffRole;
+  role: ShopStaffRole;
   barberId: string | null;
+  shopId?: string;
 }
 
 interface AdminMeta {
@@ -22,16 +25,28 @@ interface ApiError {
   error?: { code?: string; message?: string };
 }
 
-function authHeadersFor(token: string | null): HeadersInit {
-  const headers: HeadersInit = {};
+function authHeadersFor(token: string | null, lineUserId?: string | null): HeadersInit {
+  const headers: Record<string, string> = {};
+  const lineHeaders = getLineAuthHeaders(lineUserId);
+  if (lineHeaders instanceof Headers) {
+    lineHeaders.forEach((value, key) => {
+      headers[key] = value;
+    });
+  } else if (Array.isArray(lineHeaders)) {
+    for (const [key, value] of lineHeaders) headers[key] = value;
+  } else {
+    Object.assign(headers, lineHeaders);
+  }
   if (token) headers["x-admin-token"] = token;
   return headers;
 }
 
 export function useAdminSession() {
+  const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
   const [tokenInput, setTokenInput] = useState("");
   const [adminToken, setAdminToken] = useBrowserStorage(ADMIN_TOKEN_KEY);
   const [session, setSession] = useState<AdminSession | null>(null);
+  const [lineUserId, setLineUserId] = useState<string | null>(null);
   const [meta, setMeta] = useState<AdminMeta>({
     prototypeMode: true,
     adminAuthRequired: false,
@@ -41,14 +56,35 @@ export function useAdminSession() {
   const [tokenReady, setTokenReady] = useState(false);
   const bootstrappedRef = useRef(false);
 
-  const authHeaders = useMemo(() => authHeadersFor(adminToken), [adminToken]);
+  useEffect(() => {
+    if (!liffId) return;
+    let cancelled = false;
+    void liff
+      .init({ liffId })
+      .then(async () => {
+        if (cancelled || !liff.isLoggedIn()) return;
+        const p = await liff.getProfile();
+        if (!cancelled) setLineUserId(p.userId);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [liffId]);
+
+  const authHeaders = useMemo(
+    () => authHeadersFor(adminToken, lineUserId),
+    [adminToken, lineUserId],
+  );
 
   const loadSession = useCallback(
     async (tokenOverride?: string | null) => {
       const token = tokenOverride ?? adminToken;
       setLoading(true);
       try {
-        const res = await fetch("/api/staff/me", { headers: authHeadersFor(token) });
+        const res = await fetch("/api/staff/me", {
+          headers: authHeadersFor(token, lineUserId),
+        });
         const json = (await res.json()) as { staff?: AdminSession } & AdminMeta & ApiError;
         setMeta({
           prototypeMode: json.prototypeMode ?? true,
@@ -72,7 +108,7 @@ export function useAdminSession() {
         setLoading(false);
       }
     },
-    [adminToken, setAdminToken],
+    [adminToken, lineUserId, setAdminToken],
   );
 
   useEffect(() => {
@@ -96,8 +132,8 @@ export function useAdminSession() {
     setSession(null);
   }
 
-  const isSuperAdmin = session?.role === "super_admin";
-  const needsUnlock = tokenReady && meta.adminAuthRequired && !adminToken && !session;
+  const isOwner = session?.role === "owner";
+  const needsUnlock = tokenReady && meta.adminAuthRequired && !adminToken && !session && !lineUserId;
 
   return {
     tokenInput,
@@ -113,7 +149,8 @@ export function useAdminSession() {
     loadSession,
     unlock,
     signOut,
-    isSuperAdmin,
+    isOwner,
+    isSuperAdmin: isOwner,
     needsUnlock,
   };
 }

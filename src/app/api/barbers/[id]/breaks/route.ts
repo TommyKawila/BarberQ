@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaff, canManageBarber } from "@/lib/admin-auth";
+import { assertStaff, assertCanManageBarber } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore, StoreConflict } from "@/lib/data";
 import { validateRecurringBreakInput } from "@/lib/schedule/validation";
@@ -23,9 +23,7 @@ export async function GET(
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
-    if (!canManageBarber(staff, id)) {
-      throw new BookingError("FORBIDDEN", "Cannot view other barber breaks", 403);
-    }
+    await assertCanManageBarber(staff, id);
     const breaks = await getStore().listRecurringBreaks(id);
     return NextResponse.json({ breaks });
   } catch (error) {
@@ -43,9 +41,7 @@ export async function POST(
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
-    if (!canManageBarber(staff, id)) {
-      throw new BookingError("FORBIDDEN", "Cannot create breaks for others", 403);
-    }
+    await assertCanManageBarber(staff, id);
 
     const body = await readJson<{
       weekday?: number;
@@ -94,9 +90,7 @@ export async function DELETE(
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
-    if (!canManageBarber(staff, id)) {
-      throw new BookingError("FORBIDDEN", "Cannot delete breaks for others", 403);
-    }
+    await assertCanManageBarber(staff, id);
 
     const body = await readJson<{ breakId?: string }>(req);
     const breakId = body.breakId ?? "";

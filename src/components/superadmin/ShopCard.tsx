@@ -6,7 +6,13 @@ import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import type { Shop } from "@/types/booking";
 
 interface ShopCardProps {
-  shop: Shop;
+  shop: Shop & {
+    ownerName?: string | null;
+    claimed?: boolean;
+    setupReady?: boolean;
+    hasFirstBooking?: boolean;
+    bookableCount?: number;
+  };
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -76,8 +82,16 @@ export function ShopCard({ shop }: ShopCardProps) {
           <p className="text-xs text-zinc-400">
             Owner: {shop.ownerName ?? "รอ claim"}
           </p>
+          <p className="text-xs text-zinc-400">Slug: {shop.slug ?? "—"}</p>
           <p className="text-xs text-zinc-400">Status: {shop.status}</p>
           <p className="text-xs text-zinc-400">Expires: {expires}</p>
+          {shop.status !== "pending" ? (
+            <p className="text-xs text-zinc-400">
+              Setup: {shop.setupReady ? "ready" : "incomplete"}
+              {shop.hasFirstBooking ? " · first booking" : ""}
+              {shop.bookableCount !== undefined ? ` · ${shop.bookableCount} bookable` : ""}
+            </p>
+          ) : null}
           {shop.status === "pending" && inviteExpires ? (
             <p className="text-xs text-amber-400">Invite expires: {inviteExpires}</p>
           ) : null}
@@ -90,7 +104,7 @@ export function ShopCard({ shop }: ShopCardProps) {
         <div className="mt-3 space-y-3 border-t border-zinc-800 pt-3">
           {liffUrl ? (
             <CopyRow
-              label="LIFF กดจองคิว (ติดบน OA ร้าน)"
+              label="ลิงก์จอง (ติดบน OA ร้าน)"
               value={liffUrl}
               copied={copiedKey === "liff"}
               onCopy={() => void handleCopy("liff", liffUrl)}

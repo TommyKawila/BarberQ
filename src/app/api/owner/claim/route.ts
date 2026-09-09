@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { assertVerifiedCustomer } from "@/lib/auth/customer-auth";
+import { jsonError, readJson } from "@/lib/api-response";
 import { getStore, StoreConflict } from "@/lib/data";
 
 const STATUS: Partial<Record<string, number>> = {
@@ -11,21 +13,21 @@ const STATUS: Partial<Record<string, number>> = {
 
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as {
+    const lineUser = await assertVerifiedCustomer(req);
+    const body = await readJson<{
       code?: string;
-      lineId?: string;
       displayName?: string;
-    };
+    }>(req);
 
-    const { code, lineId, displayName } = body;
-    if (!code || !lineId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    const code = body.code?.trim();
+    if (!code) {
+      return NextResponse.json({ error: "Missing invite code" }, { status: 400 });
     }
 
     const shop = await getStore().claimOwnerInvite({
       inviteToken: code,
-      ownerLineId: lineId,
-      ownerName: displayName ?? "Owner",
+      ownerLineId: lineUser.userId,
+      ownerName: lineUser.displayName ?? body.displayName ?? "Owner",
     });
 
     return NextResponse.json({ shop });
@@ -36,9 +38,6 @@ export async function POST(req: Request) {
         { status: STATUS[error.code] ?? 400 },
       );
     }
-    return NextResponse.json(
-      { error: { code: "INTERNAL", message: error instanceof Error ? error.message : "Failed" } },
-      { status: 500 },
-    );
+    return jsonError(error);
   }
 }
