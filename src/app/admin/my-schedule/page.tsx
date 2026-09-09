@@ -9,8 +9,9 @@ import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { MessageKey } from "@/lib/i18n/dictionary";
+import { BarberAvatar } from "@/components/barber/BarberAvatar";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
-import type { Barber } from "@/types/booking";
+import { barberLabel, type Barber } from "@/types/booking";
 
 interface RecurringBreakRow {
   id: string;
@@ -35,7 +36,7 @@ const WEEKDAYS: { value: number; key: MessageKey }[] = [
 ];
 
 function MyScheduleContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
   const { shopPath } = useShopSlug();
   const searchParams = useSearchParams();
@@ -215,13 +216,24 @@ function MyScheduleContent() {
               {t("common.prototypeMode")}
             </span>
           ) : null}
-          <h1 className="text-xl font-semibold">{t("admin.mySchedule")}</h1>
-          <AdminSessionBadge name={profile.displayName || profile.barberName} role={profile.role} />
-          {barber ? (
-            <p className="mt-1 text-xs text-zinc-500">
-              {barberParam ? `${t("admin.scheduleFor")} ` : ""}{barber.name}
-            </p>
-          ) : null}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-xl font-semibold">
+                {barberParam && barber
+                  ? t("admin.scheduleTitleFor").replace("{name}", barberLabel(barber.name, locale))
+                  : t("admin.mySchedule")}
+              </h1>
+              {barberParam && barber ? (
+                <p className="mt-1 text-sm text-zinc-400">
+                  {t("admin.scheduleEditingFor").replace("{name}", barberLabel(barber.name, locale))}
+                </p>
+              ) : null}
+              <AdminSessionBadge name={profile.displayName || profile.barberName} role={profile.role} />
+            </div>
+            {barberParam && barber ? (
+              <BarberAvatar name={barber.name} imageUrl={barber.profile_image_url} size="lg" />
+            ) : null}
+          </div>
         </header>
 
         {error ? <p className="text-sm text-red-400">{error}</p> : null}

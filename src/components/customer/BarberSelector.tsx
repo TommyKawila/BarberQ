@@ -1,5 +1,7 @@
 "use client";
 
+import { BarberAvatar } from "@/components/barber/BarberAvatar";
+import { customerBarberPhotoUrl } from "@/lib/barber/barber-avatar";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { barberLabel, type Barber } from "@/types/booking";
 
@@ -13,26 +15,36 @@ export function BarberSelector({ barbers, value, onChange }: BarberSelectorProps
   const { locale, t } = useI18n();
 
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
+    <div className="flex flex-col gap-2">
       {barbers.map((barber) => {
         const selected = barber.id === value;
+        const photoUrl = customerBarberPhotoUrl(barber);
         return (
           <button
             key={barber.id}
             type="button"
             onClick={() => onChange(barber.id)}
-            className={`min-h-11 min-w-[6.5rem] flex-1 rounded-xl px-3 py-3 text-left transition ${
+            className={`flex min-h-[4.5rem] items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition ${
               selected
-                ? "bg-amber-400 text-zinc-950"
-                : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                ? "border-amber-400 bg-zinc-900"
+                : "border-transparent bg-zinc-800 hover:bg-zinc-700"
             }`}
           >
-            <div className="text-sm font-semibold leading-tight">
-              {barberLabel(barber.name, locale)}
+            <BarberAvatar name={barber.name} imageUrl={photoUrl} size="md" />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold leading-tight">
+                {barberLabel(barber.name, locale)}
+              </div>
+              <div className="mt-0.5 text-xs text-zinc-400">
+                {t("booking.minutesPerSlot").replace(
+                  "{minutes}",
+                  String(barber.slot_duration_minutes),
+                )}
+              </div>
             </div>
-            <div className={`mt-1 text-xs ${selected ? "text-zinc-800" : "text-zinc-400"}`}>
-              {barber.slot_duration_minutes} {t("common.minutes")}
-            </div>
+            {selected ? (
+              <span className="text-amber-400" aria-hidden>✓</span>
+            ) : null}
           </button>
         );
       })}

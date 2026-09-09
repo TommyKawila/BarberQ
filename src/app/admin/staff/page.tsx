@@ -25,7 +25,6 @@ export default function AdminStaffPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [lineId, setLineId] = useState("");
   const [slotDuration, setSlotDuration] = useState(30);
@@ -60,19 +59,9 @@ export default function AdminStaffPage() {
 
   function resetForm() {
     setShowForm(false);
-    setEditingId(null);
     setName("");
     setLineId("");
     setSlotDuration(30);
-    setFormMessage(null);
-  }
-
-  function startEdit(barber: Barber) {
-    setEditingId(barber.id);
-    setName(barber.name);
-    setLineId(barber.line_id ?? "");
-    setSlotDuration(barber.slot_duration_minutes);
-    setShowForm(true);
     setFormMessage(null);
   }
 
@@ -84,31 +73,21 @@ export default function AdminStaffPage() {
     setError(null);
     try {
       const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
-      const res = editingId
-        ? await fetch(`/api/barbers/${editingId}`, {
-            method: "PATCH",
-            headers,
-            body: JSON.stringify({
-              name: trimmed,
-              lineId: lineId.trim() || null,
-              slotDuration,
-            }),
-          })
-        : await fetch(shopApi("/barbers"), {
-            method: "POST",
-            headers,
-            body: JSON.stringify({
-              name: trimmed,
-              lineId: lineId.trim() || null,
-              slotDuration,
-            }),
-          });
+      const res = await fetch(shopApi("/barbers"), {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          name: trimmed,
+          lineId: lineId.trim() || null,
+          slotDuration,
+        }),
+      });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
         return;
       }
-      setFormMessage(editingId ? t("admin.barberSaved") : t("admin.barberCreated"));
+      setFormMessage(t("admin.barberCreated"));
       resetForm();
       await loadBarbers();
     } catch {
@@ -276,9 +255,7 @@ export default function AdminStaffPage() {
           </button>
         ) : (
           <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="text-sm font-semibold">
-              {editingId ? t("admin.editBarber") : t("admin.addBarber")}
-            </h2>
+            <h2 className="text-sm font-semibold">{t("admin.addBarber")}</h2>
             <label className="mt-3 flex flex-col gap-1 text-sm">
               {t("admin.barberName")}
               <input
@@ -435,13 +412,12 @@ export default function AdminStaffPage() {
                   ) : null}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(barber)}
+                  <Link
+                    href={shopPath(`/admin/staff/${barber.id}`)}
                     className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
                   >
                     {t("admin.editBarber")}
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => void toggleBookable(barber)}

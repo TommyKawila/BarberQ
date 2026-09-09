@@ -52,10 +52,17 @@ export async function PATCH(
       name?: string;
       lineId?: string | null;
       isBookable?: boolean;
+      showProfileInBooking?: boolean;
     }>(req);
 
     const isOwner = staff.role === "owner";
-    if (!isOwner && (body.name !== undefined || body.lineId !== undefined || body.isBookable !== undefined)) {
+    if (
+      !isOwner &&
+      (body.name !== undefined ||
+        body.lineId !== undefined ||
+        body.isBookable !== undefined ||
+        body.showProfileInBooking !== undefined)
+    ) {
       throw new BookingError("FORBIDDEN", "Shop owner required", 403);
     }
 
@@ -82,6 +89,7 @@ export async function PATCH(
       name: isOwner ? body.name?.trim() : undefined,
       lineId: isOwner ? body.lineId : undefined,
       isBookable: isOwner ? body.isBookable : undefined,
+      showProfileInBooking: isOwner ? body.showProfileInBooking : undefined,
     });
     return NextResponse.json({ barber });
   } catch (error) {

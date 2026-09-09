@@ -469,6 +469,12 @@ export const supabaseStore: BookingStore = {
     if (input.isBookable !== undefined) {
       update.is_bookable = input.isBookable;
     }
+    if (input.profileImageUrl !== undefined) {
+      update.profile_image_url = input.profileImageUrl;
+    }
+    if (input.showProfileInBooking !== undefined) {
+      update.show_profile_in_booking = input.showProfileInBooking;
+    }
     if (Object.keys(update).length === 0) return barber;
     const supabase = createServiceClient();
     const { data, error } = await supabase

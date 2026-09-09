@@ -13,6 +13,8 @@ export interface Barber {
   shop_id?: string | null;
   is_bookable?: boolean;
   is_active?: boolean;
+  profile_image_url?: string | null;
+  show_profile_in_booking?: boolean;
 }
 
 export interface Shop {

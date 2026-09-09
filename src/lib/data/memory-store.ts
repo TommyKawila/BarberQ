@@ -524,6 +524,12 @@ export const memoryStore: BookingStore = {
     if (input.isBookable !== undefined) {
       barber.is_bookable = input.isBookable;
     }
+    if (input.profileImageUrl !== undefined) {
+      barber.profile_image_url = input.profileImageUrl;
+    }
+    if (input.showProfileInBooking !== undefined) {
+      barber.show_profile_in_booking = input.showProfileInBooking;
+    }
     return { ...barber, off_days: [...barber.off_days] };
   },
 

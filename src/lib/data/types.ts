@@ -97,6 +97,8 @@ export interface UpdateBarberInput {
   name?: string;
   lineId?: string | null;
   isBookable?: boolean;
+  profileImageUrl?: string | null;
+  showProfileInBooking?: boolean;
 }
 
 export interface CreateBarberInput {

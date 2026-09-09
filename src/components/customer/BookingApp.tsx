@@ -446,7 +446,8 @@ export function BookingApp() {
 
       {!singleBarber ? (
         <section className="flex flex-col gap-2">
-          <h2 className="text-sm font-medium text-zinc-400">{t("booking.barber")}</h2>
+          <h2 className="text-base font-semibold text-zinc-100">{t("booking.selectBarber")}</h2>
+          <p className="text-sm text-zinc-400">{t("booking.selectBarberHint")}</p>
           <BarberSelector barbers={barbers} value={barberId} onChange={setBarberId} />
         </section>
       ) : selectedBarber ? (
