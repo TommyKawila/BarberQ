@@ -28,14 +28,14 @@ import { barberLabel, type Barber } from "@/types/booking";
 
 type SetupStep = "profile" | "team" | "hours" | "link" | "test" | "ready";
 
-const WEEKDAYS: { value: number; key: MessageKey }[] = [
-  { value: 0, key: "common.sunday" },
+const SETUP_HOURS_DAYS: { value: number; key: MessageKey }[] = [
   { value: 1, key: "common.monday" },
   { value: 2, key: "common.tuesday" },
   { value: 3, key: "common.wednesday" },
   { value: 4, key: "common.thursday" },
   { value: 5, key: "common.friday" },
   { value: 6, key: "common.saturday" },
+  { value: 0, key: "common.sunday" },
 ];
 
 function SetupContent() {
@@ -277,6 +277,7 @@ function SetupContent() {
     setHours((prev) =>
       prev.map((row) => (row.closed ? row : { ...row, open: template.open, close: template.close })),
     );
+    setMessage(t("onboarding.copyHoursApplied"));
   }
 
   async function saveHours() {
@@ -340,8 +341,12 @@ function SetupContent() {
               {t("common.prototypeMode")}
             </span>
           ) : null}
-          <h1 className="text-xl font-semibold">{t("onboarding.title")}</h1>
-          <p className="mt-1 text-sm text-zinc-400">{t("onboarding.subtitle")}</p>
+          <h1 className="text-xl font-semibold">
+            {step === "hours" ? t("onboarding.hoursTitle") : t("onboarding.title")}
+          </h1>
+          <p className="mt-1 text-sm text-zinc-400">
+            {step === "hours" ? t("onboarding.hoursSubtitle") : t("onboarding.subtitle")}
+          </p>
           {act ? (
             <p className="mt-2 text-xs text-zinc-500">
               {t("onboarding.progress").replace("{done}", String(act.completedSteps)).replace("{total}", String(act.totalSteps))}
@@ -544,47 +549,64 @@ function SetupContent() {
         ) : null}
 
         {step === "hours" ? (
-          <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="font-semibold">{t("onboarding.stepHours")}</h2>
+          <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
             <button
               type="button"
               onClick={applyHoursToAllOpen}
-              className="mt-2 text-xs text-amber-400 underline"
+              className="min-h-11 w-full rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200"
             >
               {t("onboarding.copyHoursToAll")}
             </button>
-            <div className="mt-3 flex flex-col gap-2">
-              {WEEKDAYS.map((day) => {
+            <div className="mt-4 flex flex-col gap-3">
+              {SETUP_HOURS_DAYS.map((day) => {
                 const row = hours[day.value];
                 return (
-                  <div key={day.value} className="rounded-lg bg-zinc-950 p-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">{t(day.key)}</span>
-                      <label className="flex items-center gap-2 text-xs text-zinc-400">
-                        <input
-                          type="checkbox"
-                          checked={row.closed}
-                          onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
-                        />
-                        {t("admin.shopClosed")}
-                      </label>
-                    </div>
-                    {!row.closed ? (
-                      <div className="mt-2 flex gap-2">
-                        <input
-                          type="time"
-                          value={row.open}
-                          onChange={(e) => updateHour(day.value, { open: e.target.value })}
-                          className="min-h-10 flex-1 rounded bg-zinc-800 px-2 text-sm"
-                        />
-                        <input
-                          type="time"
-                          value={row.close}
-                          onChange={(e) => updateHour(day.value, { close: e.target.value })}
-                          className="min-h-10 flex-1 rounded bg-zinc-800 px-2 text-sm"
-                        />
+                  <div key={day.value} className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-sm font-medium">{t(day.key)}</span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-xs text-zinc-500">{t("onboarding.dayClosed")}</span>
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-checked={row.closed}
+                          onClick={() => updateHour(day.value, { closed: !row.closed })}
+                          className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
+                            row.closed ? "bg-emerald-500" : "bg-zinc-700"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
+                              row.closed ? "translate-x-5" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
                       </div>
-                    ) : null}
+                    </div>
+                    {row.closed ? (
+                      <p className="mt-3 text-xs text-zinc-500">{t("onboarding.dayClosedHint")}</p>
+                    ) : (
+                      <div className="mt-3 grid grid-cols-2 gap-2">
+                        <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
+                          {t("onboarding.openTime")}
+                          <input
+                            type="time"
+                            value={row.open}
+                            onChange={(e) => updateHour(day.value, { open: e.target.value })}
+                            className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
+                          />
+                        </label>
+                        <label className="flex min-w-0 flex-col gap-1 text-xs text-zinc-500">
+                          {t("onboarding.closeTime")}
+                          <input
+                            type="time"
+                            value={row.close}
+                            onChange={(e) => updateHour(day.value, { close: e.target.value })}
+                            className="min-h-10 w-full min-w-0 rounded-lg bg-zinc-800 px-2 text-sm"
+                          />
+                        </label>
+                      </div>
+                    )}
                   </div>
                 );
               })}
