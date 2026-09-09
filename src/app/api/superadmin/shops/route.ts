@@ -10,8 +10,24 @@ export async function GET(req: Request) {
   try {
     assertSuperAdminToken(req.headers.get("x-superadmin-token"));
     const store = getStore();
-    const [shops, owners] = await Promise.all([store.listShops(), store.listShopOwners()]);
+    const [shops, owners, allBarbers] = await Promise.all([
+      store.listShops(),
+      store.listShopOwners(),
+      store.listBarbers(),
+    ]);
     const ownerByShop = new Map(owners.map((o) => [o.shopId, o.name]));
+    const staffByShop = new Map<string, { id: string; name: string; role: string; lineLinked: boolean }[]>();
+    for (const barber of allBarbers) {
+      if (!barber.shop_id) continue;
+      const list = staffByShop.get(barber.shop_id) ?? [];
+      list.push({
+        id: barber.id,
+        name: barber.name,
+        role: barber.role ?? "barber",
+        lineLinked: Boolean(barber.line_id),
+      });
+      staffByShop.set(barber.shop_id, list);
+    }
     const shopsWithOwner = await Promise.all(
       shops.map(async (shop) => {
         const activation = await getShopActivationSummary(shop);
@@ -22,6 +38,7 @@ export async function GET(req: Request) {
           setupReady: activation.ready,
           hasFirstBooking: activation.hasFirstBooking,
           bookableCount: activation.bookableCount,
+          staff: staffByShop.get(shop.id) ?? [],
         };
       }),
     );

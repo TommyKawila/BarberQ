@@ -1,9 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
-import type { Shop } from "@/types/booking";
+import type { BarberRole, Shop } from "@/types/booking";
+
+export interface ShopStaffSummary {
+  id: string;
+  name: string;
+  role: BarberRole | string;
+  lineLinked: boolean;
+}
 
 interface ShopCardProps {
   shop: Shop & {
@@ -12,6 +19,7 @@ interface ShopCardProps {
     setupReady?: boolean;
     hasFirstBooking?: boolean;
     bookableCount?: number;
+    staff?: ShopStaffSummary[];
   };
   superAdminToken?: string;
   onRegenerated?: () => void;
@@ -58,6 +66,14 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
   const [inviteExpiresAt, setInviteExpiresAt] = useState(shop.invite_expires_at);
   const [regenerating, setRegenerating] = useState(false);
   const [regenerateError, setRegenerateError] = useState<string | null>(null);
+  const [staff, setStaff] = useState<ShopStaffSummary[]>(shop.staff ?? []);
+
+  useEffect(() => {
+    setStaff(shop.staff ?? []);
+  }, [shop.staff]);
+  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
+  const [unlinkError, setUnlinkError] = useState<string | null>(null);
+  const [unlinkSuccess, setUnlinkSuccess] = useState<string | null>(null);
   const expires = shop.subscribed_until
     ? new Date(shop.subscribed_until).toLocaleDateString("th-TH")
     : "—";
@@ -71,6 +87,61 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
   async function handleCopy(key: string, value: string) {
     const ok = await copyText(value);
     if (ok) setCopiedKey(key);
+  }
+
+  function unlinkConfirmMessage(member: ShopStaffSummary): string {
+    const base =
+      `ต้องการยกเลิกการผูก LINE ของ ${member.name} หรือไม่?\n` +
+      "ประวัติคิวจะยังอยู่ แต่บัญชี LINE นี้จะไม่สามารถเข้าใช้งานในสิทธิ์เดิมได้จนกว่าจะผูกใหม่";
+    if (member.role === "owner") {
+      return (
+        `${base}\n\n` +
+        "⚠ เจ้าของร้าน: หลังยกเลิกจะไม่สามารถเข้าแอดมินร้านนี้ด้วย LINE account เดิม " +
+        "(สถานะร้านและการ claim ไม่เปลี่ยน)"
+      );
+    }
+    return base;
+  }
+
+  async function handleUnlinkLine(member: ShopStaffSummary) {
+    if (!superAdminToken || !member.lineLinked) return;
+    if (!window.confirm(unlinkConfirmMessage(member))) return;
+
+    setUnlinkingId(member.id);
+    setUnlinkError(null);
+    setUnlinkSuccess(null);
+    try {
+      const res = await fetch(
+        `/api/superadmin/shops/${shop.id}/barbers/${member.id}/unlink-line`,
+        {
+          method: "POST",
+          headers: { "x-superadmin-token": superAdminToken },
+        },
+      );
+      const json = (await res.json()) as {
+        barber?: { lineLinked?: boolean };
+        error?: { message?: string } | string;
+      };
+      if (!res.ok) {
+        setUnlinkError(
+          typeof json.error === "string"
+            ? json.error
+            : json.error?.message ?? "ยกเลิกการผูก LINE ไม่สำเร็จ",
+        );
+        return;
+      }
+      setStaff((prev) =>
+        prev.map((s) =>
+          s.id === member.id ? { ...s, lineLinked: false } : s,
+        ),
+      );
+      setUnlinkSuccess(`ยกเลิกการผูก LINE ของ ${member.name} แล้ว`);
+      onRegenerated?.();
+    } catch {
+      setUnlinkError("ยกเลิกการผูก LINE ไม่สำเร็จ");
+    } finally {
+      setUnlinkingId(null);
+    }
   }
 
   async function handleRegenerateInvite() {
@@ -200,6 +271,47 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
             copied={copiedKey === "invite"}
             onCopy={() => void handleCopy("invite", inviteUrl)}
           />
+        </div>
+      ) : null}
+      {staff.length > 0 ? (
+        <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
+          <p className="text-xs font-medium text-zinc-300">ทีมงาน</p>
+          {unlinkSuccess ? (
+            <p className="text-xs text-emerald-400">{unlinkSuccess}</p>
+          ) : null}
+          {unlinkError ? (
+            <p className="text-xs text-red-400">{unlinkError}</p>
+          ) : null}
+          <ul className="space-y-2">
+            {staff.map((member) => (
+              <li
+                key={member.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-zinc-800/50 px-3 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-zinc-200">
+                    {member.name}
+                    {member.role === "owner" ? (
+                      <span className="ml-1 text-amber-400">(เจ้าของ)</span>
+                    ) : null}
+                  </p>
+                  <p className="text-[11px] text-zinc-500">
+                    {member.lineLinked ? "ผูก LINE แล้ว" : "ยังไม่ผูก LINE"}
+                  </p>
+                </div>
+                {member.lineLinked && superAdminToken ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleUnlinkLine(member)}
+                    disabled={unlinkingId === member.id}
+                    className="shrink-0 rounded-lg border border-red-500/40 px-2 py-1 text-[11px] font-semibold text-red-400 disabled:opacity-50"
+                  >
+                    {unlinkingId === member.id ? "กำลังยกเลิก..." : "ยกเลิกการผูก LINE"}
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
         </div>
       ) : null}
     </div>

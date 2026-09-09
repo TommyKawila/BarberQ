@@ -731,4 +731,19 @@ export const memoryStore: BookingStore = {
     const barber = barbers.find((b) => b.line_id === trimmed && b.shop_id === shopId);
     return barber ? { ...barber, off_days: [...barber.off_days] } : null;
   },
+
+  async unlinkBarberLine(shopId, barberId) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+
+    const barber = getBarberSync(barberId);
+    if (!barber || barber.shop_id !== shopId) {
+      throw new StoreConflict("BARBER_NOT_FOUND");
+    }
+    if (!barber.line_id) {
+      return { ...barber, off_days: [...barber.off_days] };
+    }
+    barber.line_id = null;
+    return { ...barber, off_days: [...barber.off_days] };
+  },
 };

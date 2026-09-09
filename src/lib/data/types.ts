@@ -168,4 +168,5 @@ export interface BookingStore {
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;
   getBarberByLineId(lineId: string): Promise<Barber | null>;
   getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;
+  unlinkBarberLine(shopId: string, barberId: string): Promise<Barber>;
 }
