@@ -321,7 +321,7 @@ export default function AdminStaffPage() {
                 onClick={resetForm}
                 className="min-h-11 rounded-xl border border-zinc-700 px-4 text-sm text-zinc-300"
               >
-                {t("booking.cancel")}
+                {t("common.cancel")}
               </button>
             </div>
             {formMessage ? <p className="mt-2 text-sm text-emerald-400">{formMessage}</p> : null}
@@ -368,7 +368,7 @@ export default function AdminStaffPage() {
                 onClick={() => setConfirmAction(null)}
                 className="min-h-10 rounded-lg border border-zinc-700 px-4 text-sm text-zinc-300"
               >
-                {t("booking.cancel")}
+                {t("common.cancel")}
               </button>
             </div>
           </section>
@@ -447,7 +447,9 @@ export default function AdminStaffPage() {
                     onClick={() => void toggleBookable(barber)}
                     className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
                   >
-                    {t("admin.toggleBookable")}
+                    {barber.is_bookable !== false
+                      ? t("admin.closeBookable")
+                      : t("admin.openBookable")}
                   </button>
                   <Link
                     href={shopPath(`/admin/my-schedule?barber=${barber.id}`)}
