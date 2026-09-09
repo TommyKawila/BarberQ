@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test:security": "tsx --test src/lib/auth/auth-security.test.ts src/lib/env/env-hardening.test.ts src/lib/owner/invite-session.test.ts src/lib/owner/regenerate-invite.test.ts",
+    "test:security": "tsx --test src/lib/auth/auth-security.test.ts src/lib/env/env-hardening.test.ts src/lib/owner/invite-session.test.ts src/lib/owner/regenerate-invite.test.ts src/lib/owner/owner-claim-state.test.ts",
     "test:shop": "tsx --test src/lib/services/slot-hours.test.ts src/lib/auth/shop-setup.test.ts",
     "test:booking": "tsx --test src/lib/booking/customer-flow.test.ts",
     "test:onboarding": "tsx --test src/lib/onboarding/activation.test.ts"

@@ -1,13 +1,17 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useOwnerClaim } from "@/lib/owner/use-owner-claim";
 import {
   readStoredOwnerInvite,
   resolveInviteCode,
   restoreOwnerInviteUrl,
 } from "@/lib/owner/invite-session";
+import {
+  shouldAutoClaimOwner,
+  shouldShowOwnerLoginCta,
+} from "@/lib/owner/owner-claim-state";
 import { useI18n } from "@/lib/i18n/locale-provider";
 
 interface InvitePreview {
@@ -22,17 +26,30 @@ export default function OwnerJoinPage() {
   const searchParams = useSearchParams();
   const search = searchParams.toString() ? `?${searchParams.toString()}` : "";
 
-  const inviteCode = useMemo(
-    () => resolveInviteCode(search, readStoredOwnerInvite()),
-    [search],
+  const [inviteCode, setInviteCode] = useState<string | null>(() =>
+    resolveInviteCode(search, null),
   );
 
-  const { ready, profile, login, claim, claiming, claimed, error, mockMode } = useOwnerClaim({
-    inviteCode,
-  });
+  useEffect(() => {
+    setInviteCode(resolveInviteCode(search, readStoredOwnerInvite()));
+  }, [search]);
+
+  const {
+    ready,
+    authPhase,
+    profile,
+    login,
+    retryInit,
+    claim,
+    claiming,
+    claimed,
+    error,
+    mockMode,
+  } = useOwnerClaim({ inviteCode });
   const [preview, setPreview] = useState<InvitePreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(true);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const claimAttemptedRef = useRef(false);
 
   useEffect(() => {
     if (!inviteCode) {
@@ -65,16 +82,26 @@ export default function OwnerJoinPage() {
   }, [inviteCode]);
 
   useEffect(() => {
-    if (!inviteCode || !profile || !ready) return;
+    if (!inviteCode || authPhase !== "authenticated" || !profile || !ready) return;
     restoreOwnerInviteUrl(inviteCode);
-  }, [inviteCode, profile, ready]);
+  }, [authPhase, inviteCode, profile, ready]);
 
   useEffect(() => {
-    if (!ready || !profile || !preview || preview.expired || preview.claimed || claimed) return;
+    const previewReady = Boolean(preview && !preview.expired && !preview.claimed);
+    const shouldClaim = shouldAutoClaimOwner({
+      authPhase,
+      previewReady,
+      previewExpired: preview?.expired ?? false,
+      previewClaimed: preview?.claimed ?? false,
+      claimed,
+      claimAttempted: claimAttemptedRef.current,
+    });
+    if (!shouldClaim) return;
+    claimAttemptedRef.current = true;
     void claim().then((slug) => {
       if (slug) router.replace(`/${slug}/admin/setup`);
     });
-  }, [claim, claimed, preview, profile, ready, router]);
+  }, [authPhase, claim, claimed, preview, profile, ready, router]);
 
   if (loadingPreview || !ready) {
     return (
@@ -108,6 +135,8 @@ export default function OwnerJoinPage() {
     );
   }
 
+  const showLogin = shouldShowOwnerLoginCta({ authPhase, claiming });
+
   return (
     <section className="flex min-h-full flex-col items-center justify-center gap-4 px-4 py-16">
       <h1 className="text-2xl font-semibold">{t("owner.joinTitle")}</h1>
@@ -120,7 +149,16 @@ export default function OwnerJoinPage() {
         </span>
       ) : null}
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
-      {!profile ? (
+      {authPhase === "init_failed" ? (
+        <button
+          type="button"
+          onClick={retryInit}
+          className="min-h-12 w-full max-w-sm rounded-xl border border-zinc-600 font-semibold text-zinc-200"
+        >
+          {t("owner.retry")}
+        </button>
+      ) : null}
+      {showLogin ? (
         <button
           type="button"
           onClick={login}
@@ -128,9 +166,11 @@ export default function OwnerJoinPage() {
         >
           {t("booking.loginWithLine")}
         </button>
-      ) : claiming ? (
+      ) : null}
+      {authPhase === "authenticated" && profile && claiming ? (
         <p className="text-sm text-zinc-400">{t("owner.claiming")}</p>
-      ) : claimed ? (
+      ) : null}
+      {authPhase === "authenticated" && profile && claimed ? (
         <p className="text-sm text-emerald-400">{t("owner.claimSuccess")}</p>
       ) : null}
     </section>

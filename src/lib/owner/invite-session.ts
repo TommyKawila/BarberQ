@@ -14,14 +14,15 @@ export function resolveInviteCode(
   search: string,
   storedInvite: string | null | undefined,
 ): string | null {
-  if (isLiffOAuthCallback(search)) {
-    return storedInvite?.trim() || null;
-  }
   const normalized = search.startsWith("?") ? search.slice(1) : search;
   const params = new URLSearchParams(normalized);
+  const inviteParam = params.get("invite")?.trim() || null;
+  if (isLiffOAuthCallback(search)) {
+    return storedInvite?.trim() || inviteParam || null;
+  }
   const urlCode = params.get("code")?.trim();
   if (urlCode) return urlCode;
-  return storedInvite?.trim() || null;
+  return inviteParam || storedInvite?.trim() || null;
 }
 
 export function readStoredOwnerInvite(): string | null {

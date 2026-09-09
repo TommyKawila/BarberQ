@@ -114,6 +114,7 @@ export const dictionary = {
     "owner.inviteExpired": "ลิงก์เชิญหมดอายุแล้ว กรุณาติดต่อ BarberQ",
     "owner.inviteClaimed": "ลิงก์นี้ถูกใช้งานแล้ว",
     "owner.inviteInvalid": "ลิงก์เชิญไม่ถูกต้อง",
+    "owner.retry": "ลองใหม่",
 
     "superadmin.inviteUrl": "ลิงก์เชิญเจ้าของร้าน",
     "superadmin.copyLink": "คัดลอกลิงก์",
@@ -388,6 +389,7 @@ export const dictionary = {
     "owner.inviteExpired": "This invite link has expired. Contact BarberQ.",
     "owner.inviteClaimed": "This invite link has already been used",
     "owner.inviteInvalid": "Invalid invite link",
+    "owner.retry": "Try again",
 
     "superadmin.inviteUrl": "Owner invite link",
     "superadmin.copyLink": "Copy link",

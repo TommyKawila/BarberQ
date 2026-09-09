@@ -37,6 +37,12 @@ describe("owner invite session", () => {
     assert.equal(resolveInviteCode("", INVITE), INVITE);
     assert.equal(resolveInviteCode("?", INVITE), INVITE);
   });
+
+  it("OAuth callback uses invite query when storage is empty", () => {
+    const search = `?invite=${INVITE}&code=${OAUTH}&liffClientId=1234567890`;
+    assert.equal(resolveInviteCode(search, null), INVITE);
+    assert.notEqual(resolveInviteCode(search, null), OAUTH);
+  });
 });
 
 describe("owner claim store", () => {
