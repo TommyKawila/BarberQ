@@ -10,6 +10,11 @@ import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { firstIncompleteSetupStep, type ShopActivation } from "@/lib/onboarding/activation";
+import {
+  applyOptimisticToggle,
+  rollbackOptimisticToggle,
+  shouldShowOwnerSlotDuration,
+} from "@/lib/onboarding/optimistic-bookable";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { normalizeShopName } from "@/lib/shop/shop-name";
 import {
@@ -58,6 +63,8 @@ function SetupContent() {
   const [newName, setNewName] = useState("");
   const [newDuration, setNewDuration] = useState(30);
   const [savingTeam, setSavingTeam] = useState(false);
+  const [savingOwnerBookable, setSavingOwnerBookable] = useState(false);
+  const [savingOwnerDuration, setSavingOwnerDuration] = useState(false);
 
   const [hours, setHours] = useState<ShopDayHours[]>(() => DEFAULT_SHOP_HOURS.map((d) => ({ ...d })));
   const [savingHours, setSavingHours] = useState(false);
@@ -164,24 +171,66 @@ function SetupContent() {
     }
   }
 
+  function setBarberBookable(barberId: string, isBookable: boolean) {
+    setBarbers((prev) =>
+      prev.map((b) =>
+        b.id === barberId ? { ...b, is_bookable: isBookable } : b,
+      ),
+    );
+  }
+
   async function toggleOwnerBookable() {
-    if (!ownerBarber) return;
-    setSavingTeam(true);
+    if (!ownerBarber || savingOwnerBookable) return;
+    const previous = ownerBookable;
+    const next = applyOptimisticToggle(previous);
+    setOwnerBookable(next);
+    setBarberBookable(ownerBarber.id, next);
+    setSavingOwnerBookable(true);
     setError(null);
     try {
-      const next = !ownerBookable;
       const res = await fetch(`/api/barbers/${ownerBarber.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ isBookable: next }),
       });
       if (!res.ok) throw new Error(t("admin.updateFailed"));
-      setOwnerBookable(next);
-      await Promise.all([loadBarbers(), loadSetup()]);
+      void loadSetup();
     } catch (err) {
+      const rolled = rollbackOptimisticToggle(previous);
+      setOwnerBookable(rolled);
+      setBarberBookable(ownerBarber.id, rolled);
       setError(err instanceof Error ? err.message : t("admin.updateFailed"));
     } finally {
-      setSavingTeam(false);
+      setSavingOwnerBookable(false);
+    }
+  }
+
+  async function updateOwnerDuration(duration: number) {
+    if (!ownerBarber || !ownerBookable) return;
+    setSavingOwnerDuration(true);
+    setError(null);
+    const previous = ownerBarber.slot_duration_minutes;
+    setBarbers((prev) =>
+      prev.map((b) =>
+        b.id === ownerBarber.id ? { ...b, slot_duration_minutes: duration } : b,
+      ),
+    );
+    try {
+      const res = await fetch(`/api/barbers/${ownerBarber.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ slotDuration: duration }),
+      });
+      if (!res.ok) throw new Error(t("admin.updateFailed"));
+    } catch (err) {
+      setBarbers((prev) =>
+        prev.map((b) =>
+          b.id === ownerBarber.id ? { ...b, slot_duration_minutes: previous } : b,
+        ),
+      );
+      setError(err instanceof Error ? err.message : t("admin.updateFailed"));
+    } finally {
+      setSavingOwnerDuration(false);
     }
   }
 
@@ -348,42 +397,92 @@ function SetupContent() {
             <h2 className="font-semibold">{t("onboarding.stepTeam")}</h2>
             <p className="mt-1 text-sm text-zinc-400">{t("onboarding.teamHint")}</p>
             {ownerBarber ? (
-              <label className="mt-4 flex items-center gap-3 rounded-lg bg-zinc-950 p-3 text-sm">
-                <input
-                  type="checkbox"
-                  checked={ownerBookable}
-                  disabled={savingTeam}
-                  onChange={() => void toggleOwnerBookable()}
-                />
-                <span>{t("onboarding.ownerBookable")}</span>
-              </label>
+              <div className="mt-4 rounded-lg bg-zinc-950 p-3">
+                <p className="font-medium">{barberLabel(ownerBarber.name, locale)}</p>
+                <p className="text-xs text-zinc-500">{t("onboarding.ownerRole")}</p>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-medium">{t("onboarding.ownerAcceptingLabel")}</p>
+                    <p className="text-xs text-zinc-500">
+                      {ownerBookable
+                        ? t("onboarding.ownerAcceptingOn")
+                        : t("onboarding.ownerAcceptingOff")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={ownerBookable}
+                    disabled={savingOwnerBookable}
+                    onClick={() => void toggleOwnerBookable()}
+                    className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
+                      ownerBookable ? "bg-emerald-500" : "bg-zinc-700"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-6 w-6 rounded-full bg-white transition-transform ${
+                        ownerBookable ? "translate-x-5" : "translate-x-0"
+                      }`}
+                    />
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-zinc-400">{t("onboarding.ownerBookableHint")}</p>
+                {shouldShowOwnerSlotDuration(ownerBookable) ? (
+                  <label className="mt-3 flex flex-col gap-1 text-sm">
+                    {t("onboarding.slotDuration")}
+                    <span className="text-xs text-zinc-500">{t("onboarding.slotDurationHint")}</span>
+                    <select
+                      value={ownerBarber.slot_duration_minutes}
+                      disabled={savingOwnerDuration}
+                      onChange={(e) => void updateOwnerDuration(Number(e.target.value))}
+                      className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
+                    >
+                      {ALLOWED_SLOT_DURATIONS.map((d) => (
+                        <option key={d} value={d}>
+                          {d} {t("common.minutes")}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+              </div>
             ) : null}
             <div className="mt-3 space-y-2">
-              {barbers.map((b) => (
-                <div key={b.id} className="rounded-lg bg-zinc-950 px-3 py-2 text-sm">
-                  {barberLabel(b.name, locale)}
-                  {b.is_bookable === false ? (
-                    <span className="ml-2 text-xs text-zinc-500">({t("admin.barberNotBookable")})</span>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex flex-col gap-2">
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder={t("admin.barberName")}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
-              />
-              <select
-                value={newDuration}
-                onChange={(e) => setNewDuration(Number(e.target.value))}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
-              >
-                {ALLOWED_SLOT_DURATIONS.map((d) => (
-                  <option key={d} value={d}>{d} {t("common.minutes")}</option>
+              {barbers
+                .filter((b) => b.role !== "owner")
+                .map((b) => (
+                  <div key={b.id} className="rounded-lg bg-zinc-950 px-3 py-2 text-sm">
+                    <p className="font-medium">{barberLabel(b.name, locale)}</p>
+                    <p className="text-xs text-zinc-500">
+                      {b.slot_duration_minutes} {t("common.minutes")}
+                    </p>
+                  </div>
                 ))}
-              </select>
+            </div>
+            <div className="mt-4 flex flex-col gap-3">
+              <label className="flex flex-col gap-1 text-sm">
+                {t("onboarding.barberName")}
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                {t("onboarding.slotDuration")}
+                <span className="text-xs text-zinc-500">{t("onboarding.slotDurationHint")}</span>
+                <select
+                  value={newDuration}
+                  onChange={(e) => setNewDuration(Number(e.target.value))}
+                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
+                >
+                  {ALLOWED_SLOT_DURATIONS.map((d) => (
+                    <option key={d} value={d}>
+                      {d} {t("common.minutes")}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 disabled={savingTeam}
