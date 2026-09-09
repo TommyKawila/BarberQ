@@ -4,21 +4,54 @@ export type EnvKey =
   | "SUPABASE_SERVICE_ROLE_KEY"
   | "ADMIN_SECRET_KEY";
 
-const PUBLIC_ENV: Record<Extract<EnvKey, `NEXT_PUBLIC_${string}`>, string | undefined> = {
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-};
+export type ProductionRequiredKey =
+  | "NEXT_PUBLIC_SUPABASE_URL"
+  | "SUPABASE_SERVICE_ROLE_KEY"
+  | "NEXT_PUBLIC_LIFF_ID"
+  | "NEXT_PUBLIC_APP_URL"
+  | "SUPERADMIN_TOKEN";
 
-const SERVER_ENV: Record<Exclude<EnvKey, `NEXT_PUBLIC_${string}`>, string | undefined> = {
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  ADMIN_SECRET_KEY: process.env.ADMIN_SECRET_KEY,
-};
+const PRODUCTION_REQUIRED_KEYS: ProductionRequiredKey[] = [
+  "NEXT_PUBLIC_SUPABASE_URL",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "NEXT_PUBLIC_LIFF_ID",
+  "NEXT_PUBLIC_APP_URL",
+  "SUPERADMIN_TOKEN",
+];
+
+export class EnvConfigError extends Error {
+  readonly missingKeys: ProductionRequiredKey[];
+
+  constructor(missingKeys: ProductionRequiredKey[]) {
+    super(`Missing required production environment: ${missingKeys.join(", ")}`);
+    this.name = "EnvConfigError";
+    this.missingKeys = missingKeys;
+  }
+}
+
+function readEnv(key: string): string | undefined {
+  const value = process.env[key]?.trim();
+  return value || undefined;
+}
+
+export function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production";
+}
+
+export function getMissingProductionKeys(): ProductionRequiredKey[] {
+  return PRODUCTION_REQUIRED_KEYS.filter((key) => !readEnv(key));
+}
+
+export function assertProductionConfig(): void {
+  if (!isProductionRuntime()) return;
+  const missing = getMissingProductionKeys();
+  if (missing.length > 0) {
+    throw new EnvConfigError(missing);
+  }
+}
 
 export function getOptionalEnv(key: EnvKey): string | undefined {
-  const value = key.startsWith("NEXT_PUBLIC_")
-    ? PUBLIC_ENV[key as keyof typeof PUBLIC_ENV]
-    : SERVER_ENV[key as keyof typeof SERVER_ENV];
-  return value || undefined;
+  return readEnv(key);
 }
 
 export function getEnv(key: EnvKey): string {
@@ -29,9 +62,17 @@ export function getEnv(key: EnvKey): string {
   return value;
 }
 
+export function getOptionalLinePushToken(): string | undefined {
+  return readEnv("LINE_CHANNEL_ACCESS_TOKEN");
+}
+
+export function getOptionalLineOaAddUrl(): string | undefined {
+  return readEnv("NEXT_PUBLIC_LINE_OA_ADD_URL");
+}
+
 export function isAdminKeyRequired(): boolean {
-  return !(
-    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    !process.env.SUPABASE_SERVICE_ROLE_KEY
+  return !!(
+    getOptionalEnv("NEXT_PUBLIC_SUPABASE_URL") &&
+    getOptionalEnv("SUPABASE_SERVICE_ROLE_KEY")
   );
 }

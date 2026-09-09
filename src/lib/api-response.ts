@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { EnvConfigError } from "@/lib/env";
 import { BookingError } from "@/lib/services/booking-service";
 
 export const runtime = "nodejs";
@@ -8,6 +9,12 @@ export function jsonError(error: unknown): NextResponse {
     return NextResponse.json(
       { error: { code: error.code, message: error.message } },
       { status: error.status },
+    );
+  }
+  if (error instanceof EnvConfigError) {
+    return NextResponse.json(
+      { error: { code: "CONFIG", message: error.message } },
+      { status: 500 },
     );
   }
   console.error(error);

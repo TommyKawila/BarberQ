@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
+import { jsonError } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
+import { EnvConfigError } from "@/lib/env";
 import { getShopActivationSummary } from "@/lib/onboarding/shop-activation-service";
 import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import { assertSuperAdminToken } from "@/lib/superadmin/auth";
@@ -25,6 +27,7 @@ export async function GET(req: Request) {
     );
     return NextResponse.json({ shops: shopsWithOwner });
   } catch (err) {
+    if (err instanceof EnvConfigError) return jsonError(err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Unauthorized" },
       { status: 403 },
@@ -59,6 +62,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ shop, inviteUrl }, { status: 201 });
   } catch (err) {
+    if (err instanceof EnvConfigError) return jsonError(err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Failed to create shop" },
       { status: 500 },

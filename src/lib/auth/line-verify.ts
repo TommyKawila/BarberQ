@@ -1,3 +1,5 @@
+import { assertProductionConfig, isProductionRuntime } from "@/lib/env";
+
 export interface VerifiedLineUser {
   userId: string;
   displayName?: string;
@@ -7,6 +9,10 @@ export interface VerifiedLineUser {
 export const MOCK_OWNER_LINE_ID = "mock-owner-line-id";
 
 export function isLineAuthMockMode(): boolean {
+  if (isProductionRuntime()) {
+    assertProductionConfig();
+    return false;
+  }
   return !process.env.NEXT_PUBLIC_LIFF_ID?.trim();
 }
 

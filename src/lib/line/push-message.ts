@@ -1,7 +1,18 @@
+import { getOptionalLinePushToken } from "@/lib/env";
+
 export async function pushText(lineUserId: string, text: string): Promise<boolean> {
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim();
+  const token = getOptionalLinePushToken();
   const to = lineUserId.trim();
-  if (!token || !to || !text.trim()) return false;
+  if (!token) {
+    console.warn(
+      JSON.stringify({
+        event: "line_push_skipped",
+        reason: "missing_channel_access_token",
+      }),
+    );
+    return false;
+  }
+  if (!to || !text.trim()) return false;
 
   try {
     const res = await fetch("https://api.line.me/v2/bot/message/push", {
@@ -16,12 +27,17 @@ export async function pushText(lineUserId: string, text: string): Promise<boolea
       }),
     });
     if (!res.ok) {
-      console.warn("LINE push failed", res.status);
+      console.warn(
+        JSON.stringify({
+          event: "line_push_failed",
+          status: res.status,
+        }),
+      );
       return false;
     }
     return true;
-  } catch (err) {
-    console.warn("LINE push error", err);
+  } catch {
+    console.warn(JSON.stringify({ event: "line_push_error" }));
     return false;
   }
 }
