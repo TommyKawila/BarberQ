@@ -164,6 +164,7 @@ export interface BookingStore {
   listShopOwners(): Promise<ShopOwnerSummary[]>;
   createShop(input: CreateShopInput): Promise<Shop>;
   getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
+  regenerateOwnerInvite(shopId: string): Promise<Shop>;
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;
   getBarberByLineId(lineId: string): Promise<Barber | null>;
   getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;

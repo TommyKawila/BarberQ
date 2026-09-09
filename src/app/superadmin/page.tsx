@@ -81,7 +81,14 @@ export default function SuperAdminPage() {
           {shops.length === 0 ? (
             <p className="text-sm text-zinc-500">No shops yet</p>
           ) : (
-            shops.map((shop) => <ShopCard key={shop.id} shop={shop} />)
+            shops.map((shop) => (
+              <ShopCard
+                key={shop.id}
+                shop={shop}
+                superAdminToken={token}
+                onRegenerated={() => void loadShops(token)}
+              />
+            ))
           )}
         </div>
       </section>

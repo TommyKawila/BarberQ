@@ -668,6 +668,19 @@ export const memoryStore: BookingStore = {
     };
   },
 
+  async regenerateOwnerInvite(shopId) {
+    const state = getState();
+    const shop = state.shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (shop.status !== "pending") throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+
+    const now = nowIso();
+    shop.invite_token = inviteToken();
+    shop.invite_expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    shop.updated_at = now;
+    return { ...shop };
+  },
+
   async claimOwnerInvite(input) {
     const token = input.inviteToken.trim();
     const ownerLineId = input.ownerLineId.trim();

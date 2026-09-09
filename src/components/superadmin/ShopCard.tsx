@@ -13,6 +13,8 @@ interface ShopCardProps {
     hasFirstBooking?: boolean;
     bookableCount?: number;
   };
+  superAdminToken?: string;
+  onRegenerated?: () => void;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -50,21 +52,69 @@ function CopyRow({
   );
 }
 
-export function ShopCard({ shop }: ShopCardProps) {
+export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps) {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [inviteToken, setInviteToken] = useState(shop.invite_token);
+  const [inviteExpiresAt, setInviteExpiresAt] = useState(shop.invite_expires_at);
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenerateError, setRegenerateError] = useState<string | null>(null);
   const expires = shop.subscribed_until
     ? new Date(shop.subscribed_until).toLocaleDateString("th-TH")
     : "—";
-  const inviteExpires = shop.invite_expires_at
-    ? new Date(shop.invite_expires_at).toLocaleDateString("th-TH")
+  const inviteExpires = inviteExpiresAt
+    ? new Date(inviteExpiresAt).toLocaleDateString("th-TH")
     : null;
-  const inviteUrl = shop.invite_token ? buildOwnerInviteUrl(shop.invite_token) : null;
+  const inviteUrl = inviteToken ? buildOwnerInviteUrl(inviteToken) : null;
   const webUrl = shop.slug ? buildShopWebUrl(shop.slug) : null;
   const liffUrl = shop.slug ? buildShopLiffUrl(shop.slug) : null;
 
   async function handleCopy(key: string, value: string) {
     const ok = await copyText(value);
     if (ok) setCopiedKey(key);
+  }
+
+  async function handleRegenerateInvite() {
+    if (!superAdminToken || shop.status !== "pending") return;
+    const confirmed = window.confirm(
+      "ลิงก์เดิมจะใช้ไม่ได้ทันที ต้องการสร้างลิงก์ใหม่หรือไม่?",
+    );
+    if (!confirmed) return;
+
+    setRegenerating(true);
+    setRegenerateError(null);
+    try {
+      const res = await fetch(`/api/superadmin/shops/${shop.id}/invite`, {
+        method: "POST",
+        headers: { "x-superadmin-token": superAdminToken },
+      });
+      const json = (await res.json()) as {
+        shop?: Shop;
+        error?: { code?: string; message?: string } | string;
+      };
+      if (!res.ok) {
+        const code =
+          typeof json.error === "object" ? json.error?.code : undefined;
+        if (res.status === 409 || code === "INVITE_ALREADY_CLAIMED") {
+          setRegenerateError("ร้านนี้มีเจ้าของแล้ว ไม่สามารถสร้างลิงก์เชิญใหม่");
+          return;
+        }
+        setRegenerateError(
+          typeof json.error === "string"
+            ? json.error
+            : json.error?.message ?? "สร้างลิงก์เชิญใหม่ไม่สำเร็จ",
+        );
+        return;
+      }
+      if (json.shop?.invite_token) {
+        setInviteToken(json.shop.invite_token);
+        setInviteExpiresAt(json.shop.invite_expires_at ?? null);
+      }
+      onRegenerated?.();
+    } catch {
+      setRegenerateError("สร้างลิงก์เชิญใหม่ไม่สำเร็จ");
+    } finally {
+      setRegenerating(false);
+    }
   }
 
   const statusClass =
@@ -120,7 +170,29 @@ export function ShopCard({ shop }: ShopCardProps) {
           ) : null}
         </div>
       ) : null}
-      {inviteUrl ? (
+      {shop.status === "pending" && superAdminToken ? (
+        <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
+          {inviteUrl ? (
+            <CopyRow
+              label="Invite Owner"
+              value={inviteUrl}
+              copied={copiedKey === "invite"}
+              onCopy={() => void handleCopy("invite", inviteUrl)}
+            />
+          ) : null}
+          <button
+            type="button"
+            onClick={() => void handleRegenerateInvite()}
+            disabled={regenerating}
+            className="rounded-lg border border-amber-500/40 px-3 py-2 text-xs font-semibold text-amber-400 disabled:opacity-50"
+          >
+            {regenerating ? "กำลังสร้าง..." : "สร้างลิงก์เชิญใหม่"}
+          </button>
+          {regenerateError ? (
+            <p className="text-xs text-red-400">{regenerateError}</p>
+          ) : null}
+        </div>
+      ) : inviteUrl ? (
         <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
           <CopyRow
             label="Invite Owner"

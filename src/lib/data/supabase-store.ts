@@ -650,6 +650,23 @@ export const supabaseStore: BookingStore = {
     };
   },
 
+  async regenerateOwnerInvite(shopId) {
+    const supabase = createServiceClient();
+    const { error } = await supabase.rpc("regenerate_shop_invite", {
+      p_shop_id: shopId,
+    });
+    if (error) mapRpcError(error);
+
+    const { data: shop, error: shopError } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (shopError) throw new Error(shopError.message);
+    if (!shop) throw new StoreConflict("INVITE_NOT_FOUND");
+    return shop as Shop;
+  },
+
   async claimOwnerInvite(input: ClaimOwnerInviteInput) {
     const supabase = createServiceClient();
     const { data, error } = await supabase.rpc("claim_owner_invite", {
