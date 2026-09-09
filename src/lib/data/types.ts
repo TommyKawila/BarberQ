@@ -14,15 +14,18 @@ export type StoreErrorCode =
   | "INVITE_NOT_FOUND"
   | "INVITE_EXPIRED"
   | "INVITE_ALREADY_CLAIMED"
-  | "LINE_ID_TAKEN";
+  | "LINE_ID_TAKEN"
+  | "HAS_FUTURE_BOOKINGS";
 
 export class StoreConflict extends Error {
   readonly code: StoreErrorCode;
+  readonly count?: number;
 
-  constructor(code: StoreErrorCode, message?: string) {
+  constructor(code: StoreErrorCode, message?: string, count?: number) {
     super(message ?? code);
     this.name = "StoreConflict";
     this.code = code;
+    this.count = count;
   }
 }
 
@@ -181,6 +184,8 @@ export interface BookingStore {
   getBarberByLineId(lineId: string): Promise<Barber | null>;
   getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;
   unlinkBarberLine(shopId: string, barberId: string): Promise<Barber>;
+  deactivateBarber(shopId: string, barberId: string): Promise<Barber>;
+  reactivateBarber(shopId: string, barberId: string): Promise<Barber>;
   getLatestLineOaInstallRequest(shopId: string): Promise<LineOaInstallRequest | null>;
   createLineOaInstallRequest(
     shopId: string,

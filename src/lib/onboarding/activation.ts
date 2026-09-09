@@ -24,7 +24,9 @@ export interface ShopActivation {
 export function deriveShopActivation(input: ShopActivationInput): ShopActivation {
   const claimed = input.shopStatus === "active";
   const profileOk = Boolean(input.shopName?.trim());
-  const bookableCount = input.barbers.filter((b) => b.is_bookable !== false).length;
+  const bookableCount = input.barbers.filter(
+    (b) => b.is_active !== false && b.is_bookable !== false,
+  ).length;
   const teamOk = bookableCount >= 1;
   const normalized = normalizeShopHours(input.hours);
   const hoursOk = normalized.some((day) => !day.closed);

@@ -51,6 +51,7 @@ function mapStoreError(error: unknown): BookingError {
       INVALID_RANGE: ["Invalid time range", 400],
       INVALID_OUTCOME: ["Cannot mark outcome yet", 400],
       LINE_ID_TAKEN: ["This LINE account is already linked", 409],
+      HAS_FUTURE_BOOKINGS: ["Barber has future bookings", 409],
     };
     const entry = map[error.code];
     if (entry) return new BookingError(error.code, entry[0], entry[1]);
@@ -80,9 +81,13 @@ export async function listBarbers(shopId?: string): Promise<Barber[]> {
   }
 }
 
+function isBarberBookable(barber: Barber): boolean {
+  return barber.is_active !== false && barber.is_bookable !== false;
+}
+
 export async function listBookableBarbers(shopId: string): Promise<Barber[]> {
   const barbers = await listBarbers(shopId);
-  return barbers.filter((b) => b.is_bookable !== false);
+  return barbers.filter(isBarberBookable);
 }
 
 async function shopHoursForBarber(barber: Barber) {
@@ -111,7 +116,7 @@ export async function getAvailableSlots(
     const store = getStore();
     const barber = await store.getBarber(barberId);
     if (!barber) throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
-    if (barber.is_bookable === false) {
+    if (!isBarberBookable(barber)) {
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
     const shopHours = await shopHoursForBarber(barber);
@@ -169,7 +174,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
     const store = getStore();
     const barber = await store.getBarber(input.barberId);
     if (!barber) throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
-    if (barber.is_bookable === false) {
+    if (!isBarberBookable(barber)) {
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
     const end = addMinutes(start, barber.slot_duration_minutes);

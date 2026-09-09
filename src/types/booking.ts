@@ -12,6 +12,7 @@ export interface Barber {
   role?: BarberRole;
   shop_id?: string | null;
   is_bookable?: boolean;
+  is_active?: boolean;
 }
 
 export interface Shop {

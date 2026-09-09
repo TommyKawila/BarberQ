@@ -100,7 +100,7 @@ function SetupContent() {
     [barbers],
   );
   const shopBarbers = useMemo(
-    () => barbers.filter((b) => b.role !== "owner"),
+    () => barbers.filter((b) => b.role !== "owner" && b.is_active !== false),
     [barbers],
   );
 

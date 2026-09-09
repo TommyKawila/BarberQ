@@ -508,6 +508,7 @@ export const supabaseStore: BookingStore = {
         slot_duration_minutes: slotDuration,
         off_days: [],
         is_bookable: input.isBookable ?? true,
+        is_active: true,
       })
       .select("*")
       .single();
@@ -518,6 +519,67 @@ export const supabaseStore: BookingStore = {
       }
       throw new Error(error.message);
     }
+    return data as Barber;
+  },
+
+  async deactivateBarber(shopId, barberId) {
+    const supabase = createServiceClient();
+    const { data: shop, error: shopError } = await supabase
+      .from("shops")
+      .select("id")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (shopError) throw new Error(shopError.message);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+
+    const barber = await supabaseStore.getBarber(barberId);
+    if (!barber || barber.shop_id !== shopId) throw new StoreConflict("BARBER_NOT_FOUND");
+    if (barber.role === "owner") throw new StoreConflict("NOT_OWNER");
+
+    const now = new Date().toISOString();
+    const { count, error: countError } = await supabase
+      .from("appointments")
+      .select("id", { count: "exact", head: true })
+      .eq("barber_id", barberId)
+      .eq("status", "confirmed")
+      .gt("start_time", now);
+    if (countError) throw new Error(countError.message);
+    if ((count ?? 0) > 0) {
+      throw new StoreConflict("HAS_FUTURE_BOOKINGS", undefined, count ?? 0);
+    }
+
+    const { data, error } = await supabase
+      .from("barbers")
+      .update({ is_active: false, is_bookable: false, line_id: null })
+      .eq("id", barberId)
+      .eq("shop_id", shopId)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Barber;
+  },
+
+  async reactivateBarber(shopId, barberId) {
+    const supabase = createServiceClient();
+    const { data: shop, error: shopError } = await supabase
+      .from("shops")
+      .select("id")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (shopError) throw new Error(shopError.message);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+
+    const barber = await supabaseStore.getBarber(barberId);
+    if (!barber || barber.shop_id !== shopId) throw new StoreConflict("BARBER_NOT_FOUND");
+
+    const { data, error } = await supabase
+      .from("barbers")
+      .update({ is_active: true })
+      .eq("id", barberId)
+      .eq("shop_id", shopId)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
     return data as Barber;
   },
 

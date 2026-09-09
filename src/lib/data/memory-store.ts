@@ -165,7 +165,18 @@ const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
   role: index === 0 ? "owner" : "barber",
   line_id: index === 0 ? MOCK_OWNER_LINE_ID : null,
   is_bookable: true,
+  is_active: true,
 }));
+
+function countFutureConfirmedAppointments(barberId: string): number {
+  const now = Date.now();
+  return getState().appointments.filter(
+    (a) =>
+      a.barber_id === barberId &&
+      a.status === "confirmed" &&
+      new Date(a.start_time).getTime() > now,
+  ).length;
+}
 
 function getBarberSync(barberId: string): Barber | undefined {
   return barbers.find((b) => b.id === barberId);
@@ -539,9 +550,35 @@ export const memoryStore: BookingStore = {
       role: "barber",
       line_id: lineId,
       is_bookable: input.isBookable ?? true,
+      is_active: true,
     };
     barbers.push(row);
     return { ...row, off_days: [...row.off_days] };
+  },
+
+  async deactivateBarber(shopId, barberId) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const barber = getBarberSync(barberId);
+    if (!barber || barber.shop_id !== shopId) throw new StoreConflict("BARBER_NOT_FOUND");
+    if (barber.role === "owner") throw new StoreConflict("NOT_OWNER");
+    const futureCount = countFutureConfirmedAppointments(barberId);
+    if (futureCount > 0) {
+      throw new StoreConflict("HAS_FUTURE_BOOKINGS", undefined, futureCount);
+    }
+    barber.is_active = false;
+    barber.is_bookable = false;
+    barber.line_id = null;
+    return { ...barber, off_days: [...barber.off_days] };
+  },
+
+  async reactivateBarber(shopId, barberId) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const barber = getBarberSync(barberId);
+    if (!barber || barber.shop_id !== shopId) throw new StoreConflict("BARBER_NOT_FOUND");
+    barber.is_active = true;
+    return { ...barber, off_days: [...barber.off_days] };
   },
 
   async listRecurringBreaks(barberId) {

@@ -11,8 +11,10 @@ import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { barberLabel, type Barber } from "@/types/booking";
 
 interface ApiError {
-  error?: { code?: string; message?: string };
+  error?: { code?: string; message?: string; count?: number };
 }
+
+type ConfirmAction = { type: "remove"; barber: Barber } | { type: "unlink"; barber: Barber };
 
 export default function AdminStaffPage() {
   const { t, locale } = useI18n();
@@ -29,6 +31,9 @@ export default function AdminStaffPage() {
   const [slotDuration, setSlotDuration] = useState(30);
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   const loadBarbers = useCallback(async () => {
     setLoadingBarbers(true);
@@ -135,7 +140,95 @@ export default function AdminStaffPage() {
     window.setTimeout(() => setCopied(false), 2000);
   }
 
-  const bookableBarbers = barbers.filter((b) => b.is_bookable !== false);
+  async function unlinkLine(barber: Barber) {
+    setActionBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/barbers/${barber.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ lineId: null }),
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        return;
+      }
+      setConfirmAction(null);
+      setOpenMenuId(null);
+      await loadBarbers();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function removeFromShop(barber: Barber) {
+    setActionBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/barbers/${barber.id}/deactivate`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        if (json.error?.code === "HAS_FUTURE_BOOKINGS") {
+          const label = barberLabel(barber.name, locale);
+          setError(
+            t("admin.removeFromShopFutureBookings")
+              .replace("{name}", label)
+              .replace("{count}", String(json.error.count ?? 0)),
+          );
+        } else {
+          setError(json.error?.message ?? t("admin.updateFailed"));
+        }
+        return;
+      }
+      setConfirmAction(null);
+      setOpenMenuId(null);
+      await loadBarbers();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function restoreToShop(barber: Barber) {
+    setActionBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/barbers/${barber.id}/reactivate`, {
+        method: "POST",
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        return;
+      }
+      await loadBarbers();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleConfirm() {
+    if (!confirmAction) return;
+    if (confirmAction.type === "unlink") {
+      await unlinkLine(confirmAction.barber);
+      return;
+    }
+    await removeFromShop(confirmAction.barber);
+  }
+
+  const activeBarbers = barbers.filter((b) => b.is_active !== false);
+  const removedBarbers = barbers.filter((b) => b.is_active === false);
+  const bookableBarbers = activeBarbers.filter((b) => b.is_bookable !== false);
 
   if (!ready || !profile) {
     return (
@@ -235,7 +328,53 @@ export default function AdminStaffPage() {
           </section>
         )}
 
-        {bookableBarbers.length === 0 && !loadingBarbers && !showForm ? (
+        {confirmAction ? (
+          <section className="rounded-2xl border border-zinc-700 bg-zinc-900 p-4">
+            <h2 className="font-semibold">
+              {confirmAction.type === "remove"
+                ? t("admin.removeFromShopTitle").replace(
+                    "{name}",
+                    barberLabel(confirmAction.barber.name, locale),
+                  )
+                : t("admin.unlinkLineConfirm")}
+            </h2>
+            {confirmAction.type === "remove" ? (
+              <>
+                <p className="mt-2 text-sm text-zinc-400">
+                  {t("admin.removeFromShopBody").replace(
+                    "{name}",
+                    barberLabel(confirmAction.barber.name, locale),
+                  )}
+                </p>
+                {confirmAction.barber.line_id ? (
+                  <p className="mt-2 text-sm text-zinc-500">{t("admin.removeFromShopLineHint")}</p>
+                ) : null}
+              </>
+            ) : null}
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                disabled={actionBusy}
+                onClick={() => void handleConfirm()}
+                className="min-h-10 rounded-lg bg-red-600/90 px-4 text-sm font-medium text-white disabled:opacity-50"
+              >
+                {confirmAction.type === "remove"
+                  ? t("admin.removeFromShop")
+                  : t("admin.unlinkLine")}
+              </button>
+              <button
+                type="button"
+                disabled={actionBusy}
+                onClick={() => setConfirmAction(null)}
+                className="min-h-10 rounded-lg border border-zinc-700 px-4 text-sm text-zinc-300"
+              >
+                {t("booking.cancel")}
+              </button>
+            </div>
+          </section>
+        ) : null}
+
+        {bookableBarbers.length === 0 && !loadingBarbers && !showForm && activeBarbers.length === 0 ? (
           <section className="flex flex-col items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-10 text-center">
             <p className="text-sm text-zinc-400">{t("admin.teamEmpty")}</p>
             <button
@@ -248,7 +387,7 @@ export default function AdminStaffPage() {
           </section>
         ) : (
           <section className="flex flex-col gap-3">
-            {barbers.map((barber) => (
+            {activeBarbers.map((barber) => (
               <div key={barber.id} className="rounded-2xl bg-zinc-900 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -262,6 +401,38 @@ export default function AdminStaffPage() {
                       · {barber.is_bookable !== false ? t("admin.barberBookable") : t("admin.barberNotBookable")}
                     </p>
                   </div>
+                  {barber.role !== "owner" ? (
+                    <details
+                      className="relative"
+                      open={openMenuId === barber.id}
+                      onToggle={(e) => {
+                        const open = (e.currentTarget as HTMLDetailsElement).open;
+                        setOpenMenuId(open ? barber.id : null);
+                      }}
+                    >
+                      <summary className="cursor-pointer list-none rounded-lg bg-zinc-800 px-2 py-1 text-sm text-zinc-300">
+                        ⋯
+                      </summary>
+                      <div className="absolute right-0 z-10 mt-1 min-w-[11rem] rounded-lg border border-zinc-700 bg-zinc-950 py-1 shadow-lg">
+                        {barber.line_id ? (
+                          <button
+                            type="button"
+                            onClick={() => setConfirmAction({ type: "unlink", barber })}
+                            className="block w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800"
+                          >
+                            {t("admin.unlinkLine")}
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          onClick={() => setConfirmAction({ type: "remove", barber })}
+                          className="block w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-zinc-800"
+                        >
+                          {t("admin.removeFromShop")}
+                        </button>
+                      </div>
+                    </details>
+                  ) : null}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
@@ -289,6 +460,35 @@ export default function AdminStaffPage() {
             ))}
           </section>
         )}
+
+        {removedBarbers.length > 0 ? (
+          <details className="rounded-2xl border border-zinc-800 bg-zinc-900/50">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-400">
+              {t("admin.removedBarbersTitle")} ({removedBarbers.length})
+            </summary>
+            <div className="flex flex-col gap-2 px-4 pb-4">
+              {removedBarbers.map((barber) => (
+                <div
+                  key={barber.id}
+                  className="flex items-center justify-between gap-2 rounded-xl bg-zinc-900 px-3 py-2"
+                >
+                  <div>
+                    <p className="text-sm font-medium">{barberLabel(barber.name, locale)}</p>
+                    <p className="text-xs text-zinc-500">{t("admin.removedBarberStatus")}</p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={actionBusy}
+                    onClick={() => void restoreToShop(barber)}
+                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 disabled:opacity-50"
+                  >
+                    {t("admin.restoreToShop")}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </details>
+        ) : null}
       </div>
     </AdminShell>
   );

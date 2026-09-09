@@ -41,7 +41,7 @@ export function getAdminTokenFromRequest(req: Request): string {
 export async function getStaffFromLineId(lineId: string): Promise<StaffAuth | null> {
   if (!lineId) return null;
   const barber = await getStore().getBarberByLineId(lineId);
-  if (!barber || !barber.shop_id) return null;
+  if (!barber || !barber.shop_id || barber.is_active === false) return null;
   const role: ShopStaffRole = barber.role === "owner" ? "owner" : "barber";
   return {
     staffId: barber.id,
