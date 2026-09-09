@@ -73,6 +73,10 @@ function SetupContent() {
     () => barbers.find((b) => b.role === "owner") ?? null,
     [barbers],
   );
+  const shopBarbers = useMemo(
+    () => barbers.filter((b) => b.role !== "owner"),
+    [barbers],
+  );
 
   const loadSetup = useCallback(async () => {
     const res = await fetch(shopApi("/setup"), { headers: authHeaders });
@@ -245,10 +249,17 @@ function SetupContent() {
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ name: trimmed, slotDuration: newDuration, isBookable: true }),
       });
-      const json = (await res.json()) as { error?: { message?: string } };
+      const json = (await res.json()) as { barber?: Barber; error?: { message?: string } };
       if (!res.ok) throw new Error(json.error?.message ?? t("admin.updateFailed"));
       setNewName("");
-      await Promise.all([loadBarbers(), loadSetup()]);
+      setNewDuration(30);
+      if (json.barber) {
+        const created = json.barber;
+        setBarbers((prev) => [...prev, created]);
+      } else {
+        await loadBarbers();
+      }
+      await loadSetup();
       setMessage(t("onboarding.barberAdded"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("admin.updateFailed"));
@@ -393,18 +404,15 @@ function SetupContent() {
         ) : null}
 
         {step === "team" ? (
-          <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="font-semibold">{t("onboarding.stepTeam")}</h2>
-            <p className="mt-1 text-sm text-zinc-400">{t("onboarding.teamHint")}</p>
+          <div className="flex flex-col gap-5">
             {ownerBarber ? (
-              <div className="mt-4 rounded-lg bg-zinc-950 p-3">
-                <p className="font-medium">{barberLabel(ownerBarber.name, locale)}</p>
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+                <h2 className="font-semibold">{t("onboarding.ownerSectionTitle")}</h2>
+                <p className="mt-3 font-medium">{barberLabel(ownerBarber.name, locale)}</p>
                 <p className="text-xs text-zinc-500">{t("onboarding.ownerRole")}</p>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-sm font-medium">{t("onboarding.ownerBookable")}</p>
-                    <p className="text-xs text-zinc-500">{t("onboarding.ownerBookableHint")}</p>
-                  </div>
+                <div className="my-4 border-t border-zinc-800" />
+                <div className="flex items-center justify-between gap-3">
+                  <p className="min-w-0 text-sm font-medium">{t("onboarding.ownerIsBarber")}</p>
                   <button
                     type="button"
                     role="switch"
@@ -422,10 +430,11 @@ function SetupContent() {
                     />
                   </button>
                 </div>
+                <p className="mt-2 text-xs text-zinc-500">{t("onboarding.ownerIsBarberDescription")}</p>
                 {shouldShowOwnerSlotDuration(ownerBookable) ? (
-                  <label className="mt-3 flex flex-col gap-1 text-sm">
+                  <label className="mt-4 flex flex-col gap-1 text-sm">
                     {t("onboarding.slotDuration")}
-                    <span className="text-xs text-zinc-500">{t("onboarding.slotDurationHint")}</span>
+                    <span className="text-xs text-zinc-500">{t("onboarding.slotDurationDescription")}</span>
                     <select
                       value={ownerBarber.slot_duration_minutes}
                       disabled={savingOwnerDuration}
@@ -439,67 +448,99 @@ function SetupContent() {
                       ))}
                     </select>
                   </label>
-                ) : null}
-              </div>
+                ) : (
+                  <p className="mt-3 text-xs text-zinc-500">{t("onboarding.ownerOnlyDescription")}</p>
+                )}
+              </section>
             ) : null}
-            <div className="mt-3 space-y-2">
-              {barbers
-                .filter((b) => b.role !== "owner")
-                .map((b) => (
-                  <div key={b.id} className="rounded-lg bg-zinc-950 px-3 py-2 text-sm">
-                    <p className="font-medium">{barberLabel(b.name, locale)}</p>
-                    <p className="text-xs text-zinc-500">
-                      {b.slot_duration_minutes} {t("common.minutes")}
-                    </p>
-                  </div>
-                ))}
-            </div>
-            <div className="mt-6">
-              <h3 className="font-medium">{t("onboarding.addBarberHeading")}</h3>
-              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.addBarberHint")}</p>
-            </div>
-            <div className="mt-4 flex flex-col gap-3">
-              <label className="flex flex-col gap-1 text-sm">
-                {t("onboarding.barberName")}
-                <input
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
-                />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                {t("onboarding.slotDuration")}
-                <span className="text-xs text-zinc-500">{t("onboarding.slotDurationHint")}</span>
-                <select
-                  value={newDuration}
-                  onChange={(e) => setNewDuration(Number(e.target.value))}
-                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
-                >
-                  {ALLOWED_SLOT_DURATIONS.map((d) => (
-                    <option key={d} value={d}>
-                      {d} {t("common.minutes")}
-                    </option>
+
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2 className="font-semibold">{t("onboarding.existingBarbersTitle")}</h2>
+                <p className="shrink-0 text-sm text-zinc-500">
+                  {t("onboarding.barberCount").replace("{count}", String(shopBarbers.length))}
+                </p>
+              </div>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.existingBarbersDescription")}</p>
+              {shopBarbers.length === 0 ? (
+                <div className="mt-4">
+                  <p className="text-sm font-medium">{t("onboarding.noBarbers")}</p>
+                  <p className="mt-1 text-xs text-zinc-500">{t("onboarding.noBarbersDescription")}</p>
+                </div>
+              ) : (
+                <ul className="mt-4 space-y-2">
+                  {shopBarbers.map((b) => (
+                    <li
+                      key={b.id}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">{barberLabel(b.name, locale)}</p>
+                        <p className="text-xs text-zinc-500">
+                          {t("onboarding.minutesPerSlot").replace(
+                            "{duration}",
+                            String(b.slot_duration_minutes),
+                          )}
+                        </p>
+                      </div>
+                      {b.is_bookable === false ? (
+                        <span className="shrink-0 rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-400">
+                          {t("admin.barberNotBookable")}
+                        </span>
+                      ) : null}
+                    </li>
                   ))}
-                </select>
-              </label>
-              <button
-                type="button"
-                disabled={savingTeam}
-                onClick={() => void addBarber()}
-                className="min-h-11 rounded-xl border border-zinc-700 text-sm font-medium"
-              >
-                {t("onboarding.addBarber")}
-              </button>
-            </div>
+                </ul>
+              )}
+            </section>
+
+            <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+              <h2 className="font-semibold">{t("onboarding.addBarberTitle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("onboarding.addBarberDescription")}</p>
+              <div className="mt-4 flex flex-col gap-3">
+                <label className="flex flex-col gap-1 text-sm">
+                  {t("onboarding.barberName")}
+                  <input
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  {t("onboarding.slotDuration")}
+                  <span className="text-xs text-zinc-500">{t("onboarding.slotDurationDescription")}</span>
+                  <select
+                    value={newDuration}
+                    onChange={(e) => setNewDuration(Number(e.target.value))}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base"
+                  >
+                    {ALLOWED_SLOT_DURATIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d} {t("common.minutes")}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  disabled={savingTeam}
+                  onClick={() => void addBarber()}
+                  className="min-h-11 rounded-xl border border-zinc-700 text-sm font-medium"
+                >
+                  + {t("onboarding.addBarberButton")}
+                </button>
+              </div>
+            </section>
+
             <button
               type="button"
               disabled={!act?.teamOk || savingTeam}
               onClick={() => goStep("hours")}
-              className="mt-4 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+              className="mt-2 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
             >
               {t("onboarding.saveAndContinue")}
             </button>
-          </section>
+          </div>
         ) : null}
 
         {step === "hours" ? (
