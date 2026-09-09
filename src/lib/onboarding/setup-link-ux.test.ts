@@ -32,11 +32,13 @@ describe("setup link UX copy", () => {
   });
 
   it("help section copy", () => {
-    assert.equal(dictionary.th["onboarding.oaHelpTitle"], "ติดตั้งไม่เป็น?");
+    assert.equal(dictionary.th["onboarding.oaHelpTitle"], "ติดตั้งไม่เป็น? ให้เราช่วยได้");
     assert.equal(
       dictionary.th["onboarding.oaHelpHint"],
-      'ส่งข้อความหาเราได้เลย ทีม BarberQ ช่วยตั้งปุ่ม "กดจองคิว" ใน LINE OA ของร้านให้ได้',
+      'ส่งข้อมูลร้านให้ทีม BarberQ เราช่วยตั้งปุ่ม "กดจองคิว" ใน LINE OA ให้ ดำเนินการภายใน 24 ชั่วโมง',
     );
-    assert.equal(dictionary.th["onboarding.oaHelpCta"], "แชทกับ BarberQ");
+    assert.equal(dictionary.th["onboarding.oaHelpRequestCta"], "ให้ทีมช่วยติดตั้ง");
+    assert.equal(dictionary.th["onboarding.oaHelpCta"], "แชทกับ Support");
+    assert.equal(dictionary.th["onboarding.oaHelpNoPassword"], "BarberQ จะไม่ขอรหัสผ่าน LINE ของคุณ");
   });
 });

@@ -787,16 +787,23 @@ function SetupContent() {
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
               <h2 className="font-semibold">{t("onboarding.oaHelpTitle")}</h2>
               <p className="mt-1 text-sm text-zinc-400">{t("onboarding.oaHelpHint")}</p>
+              <Link
+                href={shopPath("/admin/setup/line-support")}
+                className="mt-4 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
+              >
+                {t("onboarding.oaHelpRequestCta")}
+              </Link>
               {supportLineUrl ? (
                 <a
                   href={supportLineUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-4 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200"
+                  className="mt-3 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200"
                 >
                   {t("onboarding.oaHelpCta")}
                 </a>
               ) : null}
+              <p className="mt-3 text-xs text-zinc-500">{t("onboarding.oaHelpNoPassword")}</p>
             </section>
 
             <button

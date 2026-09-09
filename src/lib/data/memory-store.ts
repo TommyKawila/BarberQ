@@ -10,11 +10,18 @@ import {
   type ClaimOwnerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
+  type LineOaInstallRequest,
+  type LineOaInstallRequestStatus,
   type RecurringBreak,
   type Staff,
   type ShopSettings,
   type UpdateBarberInput,
 } from "@/lib/data/types";
+import {
+  isOpenLineOaInstallStatus,
+  LINE_OA_INSTALL_STATUSES,
+  type CreateLineOaInstallRequestInput,
+} from "@/lib/onboarding/line-oa-install";
 import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
 import {
   countBreaksForWeekday,
@@ -38,6 +45,7 @@ interface MemoryState {
   staff: Staff[];
   recurringBreaks: RecurringBreak[];
   shops: Shop[];
+  lineOaInstallRequests: LineOaInstallRequest[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -59,6 +67,7 @@ function getState(): MemoryState {
         createdAt: new Date(),
       })),
       recurringBreaks: [],
+      lineOaInstallRequests: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
@@ -95,6 +104,9 @@ function getState(): MemoryState {
         updated_at: nowIso(),
       },
     ];
+  }
+  if (!g[GLOBAL_KEY].lineOaInstallRequests) {
+    g[GLOBAL_KEY].lineOaInstallRequests = [];
   }
   if (!g[GLOBAL_KEY].shopSettings) {
     g[GLOBAL_KEY].shopSettings = {
@@ -745,5 +757,59 @@ export const memoryStore: BookingStore = {
     }
     barber.line_id = null;
     return { ...barber, off_days: [...barber.off_days] };
+  },
+
+  async getLatestLineOaInstallRequest(shopId) {
+    const state = getState();
+    const rows = state.lineOaInstallRequests
+      .filter((r) => r.shop_id === shopId)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const latest = rows[0];
+    return latest ? { ...latest } : null;
+  },
+
+  async createLineOaInstallRequest(shopId, input) {
+    const state = getState();
+    const shop = state.shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+
+    const latest = await memoryStore.getLatestLineOaInstallRequest(shopId);
+    if (latest && isOpenLineOaInstallStatus(latest.status)) {
+      return { ...latest };
+    }
+
+    const now = nowIso();
+    const row: LineOaInstallRequest = {
+      id: uuid(),
+      shop_id: shopId,
+      line_oa: input.lineOa,
+      rich_menu_state: input.richMenuState,
+      help_type: input.helpType,
+      contact_phone: input.contactPhone,
+      status: "NEW",
+      created_at: now,
+      updated_at: now,
+    };
+    state.lineOaInstallRequests.push(row);
+    return { ...row };
+  },
+
+  async listLineOaInstallRequests() {
+    const state = getState();
+    return state.lineOaInstallRequests
+      .map((r) => ({ ...r }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+
+  async updateLineOaInstallRequestStatus(id, status) {
+    if (!LINE_OA_INSTALL_STATUSES.includes(status)) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const state = getState();
+    const row = state.lineOaInstallRequests.find((r) => r.id === id);
+    if (!row) throw new StoreConflict("NOT_FOUND");
+    row.status = status;
+    row.updated_at = nowIso();
+    return { ...row };
   },
 };

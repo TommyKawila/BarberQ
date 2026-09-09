@@ -128,6 +128,18 @@ export interface ShopOwnerSummary {
   name: string;
 }
 
+export type {
+  CreateLineOaInstallRequestInput,
+  LineOaInstallRequest,
+  LineOaInstallRequestStatus,
+} from "@/lib/onboarding/line-oa-install";
+
+import type {
+  CreateLineOaInstallRequestInput,
+  LineOaInstallRequest,
+  LineOaInstallRequestStatus,
+} from "@/lib/onboarding/line-oa-install";
+
 export interface BookingStore {
   getShopBySlug(slug: string): Promise<Shop | null>;
   listBarbersByShop(shopId: string): Promise<Barber[]>;
@@ -169,4 +181,14 @@ export interface BookingStore {
   getBarberByLineId(lineId: string): Promise<Barber | null>;
   getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;
   unlinkBarberLine(shopId: string, barberId: string): Promise<Barber>;
+  getLatestLineOaInstallRequest(shopId: string): Promise<LineOaInstallRequest | null>;
+  createLineOaInstallRequest(
+    shopId: string,
+    input: CreateLineOaInstallRequestInput,
+  ): Promise<LineOaInstallRequest>;
+  listLineOaInstallRequests(): Promise<LineOaInstallRequest[]>;
+  updateLineOaInstallRequestStatus(
+    id: string,
+    status: LineOaInstallRequestStatus,
+  ): Promise<LineOaInstallRequest>;
 }

@@ -8,11 +8,18 @@ import {
   type ClaimOwnerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
+  type LineOaInstallRequest,
+  type LineOaInstallRequestStatus,
   type RecurringBreak,
   type Staff,
   type StaffRole,
   type UpdateBarberInput,
 } from "@/lib/data/types";
+import {
+  isOpenLineOaInstallStatus,
+  LINE_OA_INSTALL_STATUSES,
+  type CreateLineOaInstallRequestInput,
+} from "@/lib/onboarding/line-oa-install";
 import {
   countBreaksForWeekday,
   normalizeOffDays,
@@ -748,5 +755,75 @@ export const supabaseStore: BookingStore = {
       .single();
     if (error) throw new Error(error.message);
     return data as Barber;
+  },
+
+  async getLatestLineOaInstallRequest(shopId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("line_oa_install_requests")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return (data as LineOaInstallRequest | null) ?? null;
+  },
+
+  async createLineOaInstallRequest(shopId, input: CreateLineOaInstallRequestInput) {
+    const supabase = createServiceClient();
+    const { data: shop, error: shopError } = await supabase
+      .from("shops")
+      .select("id")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (shopError) throw new Error(shopError.message);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+
+    const latest = await supabaseStore.getLatestLineOaInstallRequest(shopId);
+    if (latest && isOpenLineOaInstallStatus(latest.status)) {
+      return latest;
+    }
+
+    const { data, error } = await supabase
+      .from("line_oa_install_requests")
+      .insert({
+        shop_id: shopId,
+        line_oa: input.lineOa,
+        rich_menu_state: input.richMenuState,
+        help_type: input.helpType,
+        contact_phone: input.contactPhone,
+        status: "NEW",
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as LineOaInstallRequest;
+  },
+
+  async listLineOaInstallRequests() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("line_oa_install_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as LineOaInstallRequest[]) ?? [];
+  },
+
+  async updateLineOaInstallRequestStatus(id, status: LineOaInstallRequestStatus) {
+    if (!LINE_OA_INSTALL_STATUSES.includes(status)) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("line_oa_install_requests")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    if (!data) throw new StoreConflict("NOT_FOUND");
+    return data as LineOaInstallRequest;
   },
 };

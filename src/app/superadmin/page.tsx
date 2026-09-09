@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
 import type { Shop } from "@/types/booking";
@@ -74,6 +75,11 @@ export default function SuperAdminPage() {
       </header>
 
       <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />
+
+      <section>
+        <h2 className="mb-4 text-xl font-semibold">LINE OA Install Requests</h2>
+        <LineSupportInbox token={token} />
+      </section>
 
       <section>
         <h2 className="mb-4 text-xl font-semibold">Shops List</h2>
