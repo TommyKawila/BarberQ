@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 
 const QUICK_LINKS = [
   { href: "/phinxstudio", label: "จองคิว (ลูกค้า)", accent: "bg-amber-400 text-zinc-950" },
@@ -35,10 +36,11 @@ function LegendRow({ color, label }: { color: string; label: string }) {
 
 export default function GuidePage() {
   return (
-    <article className="flex flex-col gap-6 px-4 py-5 pb-10">
+    <>
+      <PlatformTopBar />
+      <article className="flex flex-col gap-6 px-4 py-5 pb-10">
       <header>
-        <p className="text-xs uppercase tracking-wide text-zinc-500">BarberQ</p>
-        <h1 className="mt-1 text-2xl font-bold">คู่มือใช้งาน</h1>
+        <h1 className="text-2xl font-bold">คู่มือใช้งาน</h1>
         <p className="mt-2 text-sm text-zinc-400">
           ระบบจองคิวตัดผม Multi-Shop + Line Login + บอร์ดช่าง + สรุปคิว + Super Admin Dashboard
         </p>
@@ -366,5 +368,6 @@ export default function GuidePage() {
         </p>
       </footer>
     </article>
+    </>
   );
 }

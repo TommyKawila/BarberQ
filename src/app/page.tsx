@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
+import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 
 export default function HomePage() {
   return (
-    <div className="flex min-h-full flex-col px-4 py-10">
+    <div className="flex min-h-full flex-col">
+      <PlatformTopBar />
+      <div className="flex flex-col px-4 py-10">
       <LiffCallbackRedirect />
       <header className="text-center">
-        <p className="text-xs uppercase tracking-wide text-zinc-500">BarberQ</p>
-        <h1 className="mt-2 text-3xl font-bold">ระบบจองคิวร้านตัดผม</h1>
+        <h1 className="text-3xl font-bold">ระบบจองคิวร้านตัดผม</h1>
         <p className="mt-3 text-sm text-zinc-400">
           ลูกค้ากดจองจาก Line OA ของร้าน คุณได้บอร์ดคิวโดยไม่ต้องสร้างระบบเอง
         </p>
@@ -29,6 +31,7 @@ export default function HomePage() {
         <Link href="/guide" className="text-sm text-zinc-400 underline">
           คู่มือติดปุ่มบน Line OA
         </Link>
+      </div>
       </div>
     </div>
   );

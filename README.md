@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# BarberQx
 
-## Getting Started
+Booking platform for barber shops. Thai pronunciation: **บาร์เบอร์ควิกซ์**.
 
-First, run the development server:
+BarberQx is the platform, not the shop. On customer pages the merchant brand comes first; BarberQx stays a small platform signature. Brand rules live in [`docs/BRAND.md`](docs/BRAND.md). Cursor/agent brand workflow lives in [`README_FOR_CURSOR.txt`](README_FOR_CURSOR.txt).
+
+Deeper write-ups (architecture, security, pilot) should go under `/docs` later — this README is the map, not the full spec.
+
+## Product
+
+Customers book from the shop’s LINE OA using BarberQx LIFF. Owners get a queue board, team, hours, and shop settings without building their own booking system.
+
+Each shop is a tenant at `/{shopSlug}` (example seed shop: `/phinxstudio`).
+
+### Customers
+
+- Book at `/{shopSlug}`: barber, date, time, confirm
+- View / cancel at `/{shopSlug}/bookings`
+- LINE Login required
+- Shop cover, shop name, and (optional) barber photos on the booking page
+
+### Owners / staff
+
+- **Owner:** today board, team, stats; More → schedule, settings, customer booking
+- **Barber:** today board, own schedule; More → customer booking
+- Settings: shop name, cover image, logo, LINE/phone, hours
+- Claim shop via invite at `/owner/join`
+- Setup / LINE OA install help under `/{shopSlug}/admin/setup`
+
+Platform ops: `/superadmin` (shop invites, LINE OA requests) and `/pilot` (production pilot checklist).
+
+## Stack (this repo)
+
+- Next.js 16 App Router, React 19, TypeScript
+- Tailwind CSS 4
+- LINE LIFF (`@line/liff`)
+- Supabase JS (Postgres + Storage in production)
+- In-memory store in local prototype mode when Supabase env is unset
+- date-fns / date-fns-tz, lucide-react
+
+## Layout
+
+```
+src/app/            routes + API (`/[shop]`, `/admin` re-exports, `/api`)
+src/components/     customer, admin, layout, superadmin
+src/lib/            booking, auth, shop, data (memory + supabase)
+src/types/          shared types
+supabase/migrations SQL + Storage buckets
+docs/BRAND.md       brand system
+public/brand/       approved BarberQx assets
+```
+
+Shop-scoped APIs: `/api/[shop]/…`. Legacy unscoped `/api/bookings` etc. still exist; prefer shop-scoped routes.
+
+## Develop
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000). Copy env from [`.env.example`](.env.example).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Without `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, the app uses the memory store (prototype). Production requires those plus `NEXT_PUBLIC_LIFF_ID`, `NEXT_PUBLIC_APP_URL`, and `SUPERADMIN_TOKEN`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run typecheck
+npm run test:shop
+npm run test:booking
+npm run test:security
+npm run test:onboarding
+npm run build
+npm run start
+```
 
-## Learn More
+## Security / tenancy (high level)
 
-To learn more about Next.js, take a look at the following resources:
+- Data and admin actions are shop-scoped. Staff from shop A cannot manage shop B.
+- Customer identity is LINE. Owner/barber roles are shop staff records, not a platform `super_admin` role on the shop.
+- Super Admin is a separate token (`SUPERADMIN_TOKEN`), not a shop owner.
+- Uploads (cover / barber photos) go through owner-authorized APIs; buckets are public-read, writes are server-side.
+- Do not leak shop IDs, tokens, or another shop’s bookings across tenants.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Status
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`0.1.0`, private. Product is in **pilot / beta**: real shops can be invited from Super Admin and exercised via `/pilot`. Local prototype mode is for development only; production must not use the memory store or LINE mock auth.

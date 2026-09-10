@@ -10,6 +10,7 @@ import {
   isIos,
 } from "@/lib/browser/in-app-browser";
 import { buildAbsoluteUrl, resolveOpenTarget } from "@/lib/browser/open-targets";
+import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 import { useI18n } from "@/lib/i18n/locale-provider";
 
 export default function OpenPage() {
@@ -56,9 +57,12 @@ export default function OpenPage() {
 
   if (!inApp) {
     return (
-      <section className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("open.redirecting")}</p>
-      </section>
+      <>
+        <PlatformTopBar showLanguageToggle />
+        <section className="flex min-h-[50vh] flex-col items-center justify-center gap-2 px-4 py-10">
+          <p className="text-sm text-zinc-400">{t("open.redirecting")}</p>
+        </section>
+      </>
     );
   }
 
@@ -67,10 +71,11 @@ export default function OpenPage() {
     : t("open.detectedGeneric");
 
   return (
-    <section className="flex flex-col gap-5 px-4 py-8">
+    <>
+      <PlatformTopBar showLanguageToggle />
+      <section className="flex flex-col gap-5 px-4 py-8">
       <header>
-        <p className="text-xs uppercase tracking-wide text-amber-400">BarberQ</p>
-        <h1 className="mt-1 text-xl font-bold">{t("open.title")}</h1>
+        <h1 className="text-xl font-bold">{t("open.title")}</h1>
         <p className="mt-2 text-sm text-zinc-400">{detectedMessage}</p>
       </header>
 
@@ -112,5 +117,6 @@ export default function OpenPage() {
 
       <p className="text-center text-xs text-zinc-500">{t("open.fallbackHint")}</p>
     </section>
+    </>
   );
 }

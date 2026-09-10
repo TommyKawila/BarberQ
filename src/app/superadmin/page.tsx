@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
@@ -35,8 +36,10 @@ export default function SuperAdminPage() {
 
   if (!isAuthenticated) {
     return (
-      <section className="flex min-h-full flex-col items-center justify-center gap-4 px-4 py-16">
-        <h1 className="text-2xl font-semibold">BarberQ Super Admin</h1>
+      <>
+        <PlatformTopBar />
+        <section className="flex min-h-full flex-col items-center justify-center gap-4 px-4 py-16">
+        <h1 className="text-2xl font-semibold">Super Admin</h1>
         <input
           type="password"
           placeholder="Super Admin Token"
@@ -54,11 +57,14 @@ export default function SuperAdminPage() {
           {loading ? "Loading..." : "Login"}
         </button>
       </section>
+      </>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
+    <>
+      <PlatformTopBar />
+      <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
       <header>
         <div className="flex items-start justify-between gap-2">
           <div>
@@ -99,5 +105,6 @@ export default function SuperAdminPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import {
   PILOT_STEPS,
@@ -283,7 +284,9 @@ export default function PilotPage() {
 
   if (!authenticated) {
     return (
-      <section className="flex min-h-full flex-col items-center justify-center gap-4 px-4 py-16">
+      <>
+        <PlatformTopBar />
+        <section className="flex min-h-full flex-col items-center justify-center gap-4 px-4 py-16">
         <h1 className="text-2xl font-semibold">Production Pilot Test</h1>
         <p className="max-w-sm text-center text-sm text-zinc-400">
           ใช้ Super Admin token เพื่อเข้าหน้า checklist
@@ -308,15 +311,17 @@ export default function PilotPage() {
           กลับ Super Admin
         </Link>
       </section>
+      </>
     );
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 pb-16">
+    <>
+      <PlatformTopBar />
+      <div className="mx-auto flex max-w-2xl flex-col gap-4 px-4 py-6 pb-16">
       <header className="sticky top-0 z-10 -mx-4 border-b border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-xs uppercase tracking-wide text-zinc-500">BarberQ</p>
             <h1 className="text-lg font-bold">Production Pilot Test</h1>
           </div>
           <div className="text-right text-xs text-zinc-500">
@@ -477,5 +482,6 @@ export default function PilotPage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

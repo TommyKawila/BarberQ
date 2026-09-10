@@ -1,4 +1,5 @@
 import { CancelClient } from "@/components/customer/CancelClient";
+import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 import { getStore } from "@/lib/data";
 
 export const runtime = "nodejs";
@@ -28,12 +29,15 @@ export default async function CancelPage({
   ]);
 
   return (
-    <CancelClient
-      token={token}
-      appointment={appointment}
-      barbers={barbers}
-      lineUrl={settings.lineUrl}
-      phone={settings.phone}
-    />
+    <>
+      <PlatformTopBar />
+      <CancelClient
+        token={token}
+        appointment={appointment}
+        barbers={barbers}
+        lineUrl={settings.lineUrl}
+        phone={settings.phone}
+      />
+    </>
   );
 }
