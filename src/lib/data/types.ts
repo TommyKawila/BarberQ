@@ -140,11 +140,23 @@ export type {
   LineOaInstallRequestStatus,
 } from "@/lib/onboarding/line-oa-install";
 
+export type {
+  CreateTrialLeadInput,
+  TrialLead,
+  TrialLeadStatus,
+} from "@/lib/marketing/trial-leads";
+
 import type {
   CreateLineOaInstallRequestInput,
   LineOaInstallRequest,
   LineOaInstallRequestStatus,
 } from "@/lib/onboarding/line-oa-install";
+
+import type {
+  CreateTrialLeadInput,
+  TrialLead,
+  TrialLeadStatus,
+} from "@/lib/marketing/trial-leads";
 
 export interface BookingStore {
   getShopBySlug(slug: string): Promise<Shop | null>;
@@ -199,4 +211,7 @@ export interface BookingStore {
     id: string,
     status: LineOaInstallRequestStatus,
   ): Promise<LineOaInstallRequest>;
+  createTrialLead(input: CreateTrialLeadInput): Promise<TrialLead>;
+  listTrialLeads(): Promise<TrialLead[]>;
+  updateTrialLeadStatus(id: string, status: TrialLeadStatus): Promise<TrialLead>;
 }

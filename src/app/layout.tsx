@@ -25,11 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="th" className={`${notoThai.className} h-full antialiased`}>
       <body className="min-h-full bg-zinc-950 text-zinc-50">
-        <LocaleProvider>
-          <div className="mx-auto min-h-full w-full max-w-lg pb-[env(safe-area-inset-bottom)]">
-            {children}
-          </div>
-        </LocaleProvider>
+        <LocaleProvider>{children}</LocaleProvider>
       </body>
     </html>
   );

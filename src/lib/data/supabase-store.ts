@@ -21,6 +21,12 @@ import {
   type CreateLineOaInstallRequestInput,
 } from "@/lib/onboarding/line-oa-install";
 import {
+  TRIAL_LEAD_STATUSES,
+  type CreateTrialLeadInput,
+  type TrialLead,
+  type TrialLeadStatus,
+} from "@/lib/marketing/trial-leads";
+import {
   countBreaksForWeekday,
   normalizeOffDays,
   validateOffDays,
@@ -895,5 +901,53 @@ export const supabaseStore: BookingStore = {
     if (error) throw new Error(error.message);
     if (!data) throw new StoreConflict("NOT_FOUND");
     return data as LineOaInstallRequest;
+  },
+
+  async createTrialLead(input: CreateTrialLeadInput) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("trial_leads")
+      .insert({
+        shop_name: input.shopName,
+        contact_name: input.contactName,
+        contact_value: input.contactValue,
+        province: input.province ?? null,
+        barber_count: input.barberCount ?? null,
+        utm_source: input.utmSource ?? null,
+        utm_medium: input.utmMedium ?? null,
+        utm_campaign: input.utmCampaign ?? null,
+        referrer: input.referrer ?? null,
+        locale: input.locale ?? null,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as TrialLead;
+  },
+
+  async listTrialLeads() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("trial_leads")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as TrialLead[]) ?? [];
+  },
+
+  async updateTrialLeadStatus(id: string, status: TrialLeadStatus) {
+    if (!TRIAL_LEAD_STATUSES.includes(status)) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("trial_leads")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    if (!data) throw new StoreConflict("NOT_FOUND");
+    return data as TrialLead;
   },
 };

@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { PhoneShell } from "@/components/layout/PhoneShell";
 import { ShopBrandProvider } from "@/lib/brand/shop-brand";
 import { getStore } from "@/lib/data";
 import { ShopSlugProvider } from "@/lib/shop/shop-slug-context";
@@ -15,11 +16,13 @@ export default async function ShopLayout({
   }
 
   return (
-    <ShopSlugProvider shopSlug={shop}>
-      <ShopBrandProvider shopSlug={shop}>
-        <AppHeader />
-        {children}
-      </ShopBrandProvider>
-    </ShopSlugProvider>
+    <PhoneShell>
+      <ShopSlugProvider shopSlug={shop}>
+        <ShopBrandProvider shopSlug={shop}>
+          <AppHeader />
+          {children}
+        </ShopBrandProvider>
+      </ShopSlugProvider>
+    </PhoneShell>
   );
 }

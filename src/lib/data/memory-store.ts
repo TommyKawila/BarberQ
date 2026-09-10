@@ -22,6 +22,12 @@ import {
   LINE_OA_INSTALL_STATUSES,
   type CreateLineOaInstallRequestInput,
 } from "@/lib/onboarding/line-oa-install";
+import {
+  TRIAL_LEAD_STATUSES,
+  type CreateTrialLeadInput,
+  type TrialLead,
+  type TrialLeadStatus,
+} from "@/lib/marketing/trial-leads";
 import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
 import {
   countBreaksForWeekday,
@@ -46,6 +52,7 @@ interface MemoryState {
   recurringBreaks: RecurringBreak[];
   shops: Shop[];
   lineOaInstallRequests: LineOaInstallRequest[];
+  trialLeads: TrialLead[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -68,6 +75,7 @@ function getState(): MemoryState {
       })),
       recurringBreaks: [],
       lineOaInstallRequests: [],
+      trialLeads: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
@@ -856,6 +864,45 @@ export const memoryStore: BookingStore = {
     }
     const state = getState();
     const row = state.lineOaInstallRequests.find((r) => r.id === id);
+    if (!row) throw new StoreConflict("NOT_FOUND");
+    row.status = status;
+    row.updated_at = nowIso();
+    return { ...row };
+  },
+
+  async createTrialLead(input: CreateTrialLeadInput) {
+    const now = nowIso();
+    const row: TrialLead = {
+      id: uuid(),
+      shop_name: input.shopName,
+      contact_name: input.contactName,
+      contact_value: input.contactValue,
+      province: input.province ?? null,
+      barber_count: input.barberCount ?? null,
+      status: "NEW",
+      utm_source: input.utmSource ?? null,
+      utm_medium: input.utmMedium ?? null,
+      utm_campaign: input.utmCampaign ?? null,
+      referrer: input.referrer ?? null,
+      locale: input.locale ?? null,
+      created_at: now,
+      updated_at: now,
+    };
+    getState().trialLeads.push(row);
+    return { ...row };
+  },
+
+  async listTrialLeads() {
+    return getState()
+      .trialLeads.map((r) => ({ ...r }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+
+  async updateTrialLeadStatus(id: string, status: TrialLeadStatus) {
+    if (!TRIAL_LEAD_STATUSES.includes(status)) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const row = getState().trialLeads.find((r) => r.id === id);
     if (!row) throw new StoreConflict("NOT_FOUND");
     row.status = status;
     row.updated_at = nowIso();

@@ -71,12 +71,20 @@ export default function SuperAdminPage() {
             <h1 className="text-2xl font-semibold">Shops Management</h1>
             <p className="text-sm text-zinc-400">Active shops: {shops.length}</p>
           </div>
-          <Link
-            href="/pilot"
-            className="shrink-0 rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-medium text-amber-400"
-          >
-            Pilot Test
-          </Link>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            <Link
+              href="/superadmin/trial-leads"
+              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300"
+            >
+              Trial Leads
+            </Link>
+            <Link
+              href="/pilot"
+              className="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-medium text-amber-400"
+            >
+              Pilot Test
+            </Link>
+          </div>
         </div>
       </header>
 
