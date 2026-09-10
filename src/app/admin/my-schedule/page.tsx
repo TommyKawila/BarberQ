@@ -10,6 +10,11 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { BarberAvatar } from "@/components/barber/BarberAvatar";
+import {
+  BREAK_WEEKDAYS_MON_FIRST,
+  buildCreateBreakBody,
+  validateBreakFormInput,
+} from "@/lib/schedule/break-day-selector";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import { barberLabel, type Barber } from "@/types/booking";
 
@@ -53,9 +58,10 @@ function MyScheduleContent() {
   const [offDaysMessage, setOffDaysMessage] = useState<string | null>(null);
   const [durationMessage, setDurationMessage] = useState<string | null>(null);
   const [breakMessage, setBreakMessage] = useState<string | null>(null);
+  const [breakMessageIsError, setBreakMessageIsError] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showBreakForm, setShowBreakForm] = useState(false);
-  const [breakWeekday, setBreakWeekday] = useState(1);
+  const [breakWeekday, setBreakWeekday] = useState<number | null>(null);
   const [breakStart, setBreakStart] = useState("12:00");
   const [breakEnd, setBreakEnd] = useState("13:00");
   const [creatingBreak, setCreatingBreak] = useState(false);
@@ -147,25 +153,45 @@ function MyScheduleContent() {
 
   async function createBreak() {
     if (!barberId) return;
+    const validationError = validateBreakFormInput({
+      weekday: breakWeekday,
+      startTime: breakStart,
+      endTime: breakEnd,
+    });
+    if (validationError === "selectDayRequired") {
+      setBreakMessage(t("admin.selectDayRequired"));
+      setBreakMessageIsError(true);
+      return;
+    }
+    if (validationError === "invalidTime") {
+      setBreakMessage(t("admin.invalidBreakTime"));
+      setBreakMessageIsError(true);
+      return;
+    }
     setCreatingBreak(true);
     setBreakMessage(null);
+    setBreakMessageIsError(false);
     const res = await fetch(`/api/barbers/${barberId}/breaks`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify({
-        weekday: breakWeekday,
-        startTime: breakStart,
-        endTime: breakEnd,
-      }),
+      body: JSON.stringify(
+        buildCreateBreakBody({
+          weekday: breakWeekday!,
+          startTime: breakStart,
+          endTime: breakEnd,
+        }),
+      ),
     });
     const json = (await res.json()) as ApiError;
     if (!res.ok) {
       setBreakMessage(json.error?.message ?? t("admin.updateFailed"));
+      setBreakMessageIsError(true);
       setCreatingBreak(false);
       return;
     }
     setBreakMessage(t("admin.breakCreated"));
-    setShowBreakForm(false);
+    setBreakMessageIsError(false);
+    setBreakWeekday(null);
     setCreatingBreak(false);
     await loadSchedule();
   }
@@ -173,6 +199,7 @@ function MyScheduleContent() {
   async function deleteBreak(breakId: string) {
     if (!barberId) return;
     setBreakMessage(null);
+    setBreakMessageIsError(false);
     const res = await fetch(`/api/barbers/${barberId}/breaks`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json", ...authHeaders },
@@ -181,9 +208,11 @@ function MyScheduleContent() {
     const json = (await res.json()) as ApiError;
     if (!res.ok) {
       setBreakMessage(json.error?.message ?? t("admin.updateFailed"));
+      setBreakMessageIsError(true);
       return;
     }
     setBreakMessage(t("admin.breakDeleted"));
+    setBreakMessageIsError(false);
     await loadSchedule();
   }
 
@@ -316,27 +345,57 @@ function MyScheduleContent() {
           </div>
           {showBreakForm ? (
             <div className="mt-3 flex flex-col gap-2">
-              <label className="flex flex-col gap-1 text-sm">
-                {t("admin.selectDay")}
-                <select
-                  value={breakWeekday}
-                  onChange={(event) => setBreakWeekday(Number(event.target.value))}
-                  className="min-h-10 rounded-lg bg-zinc-800 px-3"
+              <div className="flex flex-col gap-2 text-sm">
+                <span id="break-day-label">{t("admin.selectDay")}</span>
+                <div
+                  role="radiogroup"
+                  aria-labelledby="break-day-label"
+                  className="flex flex-wrap gap-2"
                 >
-                  {WEEKDAYS.map((day) => (
-                    <option key={day.value} value={day.value}>
-                      {t(day.key)}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  {BREAK_WEEKDAYS_MON_FIRST.map((day, index) => {
+                    const selected = breakWeekday === day.value;
+                    return (
+                      <button
+                        key={day.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={selected}
+                        aria-label={t(day.fullKey)}
+                        onKeyDown={(event) => {
+                          if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+                          event.preventDefault();
+                          const delta = event.key === "ArrowRight" ? 1 : -1;
+                          const next =
+                            (index + delta + BREAK_WEEKDAYS_MON_FIRST.length) %
+                            BREAK_WEEKDAYS_MON_FIRST.length;
+                          setBreakMessage(null);
+                          setBreakMessageIsError(false);
+                          setBreakWeekday(BREAK_WEEKDAYS_MON_FIRST[next].value);
+                        }}
+                        onClick={() => {
+                          setBreakMessage(null);
+                          setBreakMessageIsError(false);
+                          setBreakWeekday(day.value);
+                        }}
+                        className={`min-h-11 min-w-11 rounded-xl px-3 text-sm font-semibold transition ${
+                          selected
+                            ? "bg-amber-400 text-zinc-950"
+                            : "border border-zinc-700 bg-zinc-950 text-zinc-200"
+                        }`}
+                      >
+                        {t(day.shortKey)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               <label className="flex flex-col gap-1 text-sm">
                 {t("admin.startTime")}
                 <input
                   type="time"
                   value={breakStart}
                   onChange={(event) => setBreakStart(event.target.value)}
-                  className="min-h-10 rounded-lg bg-zinc-800 px-3"
+                  className="min-h-11 rounded-lg bg-zinc-800 px-3"
                 />
               </label>
               <label className="flex flex-col gap-1 text-sm">
@@ -345,16 +404,16 @@ function MyScheduleContent() {
                   type="time"
                   value={breakEnd}
                   onChange={(event) => setBreakEnd(event.target.value)}
-                  className="min-h-10 rounded-lg bg-zinc-800 px-3"
+                  className="min-h-11 rounded-lg bg-zinc-800 px-3"
                 />
               </label>
               <button
                 type="button"
-                disabled={creatingBreak}
+                disabled={creatingBreak || breakWeekday === null}
                 onClick={() => void createBreak()}
                 className="min-h-11 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
               >
-                {t("admin.createBreak")}
+                {t("admin.addBreak")}
               </button>
             </div>
           ) : (
@@ -366,7 +425,11 @@ function MyScheduleContent() {
               {t("admin.addBreak")}
             </button>
           )}
-          {breakMessage ? <p className="mt-2 text-sm text-emerald-400">{breakMessage}</p> : null}
+          {breakMessage ? (
+            <p className={`mt-2 text-sm ${breakMessageIsError ? "text-red-400" : "text-emerald-400"}`}>
+              {breakMessage}
+            </p>
+          ) : null}
         </section>
       </div>
     </AdminShell>
