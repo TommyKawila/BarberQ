@@ -1,4 +1,4 @@
-const WIDTH = { sm: 220, md: 280, lg: 300 } as const;
+const WIDTH = { sm: 220, md: 280, lg: 300, xl: 350 } as const;
 
 export type PhoneSize = keyof typeof WIDTH;
 

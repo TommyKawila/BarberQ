@@ -1,8 +1,9 @@
 import { PhoneFrame, type PhoneSize } from "./PhoneFrame";
 
 export function BookingMockup({ size = "lg" }: { size?: PhoneSize }) {
-  const text = size === "sm" ? "text-[9px]" : size === "md" ? "text-[10px]" : "text-xs";
-  const label = size === "sm" ? "text-[8px]" : "text-[10px]";
+  const text =
+    size === "sm" ? "text-[9px]" : size === "md" ? "text-[10px]" : size === "xl" ? "text-sm" : "text-xs";
+  const label = size === "sm" ? "text-[8px]" : size === "xl" ? "text-[11px]" : "text-[10px]";
   return (
     <PhoneFrame size={size}>
       <div className="h-24 bg-gradient-to-br from-amber-500/30 to-zinc-800 px-3 pt-3">

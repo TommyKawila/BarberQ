@@ -12,7 +12,7 @@ export function MarketingNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1280px] items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <BarberQxLogo priority />
+        <BarberQxLogo priority className="h-auto w-[90px] md:w-[120px]" />
         <nav className="hidden items-center gap-6 text-sm text-zinc-300 md:flex">
           <a href="#how-it-works" className="hover:text-amber-400">{t("marketing.nav.how")}</a>
           <a href="#features" className="hover:text-amber-400">{t("marketing.nav.features")}</a>
