@@ -6,6 +6,7 @@ import { format, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import liff from "@line/liff";
+import { CalendarDays, ChevronRight, Store } from "lucide-react";
 import { BarberSelector } from "@/components/customer/BarberSelector";
 import { DateSelector } from "@/components/customer/DateSelector";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
@@ -13,12 +14,17 @@ import { SlotPicker } from "@/components/customer/SlotPicker";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import {
   bookingErrorI18nKey,
+  bookingShopTitle,
+  bookingSummaryReady,
+  canShowOwnerTools,
   canSubmitBooking,
   defaultBookableBarberId,
   isCustomerDateDisabled,
   isShopClosedOnDate,
   maskPhone,
   normalizeCustomerPhone,
+  staffIdentityKey,
+  type ShopStaffMe,
 } from "@/lib/booking/customer-flow";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { useLineAuth } from "@/lib/line/use-line-auth";
@@ -52,7 +58,7 @@ export function BookingApp() {
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [barbersLoading, setBarbersLoading] = useState(true);
-  const [isShopStaff, setIsShopStaff] = useState(false);
+  const [staff, setStaff] = useState<ShopStaffMe | null>(null);
   const [prototypeMode, setPrototypeMode] = useState(true);
   const [barberId, setBarberId] = useState<string | null>(null);
   const [dateISO, setDateISO] = useState<string | null>(dates[0] ?? null);
@@ -87,7 +93,7 @@ export function BookingApp() {
 
   useEffect(() => {
     if (!profile?.userId) {
-      setIsShopStaff(false);
+      setStaff(null);
       return;
     }
     let cancelled = false;
@@ -95,11 +101,11 @@ export function BookingApp() {
       headers: getLineAuthHeaders(mockMode ? profile.userId : undefined),
     })
       .then(async (res) => {
-        const json = (await res.json()) as { staff?: { barberId: string } | null };
-        if (!cancelled) setIsShopStaff(Boolean(json.staff));
+        const json = (await res.json()) as { staff?: ShopStaffMe | null };
+        if (!cancelled) setStaff(json.staff ?? null);
       })
       .catch(() => {
-        if (!cancelled) setIsShopStaff(false);
+        if (!cancelled) setStaff(null);
       });
     return () => {
       cancelled = true;
@@ -107,7 +113,6 @@ export function BookingApp() {
   }, [profile?.userId, shopApi, mockMode]);
 
   const selectedBarber = barbers.find((item) => item.id === barberId) ?? null;
-  const singleBarber = barbers.length === 1;
 
   const activeDate = useMemo(() => {
     if (!selectedBarber || !dateISO) return dateISO;
@@ -391,77 +396,88 @@ export function BookingApp() {
     activeDate && selectedSlot
       ? format(parseISO(`${activeDate}T00:00:00`), "EEEE d MMMM yyyy", { locale: dateLocale })
       : null;
+  const resolvedShopName = bookingShopTitle(shopName);
+  const pageTitle = resolvedShopName
+    ? t("booking.shopTitle").replace("{shopName}", resolvedShopName)
+    : t("booking.title");
+  const showSummary = bookingSummaryReady(barberId, activeDate, selectedStart) && selectedSlot;
 
   return (
-    <div className="flex flex-col gap-6 px-4 pb-36 pt-5">
-      <header>
+    <div className="flex flex-col gap-8 px-4 pb-36 pt-5">
+      <header className="flex flex-col gap-1">
         {prototypeMode ? (
-          <span className="mb-2 inline-block rounded bg-zinc-800 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-400">
+          <span className="mb-1 inline-block w-fit rounded bg-zinc-800 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-400">
             {t("common.prototypeMode")}
           </span>
         ) : null}
-        <h1 className="text-2xl font-semibold">{t("booking.title")}</h1>
-        {profile.displayName ? (
-          <div className="mt-2 flex items-center justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2">
-              {profile.pictureUrl ? (
-                <img
-                  src={profile.pictureUrl}
-                  alt=""
-                  className="h-8 w-8 shrink-0 rounded-full object-cover"
-                />
-              ) : (
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-amber-400">
-                  {profile.displayName.charAt(0)}
-                </span>
-              )}
-              <p className="truncate text-sm text-zinc-300">
-                {t("booking.hello").replace("{name}", profile.displayName)}
-              </p>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1">
-              {isShopStaff ? (
-                <Link href={shopPath("/admin")} className="min-h-8 text-sm text-amber-400 underline">
-                  {t("booking.manageShop")}
-                </Link>
-              ) : null}
-              <Link href={shopPath("/bookings")} className="min-h-8 text-sm text-amber-400 underline">
-                {t("booking.myBookings")}
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-2 flex flex-col items-end gap-1">
-            {isShopStaff ? (
-              <Link href={shopPath("/admin")} className="min-h-8 text-sm text-amber-400 underline">
-                {t("booking.manageShop")}
-              </Link>
-            ) : null}
-            <Link href={shopPath("/bookings")} className="min-h-8 text-sm text-amber-400 underline">
-              {t("booking.myBookings")}
-            </Link>
-          </div>
-        )}
+        <h1 className="text-2xl font-semibold leading-tight">{pageTitle}</h1>
+        <p className="text-sm text-zinc-400">{t("booking.shopSubtitle")}</p>
       </header>
 
-      {!singleBarber ? (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-base font-semibold text-zinc-100">{t("booking.selectBarber")}</h2>
-          <p className="text-sm text-zinc-400">{t("booking.selectBarberHint")}</p>
-          <BarberSelector barbers={barbers} value={barberId} onChange={setBarberId} />
-        </section>
-      ) : selectedBarber ? (
-        <section className="rounded-xl bg-zinc-900 px-4 py-3">
-          <p className="text-xs text-zinc-500">{t("booking.barber")}</p>
-          <p className="font-semibold">{barberLabel(selectedBarber.name, locale)}</p>
-          <p className="text-xs text-zinc-400">
-            {selectedBarber.slot_duration_minutes} {t("common.minutes")}
+      <div className="flex items-center gap-3">
+        {profile.pictureUrl ? (
+          <img
+            src={profile.pictureUrl}
+            alt=""
+            className="h-11 w-11 shrink-0 rounded-full object-cover"
+          />
+        ) : (
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-amber-400">
+            {(profile.displayName ?? "?").charAt(0)}
+          </span>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-medium text-zinc-100">
+            {profile.displayName
+              ? t("booking.hello").replace("{name}", profile.displayName)
+              : t("booking.hello").replace("{name}", "—")}
           </p>
+          <p className="text-xs text-zinc-500">{t(staffIdentityKey(staff))}</p>
+        </div>
+      </div>
+
+      <Link
+        href={shopPath("/bookings")}
+        className="flex min-h-14 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800/80"
+      >
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
+          <CalendarDays className="h-5 w-5" aria-hidden />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-zinc-100">{t("booking.viewMyBookings")}</p>
+          <p className="text-xs text-zinc-500">{t("booking.myBookingsCardSubtitle")}</p>
+        </div>
+        <ChevronRight className="h-5 w-5 shrink-0 text-zinc-500" aria-hidden />
+      </Link>
+
+      {canShowOwnerTools(staff) ? (
+        <section className="flex flex-col gap-2">
+          <p className="text-xs text-zinc-600">{t("booking.ownerToolsEyebrow")}</p>
+          <Link
+            href={shopPath("/admin")}
+            className="flex min-h-12 items-center gap-3 rounded-xl border border-zinc-800/80 bg-zinc-950 px-4 py-3 transition hover:bg-zinc-900"
+          >
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400">
+              <Store className="h-[18px] w-[18px]" aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-zinc-300">{t("booking.ownerToolsTitle")}</p>
+              <p className="text-xs text-zinc-600">{t("booking.ownerToolsSubtitle")}</p>
+            </div>
+            <ChevronRight className="h-4 w-4 shrink-0 text-zinc-600" aria-hidden />
+          </Link>
         </section>
       ) : null}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-zinc-400">{t("booking.date")}</h2>
+        <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepBarber")}</h2>
+        <p className="text-sm text-zinc-400">{t("booking.selectBarberHint")}</p>
+        <BarberSelector barbers={barbers} value={barberId} onChange={setBarberId} />
+      </section>
+
+      <section className="flex flex-col gap-2">
+        <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepDate")}</h2>
+        <p className="text-sm text-zinc-400">{t("booking.selectDateHint")}</p>
         <DateSelector
           dates={dates}
           value={activeDate}
@@ -473,9 +489,12 @@ export function BookingApp() {
 
       <section className="flex flex-col gap-2">
         <div className="flex items-baseline justify-between gap-2">
-          <h2 className="text-sm font-medium text-zinc-400">{t("booking.time")}</h2>
+          <div>
+            <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepTime")}</h2>
+            <p className="mt-0.5 text-sm text-zinc-400">{t("booking.selectTimeHint")}</p>
+          </div>
           {lastUpdated ? (
-            <p className="text-[10px] text-zinc-600">
+            <p className="shrink-0 text-[10px] text-zinc-600">
               {t("booking.lastUpdated")}{" "}
               {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm:ss")}
             </p>
@@ -493,51 +512,77 @@ export function BookingApp() {
         />
       </section>
 
-      {message && !selectedSlot ? (
+      {message && !showSummary ? (
         <p className="text-sm text-amber-400">{message}</p>
       ) : null}
 
-      {selectedSlot ? (
+      {showSummary ? (
         <>
-          <section className="flex flex-col gap-3 rounded-2xl bg-zinc-900 p-4">
-            <div className="space-y-1 border-b border-zinc-800 pb-3 text-sm">
-              {shopName ? <p className="font-semibold">{shopName}</p> : null}
-              {selectedBarber ? (
-                <p className="text-zinc-300">{barberLabel(selectedBarber.name, locale)}</p>
-              ) : null}
-              {summaryDate ? <p className="text-zinc-400">{summaryDate}</p> : null}
-              <p className="text-lg font-semibold">
-                {formatSlotTime(selectedSlot.startTime)}
-                {selectedBarber ? (
-                  <span className="ml-2 text-xs font-normal text-zinc-500">
-                    ({selectedBarber.slot_duration_minutes} {t("common.minutes")})
-                  </span>
-                ) : null}
-              </p>
+          <section className="flex flex-col gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepSummary")}</h2>
+              <p className="mt-0.5 text-sm text-zinc-400">{t("booking.stepSummaryHint")}</p>
             </div>
-            <label className="flex flex-col gap-1 text-sm">
-              {t("booking.name")}
-              <input
-                value={customerName}
-                onChange={(event) => setCustomerName(event.target.value)}
-                placeholder={t("booking.namePlaceholder")}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-              />
-            </label>
-            <label className="flex flex-col gap-1 text-sm">
-              {t("booking.phone")}
-              <input
-                value={phone ?? ""}
-                onChange={(event) => setPhone(event.target.value)}
-                inputMode="tel"
-                placeholder={t("booking.phonePlaceholder")}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-              />
-            </label>
-            <p className="text-xs text-zinc-500">{t("booking.cancelPolicy")}</p>
+            <div className="rounded-2xl bg-zinc-900 p-4">
+              <dl className="space-y-3 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-zinc-500">{t("booking.barber")}</dt>
+                  <dd className="text-right font-medium text-zinc-100">
+                    {selectedBarber ? barberLabel(selectedBarber.name, locale) : "—"}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-zinc-500">{t("booking.date")}</dt>
+                  <dd className="text-right text-zinc-200">{summaryDate ?? "—"}</dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-zinc-500">{t("booking.time")}</dt>
+                  <dd className="text-right font-medium text-zinc-100">
+                    {formatSlotTime(selectedSlot.startTime)}
+                  </dd>
+                </div>
+                <div className="flex items-start justify-between gap-3">
+                  <dt className="text-zinc-500">{t("booking.duration")}</dt>
+                  <dd className="text-right text-zinc-200">
+                    {selectedBarber
+                      ? `${selectedBarber.slot_duration_minutes} ${t("common.minutes")}`
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-4 space-y-3 border-t border-zinc-800 pt-4">
+                <label className="flex flex-col gap-1 text-sm">
+                  {t("booking.name")}
+                  <input
+                    value={customerName}
+                    onChange={(event) => setCustomerName(event.target.value)}
+                    placeholder={t("booking.namePlaceholder")}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-sm">
+                  {t("booking.phone")}
+                  <input
+                    value={phone ?? ""}
+                    onChange={(event) => setPhone(event.target.value)}
+                    inputMode="tel"
+                    placeholder={t("booking.phonePlaceholder")}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+                  />
+                </label>
+              </div>
+            </div>
           </section>
 
-          {message ? <p className="text-sm text-red-400">{message}</p> : null}
+          <section className="flex flex-col gap-2">
+            <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepConfirm")}</h2>
+            {message ? <p className="text-sm text-red-400">{message}</p> : null}
+          </section>
+
+          <section className="flex flex-col gap-2 pb-4">
+            <h2 className="text-sm font-semibold text-zinc-300">{t("booking.notesHeading")}</h2>
+            <p className="text-xs text-zinc-500">{t("booking.cancelPolicy")}</p>
+          </section>
 
           <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-800 bg-zinc-950/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
             <div className="mb-2 text-center text-xs text-zinc-500">

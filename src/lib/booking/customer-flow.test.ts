@@ -3,6 +3,9 @@ import assert from "node:assert/strict";
 import { memoryStore } from "@/lib/data/memory-store";
 import {
   bookingErrorI18nKey,
+  bookingShopTitle,
+  bookingSummaryReady,
+  canShowOwnerTools,
   canSubmitBooking,
   defaultBookableBarberId,
   isCustomerDateDisabled,
@@ -11,6 +14,7 @@ import {
   maskPhone,
   normalizeCustomerPhone,
   sortAppointmentsUpcomingFirst,
+  staffIdentityKey,
 } from "@/lib/booking/customer-flow";
 import {
   BookingError,
@@ -77,6 +81,31 @@ describe("customer flow helpers", () => {
   it("canSubmitBooking blocks duplicate submit", () => {
     assert.equal(canSubmitBooking(false), true);
     assert.equal(canSubmitBooking(true), false);
+  });
+
+  it("bookingShopTitle uses trimmed shop name", () => {
+    assert.equal(bookingShopTitle("TMY BarberQx"), "TMY BarberQx");
+    assert.equal(bookingShopTitle("  "), null);
+    assert.equal(bookingShopTitle(null), null);
+  });
+
+  it("staffIdentityKey maps role to i18n key", () => {
+    assert.equal(staffIdentityKey(null), "booking.identityCustomer");
+    assert.equal(staffIdentityKey({ role: "owner", barberId: "x" }), "booking.identityOwner");
+    assert.equal(staffIdentityKey({ role: "barber", barberId: "x" }), "booking.identityBarber");
+  });
+
+  it("canShowOwnerTools only for shop staff", () => {
+    assert.equal(canShowOwnerTools(null), false);
+    assert.equal(canShowOwnerTools({ role: "owner", barberId: "x" }), true);
+    assert.equal(canShowOwnerTools({ role: "barber", barberId: "x" }), true);
+  });
+
+  it("bookingSummaryReady requires barber date and time", () => {
+    assert.equal(bookingSummaryReady("b1", "2026-09-10", "2026-09-10T07:00:00.000Z"), true);
+    assert.equal(bookingSummaryReady(null, "2026-09-10", "2026-09-10T07:00:00.000Z"), false);
+    assert.equal(bookingSummaryReady("b1", null, "2026-09-10T07:00:00.000Z"), false);
+    assert.equal(bookingSummaryReady("b1", "2026-09-10", null), false);
   });
 
   it("normalizeCustomerPhone strips spaces and dashes", () => {

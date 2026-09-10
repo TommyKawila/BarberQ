@@ -5,6 +5,34 @@ import type { Barber } from "@/types/booking";
 
 const PHONE_RE = /^0\d{8,9}$/;
 
+export type ShopStaffMe = {
+  role: "owner" | "barber";
+  barberId: string;
+};
+
+export function bookingShopTitle(shopName: string | null | undefined): string | null {
+  const trimmed = shopName?.trim();
+  return trimmed ? trimmed : null;
+}
+
+export function staffIdentityKey(staff: ShopStaffMe | null | undefined): MessageKey {
+  if (staff?.role === "owner") return "booking.identityOwner";
+  if (staff?.role === "barber") return "booking.identityBarber";
+  return "booking.identityCustomer";
+}
+
+export function canShowOwnerTools(staff: ShopStaffMe | null | undefined): boolean {
+  return Boolean(staff);
+}
+
+export function bookingSummaryReady(
+  barberId: string | null | undefined,
+  dateISO: string | null | undefined,
+  selectedStart: string | null | undefined,
+): boolean {
+  return Boolean(barberId && dateISO && selectedStart);
+}
+
 export function defaultBookableBarberId(barbers: Barber[]): string | null {
   if (barbers.length === 1) return barbers[0].id;
   return null;

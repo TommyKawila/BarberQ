@@ -2,6 +2,7 @@ import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { assertShopOwner, type StaffAuth } from "@/lib/admin-auth";
 import { adminNavItems, moreAdminNavItems, primaryAdminNavItems } from "@/lib/admin/admin-nav-items";
+import { canShowOwnerTools } from "@/lib/booking/customer-flow";
 import { getBearerToken, verifyLineAccessToken } from "@/lib/auth/line-verify";
 import { BookingError } from "@/lib/services/booking-service";
 
@@ -97,6 +98,21 @@ describe("admin nav visibility", () => {
       "booking",
     ]);
     assert.deepEqual(adminNavItems("barber"), ["board", "schedule", "booking"]);
+  });
+});
+
+describe("customer booking owner tools visibility", () => {
+  it("normal customer does not see owner tools", () => {
+    assert.equal(canShowOwnerTools(null), false);
+  });
+
+  it("authorized owner sees owner tools", () => {
+    assert.equal(canShowOwnerTools({ role: "owner", barberId: "owner-a" }), true);
+  });
+
+  it("shop staff from another shop does not leak via helper alone", () => {
+    assert.equal(canShowOwnerTools({ role: "owner", barberId: "owner-b" }), true);
+    assert.notEqual(ownerA.shopId, ownerOtherShop.shopId);
   });
 });
 
