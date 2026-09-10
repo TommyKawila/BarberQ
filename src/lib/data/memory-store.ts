@@ -83,6 +83,7 @@ function getState(): MemoryState {
     g[GLOBAL_KEY].shopSettings[DEFAULT_SHOP_ID] = {
       shopId: DEFAULT_SHOP_ID,
       logoDataUrl: null,
+      coverImageUrl: null,
       shopName: "PHINX STUDIO",
       lineUrl: null,
       phone: null,
@@ -113,6 +114,7 @@ function getState(): MemoryState {
       [DEFAULT_SHOP_ID]: {
         shopId: DEFAULT_SHOP_ID,
         logoDataUrl: null,
+        coverImageUrl: null,
         shopName: "PHINX STUDIO",
         lineUrl: null,
         phone: null,
@@ -433,6 +435,7 @@ export const memoryStore: BookingStore = {
       existing ?? {
         shopId,
         logoDataUrl: null,
+        coverImageUrl: null,
         shopName: null,
         lineUrl: null,
         phone: null,
@@ -446,6 +449,7 @@ export const memoryStore: BookingStore = {
     state.shopSettings[shopId] = {
       shopId,
       logoDataUrl: input.logoDataUrl,
+      coverImageUrl: input.coverImageUrl,
       shopName: input.shopName,
       lineUrl: input.lineUrl,
       phone: input.phone,
@@ -658,6 +662,7 @@ export const memoryStore: BookingStore = {
       getState().shopSettings[shop.id] = {
         shopId: shop.id,
         logoDataUrl: null,
+        coverImageUrl: null,
         shopName: name,
         lineUrl: null,
         phone: null,
@@ -687,6 +692,7 @@ export const memoryStore: BookingStore = {
     getState().shopSettings[shop.id] = {
       shopId: shop.id,
       logoDataUrl: null,
+      coverImageUrl: null,
       shopName: name,
       lineUrl: null,
       phone: null,

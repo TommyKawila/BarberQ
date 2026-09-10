@@ -8,13 +8,13 @@ import { enUS, th } from "date-fns/locale";
 import liff from "@line/liff";
 import { CalendarDays, ChevronRight, Store } from "lucide-react";
 import { BarberSelector } from "@/components/customer/BarberSelector";
+import { BookingHero } from "@/components/customer/BookingHero";
 import { DateSelector } from "@/components/customer/DateSelector";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { SlotPicker } from "@/components/customer/SlotPicker";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import {
   bookingErrorI18nKey,
-  bookingShopTitle,
   bookingSummaryReady,
   canShowOwnerTools,
   canSubmitBooking,
@@ -53,7 +53,7 @@ interface SuccessState {
 export function BookingApp() {
   const { t, locale } = useI18n();
   const { shopApi, shopPath } = useShopSlug();
-  const { shopName, lineUrl, phone: shopPhone, hours } = useShopBrand();
+  const { shopName, coverImageUrl, lineUrl, phone: shopPhone, hours } = useShopBrand();
   const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -301,7 +301,7 @@ export function BookingApp() {
   if (!profile && !mockMode) {
     return (
       <section className="flex flex-col gap-4 px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t("booking.title")}</h1>
+        <BookingHero shopName={shopName} coverImageUrl={coverImageUrl} prototypeMode={prototypeMode} />
         <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
         <button
           type="button"
@@ -383,7 +383,7 @@ export function BookingApp() {
   if (barbers.length === 0) {
     return (
       <section className="flex flex-col gap-4 px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t("booking.title")}</h1>
+        <BookingHero shopName={shopName} coverImageUrl={coverImageUrl} prototypeMode={prototypeMode} />
         <p className="text-sm text-zinc-400">{t("booking.noOnlineBooking")}</p>
         <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
       </section>
@@ -396,23 +396,15 @@ export function BookingApp() {
     activeDate && selectedSlot
       ? format(parseISO(`${activeDate}T00:00:00`), "EEEE d MMMM yyyy", { locale: dateLocale })
       : null;
-  const resolvedShopName = bookingShopTitle(shopName);
-  const pageTitle = resolvedShopName
-    ? t("booking.shopTitle").replace("{shopName}", resolvedShopName)
-    : t("booking.title");
   const showSummary = bookingSummaryReady(barberId, activeDate, selectedStart) && selectedSlot;
 
   return (
     <div className="flex flex-col gap-8 px-4 pb-36 pt-5">
-      <header className="flex flex-col gap-1">
-        {prototypeMode ? (
-          <span className="mb-1 inline-block w-fit rounded bg-zinc-800 px-2 py-1 text-[10px] uppercase tracking-wide text-amber-400">
-            {t("common.prototypeMode")}
-          </span>
-        ) : null}
-        <h1 className="text-2xl font-semibold leading-tight">{pageTitle}</h1>
-        <p className="text-sm text-zinc-400">{t("booking.shopSubtitle")}</p>
-      </header>
+      <BookingHero
+        shopName={shopName}
+        coverImageUrl={coverImageUrl}
+        prototypeMode={prototypeMode}
+      />
 
       <div className="flex items-center gap-3">
         {profile.pictureUrl ? (

@@ -11,6 +11,7 @@ import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { FitLogoError, fitLogoFile } from "@/lib/image/fit-logo";
+import { CoverImageError } from "@/lib/image/validate-cover-image";
 import { normalizeShopName } from "@/lib/shop/shop-name";
 import { DEFAULT_SHOP_HOURS, normalizeShopHours, type ShopDayHours, type ShopHours } from "@/lib/shop/shop-hours";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -37,19 +38,39 @@ interface ApiError {
 
 interface SettingsResponse {
   logoDataUrl?: string | null;
+  coverImageUrl?: string | null;
   shopName?: string | null;
   lineUrl?: string | null;
   phone?: string | null;
   hours?: ShopHours | null;
 }
 
+interface CoverImageResponse {
+  coverImageUrl?: string | null;
+  error?: { code?: string; message?: string };
+}
+
 export default function AdminSettingsPage() {
   const { t } = useI18n();
   const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
   const { shopApi, shopPath } = useShopSlug();
-  const { logoDataUrl, shopName, lineUrl, phone, setLogoDataUrl, setShopName, setLineUrl, setPhone, refresh } = useShopBrand();
+  const {
+    logoDataUrl,
+    coverImageUrl,
+    shopName,
+    lineUrl,
+    phone,
+    setLogoDataUrl,
+    setCoverImageUrl,
+    setShopName,
+    setLineUrl,
+    setPhone,
+    refresh,
+  } = useShopBrand();
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? logoDataUrl;
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const displayCoverUrl = coverPreview ?? coverImageUrl;
   const [shopNameDraft, setShopNameDraft] = useState("");
   const [shopNameDirty, setShopNameDirty] = useState(false);
   const shopNameInput = shopNameDirty ? shopNameDraft : (shopName ?? "");
@@ -64,6 +85,9 @@ export default function AdminSettingsPage() {
   const [logoMessage, setLogoMessage] = useState<string | null>(null);
   const [nameMessage, setNameMessage] = useState<string | null>(null);
   const [contactMessage, setContactMessage] = useState<string | null>(null);
+  const [savingCover, setSavingCover] = useState(false);
+  const [coverMessage, setCoverMessage] = useState<string | null>(null);
+  const [coverError, setCoverError] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
@@ -72,6 +96,20 @@ export default function AdminSettingsPage() {
   const [hoursMessage, setHoursMessage] = useState<string | null>(null);
   const [hoursError, setHoursError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+
+  function coverErrorMessage(code: string | undefined): string {
+    switch (code) {
+      case "INVALID_TYPE":
+        return t("admin.coverInvalidType");
+      case "TOO_LARGE":
+        return t("admin.coverTooLarge");
+      case "EMPTY":
+        return t("admin.coverEmpty");
+      default:
+        return t("admin.updateFailed");
+    }
+  }
 
   useEffect(() => {
     if (!ready || !profile || profile.role !== "owner") return;
@@ -197,6 +235,70 @@ export default function AdminSettingsPage() {
     );
   }
 
+  async function uploadCover(file: File) {
+    setSavingCover(true);
+    setCoverError(null);
+    setCoverMessage(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(shopApi("/settings/cover-image"), {
+        method: "POST",
+        headers: authHeaders,
+        body: form,
+      });
+      const json = (await res.json()) as CoverImageResponse;
+      if (!res.ok) {
+        throw new Error(coverErrorMessage(json.error?.code));
+      }
+      setCoverPreview(json.coverImageUrl ?? null);
+      setCoverImageUrl(json.coverImageUrl ?? null);
+      await refresh();
+      setCoverMessage(t("admin.coverSaved"));
+    } catch (err) {
+      if (err instanceof CoverImageError) {
+        setCoverError(coverErrorMessage(err.code));
+      } else {
+        setCoverError(err instanceof Error ? err.message : t("admin.updateFailed"));
+      }
+    } finally {
+      setSavingCover(false);
+    }
+  }
+
+  async function deleteCover() {
+    setSavingCover(true);
+    setCoverError(null);
+    setCoverMessage(null);
+    try {
+      const res = await fetch(shopApi("/settings/cover-image"), {
+        method: "DELETE",
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as CoverImageResponse;
+      if (!res.ok) {
+        throw new Error(coverErrorMessage(json.error?.code));
+      }
+      setCoverPreview(null);
+      setCoverImageUrl(null);
+      await refresh();
+      setCoverMessage(t("admin.coverDeleted"));
+    } catch (err) {
+      setCoverError(err instanceof Error ? err.message : t("admin.updateFailed"));
+    } finally {
+      setSavingCover(false);
+    }
+  }
+
+  async function onCoverFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    const previewUrl = URL.createObjectURL(file);
+    setCoverPreview(previewUrl);
+    await uploadCover(file);
+  }
+
   async function onFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -280,6 +382,60 @@ export default function AdminSettingsPage() {
           </button>
           {nameMessage ? <p className="mt-3 text-sm text-emerald-400">{nameMessage}</p> : null}
           {nameError ? <p className="mt-3 text-sm text-red-400">{nameError}</p> : null}
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.coverTitle")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.coverHint")}</p>
+          <p className="mt-1 text-xs text-zinc-500">{t("admin.coverAspectHint")}</p>
+          <p className="mt-0.5 text-xs text-zinc-500">{t("admin.coverFormatHint")}</p>
+          <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+            {displayCoverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- shop cover preview
+              <img
+                src={displayCoverUrl}
+                alt=""
+                className="aspect-video w-full object-cover object-center"
+              />
+            ) : (
+              <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-xs text-zinc-500">
+                {t("admin.coverTitle")}
+              </div>
+            )}
+          </div>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(event) => void onCoverFileChange(event)}
+          />
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={savingCover}
+              onClick={() => coverInputRef.current?.click()}
+              className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+            >
+              {savingCover
+                ? t("admin.coverUploading")
+                : displayCoverUrl
+                  ? t("admin.changeCover")
+                  : t("admin.uploadCover")}
+            </button>
+            {displayCoverUrl ? (
+              <button
+                type="button"
+                disabled={savingCover}
+                onClick={() => void deleteCover()}
+                className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300 disabled:opacity-40"
+              >
+                {t("admin.deleteCover")}
+              </button>
+            ) : null}
+          </div>
+          {coverMessage ? <p className="mt-3 text-sm text-emerald-400">{coverMessage}</p> : null}
+          {coverError ? <p className="mt-3 text-sm text-red-400">{coverError}</p> : null}
         </section>
 
         <section className="rounded-2xl bg-zinc-900 p-4">

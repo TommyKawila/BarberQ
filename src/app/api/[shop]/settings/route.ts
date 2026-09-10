@@ -53,6 +53,7 @@ export async function PUT(
     const current = await getStore().getShopSettings(shop.id);
     const next: Omit<ShopSettings, "shopId"> = {
       logoDataUrl: current.logoDataUrl,
+      coverImageUrl: current.coverImageUrl,
       shopName: current.shopName,
       lineUrl: current.lineUrl,
       phone: current.phone,

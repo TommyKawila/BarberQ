@@ -5,12 +5,14 @@ import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 
 interface ShopBrandContextValue {
   logoDataUrl: string | null;
+  coverImageUrl: string | null;
   shopName: string | null;
   lineUrl: string | null;
   phone: string | null;
   hours: ShopHours;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
+  setCoverImageUrl: (value: string | null) => void;
   setShopName: (value: string | null) => void;
   setLineUrl: (value: string | null) => void;
   setPhone: (value: string | null) => void;
@@ -27,6 +29,7 @@ export function ShopBrandProvider({
   shopSlug: string;
 }) {
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
   const [shopName, setShopName] = useState<string | null>(null);
   const [lineUrl, setLineUrl] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
@@ -39,12 +42,14 @@ export function ShopBrandProvider({
       if (!res.ok) return;
       const json = (await res.json()) as {
         logoDataUrl?: string | null;
+        coverImageUrl?: string | null;
         shopName?: string | null;
         lineUrl?: string | null;
         phone?: string | null;
         hours?: ShopHours | null;
       };
       setLogoDataUrl(json.logoDataUrl ?? null);
+      setCoverImageUrl(json.coverImageUrl ?? null);
       setShopName(json.shopName ?? null);
       setLineUrl(json.lineUrl ?? null);
       setPhone(json.phone ?? null);
@@ -71,18 +76,20 @@ export function ShopBrandProvider({
   const value = useMemo(
     () => ({
       logoDataUrl,
+      coverImageUrl,
       shopName,
       lineUrl,
       phone,
       hours,
       loading,
       setLogoDataUrl,
+      setCoverImageUrl,
       setShopName,
       setLineUrl,
       setPhone,
       refresh,
     }),
-    [logoDataUrl, shopName, lineUrl, phone, hours, loading, refresh],
+    [logoDataUrl, coverImageUrl, shopName, lineUrl, phone, hours, loading, refresh],
   );
 
   return <ShopBrandContext.Provider value={value}>{children}</ShopBrandContext.Provider>;

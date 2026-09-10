@@ -357,13 +357,14 @@ export const supabaseStore: BookingStore = {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("shop_settings")
-      .select("shop_id, logo_data_url, shop_name, shop_line_url, shop_phone, hours")
+      .select("shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours")
       .eq("shop_id", shopId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return {
       shopId,
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
+      coverImageUrl: (data?.cover_image_url as string | null) ?? null,
       shopName: (data?.shop_name as string | null) ?? null,
       lineUrl: (data?.shop_line_url as string | null) ?? null,
       phone: (data?.shop_phone as string | null) ?? null,
@@ -378,6 +379,7 @@ export const supabaseStore: BookingStore = {
       .upsert({
         shop_id: shopId,
         logo_data_url: input.logoDataUrl,
+        cover_image_url: input.coverImageUrl,
         shop_name: input.shopName,
         shop_line_url: input.lineUrl,
         shop_phone: input.phone,

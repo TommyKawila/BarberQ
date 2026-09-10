@@ -51,6 +51,7 @@ import type { ShopHours } from "@/lib/shop/shop-hours";
 export interface ShopSettings {
   shopId: string;
   logoDataUrl: string | null;
+  coverImageUrl: string | null;
   shopName: string | null;
   lineUrl: string | null;
   phone: string | null;

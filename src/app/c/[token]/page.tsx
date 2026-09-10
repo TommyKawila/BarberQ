@@ -19,6 +19,7 @@ export default async function CancelPage({
       : Promise.resolve({
           shopId: "",
           logoDataUrl: null,
+          coverImageUrl: null,
           shopName: null,
           lineUrl: null,
           phone: null,
