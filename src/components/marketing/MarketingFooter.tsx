@@ -4,9 +4,20 @@ import { BarberQxLogo } from "@/components/brand/BarberQxLogo";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { trackMarketingEvent } from "@/lib/marketing/events";
 
-export function MarketingFooter() {
+export function MarketingFooter({ variant = "sales" }: { variant?: "sales" | "trial" }) {
   const { t, locale } = useI18n();
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
+
+  if (variant === "trial") {
+    return (
+      <footer className="border-t border-zinc-800 bg-zinc-950 py-6">
+        <div className="mx-auto flex max-w-[1080px] flex-col items-start gap-3 px-4 md:px-6">
+          <BarberQxLogo className="h-6 w-auto" />
+          <p className="text-sm text-zinc-500">{t("marketing.footer.tagline")}</p>
+        </div>
+      </footer>
+    );
+  }
 
   return (
     <footer className="border-t border-zinc-800 bg-zinc-950 py-12">

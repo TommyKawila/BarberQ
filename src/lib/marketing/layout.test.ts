@@ -22,5 +22,22 @@ describe("marketing layout split", () => {
       "utf8",
     );
     assert.match(sales, /href="\/trial"/);
+    assert.doesNotMatch(sales, /variant="trial"/);
+  });
+
+  it("trial page uses focused chrome without sales nav CTA", () => {
+    const trial = readFileSync(
+      resolve(root, "components/marketing/TrialForm.tsx"),
+      "utf8",
+    );
+    const nav = readFileSync(
+      resolve(root, "components/marketing/MarketingNav.tsx"),
+      "utf8",
+    );
+    assert.match(trial, /variant="trial"/);
+    assert.match(trial, /noValidate/);
+    assert.match(trial, /marketing.trial.backHome/);
+    assert.doesNotMatch(trial, /← Home/);
+    assert.match(nav, /variant === "trial"/);
   });
 });
