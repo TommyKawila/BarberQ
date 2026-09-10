@@ -5,6 +5,16 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import {
+  applyOptimisticBookable,
+  canToggleBookable,
+  getQueueStatusHintKey,
+  getQueueStatusLabelKey,
+  isBarberBookable,
+  rollbackOptimisticBookable,
+  shouldShowRemoveMenu,
+  updateBarberBookableInList,
+} from "@/lib/barber/optimistic-bookable";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
@@ -33,6 +43,8 @@ export default function AdminStaffPage() {
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [pendingBookableIds, setPendingBookableIds] = useState<string[]>([]);
+  const [bookableErrors, setBookableErrors] = useState<Record<string, string>>({});
 
   const loadBarbers = useCallback(async () => {
     setLoadingBarbers(true);
@@ -98,18 +110,41 @@ export default function AdminStaffPage() {
   }
 
   async function toggleBookable(barber: Barber) {
-    setError(null);
-    const res = await fetch(`/api/barbers/${barber.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", ...authHeaders },
-      body: JSON.stringify({ isBookable: barber.is_bookable === false }),
+    const pending = pendingBookableIds.includes(barber.id);
+    if (!canToggleBookable(pending)) return;
+
+    const previous = isBarberBookable(barber);
+    const next = applyOptimisticBookable(previous);
+
+    setBarbers((current) => updateBarberBookableInList(current, barber.id, next));
+    setPendingBookableIds((current) => [...current, barber.id]);
+    setBookableErrors((current) => {
+      const nextErrors = { ...current };
+      delete nextErrors[barber.id];
+      return nextErrors;
     });
-    const json = (await res.json()) as ApiError;
-    if (!res.ok) {
-      setError(json.error?.message ?? t("admin.updateFailed"));
-      return;
+
+    try {
+      const res = await fetch(`/api/barbers/${barber.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ isBookable: next }),
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        throw new Error(json.error?.message ?? t("admin.saveBookableFailed"));
+      }
+    } catch {
+      setBarbers((current) =>
+        updateBarberBookableInList(current, barber.id, rollbackOptimisticBookable(previous)),
+      );
+      setBookableErrors((current) => ({
+        ...current,
+        [barber.id]: t("admin.saveBookableFailed"),
+      }));
+    } finally {
+      setPendingBookableIds((current) => current.filter((id) => id !== barber.id));
     }
-    await loadBarbers();
   }
 
   async function copyBookingLink() {
@@ -364,78 +399,135 @@ export default function AdminStaffPage() {
           </section>
         ) : (
           <section className="flex flex-col gap-3">
-            {activeBarbers.map((barber) => (
-              <div key={barber.id} className="rounded-2xl bg-zinc-900 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-semibold">{barberLabel(barber.name, locale)}</p>
-                    <p className="mt-1 text-xs text-zinc-400">
-                      {barber.role === "owner" ? t("admin.roleOwner") : t("admin.roleBarber")}
-                      · {barber.slot_duration_minutes} {t("common.minutes")}
-                    </p>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {barber.line_id ? t("admin.barberLineLinked") : t("admin.barberLineNotLinked")}
-                      · {barber.is_bookable !== false ? t("admin.barberBookable") : t("admin.barberNotBookable")}
-                    </p>
-                  </div>
-                  {barber.role !== "owner" ? (
-                    <details
-                      className="relative"
-                      open={openMenuId === barber.id}
-                      onToggle={(e) => {
-                        const open = (e.currentTarget as HTMLDetailsElement).open;
-                        setOpenMenuId(open ? barber.id : null);
-                      }}
-                    >
-                      <summary className="cursor-pointer list-none rounded-lg bg-zinc-800 px-2 py-1 text-sm text-zinc-300">
-                        ⋯
-                      </summary>
-                      <div className="absolute right-0 z-10 mt-1 min-w-[11rem] rounded-lg border border-zinc-700 bg-zinc-950 py-1 shadow-lg">
-                        {barber.line_id ? (
+            {activeBarbers.map((barber) => {
+              const displayName = barberLabel(barber.name, locale);
+              const bookable = isBarberBookable(barber);
+              const isPending = pendingBookableIds.includes(barber.id);
+              const statusLabelKey = getQueueStatusLabelKey(bookable);
+              const statusHintKey = getQueueStatusHintKey(bookable);
+              const cardError = bookableErrors[barber.id];
+
+              return (
+                <div key={barber.id} className="rounded-2xl bg-zinc-900 p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold">{displayName}</p>
+                        {barber.role === "owner" ? (
+                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">
+                            {t("admin.ownerBadge")}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-xs text-zinc-400">
+                        {barber.role === "owner" ? t("admin.roleOwner") : t("admin.roleBarber")}
+                        · {barber.slot_duration_minutes} {t("common.minutes")}
+                      </p>
+                      <p className="mt-1 text-xs text-zinc-500">
+                        LINE:{" "}
+                        {barber.line_id
+                          ? t("admin.barberLineLinked")
+                          : t("admin.barberLineNotLinked")}
+                      </p>
+                    </div>
+                    {shouldShowRemoveMenu(barber.role) ? (
+                      <details
+                        className="relative shrink-0"
+                        open={openMenuId === barber.id}
+                        onToggle={(e) => {
+                          const open = (e.currentTarget as HTMLDetailsElement).open;
+                          setOpenMenuId(open ? barber.id : null);
+                        }}
+                      >
+                        <summary className="cursor-pointer list-none rounded-lg bg-zinc-800 px-2 py-1 text-sm text-zinc-300">
+                          ⋯
+                        </summary>
+                        <div className="absolute right-0 z-10 mt-1 min-w-[11rem] rounded-lg border border-zinc-700 bg-zinc-950 py-1 shadow-lg">
+                          {barber.line_id ? (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmAction({ type: "unlink", barber })}
+                              className="block w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800"
+                            >
+                              {t("admin.unlinkLine")}
+                            </button>
+                          ) : null}
                           <button
                             type="button"
-                            onClick={() => setConfirmAction({ type: "unlink", barber })}
-                            className="block w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800"
+                            onClick={() => setConfirmAction({ type: "remove", barber })}
+                            className="block w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-zinc-800"
                           >
-                            {t("admin.unlinkLine")}
+                            {t("admin.removeFromShop")}
                           </button>
+                        </div>
+                      </details>
+                    ) : null}
+                  </div>
+
+                  <div className="my-4 border-t border-zinc-800" />
+
+                  <section>
+                    <h3 className="text-sm font-semibold text-zinc-200">{t("admin.queueSection")}</h3>
+                    <div className="mt-3 flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                              bookable ? "bg-emerald-400" : "bg-red-400"
+                            }`}
+                            aria-hidden
+                          />
+                          <span className="text-sm font-medium text-zinc-100">
+                            {t(statusLabelKey)}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-zinc-500">
+                          {t(statusHintKey).replace("{name}", displayName)}
+                        </p>
+                        {isPending ? (
+                          <p className="mt-1 text-xs text-zinc-400">{t("admin.savingBookable")}</p>
                         ) : null}
-                        <button
-                          type="button"
-                          onClick={() => setConfirmAction({ type: "remove", barber })}
-                          className="block w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-zinc-800"
-                        >
-                          {t("admin.removeFromShop")}
-                        </button>
+                        {cardError ? (
+                          <p className="mt-1 text-xs text-red-400">{cardError}</p>
+                        ) : null}
                       </div>
-                    </details>
-                  ) : null}
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={bookable}
+                        aria-label={t(statusLabelKey)}
+                        disabled={isPending}
+                        onClick={() => void toggleBookable(barber)}
+                        className={`relative min-h-11 w-14 shrink-0 rounded-full transition disabled:opacity-50 ${
+                          bookable ? "bg-emerald-500" : "bg-zinc-700"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-1 left-1 h-9 w-9 rounded-full bg-white shadow transition ${
+                            bookable ? "translate-x-6" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </section>
+
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={shopPath(`/admin/staff/${barber.id}`)}
+                      className="min-h-11 rounded-lg bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200"
+                    >
+                      {t("admin.editBarber")}
+                    </Link>
+                    <Link
+                      href={shopPath(`/admin/my-schedule?barber=${barber.id}`)}
+                      className="min-h-11 rounded-lg bg-zinc-800 px-4 py-2.5 text-sm text-zinc-200"
+                    >
+                      {t("admin.nav.schedule")}
+                    </Link>
+                  </div>
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link
-                    href={shopPath(`/admin/staff/${barber.id}`)}
-                    className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
-                  >
-                    {t("admin.editBarber")}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => void toggleBookable(barber)}
-                    className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
-                  >
-                    {barber.is_bookable !== false
-                      ? t("admin.closeBookable")
-                      : t("admin.openBookable")}
-                  </button>
-                  <Link
-                    href={shopPath(`/admin/my-schedule?barber=${barber.id}`)}
-                    className="rounded-lg bg-zinc-800 px-3 py-1.5 text-xs text-zinc-200"
-                  >
-                    {t("admin.nav.schedule")}
-                  </Link>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </section>
         )}
 
@@ -452,7 +544,10 @@ export default function AdminStaffPage() {
                 >
                   <div>
                     <p className="text-sm font-medium">{barberLabel(barber.name, locale)}</p>
-                    <p className="text-xs text-zinc-500">{t("admin.removedBarberStatus")}</p>
+                    <div className="mt-1 flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
+                      <p className="text-xs text-zinc-500">{t("admin.removedBarberStatus")}</p>
+                    </div>
                   </div>
                   <button
                     type="button"
