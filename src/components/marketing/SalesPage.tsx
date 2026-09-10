@@ -2,14 +2,25 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Clock3,
+  MessageCircleOff,
+  Store,
+  Users,
+} from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
-import { AdminMockup } from "@/components/marketing/mockups/AdminMockup";
 import { BookingMockup } from "@/components/marketing/mockups/BookingMockup";
+import { CustomerJourneyMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
+import { OwnerSurfacesMockups } from "@/components/marketing/mockups/OwnerSurfacesMockups";
+import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { marketingOffer } from "@/lib/marketing/offer";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
 
 function Section({
@@ -17,21 +28,105 @@ function Section({
   title,
   children,
   className,
+  titleClassName,
 }: {
   id?: string;
-  title: string;
+  title?: string;
   children: React.ReactNode;
   className?: string;
+  titleClassName?: string;
 }) {
   return (
-    <section id={id} className={`scroll-mt-20 py-16 md:py-20 ${className ?? ""}`}>
+    <section id={id} className={`scroll-mt-20 py-12 md:py-16 ${className ?? ""}`}>
       <div className="mx-auto max-w-[1280px] px-4 md:px-6">
-        <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">{title}</h2>
-        <div className="mt-8">{children}</div>
+        {title ? (
+          <h2 className={`text-2xl font-bold text-zinc-50 md:text-3xl ${titleClassName ?? ""}`}>
+            {title}
+          </h2>
+        ) : null}
+        <div className={title ? "mt-6 md:mt-8" : ""}>{children}</div>
       </div>
     </section>
   );
 }
+
+function FlowCard({
+  label,
+  steps,
+  variant,
+}: {
+  label: string;
+  steps: string[];
+  variant: "before" | "after";
+}) {
+  const isAfter = variant === "after";
+  return (
+    <div
+      className={`rounded-2xl border p-6 ${
+        isAfter
+          ? "border-amber-500/40 bg-amber-500/5"
+          : "border-zinc-800 bg-zinc-900/50"
+      }`}
+    >
+      <h3
+        className={`flex items-center gap-2 font-semibold ${
+          isAfter ? "text-amber-400" : "text-zinc-400"
+        }`}
+      >
+        {isAfter ? <Check size={18} /> : null}
+        {label}
+      </h3>
+      <ol className="mt-4 space-y-2">
+        {steps.map((step, i) => (
+          <li key={i} className="flex items-center gap-2 text-sm text-zinc-300">
+            {i > 0 ? (
+              <ArrowRight
+                size={14}
+                className={`hidden shrink-0 md:inline ${isAfter ? "text-amber-500/60" : "text-zinc-600"}`}
+              />
+            ) : null}
+            <span className={isAfter ? "text-zinc-200" : "text-zinc-400"}>{step}</span>
+            {i < steps.length - 1 ? (
+              <ChevronDown
+                size={14}
+                className={`shrink-0 md:hidden ${isAfter ? "text-amber-500/60" : "text-zinc-600"}`}
+              />
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function TrialCta({
+  label,
+  className,
+  fullWidth,
+}: {
+  label: string;
+  className?: string;
+  fullWidth?: boolean;
+}) {
+  return (
+    <Link
+      href="/trial"
+      onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
+      className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 ${
+        fullWidth ? "w-full" : ""
+      } ${className ?? ""}`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+const BENEFIT_ICONS = [MessageCircleOff, Clock3, Users, Store] as const;
+const BENEFIT_KEYS = [1, 2, 3, 4] as const;
+const BARBER_CHIPS = [1, 2, 3, 4, 5, 6, 7] as const;
+const SETUP_STEPS = [1, 2, 3, 4] as const;
+const PRICING_BENEFITS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const FAQ_ITEMS = [1, 2, 3, 4, 5, 6] as const;
 
 export function SalesPage() {
   const { t } = useI18n();
@@ -40,157 +135,253 @@ export function SalesPage() {
     trackMarketingEvent("sales_page_view");
   }, []);
 
+  const beforeSteps = [1, 2, 3, 4, 5, 6].map((n) =>
+    t(`marketing.beforeAfter.before${n}` as MessageKey),
+  );
+  const afterSteps = [1, 2, 3, 4, 5].map((n) =>
+    t(`marketing.beforeAfter.after${n}` as MessageKey),
+  );
+
+  const painMessages = [
+    { from: "customer" as const, text: t("marketing.pain.chat1") },
+    { from: "shop" as const, text: t("marketing.pain.chat2") },
+    { from: "customer" as const, text: t("marketing.pain.chat3") },
+    { from: "shop" as const, text: t("marketing.pain.chat4") },
+  ];
+
   return (
     <div className="min-h-full bg-zinc-950 text-zinc-50">
       <LiffCallbackRedirect />
       <AttributionCapture />
       <MarketingNav />
 
-      <section className="border-b border-zinc-800/50 bg-gradient-to-b from-zinc-900/80 to-zinc-950 py-20 md:py-28">
-        <div className="mx-auto flex max-w-[1280px] flex-col items-center gap-12 px-4 md:flex-row md:px-6">
-          <div className="flex-1 text-center md:text-left">
-            <h1 className="text-3xl font-bold leading-tight md:text-5xl">{t("marketing.hero.title")}</h1>
-            <p className="mt-4 text-lg text-zinc-400">{t("marketing.hero.subtitle")}</p>
+      {/* Hero */}
+      <section className="border-b border-zinc-800/50 bg-gradient-to-b from-zinc-900/80 to-zinc-950 py-14 md:py-20">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-4 md:grid-cols-2 md:gap-12 md:px-6">
+          <div className="text-center md:text-left">
+            <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
+            <h1 className="mt-3 text-3xl font-bold leading-tight md:text-5xl lg:text-6xl">
+              {t("marketing.hero.title")}
+            </h1>
+            <p className="mt-4 text-base text-zinc-300 md:text-lg">{t("marketing.hero.subtitle")}</p>
+            <p className="mt-2 text-sm text-zinc-400 md:text-base">{t("marketing.hero.subtitle2")}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center md:justify-start">
-              <Link
-                href="/trial"
-                onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
-                className="min-h-12 rounded-xl bg-amber-400 px-6 py-3 text-center font-semibold text-zinc-950"
-              >
-                <span className="md:hidden">{t("marketing.hero.ctaShort")}</span>
-                <span className="hidden md:inline">{t("marketing.hero.cta")}</span>
-              </Link>
+              <TrialCta
+                label={t("marketing.hero.cta")}
+                className="hidden md:inline-flex"
+              />
+              <TrialCta
+                label={t("marketing.hero.ctaShort")}
+                className="md:hidden"
+                fullWidth
+              />
               <a
                 href="#how-it-works"
                 onClick={() => trackMarketingEvent("how_it_works_click")}
-                className="min-h-12 rounded-xl border border-zinc-600 px-6 py-3 text-center font-medium text-zinc-200"
+                className="inline-flex min-h-12 items-center justify-center rounded-xl border border-zinc-600 px-6 py-3 font-medium text-zinc-200"
               >
                 {t("marketing.hero.secondary")}
               </a>
             </div>
           </div>
-          <BookingMockup />
+          <div className="flex justify-center md:justify-end">
+            <BookingMockup size="lg" />
+          </div>
         </div>
       </section>
 
-      <Section title={t("marketing.pain.title")} className="bg-zinc-900/30">
-        <ul className="space-y-4 text-zinc-300">
-          <li className="flex gap-3"><span className="text-amber-400">•</span>{t("marketing.pain.1")}</li>
-          <li className="flex gap-3"><span className="text-amber-400">•</span>{t("marketing.pain.2")}</li>
-          <li className="flex gap-3"><span className="text-amber-400">•</span>{t("marketing.pain.3")}</li>
-        </ul>
-      </Section>
-
-      <Section title={t("marketing.beforeAfter.title")}>
-        <div className="grid gap-8 md:grid-cols-2">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-            <h3 className="font-semibold text-zinc-400">{t("marketing.beforeAfter.before")}</h3>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-400">
-              <li>{t("marketing.beforeAfter.before1")}</li>
-              <li>{t("marketing.beforeAfter.before2")}</li>
-            </ul>
+      {/* Pain */}
+      <Section className="bg-zinc-900/30">
+        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+          <div>
+            <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">{t("marketing.pain.title")}</h2>
+            <p className="mt-4 text-zinc-400">{t("marketing.pain.support")}</p>
+            <p className="mt-4 font-semibold text-amber-400">{t("marketing.pain.emphasis")}</p>
           </div>
-          <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-6">
-            <h3 className="font-semibold text-amber-400">{t("marketing.beforeAfter.after")}</h3>
-            <ul className="mt-4 space-y-2 text-sm text-zinc-300">
-              <li>{t("marketing.beforeAfter.after1")}</li>
-              <li>{t("marketing.beforeAfter.after2")}</li>
-            </ul>
-          </div>
+          <PainChatMockup
+            customerLabel={t("marketing.pain.customer")}
+            shopLabel={t("marketing.pain.shop")}
+            messages={painMessages}
+          />
         </div>
       </Section>
 
-      <Section id="how-it-works" title={t("marketing.how.title")}>
-        <ol className="grid gap-6 md:grid-cols-3">
+      {/* Before / After */}
+      <Section title={t("marketing.beforeAfter.title")}>
+        <div className="grid gap-6 md:grid-cols-2">
+          <FlowCard
+            label={t("marketing.beforeAfter.before")}
+            steps={beforeSteps}
+            variant="before"
+          />
+          <FlowCard
+            label={t("marketing.beforeAfter.after")}
+            steps={afterSteps}
+            variant="after"
+          />
+        </div>
+      </Section>
+
+      {/* How it works */}
+      <Section id="how-it-works" title={t("marketing.how.title")} className="bg-zinc-900/30">
+        <ol className="grid gap-4 md:grid-cols-3">
           {[1, 2, 3].map((n) => (
-            <li key={n} className="rounded-2xl border border-zinc-800 p-6">
+            <li key={n} className="rounded-2xl border border-zinc-800 p-5">
               <span className="text-2xl font-bold text-amber-400">0{n}</span>
-              <p className="mt-3 text-zinc-300">{t(`marketing.how.${n}` as "marketing.how.1")}</p>
+              <p className="mt-2 text-zinc-300">{t(`marketing.how.${n}` as MessageKey)}</p>
             </li>
           ))}
         </ol>
       </Section>
 
-      <Section title={t("marketing.customer.title")} className="bg-zinc-900/30">
-        <div className="flex flex-col items-center gap-8 md:flex-row">
-          <p className="flex-1 text-zinc-400">{t("marketing.customer.desc")}</p>
-          <BookingMockup />
-        </div>
-      </Section>
-
-      <Section title={t("marketing.owner.title")}>
-        <div className="flex flex-col items-center gap-8 md:flex-row-reverse">
-          <div className="flex-1">
-            <p className="text-zinc-400">{t("marketing.owner.desc")}</p>
+      {/* Customer experience */}
+      <Section title={t("marketing.customer.title")}>
+        <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
+          <p className="text-zinc-400 md:text-lg">{t("marketing.customer.desc")}</p>
+          <div className="hidden lg:block">
+            <CustomerJourneyMockups />
           </div>
-          <AdminMockup />
+          <div className="lg:hidden">
+            <CustomerJourneyMockups compact />
+          </div>
         </div>
       </Section>
 
-      <Section id="features" title={t("marketing.benefits.title")} className="bg-zinc-900/30">
-        <div className="flex flex-wrap gap-3">
-          {[1, 2, 3, 4, 5, 6].map((n) => (
+      {/* Owner experience */}
+      <Section title={t("marketing.owner.title")} className="bg-zinc-900/30">
+        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
+          <div className="order-2 lg:order-1">
+            <div className="hidden lg:block">
+              <OwnerSurfacesMockups />
+            </div>
+            <div className="lg:hidden">
+              <OwnerSurfacesMockups compact />
+            </div>
+          </div>
+          <div className="order-1 lg:order-2">
+            <p className="text-zinc-400 md:text-lg">{t("marketing.owner.desc")}</p>
+          </div>
+        </div>
+      </Section>
+
+      {/* Benefits */}
+      <Section id="features" title={t("marketing.benefits.title")}>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {BENEFIT_KEYS.map((n, i) => {
+            const Icon = BENEFIT_ICONS[i];
+            return (
+              <div
+                key={n}
+                className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5"
+              >
+                <Icon size={22} className="text-amber-400" strokeWidth={2} />
+                <h3 className="mt-3 font-semibold text-zinc-100">
+                  {t(`marketing.benefits.${n}.title` as MessageKey)}
+                </h3>
+                <p className="mt-2 text-sm text-zinc-400">
+                  {t(`marketing.benefits.${n}.desc` as MessageKey)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </Section>
+
+      {/* Built for barbers */}
+      <Section className="bg-zinc-900/30">
+        <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
+          {t("marketing.barber.title1")}
+          <br />
+          <span className="text-amber-400">{t("marketing.barber.title2")}</span>
+        </h2>
+        <p className="mt-4 text-sm text-zinc-500">{t("marketing.barber.vocab")}</p>
+        <div className="mt-6 flex flex-wrap gap-2">
+          {BARBER_CHIPS.map((n) => (
             <span
               key={n}
-              className="rounded-full border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm text-zinc-300"
+              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-200/90"
             >
-              {t(`marketing.benefits.${n}` as "marketing.benefits.1")}
+              {t(`marketing.barber.chip${n}` as MessageKey)}
             </span>
           ))}
         </div>
       </Section>
 
-      <Section title={t("marketing.barber.title")}>
-        <p className="max-w-2xl text-zinc-400">{t("marketing.barber.desc")}</p>
-      </Section>
-
-      <Section title={t("marketing.setup.title")} className="bg-zinc-900/30">
-        <p className="mb-6 max-w-2xl text-zinc-400">{t("marketing.setup.desc")}</p>
-        <Link
-          href="/trial"
-          onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
-          className="inline-flex min-h-12 items-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950"
-        >
-          {t("marketing.setup.cta")}
-        </Link>
-      </Section>
-
-      <Section id="pricing" title={t("marketing.pricing.title")}>
-        <div className="max-w-md rounded-2xl border border-amber-500/40 bg-zinc-900/80 p-8">
-          <p className="text-3xl font-bold text-amber-400">{t("marketing.pricing.price")}</p>
-          <p className="mt-2 text-zinc-400">{t("marketing.pricing.trial")}</p>
-          <p className="mt-1 text-sm text-zinc-500">{t("marketing.pricing.barbers")}</p>
-          <p className="mt-4 text-xs text-zinc-600">
-            {marketingOffer.monthlyPrice} / {marketingOffer.barberLimit} / {marketingOffer.trialDays}
-          </p>
+      {/* Setup */}
+      <Section title={t("marketing.setup.title")}>
+        <div className="flex flex-col items-start gap-8 md:flex-row md:items-center md:justify-between">
+          <ol className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+            {SETUP_STEPS.map((n, i) => (
+              <li key={n} className="flex items-center gap-2 text-sm text-zinc-300">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
+                  {n}
+                </span>
+                <span>{t(`marketing.setup.step${n}` as MessageKey)}</span>
+                {i < SETUP_STEPS.length - 1 ? (
+                  <ArrowRight size={14} className="hidden text-zinc-600 sm:inline" />
+                ) : null}
+              </li>
+            ))}
+          </ol>
+          <TrialCta label={t("marketing.setup.cta")} />
         </div>
       </Section>
 
-      <Section id="faq" title={t("marketing.faq.title")} className="bg-zinc-900/30">
-        <div className="max-w-2xl space-y-3">
-          {[1, 2, 3].map((n) => (
+      {/* Pricing */}
+      <Section id="pricing" title={t("marketing.pricing.title")} className="bg-zinc-900/30">
+        <div className="mx-auto w-full max-w-[800px] rounded-2xl border border-amber-500/40 bg-zinc-900/80 p-8 md:p-10">
+          <p className="text-4xl font-bold text-amber-400 md:text-5xl">
+            {t("marketing.pricing.price")}
+          </p>
+          <p className="mt-3 text-lg text-zinc-300">{t("marketing.pricing.trial")}</p>
+          <p className="mt-1 text-sm text-zinc-500">{t("marketing.pricing.barbers")}</p>
+          <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+            {PRICING_BENEFITS.map((n) => (
+              <li key={n} className="flex items-center gap-2 text-sm text-zinc-300">
+                <Check size={16} className="shrink-0 text-amber-400" />
+                {t(`marketing.pricing.benefit${n}` as MessageKey)}
+              </li>
+            ))}
+          </ul>
+          <TrialCta
+            label={t("marketing.pricing.cta")}
+            className="mt-8 w-full sm:w-auto"
+            fullWidth
+          />
+        </div>
+      </Section>
+
+      {/* FAQ */}
+      <Section id="faq" title={t("marketing.faq.title")}>
+        <div className="mx-auto max-w-3xl space-y-3">
+          {FAQ_ITEMS.map((n) => (
             <details key={n} className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
               <summary className="cursor-pointer font-medium text-zinc-200">
-                {t(`marketing.faq.${n}.q` as "marketing.faq.1.q")}
+                {t(`marketing.faq.${n}.q` as MessageKey)}
               </summary>
               <p className="mt-3 text-sm text-zinc-400">
-                {t(`marketing.faq.${n}.a` as "marketing.faq.1.a")}
+                {t(`marketing.faq.${n}.a` as MessageKey)}
               </p>
             </details>
           ))}
         </div>
       </Section>
 
-      <section className="border-t border-zinc-800 py-20">
+      {/* Final CTA */}
+      <section className="border-t border-amber-500/20 bg-zinc-900/60 py-14 md:py-20">
         <div className="mx-auto max-w-[1280px] px-4 text-center md:px-6">
-          <h2 className="text-2xl font-bold md:text-3xl">{t("marketing.final.title")}</h2>
-          <Link
-            href="/trial"
-            onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
-            className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-amber-400 px-8 py-3 font-semibold text-zinc-950"
-          >
-            {t("marketing.final.cta")}
-          </Link>
+          <h2 className="text-2xl font-bold md:text-4xl">{t("marketing.final.title")}</h2>
+          <p className="mx-auto mt-4 max-w-xl text-zinc-400">{t("marketing.final.subtitle")}</p>
+          <TrialCta
+            label={t("marketing.final.cta")}
+            className="mt-8"
+            fullWidth
+          />
+          <div className="mt-4 flex flex-col items-center gap-1 text-sm text-zinc-500 sm:flex-row sm:justify-center sm:gap-4">
+            <span>{t("marketing.final.trust1")}</span>
+            <span className="hidden sm:inline">·</span>
+            <span>{t("marketing.final.trust2")}</span>
+          </div>
         </div>
       </section>
 
