@@ -1,7 +1,7 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { assertShopOwner, type StaffAuth } from "@/lib/admin-auth";
-import { adminNavItems } from "@/lib/admin/admin-nav-items";
+import { adminNavItems, moreAdminNavItems, primaryAdminNavItems } from "@/lib/admin/admin-nav-items";
 import { getBearerToken, verifyLineAccessToken } from "@/lib/auth/line-verify";
 import { BookingError } from "@/lib/services/booking-service";
 
@@ -64,18 +64,38 @@ describe("shop authorization", () => {
 });
 
 describe("admin nav visibility", () => {
-  it("owner sees full nav", () => {
+  it("owner sees primary Today/Team/Stats/More", () => {
+    assert.deepEqual(primaryAdminNavItems("owner"), ["board", "team", "stats", "more"]);
+  });
+
+  it("owner more sheet has schedule, settings, booking", () => {
+    assert.deepEqual(moreAdminNavItems("owner"), ["schedule", "settings", "booking"]);
+  });
+
+  it("barber sees Today/Schedule/More", () => {
+    assert.deepEqual(primaryAdminNavItems("barber"), ["board", "schedule", "more"]);
+  });
+
+  it("barber more sheet has booking only", () => {
+    assert.deepEqual(moreAdminNavItems("barber"), ["booking"]);
+  });
+
+  it("barber cannot see team, stats, or settings", () => {
+    const items = [...primaryAdminNavItems("barber"), ...moreAdminNavItems("barber")];
+    assert.ok(!items.includes("team"));
+    assert.ok(!items.includes("stats"));
+    assert.ok(!items.includes("settings"));
+  });
+
+  it("legacy adminNavItems keeps reachable destinations", () => {
     assert.deepEqual(adminNavItems("owner"), [
       "board",
       "team",
-      "schedule",
       "stats",
+      "schedule",
       "settings",
       "booking",
     ]);
-  });
-
-  it("barber sees limited nav", () => {
     assert.deepEqual(adminNavItems("barber"), ["board", "schedule", "booking"]);
   });
 });

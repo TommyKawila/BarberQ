@@ -2,6 +2,7 @@
 
 import type { ShopStaffRole } from "@/lib/admin-auth";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { ADMIN_NAV_OFFSET_CLASS } from "@/lib/admin/admin-nav-items";
 
 export function AdminShell({
   role,
@@ -12,7 +13,7 @@ export function AdminShell({
 }) {
   return (
     <>
-      <div className="pb-20">{children}</div>
+      <div className={ADMIN_NAV_OFFSET_CLASS}>{children}</div>
       <AdminNav role={role} />
     </>
   );

@@ -10,6 +10,7 @@ import { formatBreaksSummary, formatOffDaysSummary } from "@/lib/barber/schedule
 import { fitLogoFile } from "@/lib/image/fit-logo";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
+import { ADMIN_NAV_STICKY_BOTTOM_CLASS } from "@/lib/admin/admin-nav-items";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { barberLabel, type Barber } from "@/types/booking";
 
@@ -467,7 +468,7 @@ export default function EditBarberPage() {
           </section>
         ) : null}
 
-        <div className="fixed inset-x-0 bottom-16 z-10 border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur">
+        <div className={`fixed inset-x-0 z-10 border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur ${ADMIN_NAV_STICKY_BOTTOM_CLASS}`}>
           <div className="flex gap-2">
             <button
               type="button"
