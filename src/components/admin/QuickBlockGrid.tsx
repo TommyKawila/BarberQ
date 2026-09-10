@@ -62,6 +62,7 @@ export function QuickBlockGrid({
 }: QuickBlockGridProps) {
   const { locale, t } = useI18n();
   const now = Date.now();
+  const denseColumns = columns.length > 0 && columns.length <= 3;
 
   if (columns.length === 0) {
     return (
@@ -94,7 +95,12 @@ export function QuickBlockGrid({
         const canEdit =
           editableBarberId === null || column.barber.id === editableBarberId;
         return (
-        <div key={column.barber.id} className="flex min-w-[7.5rem] shrink-0 flex-col gap-2">
+        <div
+          key={column.barber.id}
+          className={`flex flex-col gap-2 ${
+            denseColumns ? "min-w-0 flex-1" : "min-w-[7.5rem] shrink-0"
+          }`}
+        >
           <div className="rounded-lg bg-zinc-900 px-1 py-2 text-center">
             <div className="text-sm font-semibold">
               {barberLabel(column.barber.name, locale)}

@@ -28,7 +28,8 @@ export async function GET(
     const staff = await assertStaffForShop(req, shop.id);
     const { searchParams } = new URL(req.url);
     const date = searchParams.get("date") ?? dateISOFromInstant(new Date());
-    const columns = await getAdminDay(date, shop.id, staff);
+    const includeClosedQueue = searchParams.get("includeClosed") === "1";
+    const columns = await getAdminDay(date, shop.id, staff, new Date(), includeClosedQueue);
     return NextResponse.json({
       date,
       columns,

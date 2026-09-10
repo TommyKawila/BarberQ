@@ -11,6 +11,7 @@ import {
   isLate,
   recurringBreaksForDate,
 } from "@/lib/services/slot-service";
+import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import type { StaffAuth } from "@/lib/admin-auth";
 import type {
@@ -368,6 +369,7 @@ export async function getAdminDay(
   shopId: string,
   staff: StaffAuth,
   now: Date = new Date(),
+  includeClosedQueue = false,
 ): Promise<AdminColumn[]> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
     throw new BookingError("INVALID_DATE", "Date must be YYYY-MM-DD", 400);
@@ -390,12 +392,22 @@ export async function getAdminDay(
       Promise.all(barbers.map((barber) => store.listRecurringBreaks(barber.id))),
     ]);
     const booked = allBooked.filter((row) => barberIds.has(row.barber_id));
-    const blocked = allBlocked.filter((row) => barberIds.has(row.barber_id));
+    const bookedBarberIds = new Set(booked.map((row) => row.barber_id));
+    const visibleBarbers = selectAdminBoardBarbers(
+      barbers,
+      bookedBarberIds,
+      includeClosedQueue,
+    );
+    const visibleIds = new Set(visibleBarbers.map((b) => b.id));
+    const blocked = allBlocked.filter((row) => visibleIds.has(row.barber_id));
     const breaksByBarber = new Map(
-      barbers.map((barber, index) => [barber.id, allBreaks[index] ?? []]),
+      visibleBarbers.map((barber) => {
+        const index = barbers.findIndex((item) => item.id === barber.id);
+        return [barber.id, allBreaks[index] ?? []];
+      }),
     );
 
-    return barbers.map((barber) => {
+    return visibleBarbers.map((barber) => {
       const barberBooked = booked.filter((row) => row.barber_id === barber.id);
       const barberBlocked = blocked.filter((row) => row.barber_id === barber.id);
       const recurringBreaks = breaksByBarber.get(barber.id) ?? [];

@@ -34,6 +34,7 @@ export default function AdminPage() {
   const [activation, setActivation] = useState<ShopActivation | null>(null);
   const [bookingUrl, setBookingUrl] = useState("");
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
+  const [showClosedQueue, setShowClosedQueue] = useState(false);
   const todayISO = dateISOFromInstant(new Date());
   const isToday = dateISO === todayISO;
   const dateLocale = locale === "th" ? th : enUS;
@@ -55,7 +56,9 @@ export default function AdminPage() {
 
   const loadDay = useCallback(async () => {
     try {
-      const res = await fetch(shopApi(`/block?date=${encodeURIComponent(dateISO)}`), {
+      const params = new URLSearchParams({ date: dateISO });
+      if (showClosedQueue) params.set("includeClosed", "1");
+      const res = await fetch(shopApi(`/block?${params.toString()}`), {
         headers: authHeaders,
       });
       const json = (await res.json()) as {
@@ -70,7 +73,7 @@ export default function AdminPage() {
     } catch {
       setError(t("admin.networkError"));
     }
-  }, [authHeaders, dateISO, shopApi, t]);
+  }, [authHeaders, dateISO, shopApi, showClosedQueue, t]);
 
   useEffect(() => {
     if (!ready || !profile || profile.role !== "owner") return;
@@ -306,6 +309,17 @@ export default function AdminPage() {
                 {t("admin.refresh")}
               </button>
             </div>
+            {isOwner ? (
+              <label className="mt-2 flex min-h-11 items-center gap-2 text-sm text-zinc-300">
+                <input
+                  type="checkbox"
+                  checked={showClosedQueue}
+                  onChange={(event) => setShowClosedQueue(event.target.checked)}
+                  className="h-4 w-4"
+                />
+                {t("admin.showClosedQueueBarbers")}
+              </label>
+            ) : null}
             <h1 className="mt-2 text-xl font-semibold">
               {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
             </h1>
