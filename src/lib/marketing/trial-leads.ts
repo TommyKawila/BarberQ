@@ -20,9 +20,19 @@ export interface TrialLead {
   utm_campaign: string | null;
   referrer: string | null;
   locale: string | null;
+  follow_up_at: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export interface TrialLeadNote {
+  id: string;
+  trial_lead_id: string;
+  body: string;
+  created_at: string;
+}
+
+export const MAX_TRIAL_LEAD_NOTE = 2000;
 
 export interface CreateTrialLeadInput {
   shopName: string;

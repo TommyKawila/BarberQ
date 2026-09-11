@@ -16,6 +16,27 @@ describe("marketing layout split", () => {
     assert.match(layout, /PhoneShell/);
   });
 
+  it("app group layout keeps PhoneShell", () => {
+    const layout = readFileSync(resolve(root, "app/(app)/layout.tsx"), "utf8");
+    assert.match(layout, /PhoneShell/);
+  });
+
+  it("operator layout is full width without PhoneShell", () => {
+    const layout = readFileSync(resolve(root, "app/(operator)/layout.tsx"), "utf8");
+    assert.doesNotMatch(layout, /PhoneShell/);
+    assert.doesNotMatch(layout, /max-w-lg/);
+  });
+
+  it("superadmin pages live in operator group", () => {
+    const shops = readFileSync(resolve(root, "app/(operator)/superadmin/page.tsx"), "utf8");
+    const page = readFileSync(
+      resolve(root, "app/(operator)/superadmin/trial-leads/page.tsx"),
+      "utf8",
+    );
+    assert.match(shops, /superadmin/);
+    assert.match(page, /TrialLeadsCrm/);
+  });
+
   it("sales page links CTA to /trial", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),

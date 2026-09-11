@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useState } from "react";
-import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
+import { useCallback, useEffect, useState } from "react";
 import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
+import {
+  readOperatorToken,
+  writeOperatorToken,
+} from "@/lib/superadmin/operator-session";
 import type { Shop } from "@/types/booking";
 
 export default function SuperAdminPage() {
@@ -14,6 +17,7 @@ export default function SuperAdminPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [ready, setReady] = useState(false);
 
   const loadShops = useCallback(async (authToken: string) => {
     setLoading(true);
@@ -26,19 +30,31 @@ export default function SuperAdminPage() {
       if (!res.ok) throw new Error(json.error ?? "Invalid token");
       setShops(json.shops ?? []);
       setIsAuthenticated(true);
+      writeOperatorToken(authToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
       setIsAuthenticated(false);
+      writeOperatorToken(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
+  useEffect(() => {
+    const stored = readOperatorToken();
+    if (!stored) {
+      setReady(true);
+      return;
+    }
+    setToken(stored);
+    void loadShops(stored).finally(() => setReady(true));
+  }, [loadShops]);
+
+  if (!ready) return null;
+
   if (!isAuthenticated) {
     return (
-      <>
-        <PlatformTopBar />
-        <section className="flex min-h-full flex-col items-center justify-center gap-4 px-4 py-16">
+      <section className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 py-16">
         <h1 className="text-2xl font-semibold">Super Admin</h1>
         <input
           type="password"
@@ -57,35 +73,22 @@ export default function SuperAdminPage() {
           {loading ? "Loading..." : "Login"}
         </button>
       </section>
-      </>
     );
   }
 
   return (
-    <>
-      <PlatformTopBar />
-      <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8">
-      <header>
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <h1 className="text-2xl font-semibold">Shops Management</h1>
-            <p className="text-sm text-zinc-400">Active shops: {shops.length}</p>
-          </div>
-          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-            <Link
-              href="/superadmin/trial-leads"
-              className="rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-300"
-            >
-              Trial Leads
-            </Link>
-            <Link
-              href="/pilot"
-              className="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-medium text-amber-400"
-            >
-              Pilot Test
-            </Link>
-          </div>
+    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8 md:px-6">
+      <header className="flex items-start justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-semibold">Shops Management</h1>
+          <p className="text-sm text-zinc-400">Active shops: {shops.length}</p>
         </div>
+        <Link
+          href="/pilot"
+          className="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-medium text-amber-400"
+        >
+          Pilot Test
+        </Link>
       </header>
 
       <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />
@@ -113,6 +116,5 @@ export default function SuperAdminPage() {
         </div>
       </section>
     </div>
-    </>
   );
 }

@@ -143,6 +143,7 @@ export type {
 export type {
   CreateTrialLeadInput,
   TrialLead,
+  TrialLeadNote,
   TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
 
@@ -155,6 +156,7 @@ import type {
 import type {
   CreateTrialLeadInput,
   TrialLead,
+  TrialLeadNote,
   TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
 
@@ -214,4 +216,10 @@ export interface BookingStore {
   createTrialLead(input: CreateTrialLeadInput): Promise<TrialLead>;
   listTrialLeads(): Promise<TrialLead[]>;
   updateTrialLeadStatus(id: string, status: TrialLeadStatus): Promise<TrialLead>;
+  updateTrialLead(
+    id: string,
+    patch: { status?: TrialLeadStatus; followUpAt?: string | null },
+  ): Promise<TrialLead>;
+  listTrialLeadNotes(leadId: string): Promise<TrialLeadNote[]>;
+  createTrialLeadNote(leadId: string, body: string): Promise<TrialLeadNote>;
 }

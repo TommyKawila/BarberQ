@@ -24,6 +24,7 @@ import {
   TRIAL_LEAD_STATUSES,
   type CreateTrialLeadInput,
   type TrialLead,
+  type TrialLeadNote,
   type TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
 import {
@@ -936,18 +937,64 @@ export const supabaseStore: BookingStore = {
   },
 
   async updateTrialLeadStatus(id: string, status: TrialLeadStatus) {
-    if (!TRIAL_LEAD_STATUSES.includes(status)) {
+    return this.updateTrialLead(id, { status });
+  },
+
+  async updateTrialLead(
+    id: string,
+    patch: { status?: TrialLeadStatus; followUpAt?: string | null },
+  ) {
+    if (patch.status && !TRIAL_LEAD_STATUSES.includes(patch.status)) {
       throw new StoreConflict("INVALID_RANGE");
     }
     const supabase = createServiceClient();
+    const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (patch.status) update.status = patch.status;
+    if (patch.followUpAt !== undefined) update.follow_up_at = patch.followUpAt;
     const { data, error } = await supabase
       .from("trial_leads")
-      .update({ status, updated_at: new Date().toISOString() })
+      .update(update)
       .eq("id", id)
       .select("*")
       .single();
     if (error) throw new Error(error.message);
     if (!data) throw new StoreConflict("NOT_FOUND");
     return data as TrialLead;
+  },
+
+  async listTrialLeadNotes(leadId: string) {
+    const supabase = createServiceClient();
+    const { data: lead, error: leadError } = await supabase
+      .from("trial_leads")
+      .select("id")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (leadError) throw new Error(leadError.message);
+    if (!lead) throw new StoreConflict("NOT_FOUND");
+    const { data, error } = await supabase
+      .from("trial_lead_notes")
+      .select("*")
+      .eq("trial_lead_id", leadId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data as TrialLeadNote[]) ?? [];
+  },
+
+  async createTrialLeadNote(leadId: string, body: string) {
+    const supabase = createServiceClient();
+    const { data: lead, error: leadError } = await supabase
+      .from("trial_leads")
+      .select("id")
+      .eq("id", leadId)
+      .maybeSingle();
+    if (leadError) throw new Error(leadError.message);
+    if (!lead) throw new StoreConflict("NOT_FOUND");
+    const { data, error } = await supabase
+      .from("trial_lead_notes")
+      .insert({ trial_lead_id: leadId, body })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as TrialLeadNote;
   },
 };

@@ -26,6 +26,7 @@ import {
   TRIAL_LEAD_STATUSES,
   type CreateTrialLeadInput,
   type TrialLead,
+  type TrialLeadNote,
   type TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
 import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
@@ -53,6 +54,7 @@ interface MemoryState {
   shops: Shop[];
   lineOaInstallRequests: LineOaInstallRequest[];
   trialLeads: TrialLead[];
+  trialLeadNotes: TrialLeadNote[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -76,6 +78,7 @@ function getState(): MemoryState {
       recurringBreaks: [],
       lineOaInstallRequests: [],
       trialLeads: [],
+      trialLeadNotes: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
@@ -116,6 +119,9 @@ function getState(): MemoryState {
   }
   if (!g[GLOBAL_KEY].lineOaInstallRequests) {
     g[GLOBAL_KEY].lineOaInstallRequests = [];
+  }
+  if (!g[GLOBAL_KEY].trialLeadNotes) {
+    g[GLOBAL_KEY].trialLeadNotes = [];
   }
   if (!g[GLOBAL_KEY].shopSettings) {
     g[GLOBAL_KEY].shopSettings = {
@@ -885,6 +891,7 @@ export const memoryStore: BookingStore = {
       utm_campaign: input.utmCampaign ?? null,
       referrer: input.referrer ?? null,
       locale: input.locale ?? null,
+      follow_up_at: null,
       created_at: now,
       updated_at: now,
     };
@@ -899,13 +906,43 @@ export const memoryStore: BookingStore = {
   },
 
   async updateTrialLeadStatus(id: string, status: TrialLeadStatus) {
-    if (!TRIAL_LEAD_STATUSES.includes(status)) {
+    return this.updateTrialLead(id, { status });
+  },
+
+  async updateTrialLead(
+    id: string,
+    patch: { status?: TrialLeadStatus; followUpAt?: string | null },
+  ) {
+    if (patch.status && !TRIAL_LEAD_STATUSES.includes(patch.status)) {
       throw new StoreConflict("INVALID_RANGE");
     }
     const row = getState().trialLeads.find((r) => r.id === id);
     if (!row) throw new StoreConflict("NOT_FOUND");
-    row.status = status;
+    if (patch.status) row.status = patch.status;
+    if (patch.followUpAt !== undefined) row.follow_up_at = patch.followUpAt;
     row.updated_at = nowIso();
+    return { ...row };
+  },
+
+  async listTrialLeadNotes(leadId: string) {
+    const exists = getState().trialLeads.some((r) => r.id === leadId);
+    if (!exists) throw new StoreConflict("NOT_FOUND");
+    return getState()
+      .trialLeadNotes.filter((n) => n.trial_lead_id === leadId)
+      .map((n) => ({ ...n }))
+      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+  },
+
+  async createTrialLeadNote(leadId: string, body: string) {
+    const exists = getState().trialLeads.some((r) => r.id === leadId);
+    if (!exists) throw new StoreConflict("NOT_FOUND");
+    const row: TrialLeadNote = {
+      id: uuid(),
+      trial_lead_id: leadId,
+      body,
+      created_at: nowIso(),
+    };
+    getState().trialLeadNotes.push(row);
     return { ...row };
   },
 };
