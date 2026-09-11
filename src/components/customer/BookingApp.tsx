@@ -9,6 +9,7 @@ import liff from "@line/liff";
 import { CalendarDays, ChevronRight, Store } from "lucide-react";
 import { BarberSelector } from "@/components/customer/BarberSelector";
 import { BookingHero } from "@/components/customer/BookingHero";
+import { BookingSuccess } from "@/components/customer/BookingSuccess";
 import { DateSelector } from "@/components/customer/DateSelector";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { SlotPicker } from "@/components/customer/SlotPicker";
@@ -319,60 +320,15 @@ export function BookingApp() {
   }
 
   if (success) {
-    const dateLabel = formatInTimeZone(
-      new Date(success.appointment.start_time),
-      SHOP_TIMEZONE,
-      "EEEE d MMMM yyyy",
-      { locale: locale === "th" ? th : enUS },
-    );
     return (
-      <div className="flex flex-col gap-6 px-4 py-8">
-        <header className="text-center">
-          <p className="text-3xl">✅</p>
-          <h1 className="mt-2 text-2xl font-semibold">{t("booking.successTitle")}</h1>
-        </header>
-        <div className="rounded-2xl bg-zinc-900 p-4 text-sm">
-          {shopName ? <p className="font-semibold">{shopName}</p> : null}
-          <p className="mt-1 text-zinc-300">{success.barberName}</p>
-          <p className="mt-1 text-zinc-400">{dateLabel}</p>
-          <p className="mt-2 text-lg font-semibold">
-            {formatSlotTime(success.appointment.start_time)}
-          </p>
-          {selectedBarber ? (
-            <p className="mt-1 text-xs text-zinc-500">
-              {selectedBarber.slot_duration_minutes} {t("common.minutes")}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-2">
-          <Link
-            href={shopPath("/bookings")}
-            className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
-          >
-            {t("booking.viewMyBookings")}
-          </Link>
-          <button
-            type="button"
-            onClick={resetBooking}
-            className="min-h-12 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200"
-          >
-            {t("booking.backToShop")}
-          </button>
-        </div>
-        {showAddFriend && addFriendUrl ? (
-          <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
-            <p className="text-xs text-zinc-500">{t("booking.addFriendSecondary")}</p>
-            <a
-              href={addFriendUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-2 flex min-h-11 items-center justify-center rounded-lg bg-[#06C755] text-sm font-semibold text-white"
-            >
-              {t("booking.addBarberqFriend")}
-            </a>
-          </div>
-        ) : null}
-      </div>
+      <BookingSuccess
+        appointment={success.appointment}
+        barberName={success.barberName}
+        shopName={shopName}
+        barber={selectedBarber}
+        showAddFriend={showAddFriend}
+        onBackToShop={resetBooking}
+      />
     );
   }
 

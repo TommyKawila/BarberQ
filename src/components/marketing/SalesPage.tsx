@@ -11,10 +11,9 @@ import {
   Users,
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
-import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
-import { BookingMockup } from "@/components/marketing/mockups/BookingMockup";
+import { SalesHero } from "@/components/marketing/SalesHero";
 import { CustomerJourneyMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { OwnerSurfacesMockups } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
@@ -125,7 +124,6 @@ const BARBER_CHIPS = [1, 2, 3, 4, 5, 6, 7] as const;
 const SETUP_STEPS = [1, 2, 3, 4] as const;
 const PRICING_BENEFITS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6] as const;
-const HERO_TRUST = [1, 2, 3] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 
 export function SalesPage() {
@@ -153,53 +151,7 @@ export function SalesPage() {
     <div className="min-h-full bg-zinc-950 text-zinc-50">
       <LiffCallbackRedirect />
       <AttributionCapture />
-      <MarketingNav />
-
-      {/* Hero */}
-      <section className="border-b border-zinc-800/50 bg-gradient-to-b from-zinc-900/80 to-zinc-950 py-14 md:py-20">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-10 px-4 md:grid-cols-2 md:gap-12 md:px-6">
-          <div className="text-left">
-            <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-            <h1 className="mt-3 text-3xl font-bold leading-tight md:text-5xl lg:text-6xl">
-              {t("marketing.hero.title")}
-            </h1>
-            <p className={`mt-4 ${BODY} md:text-lg`}>{t("marketing.hero.subtitle")}</p>
-            <p className={`mt-2 ${BODY}`}>{t("marketing.hero.subtitle2")}</p>
-            <div className="mt-8 flex flex-col gap-3 md:flex-row md:justify-start">
-              <TrialCta
-                label={t("marketing.hero.cta")}
-                className="hidden md:inline-flex"
-              />
-              <TrialCta
-                label={t("marketing.hero.ctaShort")}
-                className="md:hidden"
-                fullWidth
-              />
-              <a
-                href="#how-it-works"
-                onClick={() => trackMarketingEvent("how_it_works_click")}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-zinc-600 px-6 py-3 font-medium text-zinc-200 md:w-auto"
-              >
-                {t("marketing.hero.secondary")}
-              </a>
-            </div>
-            <ul className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
-              {HERO_TRUST.map((n) => (
-                <li
-                  key={n}
-                  className="flex items-center gap-1.5 text-[13px] text-zinc-400 md:text-sm"
-                >
-                  <Check size={14} className="shrink-0 text-amber-400" strokeWidth={2.5} />
-                  {t(`marketing.hero.trust${n}` as MessageKey)}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div className="flex justify-center overflow-hidden md:justify-end">
-            <BookingMockup size="xl" />
-          </div>
-        </div>
-      </section>
+      <SalesHero />
 
       {/* Pain */}
       <Section className="bg-zinc-900/30">

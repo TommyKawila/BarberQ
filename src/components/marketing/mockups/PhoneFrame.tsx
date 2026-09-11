@@ -4,18 +4,21 @@ export type PhoneSize = keyof typeof WIDTH;
 
 export function PhoneFrame({
   size = "md",
+  width,
+  fluid,
   children,
   className,
 }: {
   size?: PhoneSize;
+  width?: number;
+  fluid?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
-  const w = WIDTH[size];
   return (
     <div
       aria-hidden="true"
-      style={{ width: w }}
+      style={fluid ? undefined : { width: width ?? WIDTH[size] }}
       className={`shrink-0 rounded-[2rem] border-4 border-zinc-700 bg-zinc-900 p-2 shadow-2xl ${className ?? ""}`}
     >
       <div className="overflow-hidden rounded-[1.5rem] bg-zinc-950">{children}</div>

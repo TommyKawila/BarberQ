@@ -42,13 +42,22 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
+    const hero = readFileSync(
+      resolve(root, "components/marketing/SalesHero.tsx"),
+      "utf8",
+    );
     const nav = readFileSync(
       resolve(root, "components/marketing/MarketingNav.tsx"),
       "utf8",
     );
+    assert.match(sales, /SalesHero/);
     assert.match(sales, /MarketingTrialLink/);
+    assert.match(hero, /MarketingTrialLink/);
+    assert.match(hero, /hero-barbershop-bg\.png/);
+    assert.match(hero, /HeroPhoneMockups/);
     assert.match(nav, /MarketingTrialLink/);
     assert.doesNotMatch(sales, /href="\/trial"/);
+    assert.doesNotMatch(hero, /href="\/trial"/);
     assert.doesNotMatch(nav, /href="\/trial"/);
     assert.doesNotMatch(sales, /variant="trial"/);
   });
