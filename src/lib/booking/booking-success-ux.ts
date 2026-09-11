@@ -1,8 +1,9 @@
+export type LineFriendship = "unknown" | "friend" | "not_friend";
+
 export function shouldShowLineReminder(
   addFriendUrl: string | null | undefined,
-  alreadyFriend: boolean,
+  friendship: LineFriendship,
 ): boolean {
   if (!addFriendUrl?.trim()) return false;
-  if (alreadyFriend) return false;
-  return true;
+  return friendship !== "friend";
 }

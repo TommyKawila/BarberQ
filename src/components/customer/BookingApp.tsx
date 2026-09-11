@@ -37,6 +37,7 @@ import {
   getBookableDates,
   SHOP_TIMEZONE,
 } from "@/lib/services/slot-service";
+import { type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { barberLabel, type Appointment, type Barber, type Slot } from "@/types/booking";
 
 const PHONE_KEY = "barberq_phone";
@@ -72,10 +73,11 @@ export function BookingApp() {
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [success, setSuccess] = useState<SuccessState | null>(null);
-  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [friendship, setFriendship] = useState<LineFriendship>("unknown");
 
   const selectedStartRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
+  const missingAddUrlWarned = useRef(false);
   const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
 
   useEffect(() => {
@@ -222,18 +224,26 @@ export function BookingApp() {
   }, [barberId, activeDate, selectedBarber, silentRefresh, hours, success]);
 
   useEffect(() => {
-    if (!success || mockMode || !addFriendUrl) {
-      setShowAddFriend(false);
+    if (!success) {
+      setFriendship("unknown");
       return;
     }
+    if (!addFriendUrl) {
+      if (!missingAddUrlWarned.current) {
+        missingAddUrlWarned.current = true;
+        console.warn("Add Friend skipped: NEXT_PUBLIC_LINE_OA_ADD_URL is unset");
+      }
+      return;
+    }
+    if (mockMode) return;
     let cancelled = false;
     void liff
       .getFriendship()
       .then((result) => {
-        if (!cancelled) setShowAddFriend(!result.friendFlag);
+        if (!cancelled) setFriendship(result.friendFlag ? "friend" : "not_friend");
       })
       .catch(() => {
-        if (!cancelled) setShowAddFriend(true);
+        if (!cancelled) setFriendship("unknown");
       });
     return () => {
       cancelled = true;
@@ -326,7 +336,7 @@ export function BookingApp() {
         barberName={success.barberName}
         shopName={shopName}
         barber={selectedBarber}
-        showAddFriend={showAddFriend}
+        friendship={friendship}
         onBackToShop={resetBooking}
       />
     );

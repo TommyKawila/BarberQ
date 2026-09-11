@@ -5,7 +5,7 @@ import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { BarberAvatar } from "@/components/barber/BarberAvatar";
-import { shouldShowLineReminder } from "@/lib/booking/booking-success-ux";
+import { shouldShowLineReminder, type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { customerBarberPhotoUrl } from "@/lib/barber/barber-avatar";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime, SHOP_TIMEZONE } from "@/lib/services/slot-service";
@@ -17,20 +17,20 @@ export function BookingSuccess({
   barberName,
   shopName,
   barber,
-  showAddFriend,
+  friendship,
   onBackToShop,
 }: {
   appointment: Appointment;
   barberName: string;
   shopName: string | null;
   barber: Barber | null;
-  showAddFriend: boolean;
+  friendship: LineFriendship;
   onBackToShop: () => void;
 }) {
   const { t, locale } = useI18n();
   const { shopPath } = useShopSlug();
   const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
-  const showLine = shouldShowLineReminder(addFriendUrl, !showAddFriend);
+  const showLine = shouldShowLineReminder(addFriendUrl, friendship);
   const dateLabel = formatInTimeZone(
     new Date(appointment.start_time),
     SHOP_TIMEZONE,
