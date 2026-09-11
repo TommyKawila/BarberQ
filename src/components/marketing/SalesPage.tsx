@@ -75,7 +75,7 @@ function CompareCard({
           : "border-zinc-800 bg-zinc-900/50"
       }`}
     >
-      <div className="relative h-40 w-full overflow-hidden md:h-48">
+      <div className="relative h-48 w-full overflow-hidden md:h-56">
         <Image
           src={imageSrc}
           alt={imageAlt}
@@ -83,25 +83,38 @@ function CompareCard({
           height={941}
           sizes="(max-width: 767px) 92vw, (max-width: 1023px) 48vw, 580px"
           className={`h-full w-full object-cover object-[70%_center] ${
-            isAfter ? "" : "opacity-90 saturate-75"
+            isAfter
+              ? "brightness-[1.12] contrast-[1.06]"
+              : "brightness-[1.08] contrast-[1.06] saturate-[0.95]"
           }`}
         />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 w-[58%] bg-gradient-to-r from-zinc-950/75 via-zinc-950/35 to-transparent"
+          aria-hidden
+        />
+        <div className="absolute inset-y-0 left-0 z-10 flex w-[52%] flex-col justify-end p-4 md:p-5">
+          <h3
+            className={`flex items-center gap-2 font-semibold ${
+              isAfter ? "text-amber-400" : "text-zinc-200"
+            }`}
+          >
+            {isAfter ? <Check size={18} /> : null}
+            {label}
+          </h3>
+          <p className="mt-1 text-base font-semibold leading-snug text-zinc-50 md:text-lg">
+            {subhead}
+          </p>
+          <p className={`mt-1.5 text-sm md:text-base ${isAfter ? "text-amber-300" : "text-zinc-200"}`}>
+            {takeaway}
+          </p>
+        </div>
       </div>
       <div className="p-4 md:p-5">
-        <h3
-          className={`flex items-center gap-2 font-semibold ${
-            isAfter ? "text-amber-400" : "text-zinc-400"
-          }`}
-        >
-          {isAfter ? <Check size={18} /> : null}
-          {label}
-        </h3>
-        <p className="mt-1 text-sm text-zinc-300">{subhead}</p>
-        <ol className="mt-3 space-y-1.5">
+        <ol className="space-y-2">
           {steps.map((step, i) => (
-            <li key={i} className="flex gap-2 text-[13px] leading-snug md:text-sm">
+            <li key={i} className="flex gap-2 text-[15px] leading-snug md:text-base">
               <span
-                className={`w-6 shrink-0 font-semibold tabular-nums ${
+                className={`w-7 shrink-0 font-semibold tabular-nums ${
                   isAfter ? "text-amber-400/80" : "text-zinc-500"
                 }`}
               >
@@ -111,9 +124,6 @@ function CompareCard({
             </li>
           ))}
         </ol>
-        <p className={`mt-3 text-sm ${isAfter ? "text-amber-400/90" : "text-zinc-500"}`}>
-          {takeaway}
-        </p>
       </div>
     </div>
   );

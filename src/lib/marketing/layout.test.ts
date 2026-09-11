@@ -99,6 +99,11 @@ describe("marketing layout split", () => {
     assert.match(sales, /after-organized-workflow\.png/);
     assert.match(sales, /from "next\/image"/);
     assert.match(sales, /marketing\.beforeAfter/);
+    assert.match(sales, /bg-gradient-to-r from-zinc-950\/75 via-zinc-950\/35 to-transparent/);
+    const takeawayIdx = sales.indexOf("{takeaway}");
+    const flowOlIdx = sales.indexOf('<ol className="space-y-2">');
+    assert.ok(takeawayIdx > 0);
+    assert.ok(flowOlIdx > takeawayIdx);
     const ba = dict.match(
       /"marketing\.beforeAfter[\s\S]*?"marketing\.how\.title"/,
     );
