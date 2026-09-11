@@ -141,10 +141,10 @@ export function SalesPage() {
   );
 
   const painMessages = [
-    { from: "customer" as const, text: t("marketing.pain.chat1") },
-    { from: "shop" as const, text: t("marketing.pain.chat2") },
-    { from: "customer" as const, text: t("marketing.pain.chat3") },
-    { from: "shop" as const, text: t("marketing.pain.chat4") },
+    t("marketing.pain.chat1"),
+    t("marketing.pain.chat2"),
+    t("marketing.pain.chat3"),
+    t("marketing.pain.chat4"),
   ];
 
   return (
@@ -154,20 +154,26 @@ export function SalesPage() {
       <SalesHero />
 
       {/* Pain */}
-      <Section className="bg-zinc-900/30">
-        <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12">
+      <section className="overflow-x-clip bg-zinc-900/40">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-6 px-4 py-8 md:px-6 md:py-10 lg:grid-cols-[minmax(0,54%)_minmax(0,46%)] lg:gap-10">
           <div>
-            <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">{t("marketing.pain.title")}</h2>
-            <p className={`mt-4 ${BODY}`}>{t("marketing.pain.support")}</p>
-            <p className="mt-4 font-semibold text-amber-400">{t("marketing.pain.emphasis")}</p>
+            <h2 className="text-[1.75rem] font-bold leading-[1.2] text-zinc-50 md:text-4xl lg:text-[2.5rem]">
+              {t("marketing.pain.titleLine1")}
+              <br />
+              {t("marketing.pain.titleLine2")}
+            </h2>
+            <p className="mt-4 text-[15px] leading-relaxed text-zinc-400 md:text-base">
+              {t("marketing.pain.supportQuotes")}
+            </p>
+            <p className={`mt-2 ${BODY}`}>{t("marketing.pain.support")}</p>
+            <p className="mt-4 text-sm text-amber-400/90">{t("marketing.pain.emphasis")}</p>
           </div>
           <PainChatMockup
-            customerLabel={t("marketing.pain.customer")}
-            shopLabel={t("marketing.pain.shop")}
             messages={painMessages}
+            footer={t("marketing.pain.visualFooter")}
           />
         </div>
-      </Section>
+      </section>
 
       {/* Before / After */}
       <Section title={t("marketing.beforeAfter.title")}>

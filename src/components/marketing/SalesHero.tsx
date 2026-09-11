@@ -4,7 +4,6 @@ import Image from "next/image";
 import { Check } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
-import { HeroPhoneMockups } from "@/components/marketing/mockups/HeroPhoneMockups";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
@@ -15,7 +14,7 @@ export function SalesHero() {
   const { t } = useI18n();
 
   return (
-    <div className="relative">
+    <div className="relative overflow-x-clip">
       <div className="absolute inset-0 overflow-hidden">
         <Image
           src="/marketing/barberqx/hero-barbershop-bg.png"
@@ -25,12 +24,12 @@ export function SalesHero() {
           sizes="100vw"
           className="object-cover object-[65%_center] md:object-right"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/75 to-zinc-950/25" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-zinc-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/90 to-zinc-950/25 md:bg-gradient-to-r md:from-zinc-950 md:via-zinc-950/75 md:to-zinc-950/25" />
+        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-zinc-950 md:h-24" />
       </div>
       <MarketingNav />
-      <section className="relative min-h-[640px] pb-10 pt-6 md:min-h-[680px] md:pb-12 lg:min-h-[740px] lg:pt-8">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 lg:grid-cols-[48%_52%] lg:gap-10 lg:px-6">
+      <section className="relative flex flex-col pb-6 pt-6 md:min-h-[640px] md:pb-8 lg:min-h-[680px] lg:pt-8">
+        <div className="mx-auto grid w-full max-w-[1280px] flex-1 items-center gap-6 px-4 lg:grid-cols-[48%_52%] lg:items-end lg:gap-10 lg:px-6">
           <div className="text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 text-[2.5rem] font-bold leading-[1.15] md:text-[3.25rem] md:leading-[1.12] lg:text-[3.75rem]">
@@ -68,7 +67,21 @@ export function SalesHero() {
               ))}
             </ul>
           </div>
-          <HeroPhoneMockups />
+          <div className="hero-phones-enter relative flex w-full items-end justify-center lg:justify-end">
+            <div
+              className="pointer-events-none absolute inset-[12%] rounded-full bg-amber-400/15 blur-3xl"
+              aria-hidden
+            />
+            <Image
+              src="/marketing/barberqx/hero-phone-hand.png"
+              alt={t("marketing.hero.productAlt")}
+              width={1536}
+              height={1024}
+              priority
+              sizes="(max-width: 767px) 92vw, (max-width: 1023px) 480px, 580px"
+              className="relative h-auto w-[min(100%,390px)] object-contain drop-shadow-[0_20px_36px_rgba(0,0,0,0.4)] lg:w-[min(100%,580px)]"
+            />
+          </div>
         </div>
       </section>
     </div>

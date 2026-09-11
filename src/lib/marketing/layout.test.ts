@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(import.meta.dirname, "../..");
@@ -54,12 +54,38 @@ describe("marketing layout split", () => {
     assert.match(sales, /MarketingTrialLink/);
     assert.match(hero, /MarketingTrialLink/);
     assert.match(hero, /hero-barbershop-bg\.png/);
-    assert.match(hero, /HeroPhoneMockups/);
+    assert.match(hero, /hero-phone-hand\.png/);
+    assert.match(hero, /from "next\/image"/);
+    assert.doesNotMatch(hero, /HeroPhoneMockups/);
     assert.match(nav, /MarketingTrialLink/);
     assert.doesNotMatch(sales, /href="\/trial"/);
     assert.doesNotMatch(hero, /href="\/trial"/);
     assert.doesNotMatch(nav, /href="\/trial"/);
     assert.doesNotMatch(sales, /variant="trial"/);
+  });
+
+  it("retired HTML hero phone mockup is gone", () => {
+    assert.equal(
+      existsSync(resolve(root, "components/marketing/mockups/HeroPhoneMockups.tsx")),
+      false,
+    );
+  });
+
+  it("pain section is interruption-only without shop replies", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const pain = readFileSync(
+      resolve(root, "components/marketing/mockups/PainChatMockup.tsx"),
+      "utf8",
+    );
+    const dict = readFileSync(resolve(root, "lib/i18n/dictionary.ts"), "utf8");
+    assert.match(sales, /PainChatMockup/);
+    assert.doesNotMatch(sales, /from: "shop"/);
+    assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
+    assert.match(dict, /ทุกข้อความหมายถึงการต้องหยุด แล้วกลับมาตอบเรื่องเดิมอีกครั้ง/);
+    assert.doesNotMatch(dict, /ให้ BarberQx รับงานตรงนี้แทน/);
   });
 
   it("trial page uses focused chrome without sales nav CTA", () => {
