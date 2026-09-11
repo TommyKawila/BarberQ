@@ -29,7 +29,7 @@ export function SalesHero() {
       </div>
       <MarketingNav />
       <section className="relative flex flex-col pb-6 pt-6 md:min-h-[640px] md:pb-8 lg:min-h-[680px] lg:pt-8">
-        <div className="mx-auto grid w-full max-w-[1280px] flex-1 items-center gap-6 px-4 lg:grid-cols-[48%_52%] lg:items-end lg:gap-10 lg:px-6">
+        <div className="mx-auto grid w-full max-w-[1280px] flex-1 items-center gap-4 px-4 lg:grid-cols-[48%_52%] lg:items-end lg:gap-10 lg:px-6">
           <div className="text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 text-[2.5rem] font-bold leading-[1.15] md:text-[3.25rem] md:leading-[1.12] lg:text-[3.75rem]">
@@ -78,8 +78,8 @@ export function SalesHero() {
               width={1536}
               height={1024}
               priority
-              sizes="(max-width: 767px) 92vw, (max-width: 1023px) 480px, 580px"
-              className="relative h-auto w-[min(100%,390px)] object-contain drop-shadow-[0_20px_36px_rgba(0,0,0,0.4)] lg:w-[min(100%,580px)]"
+              sizes="(max-width: 767px) 100vw, (max-width: 1023px) 480px, 580px"
+              className="relative h-auto w-[min(108%,420px)] max-w-none object-contain drop-shadow-[0_20px_36px_rgba(0,0,0,0.4)] md:w-[min(100%,390px)] lg:w-[min(100%,580px)]"
             />
           </div>
         </div>
