@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import {
   ArrowRight,
   Check,
-  ChevronDown,
   Clock3,
   MessageCircleOff,
   Store,
@@ -49,51 +49,72 @@ function Section({
   );
 }
 
-function FlowCard({
+function CompareCard({
   label,
+  subhead,
   steps,
+  takeaway,
   variant,
+  imageSrc,
+  imageAlt,
 }: {
   label: string;
+  subhead: string;
   steps: string[];
+  takeaway: string;
   variant: "before" | "after";
+  imageSrc: string;
+  imageAlt: string;
 }) {
   const isAfter = variant === "after";
   return (
     <div
-      className={`rounded-2xl border p-6 ${
+      className={`overflow-hidden rounded-2xl border ${
         isAfter
           ? "border-amber-500/40 bg-amber-500/5"
           : "border-zinc-800 bg-zinc-900/50"
       }`}
     >
-      <h3
-        className={`flex items-center gap-2 font-semibold ${
-          isAfter ? "text-amber-400" : "text-zinc-400"
-        }`}
-      >
-        {isAfter ? <Check size={18} /> : null}
-        {label}
-      </h3>
-      <ol className="mt-4 space-y-2">
-        {steps.map((step, i) => (
-          <li key={i} className={`flex items-center gap-2 ${BODY}`}>
-            {i > 0 ? (
-              <ArrowRight
-                size={14}
-                className={`hidden shrink-0 md:inline ${isAfter ? "text-amber-500/60" : "text-zinc-600"}`}
-              />
-            ) : null}
-            <span className={isAfter ? "text-zinc-200" : "text-zinc-400"}>{step}</span>
-            {i < steps.length - 1 ? (
-              <ChevronDown
-                size={14}
-                className={`shrink-0 md:hidden ${isAfter ? "text-amber-500/60" : "text-zinc-600"}`}
-              />
-            ) : null}
-          </li>
-        ))}
-      </ol>
+      <div className="relative h-40 w-full overflow-hidden md:h-48">
+        <Image
+          src={imageSrc}
+          alt={imageAlt}
+          width={1672}
+          height={941}
+          sizes="(max-width: 767px) 92vw, (max-width: 1023px) 48vw, 580px"
+          className={`h-full w-full object-cover object-[70%_center] ${
+            isAfter ? "" : "opacity-90 saturate-75"
+          }`}
+        />
+      </div>
+      <div className="p-4 md:p-5">
+        <h3
+          className={`flex items-center gap-2 font-semibold ${
+            isAfter ? "text-amber-400" : "text-zinc-400"
+          }`}
+        >
+          {isAfter ? <Check size={18} /> : null}
+          {label}
+        </h3>
+        <p className="mt-1 text-sm text-zinc-300">{subhead}</p>
+        <ol className="mt-3 space-y-1.5">
+          {steps.map((step, i) => (
+            <li key={i} className="flex gap-2 text-[13px] leading-snug md:text-sm">
+              <span
+                className={`w-6 shrink-0 font-semibold tabular-nums ${
+                  isAfter ? "text-amber-400/80" : "text-zinc-500"
+                }`}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className={isAfter ? "text-zinc-200" : "text-zinc-400"}>{step}</span>
+            </li>
+          ))}
+        </ol>
+        <p className={`mt-3 text-sm ${isAfter ? "text-amber-400/90" : "text-zinc-500"}`}>
+          {takeaway}
+        </p>
+      </div>
     </div>
   );
 }
@@ -176,20 +197,42 @@ export function SalesPage() {
       </section>
 
       {/* Before / After */}
-      <Section title={t("marketing.beforeAfter.title")}>
-        <div className="grid gap-6 md:grid-cols-2">
-          <FlowCard
-            label={t("marketing.beforeAfter.before")}
-            steps={beforeSteps}
-            variant="before"
-          />
-          <FlowCard
-            label={t("marketing.beforeAfter.after")}
-            steps={afterSteps}
-            variant="after"
-          />
+      <section className="overflow-x-clip">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <p className="text-sm font-medium text-amber-400/90">
+            {t("marketing.beforeAfter.eyebrow")}
+          </p>
+          <h2 className="mt-2 text-[1.75rem] font-bold leading-[1.2] text-zinc-50 md:text-4xl lg:text-[2.5rem]">
+            {t("marketing.beforeAfter.titleLine1")}
+            <br />
+            {t("marketing.beforeAfter.titleLine2")}
+          </h2>
+          <p className={`mt-3 ${BODY}`}>{t("marketing.beforeAfter.support")}</p>
+          <div className="mt-6 grid items-stretch gap-4 lg:grid-cols-[minmax(0,47%)_minmax(0,53%)] lg:gap-6">
+            <CompareCard
+              label={t("marketing.beforeAfter.before")}
+              subhead={t("marketing.beforeAfter.beforeSubhead")}
+              steps={beforeSteps}
+              takeaway={t("marketing.beforeAfter.beforeTakeaway")}
+              variant="before"
+              imageSrc="/marketing/barberqx/before-manual-booking.png"
+              imageAlt={t("marketing.beforeAfter.beforeAlt")}
+            />
+            <p className="text-center text-sm text-zinc-500 lg:hidden">
+              {t("marketing.beforeAfter.transition")}
+            </p>
+            <CompareCard
+              label={t("marketing.beforeAfter.after")}
+              subhead={t("marketing.beforeAfter.afterSubhead")}
+              steps={afterSteps}
+              takeaway={t("marketing.beforeAfter.afterTakeaway")}
+              variant="after"
+              imageSrc="/marketing/barberqx/after-organized-workflow.png"
+              imageAlt={t("marketing.beforeAfter.afterAlt")}
+            />
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* How it works */}
       <Section id="how-it-works" title={t("marketing.how.title")} className="bg-zinc-900/30">

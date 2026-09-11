@@ -88,6 +88,27 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(dict, /ให้ BarberQx รับงานตรงนี้แทน/);
   });
 
+  it("before after comparison uses supporting photos without overclaiming", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const dict = readFileSync(resolve(root, "lib/i18n/dictionary.ts"), "utf8");
+    const assets = resolve(root, "../public/marketing/barberqx");
+    assert.match(sales, /before-manual-booking\.png/);
+    assert.match(sales, /after-organized-workflow\.png/);
+    assert.match(sales, /from "next\/image"/);
+    assert.match(sales, /marketing\.beforeAfter/);
+    const ba = dict.match(
+      /"marketing\.beforeAfter[\s\S]*?"marketing\.how\.title"/,
+    );
+    assert.ok(ba);
+    assert.match(ba[0], /ร้านไม่ต้องตอบคำถามเรื่องคิวทีละข้อความ/);
+    assert.doesNotMatch(ba[0], /no-show|revenue|reminder before|ไม่มาตามนัด|รายได้เพิ่มขึ้น/i);
+    assert.equal(existsSync(resolve(assets, "before-manual-booking.png")), true);
+    assert.equal(existsSync(resolve(assets, "after-organized-workflow.png")), true);
+  });
+
   it("trial page uses focused chrome without sales nav CTA", () => {
     const trial = readFileSync(
       resolve(root, "components/marketing/TrialForm.tsx"),
