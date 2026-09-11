@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 import {
   ArrowRight,
@@ -14,6 +13,7 @@ import {
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
+import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { BookingMockup } from "@/components/marketing/mockups/BookingMockup";
 import { CustomerJourneyMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { OwnerSurfacesMockups } from "@/components/marketing/mockups/OwnerSurfacesMockups";
@@ -109,15 +109,13 @@ function TrialCta({
   fullWidth?: boolean;
 }) {
   return (
-    <Link
-      href="/trial"
-      onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
+    <MarketingTrialLink
       className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 ${
         fullWidth ? "w-full" : ""
       } ${className ?? ""}`}
     >
       {label}
-    </Link>
+    </MarketingTrialLink>
   );
 }
 

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { BarberQxLogo } from "@/components/brand/BarberQxLogo";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
+import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { trackMarketingEvent } from "@/lib/marketing/events";
 
 export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial" }) {
   const { t } = useI18n();
@@ -26,20 +25,12 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
           <LanguageToggle />
           {isTrial ? null : (
             <>
-              <Link
-                href="/trial"
-                onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
-                className="min-h-11 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 md:hidden"
-              >
+              <MarketingTrialLink className="min-h-11 rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 md:hidden">
                 {t("marketing.hero.ctaShort")}
-              </Link>
-              <Link
-                href="/trial"
-                onClick={() => trackMarketingEvent("sales_cta_click", { destination: "/trial" })}
-                className="hidden min-h-11 rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex md:items-center"
-              >
+              </MarketingTrialLink>
+              <MarketingTrialLink className="hidden min-h-11 rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex md:items-center">
                 {t("marketing.nav.trial")}
-              </Link>
+              </MarketingTrialLink>
             </>
           )}
         </div>

@@ -8,7 +8,7 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
-import { readStashedAttribution } from "@/lib/marketing/attribution";
+import { getMarketingAttribution, readStashedAttribution } from "@/lib/marketing/attribution";
 import { trackMarketingEvent } from "@/lib/marketing/events";
 import {
   firstInvalidTrialField,
@@ -109,7 +109,10 @@ export function TrialForm() {
     setError(null);
     trackMarketingEvent("trial_form_submit");
 
-    const attribution = readStashedAttribution();
+    const attribution = getMarketingAttribution(
+      window.location.search,
+      readStashedAttribution(),
+    );
     const body: Record<string, unknown> = {
       shopName,
       contactName,

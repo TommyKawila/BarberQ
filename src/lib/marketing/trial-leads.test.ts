@@ -12,7 +12,12 @@ import {
   resetTrialRateLimit,
 } from "@/lib/marketing/trial-rate-limit";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-import { captureAttributionFromSearch } from "@/lib/marketing/attribution";
+import {
+  buildTrialHref,
+  captureAttributionFromSearch,
+  getMarketingAttribution,
+  mergeAttribution,
+} from "@/lib/marketing/attribution";
 
 describe("trial lead validation", () => {
   it("accepts valid payload", () => {
@@ -90,23 +95,84 @@ describe("honeypot", () => {
 });
 
 describe("attribution", () => {
-  it("captures utm params when present", () => {
+  it("captures landing facebook UTM", () => {
     const data = captureAttributionFromSearch(
-      "?utm_source=fb&utm_medium=cpc&utm_campaign=spring",
-      "https://google.com",
+      "?utm_source=facebook&utm_medium=paid_social&utm_campaign=beta_test_001",
+      "https://facebook.com",
       "th",
     );
-    assert.equal(data.utmSource, "fb");
+    assert.equal(data.utmSource, "facebook");
+    assert.equal(data.utmMedium, "paid_social");
+    assert.equal(data.utmCampaign, "beta_test_001");
+  });
+
+  it("lets explicit /trial UTM win over stored session", () => {
+    const stored = {
+      utmSource: "facebook",
+      utmMedium: "paid_social",
+      utmCampaign: "beta_test_001",
+    };
+    const data = getMarketingAttribution(
+      "?utm_source=ig&utm_medium=cpc&utm_campaign=beta_test_002",
+      stored,
+    );
+    assert.equal(data.utmSource, "ig");
     assert.equal(data.utmMedium, "cpc");
-    assert.equal(data.utmCampaign, "spring");
-    assert.equal(data.referrer, "https://google.com");
-    assert.equal(data.locale, "th");
+    assert.equal(data.utmCampaign, "beta_test_002");
+  });
+
+  it("does not invent source or campaign on direct /trial", () => {
+    const data = getMarketingAttribution("", {});
+    assert.equal(data.utmSource, null);
+    assert.equal(data.utmMedium, null);
+    assert.equal(data.utmCampaign, null);
+  });
+
+  it("keeps stored UTM when /trial has no query", () => {
+    const merged = mergeAttribution(
+      {
+        utmSource: "facebook",
+        utmMedium: "paid_social",
+        utmCampaign: "beta_test_001",
+      },
+      captureAttributionFromSearch("", "https://barber-q-pi.vercel.app/", "th"),
+    );
+    assert.equal(merged.utmSource, "facebook");
+    assert.equal(merged.utmCampaign, "beta_test_001");
+  });
+
+  it("ignores arbitrary query params", () => {
+    const data = captureAttributionFromSearch(
+      "?utm_source=facebook&fbclid=abc&foo=bar&contactName=secret",
+    );
+    assert.equal(data.utmSource, "facebook");
+    assert.equal("fbclid" in data, false);
+    assert.equal("foo" in data, false);
+    assert.equal("contactName" in data, false);
   });
 
   it("does not invent values when absent", () => {
     const data = captureAttributionFromSearch("", null, "th");
     assert.equal(data.utmSource, null);
     assert.equal(data.referrer, null);
+  });
+});
+
+describe("trial lead POST allowlist", () => {
+  it("keeps allowlisted UTM fields", () => {
+    const input = validateTrialLeadPayload({
+      shopName: "Shop",
+      contactName: "A",
+      contactValue: "1",
+      utmSource: "facebook",
+      utmMedium: "paid_social",
+      utmCampaign: "beta_test_001",
+      extra: "nope",
+    });
+    assert.equal(input.utmSource, "facebook");
+    assert.equal(input.utmMedium, "paid_social");
+    assert.equal(input.utmCampaign, "beta_test_001");
+    assert.equal("extra" in input, false);
   });
 });
 
@@ -199,7 +265,13 @@ describe("marketing events", () => {
 });
 
 describe("layout helpers", () => {
-  it("CTA destination is /trial", () => {
-    assert.equal("/trial", "/trial");
+  it("CTA destination builder preserves UTM and omits extras", () => {
+    assert.equal(
+      buildTrialHref(
+        "?utm_source=facebook&utm_medium=paid_social&utm_campaign=beta_test_001&fbclid=x",
+      ),
+      "/trial?utm_source=facebook&utm_medium=paid_social&utm_campaign=beta_test_001",
+    );
+    assert.equal(buildTrialHref(""), "/trial");
   });
 });

@@ -37,12 +37,19 @@ describe("marketing layout split", () => {
     assert.match(page, /TrialLeadsCrm/);
   });
 
-  it("sales page links CTA to /trial", () => {
+  it("sales page CTAs use the shared trial destination builder", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    assert.match(sales, /href="\/trial"/);
+    const nav = readFileSync(
+      resolve(root, "components/marketing/MarketingNav.tsx"),
+      "utf8",
+    );
+    assert.match(sales, /MarketingTrialLink/);
+    assert.match(nav, /MarketingTrialLink/);
+    assert.doesNotMatch(sales, /href="\/trial"/);
+    assert.doesNotMatch(nav, /href="\/trial"/);
     assert.doesNotMatch(sales, /variant="trial"/);
   });
 
