@@ -102,6 +102,42 @@ Insights and feature requests do not independently authorize engineering work ([
 | Product implication | Engineering/Cursor must not treat INS-*, HYP-*, or informal requests as implementation tickets. |
 | Revisit condition | A later operating-model change, recorded as a new PD. |
 
+## PD-009
+
+| | |
+|---|---|
+| Date | 2026-09-15 |
+| Status | Accepted |
+| Decision | Initial acquisition uses an **Assisted 30-Day Pilot**, not an open self-service Free Trial. |
+| Reason | The immediate goal is to qualify approximately five real barber shops, assist setup, observe real usage, and validate willingness to continue at 599 THB/month. An open free trial would mix low-intent signups with the validation cohort and weaken interpretation of Pilot results. |
+| Evidence / source | Explicit Founder approval following BarberQx Alignment Plan v1, synthesized from Marketing, Product, and UX/UI Alignment Audits. This is an operating decision, not customer evidence. |
+| Product implication | Public acquisition, `/trial`, CTA expectations, lead handling, and assisted onboarding must describe one coherent Pilot program. Do not present BarberQx as an open self-service 30-day trial during this validation phase. |
+| Revisit condition | After the first qualified Pilot cohort produces enough evidence to reconsider acquisition motion. |
+
+## PD-010
+
+| | |
+|---|---|
+| Date | 2026-09-15 |
+| Status | Accepted |
+| Decision | Customers enter booking from the **shop's own LINE OA**; BarberQx provides the booking platform; shop branding remains primary; any BarberQx/system confirmation messaging must be represented according to the actual sender. Do not imply that a message comes from the shop's own OA unless that is actually implemented. |
+| Reason | LINE-first adoption and merchant-first trust require the product and marketing to distinguish the shop relationship from platform/system messaging truthfully. |
+| Evidence / source | Explicit Founder approval plus repository inspection during Product Alignment Audit. Current architecture is the truth for Sprint 1; this decision does not authorize new tenant-specific LINE messaging architecture. |
+| Product implication | Sprint 1 may align UX/copy with current messaging behavior, but must not redesign LINE auth, LIFF identity, tenant messaging architecture, or shop ownership boundaries. PD-006 still prohibits pre-appointment reminder claims. |
+| Revisit condition | A later Founder/Product decision explicitly approves a different messaging architecture based on validated need. |
+
+## PD-011
+
+| | |
+|---|---|
+| Date | 2026-09-15 |
+| Status | Accepted |
+| Decision | “Up to 10 barbers” is an **unvalidated commercial/package hypothesis** during Pilot and must not be strengthened into a public product promise. |
+| Reason | The initial ICP is approximately 2–8 barbers and there is no customer evidence yet establishing 10 barbers as a meaningful or validated package boundary. |
+| Evidence / source | Explicit Founder approval; [PD-003](#pd-003); current Pilot-stage evidence rules. |
+| Product implication | Keep any underlying implementation limit separate from positioning. Public acquisition should not use the 10-barber cap as proof, differentiation, or validated packaging until Product/Founder revisit it. |
+| Revisit condition | Pilot usage and commercial evidence justify a deliberate packaging decision. |
+
 ---
 
 ## Constraints (not tickets)
