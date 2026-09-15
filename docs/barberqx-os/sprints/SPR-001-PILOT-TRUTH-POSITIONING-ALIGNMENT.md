@@ -17,7 +17,7 @@
 | Engineering report | [RPT-001-ENG](../reports/RPT-001-ENG.md) |
 | P0? | No |
 
-> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Engineering completed SPR-001 against UX-001. Sprint is **READY_FOR_QA**. QA owns PASS. Do not create SPR-002.
+> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Engineering completed the QA FAQ sender-claim fix. Sprint is **READY_FOR_QA**. QA owns PASS. Do not create SPR-002.
 
 ---
 
@@ -439,6 +439,8 @@ Repository verification also supports UX-001's statement that BarberQx does not 
 - `UX_APPROVED` → **READY_FOR_ENGINEERING** via Product review on 2026-09-15
 - `READY_FOR_ENGINEERING` → **IMPLEMENTED** via Engineering + [RPT-001-ENG](../reports/RPT-001-ENG.md) on 2026-09-15 (sender-neutral Add Friend fallback after Product resolved the LINE sender blocker)
 - `IMPLEMENTED` → **READY_FOR_QA** via Engineering verification on 2026-09-15
+- `READY_FOR_QA` → **IMPLEMENTED** via QA FAIL on 2026-09-16 (public FAQ 5 named BarberQx LINE OA while sender identity is unverified)
+- `IMPLEMENTED` → **READY_FOR_QA** via Engineering FAQ 5 sender-neutral fix + updated [RPT-001-ENG](../reports/RPT-001-ENG.md) on 2026-09-16
 
 QA owns **PASS**. Do not mark PASS in this record.
 
@@ -568,7 +570,7 @@ If any of those files/behaviors must change, stop and return to Product before p
 
 **READY_FOR_QA**
 
-Engineering completed SPR-001 against UX-001, including the Product-approved unverified-sender Add Friend fallback. Report: [RPT-001-ENG](../reports/RPT-001-ENG.md).
+QA FAIL on public FAQ 5 sender claim is fixed with sender-neutral `marketing.faq.5.a`. Report: [RPT-001-ENG](../reports/RPT-001-ENG.md).
 
 Sender identity remains **unverified** from deployment configuration. Brand-specific BarberQx sender wording was not shipped. LINE architecture was not changed.
 

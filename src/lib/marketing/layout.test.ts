@@ -157,4 +157,24 @@ describe("visible marketing claim locks", () => {
     assert.doesNotMatch(th, /รายได้เพิ่มขึ้น|ไม่มาตามนัด/i);
     assert.doesNotMatch(en, /reminder before|before your appointment/i);
   });
+
+  it("public marketing values do not name an unverified LINE sender", () => {
+    const th = visibleValues("marketing.", "th");
+    const en = visibleValues("marketing.", "en");
+    assert.doesNotMatch(th, /BarberQx LINE OA/);
+    assert.doesNotMatch(en, /BarberQx LINE OA/i);
+    assert.doesNotMatch(th, /ข้อความยืนยันการจองผ่าน BarberQx/);
+    assert.doesNotMatch(en, /confirmation messages through the BarberQx/i);
+    assert.doesNotMatch(th, /ข้อความ(?:ยืนยัน)?(?:การจอง)?(?:ผ่าน|จาก) LINE OA ของร้าน/);
+    assert.doesNotMatch(en, /shop(?:'s)? (?:LINE )?OA as sender/i);
+    assert.doesNotMatch(en, /(?:messages?|confirmation) through the shop(?:'s)? LINE OA/i);
+    assert.equal(
+      dictionary.th["marketing.faq.5.a"],
+      "หลังจอง คิวของคุณถูกบันทึกในระบบแล้ว ข้อความเพิ่มเติมใน LINE เป็นทางเลือก และไม่กระทบสถานะการจอง",
+    );
+    assert.equal(
+      dictionary.en["marketing.faq.5.a"],
+      "After you book, your queue is saved in the system. Any extra LINE message is optional and does not affect your booking status.",
+    );
+  });
 });
