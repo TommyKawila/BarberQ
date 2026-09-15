@@ -4,7 +4,7 @@ Booking platform for barber shops. Thai pronunciation: **บาร์เบอ�
 
 BarberQx is the platform, not the shop. On customer pages the merchant brand comes first; BarberQx stays a small platform signature. Brand rules live in [`docs/BRAND.md`](docs/BRAND.md). Cursor/agent brand workflow lives in [`README_FOR_CURSOR.txt`](README_FOR_CURSOR.txt).
 
-Deeper write-ups (architecture, security, pilot) should go under `/docs` later — this README is the map, not the full spec.
+Product OS: [`docs/barberqx-os/README.md`](docs/barberqx-os/README.md). This README is the map, not the full spec.
 
 ## Product
 
@@ -47,6 +47,7 @@ src/lib/            booking, auth, shop, data (memory + supabase)
 src/types/          shared types
 supabase/migrations SQL + Storage buckets
 docs/BRAND.md       brand system
+docs/barberqx-os/   product operating system
 public/brand/       approved BarberQx assets
 ```
 
