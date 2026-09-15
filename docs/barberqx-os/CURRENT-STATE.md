@@ -1,6 +1,6 @@
 # Current state
 
-**Last updated:** 2026-09-15
+**Last updated:** 2026-09-16
 
 **Phase:** Pre-Pilot / Pilot Readiness
 
@@ -12,7 +12,7 @@ This is an operational snapshot, not a second README. Runbook and stack: [`../..
 
 **Product:** Make the core booking experience reliable and simple enough for real barbershops and customers to use with minimal handholding.
 
-**Marketing:** Complete conversion-ready Sales Page and prepare founder-led customer acquisition.
+**Marketing:** Use the aligned Assisted 30-Day Pilot acquisition flow and prepare founder-led customer acquisition.
 
 **Sales strategy:** Founder-led sales before scaling paid acquisition.
 
@@ -27,18 +27,39 @@ These are targets, not measured results.
 
 ## Known product truth
 
-**Scheduled pre-appointment reminders are NOT currently implemented.** Do not claim them. [HYP-005](./02-CUSTOMER-INSIGHTS.md) is a hypothesis only.
+- Initial acquisition is an **Assisted 30-Day Pilot**, not an open self-service Free Trial ([PD-009](./04-PRODUCT-DECISIONS.md#pd-009)).
+- Customers enter booking from the shop's own LINE OA; BarberQx is the booking platform and shop identity remains primary ([PD-010](./04-PRODUCT-DECISIONS.md#pd-010)).
+- Deployed LINE sender identity is not verified from repository/config alone. Customer Add Friend / extra LINE messaging copy therefore uses the approved **sender-neutral** representation; it does not claim BarberQx or the shop OA is the sender.
+- **Scheduled pre-appointment reminders are NOT currently implemented.** Do not claim them. [HYP-005](./02-CUSTOMER-INSIGHTS.md) is a hypothesis only.
+- “Up to 10 barbers” remains an unvalidated commercial/package hypothesis and is not a public product promise ([PD-011](./04-PRODUCT-DECISIONS.md#pd-011)).
 
 ## What exists (inventory)
 
 Status: **`0.1.0`, private.** Local prototype mode (memory store / LINE mock) is for development only.
 
-- **Customer:** book at `/{shopSlug}` (barber, date, time, confirm); view/cancel at `/{shopSlug}/bookings`; LINE Login; shop cover/name; optional barber photos.
+- **Customer:** book at `/{shopSlug}` (barber, date, time, confirm); view/cancel at `/{shopSlug}/bookings`; LINE Login; shop cover/name; optional barber photos; optional sender-neutral LINE Add Friend prompt where configured.
 - **Owner:** today board, team, stats; schedule, settings, customer booking; shop name/cover/logo/LINE/phone/hours; claim via `/owner/join`; setup / LINE OA help under `/{shopSlug}/admin/setup`.
 - **Barber:** today board, own schedule, customer booking.
-- **Platform:** `/superadmin` (invites, LINE OA requests, trial leads); `/pilot`; marketing sales page + `/trial`.
+- **Platform:** `/superadmin` (invites, LINE OA requests, Pilot Applications visible terminology over the existing trial-lead workflow); `/pilot`; marketing Sales Page + `/trial` Pilot application.
 
 Staff-assisted booking may still exist when operationally useful.
+
+## Locked alignment baseline
+
+[SPR-001 — Pilot Truth & Positioning Alignment](./sprints/SPR-001-PILOT-TRUTH-POSITIONING-ALIGNMENT.md) is **LOCKED** after QA PASS.
+
+The locked result includes:
+
+- Assisted 30-Day Pilot framing across scoped acquisition surfaces;
+- `/trial` as application → contact/qualification → assisted setup, not instant self-service activation;
+- 599 THB/month/shop framed as the working post-Pilot continuation price to validate;
+- no public 10-barber package promise;
+- no unsupported adoption/social-proof claim on the scoped path;
+- sender-neutral LINE fallback while sender identity remains unverified;
+- no reminder/no-show claims;
+- unchanged booking/auth/LIFF/tenant/concurrency/security boundaries and unchanged CTA destinations.
+
+Engineering report: [`reports/RPT-001-ENG.md`](./reports/RPT-001-ENG.md). QA report: [`reports/RPT-001-QA.md`](./reports/RPT-001-QA.md).
 
 ## Architecture (where it lives)
 
@@ -53,6 +74,7 @@ Staff-assisted booking may still exist when operationally useful.
 - willingness to pay remains unvalidated
 - feature creep before Pilot evidence
 - over-polishing before real usage
+- deployed global LINE sender identity remains unverified; do not infer or claim sender identity without explicit verification/Product review
 
 ## Current priority
 
