@@ -24,8 +24,8 @@ This is not a feature or aesthetic-redesign handoff.
 | Sales Page: outcome and barber-specific differentiation | **CHANGE** | Clarify customer self-books → shop still controls the queue, using shipped capability only. |
 | Sales Page: adoption/social-proof copy | **REMOVE** | Remove wording equivalent to “Why barbershops choose BarberQx.” |
 | `/trial`: pre-submit, form, success state | **CHANGE** | Make qualification and assisted setup clear; submitting is not instant account access. |
-| Booking success: Add Friend/system-message card | **CHANGE** | Identify BarberQx as platform/system-message sender. |
-| My Bookings: Add Friend prompt | **CHANGE** | Remove reminder/notification implication; describe confirmation from BarberQx system only. |
+| Booking success: Add Friend/system-message card | **CHANGE** | Identify BarberQx as sender only when verified; otherwise use the Product-approved sender-neutral fallback. |
+| My Bookings: Add Friend prompt | **CHANGE** | Remove reminder/notification implication; identify BarberQx as sender only when verified; otherwise use the Product-approved sender-neutral fallback. |
 | Trial Lead / Super Admin visible wording | **CHANGE** | Use Pilot terminology only; preserve workflow/data model. |
 | Customer flow: shop → barber → date → time → confirm | **KEEP** | No workflow redesign. |
 | Shop-first customer branding | **KEEP** | Merchant identity remains primary; BarberQx is subtle platform signature. |
@@ -115,7 +115,7 @@ Success state:
 
 Keep booking success, booking details, shop name, and customer action order unchanged.
 
-Where an optional Add Friend/system-message card is shown, use:
+**Verified sender:** where an optional Add Friend/system-message card is shown, use:
 
 Heading:
 
@@ -133,9 +133,31 @@ Reassurance:
 
 > ไม่บังคับ • คิวของคุณยืนยันแล้ว
 
-Replace any Add Friend wording that says or implies “แจ้งเตือน” with:
+**Unverified sender:** use this Product-approved sender-neutral fallback. Do not name BarberQx or the shop as the LINE sender. Do not claim that adding the account guarantees a confirmation message.
 
-> รับข้อความยืนยันการจองจากระบบ BarberQx
+Booking Success — TH:
+
+> เพิ่มเพื่อนใน LINE  
+> หากต้องการ คุณสามารถเพิ่มเพื่อนผ่านลิงก์นี้ได้ โดยไม่กระทบสถานะการจอง  
+> เพิ่มเพื่อนใน LINE  
+> ไม่บังคับ • คิวของคุณยืนยันแล้ว
+
+Booking Success — EN:
+
+> Add on LINE  
+> If you'd like, you can add this LINE account. This does not affect your booking status.  
+> Add on LINE  
+> Optional • Your booking is confirmed
+
+My Bookings — TH:
+
+> เพิ่มเพื่อนใน LINE  
+> ไม่บังคับ • การจองของคุณยืนยันแล้ว
+
+My Bookings — EN:
+
+> Add on LINE  
+> Optional • Your booking is confirmed
 
 Do not imply that messages are from the shop's LINE OA. Do not claim pre-appointment reminders, no-show prevention, or automatic alerts.
 
@@ -157,7 +179,7 @@ Do not change statuses, fields, data model, filters, notes, automation, or creat
 - A prospect understands they are applying for a small, assisted Pilot—not receiving unattended self-service access.
 - A qualified shop owner expects contact, qualification, and help with setup before activation.
 - The shop's own LINE OA is the entry point for booking.
-- A customer understands the booking is with the shop; optional system confirmation messaging comes from BarberQx as the platform.
+- A customer understands the booking is with the shop. Optional Add Friend copy names BarberQx as the LINE sender only when that identity is verified; otherwise it uses the approved sender-neutral fallback.
 - The shop continues to own its identity and control each barber’s queue.
 - `฿599/month/shop` is the working post-Pilot continuation price to test, not proven market pricing.
 
@@ -175,7 +197,7 @@ Verify all changed surfaces at **375px, 390px, 430px, and desktop**.
 
 - Preserve semantic labels, focus states, and keyboard-accessible controls.
 - Present Pilot expectations and after-submit state as text, not icon-only treatment.
-- Nearby text must identify BarberQx as the sender of optional platform/system messages; color alone must not carry this distinction.
+- Nearby text may identify BarberQx as the sender of optional platform/system messages only when sender identity is verified; otherwise use the approved sender-neutral fallback. Color alone must not carry sender identity.
 - Ensure muted copy remains readable on dark surfaces.
 - Preserve existing booking validation, conflict, and cancellation feedback.
 
@@ -215,13 +237,11 @@ Do not change:
 5. Unsupported customer-adoption/social-proof claims are removed.
 6. Existing product mechanisms communicate: customer chooses barber/date/time; shop still sees and controls the queue.
 7. Shop LINE OA remains the stated booking entry point; merchant identity remains primary on customer surfaces.
-8. Customer-facing Add Friend/system-message wording explicitly identifies BarberQx as the platform/system sender.
+8. Add Friend/system-message wording must identify the sender only when sender identity is verified; otherwise use the approved sender-neutral fallback.
 9. No reminder, pre-appointment alert, or no-show-reduction claim appears.
 10. No code change is required to booking logic, LINE/LIFF/auth, sender behavior, tenancy, authorization, or protected technical boundaries.
 11. All affected screens are reviewed at 375px, 390px, 430px, and desktop before QA.
 
 ## 10. Product blocker
 
-**None identified.**
-
-PD-009, PD-010, and PD-011 resolve the Product decisions required for this UX proposal. If implementation review finds that sender identity cannot be represented truthfully without changing actual LINE behavior or architecture, return that issue to Product as `NEEDS_PRODUCT_REVIEW`; do not expand SPR-001.
+**Resolved — 2026-09-15.** Sender identity remains unverified from deployment configuration. Product approved the sender-neutral fallback in §C (Unverified sender). Do not expand SPR-001 into LINE architecture.

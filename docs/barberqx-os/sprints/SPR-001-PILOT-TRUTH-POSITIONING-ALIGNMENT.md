@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-15 |
-| State | **READY_FOR_ENGINEERING** |
+| State | **READY_FOR_QA** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -12,11 +12,12 @@
 | Product review | **APPROVED — 2026-09-15** |
 | Source / rationale type | Product Decisions + explicit Founder-approved operational requirement |
 | Source / rationale | BarberQx Alignment Plan v1 (Marketing + Product + UX/UI audits), Founder approval, [PD-009](../04-PRODUCT-DECISIONS.md#pd-009), [PD-010](../04-PRODUCT-DECISIONS.md#pd-010), [PD-011](../04-PRODUCT-DECISIONS.md#pd-011) |
-| Next allowed transition | `IMPLEMENTED` after Engineering completes this Sprint only and creates `RPT-001-ENG` |
-| Engineering authorized now? | **Yes — SPR-001 scope only** |
+| Next allowed transition | `PASS` by QA, or reject to `IMPLEMENTED` |
+| Engineering authorized now? | Complete — awaiting QA |
+| Engineering report | [RPT-001-ENG](../reports/RPT-001-ENG.md) |
 | P0? | No |
 
-> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Product has accepted UX-001. Engineering / Cursor may now implement **only** the scope defined by this Sprint and UX-001. No other Product or roadmap work is authorized.
+> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Engineering completed SPR-001 against UX-001. Sprint is **READY_FOR_QA**. QA owns PASS. Do not create SPR-002.
 
 ---
 
@@ -436,6 +437,10 @@ Repository verification also supports UX-001's statement that BarberQx does not 
 - `READY_FOR_UX` → UX recommendation `UX_APPROVED` via UX-001
 - UX-001 → **Product-approved**
 - `UX_APPROVED` → **READY_FOR_ENGINEERING** via Product review on 2026-09-15
+- `READY_FOR_ENGINEERING` → **IMPLEMENTED** via Engineering + [RPT-001-ENG](../reports/RPT-001-ENG.md) on 2026-09-15 (sender-neutral Add Friend fallback after Product resolved the LINE sender blocker)
+- `IMPLEMENTED` → **READY_FOR_QA** via Engineering verification on 2026-09-15
+
+QA owns **PASS**. Do not mark PASS in this record.
 
 ---
 
@@ -561,8 +566,10 @@ If any of those files/behaviors must change, stop and return to Product before p
 
 ## 18. State
 
-**READY_FOR_ENGINEERING**
+**READY_FOR_QA**
 
-Engineering / Cursor is authorized to implement SPR-001 only, using UX-001 as the approved handoff and the constraints above.
+Engineering completed SPR-001 against UX-001, including the Product-approved unverified-sender Add Friend fallback. Report: [RPT-001-ENG](../reports/RPT-001-ENG.md).
 
-STOP before Engineering execution in Product review.
+Sender identity remains **unverified** from deployment configuration. Brand-specific BarberQx sender wording was not shipped. LINE architecture was not changed.
+
+STOP. QA owns PASS. Do not create SPR-002.

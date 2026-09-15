@@ -218,6 +218,9 @@ export function TrialForm() {
           <p className="mt-6 text-sm leading-relaxed text-zinc-400">
             {t("marketing.trial.afterSubmit")}
           </p>
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            {t("marketing.trial.priceExpect")}
+          </p>
         </div>
 
         <div className="w-full max-w-[480px] justify-self-stretch rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 md:justify-self-end md:p-7">

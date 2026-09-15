@@ -55,6 +55,9 @@ export function SalesHero() {
                 {t("marketing.hero.secondary")}
               </a>
             </div>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              {t("marketing.hero.ctaExpect")}
+            </p>
             <ul className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
               {HERO_TRUST.map((n) => (
                 <li

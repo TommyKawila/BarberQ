@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { dictionary } from "@/lib/i18n/dictionary";
 
 const root = resolve(import.meta.dirname, "../..");
 
@@ -56,6 +57,7 @@ describe("marketing layout split", () => {
     assert.match(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /hero-phone-hand\.png/);
     assert.match(hero, /from "next\/image"/);
+    assert.match(hero, /marketing\.hero\.ctaExpect/);
     assert.doesNotMatch(hero, /HeroPhoneMockups/);
     assert.match(nav, /MarketingTrialLink/);
     assert.doesNotMatch(sales, /href="\/trial"/);
@@ -126,7 +128,33 @@ describe("marketing layout split", () => {
     assert.match(trial, /variant="trial"/);
     assert.match(trial, /noValidate/);
     assert.match(trial, /marketing.trial.backHome/);
+    assert.match(trial, /marketing.trial.priceExpect/);
     assert.doesNotMatch(trial, /← Home/);
     assert.match(nav, /variant === "trial"/);
+  });
+});
+
+function visibleValues(prefix: string, locale: "th" | "en"): string {
+  return Object.entries(dictionary[locale])
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, value]) => value)
+    .join("\n");
+}
+
+describe("visible marketing claim locks", () => {
+  it("public marketing values have no free trial, 10-barber package, or social-proof claims", () => {
+    const th = visibleValues("marketing.", "th");
+    const en = visibleValues("marketing.", "en");
+    assert.match(th, /สมัครเข้าร่วม Pilot 30 วัน/);
+    assert.match(th, /หลังจบ Pilot หากเลือกใช้งานต่อ ราคาอยู่ที่ ฿599 \/ เดือน \/ ร้าน/);
+    assert.doesNotMatch(th, /ทดลองใช้ฟรี/);
+    assert.doesNotMatch(en, /free trial/i);
+    assert.doesNotMatch(th, /ทำไมร้านตัดผมเลือก/);
+    assert.doesNotMatch(en, /why barbershops choose/i);
+    assert.doesNotMatch(th, /ประมาณ 10 คน|สูงสุด 10 คน/);
+    assert.doesNotMatch(en, /up to about 10 barbers|up to 10 barbers/i);
+    assert.doesNotMatch(en, /about 10 barbers per shop/i);
+    assert.doesNotMatch(th, /รายได้เพิ่มขึ้น|ไม่มาตามนัด/i);
+    assert.doesNotMatch(en, /reminder before|before your appointment/i);
   });
 });

@@ -58,6 +58,8 @@ describe("booking success source", () => {
       "booking.successReminderBody",
       "booking.successAddFriend",
       "booking.successReminderHint",
+      "booking.addFriendSecondary",
+      "booking.addBarberqFriend",
     ] as const;
     for (const key of keys) {
       assert.match(dictionary.th[key], /\S/);
@@ -66,8 +68,38 @@ describe("booking success source", () => {
       assert.doesNotMatch(dictionary.en[key], /before your appointment/i);
       assert.doesNotMatch(dictionary.th[key], /รับแจ้งเตือนก่อนถึงเวลา/);
       assert.doesNotMatch(dictionary.th[key], /เตือนก่อนนัด/);
+      assert.doesNotMatch(dictionary.th[key], /แจ้งเตือน/);
+      assert.doesNotMatch(dictionary.en[key], /notification|reminder|alert/i);
+      assert.doesNotMatch(dictionary.th[key], /BarberQx|BarberQ/);
+      assert.doesNotMatch(dictionary.en[key], /BarberQx|BarberQ/);
+      assert.doesNotMatch(dictionary.th[key], /ร้าน/);
+      assert.doesNotMatch(dictionary.en[key], /\bshop\b/i);
+      assert.doesNotMatch(dictionary.th[key], /ไม่มาตามนัด/);
+      assert.doesNotMatch(dictionary.en[key], /no-show/i);
     }
-    assert.equal(dictionary.th["booking.successReminderTitle"], "รับข้อความยืนยันผ่าน LINE");
+    assert.equal(dictionary.th["booking.successReminderTitle"], "เพิ่มเพื่อนใน LINE");
+    assert.equal(
+      dictionary.th["booking.successReminderBody"],
+      "หากต้องการ คุณสามารถเพิ่มเพื่อนผ่านลิงก์นี้ได้ โดยไม่กระทบสถานะการจอง",
+    );
+    assert.equal(dictionary.th["booking.successAddFriend"], "เพิ่มเพื่อนใน LINE");
     assert.equal(dictionary.th["booking.successReminderHint"], "ไม่บังคับ • คิวของคุณยืนยันแล้ว");
+    assert.equal(dictionary.th["booking.addBarberqFriend"], "เพิ่มเพื่อนใน LINE");
+    assert.equal(dictionary.th["booking.addFriendSecondary"], "ไม่บังคับ • การจองของคุณยืนยันแล้ว");
+    assert.equal(dictionary.en["booking.successReminderTitle"], "Add on LINE");
+    assert.equal(
+      dictionary.en["booking.successReminderBody"],
+      "If you'd like, you can add this LINE account. This does not affect your booking status.",
+    );
+    assert.equal(dictionary.en["booking.successAddFriend"], "Add on LINE");
+    assert.equal(dictionary.en["booking.successReminderHint"], "Optional • Your booking is confirmed");
+    assert.equal(dictionary.en["booking.addBarberqFriend"], "Add on LINE");
+    assert.equal(dictionary.en["booking.addFriendSecondary"], "Optional • Your booking is confirmed");
+  });
+
+  it("visible Add Friend copy has no notification implication", () => {
+    assert.doesNotMatch(dictionary.th["booking.addFriendSecondary"], /แจ้งเตือน/);
+    assert.doesNotMatch(dictionary.en["booking.addFriendSecondary"], /notification/i);
+    assert.equal(dictionary.th["booking.addFriendSecondary"], "ไม่บังคับ • การจองของคุณยืนยันแล้ว");
   });
 });
