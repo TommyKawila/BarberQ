@@ -26,12 +26,15 @@ Insights, hypotheses, and feature requests do **not** authorize engineering work
 - [03-PRODUCT-ROADMAP.md](./03-PRODUCT-ROADMAP.md) — now / candidates / later / not now
 - [04-PRODUCT-DECISIONS.md](./04-PRODUCT-DECISIONS.md) — product decision log
 - [CURRENT-STATE.md](./CURRENT-STATE.md) — operational snapshot
+- [sprints/SPR-001-PILOT-TRUTH-POSITIONING-ALIGNMENT.md](./sprints/SPR-001-PILOT-TRUTH-POSITIONING-ALIGNMENT.md) — active delivery item; state owned by the Sprint artifact
 
-## Workflow folders (not created yet)
+## Workflow folders
 
-`sprints/`, `handoffs/`, and `reports/` will appear in this directory when the first real workflow artifact exists.
+- `sprints/` now exists because the first real Sprint artifact has been opened.
+- `handoffs/` must not be created until the first real UX handoff exists.
+- `reports/` must not be created until the first real Engineering / QA report exists.
 
-Do not create placeholder files or empty directories for those areas.
+Do not create placeholder files or empty workflow directories.
 
 ## Other sources of truth (do not duplicate here)
 
