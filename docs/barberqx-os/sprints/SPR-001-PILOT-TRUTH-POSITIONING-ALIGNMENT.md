@@ -3,18 +3,20 @@
 | | |
 |---|---|
 | Date opened | 2026-09-15 |
-| State | **READY_FOR_UX** |
+| State | **READY_FOR_ENGINEERING** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
 | Founder approval | **Approved — 2026-09-15** |
+| UX handoff | [UX-001 — Pilot Truth & Positioning Alignment](../handoffs/UX-001-PILOT-TRUTH-POSITIONING-ALIGNMENT.md) — **Product-approved** |
+| Product review | **APPROVED — 2026-09-15** |
 | Source / rationale type | Product Decisions + explicit Founder-approved operational requirement |
 | Source / rationale | BarberQx Alignment Plan v1 (Marketing + Product + UX/UI audits), Founder approval, [PD-009](../04-PRODUCT-DECISIONS.md#pd-009), [PD-010](../04-PRODUCT-DECISIONS.md#pd-010), [PD-011](../04-PRODUCT-DECISIONS.md#pd-011) |
-| Next allowed transition | `UX_APPROVED` after linked `UX-001` satisfies this Sprint |
-| Engineering authorized now? | **No** |
+| Next allowed transition | `IMPLEMENTED` after Engineering completes this Sprint only and creates `RPT-001-ENG` |
+| Engineering authorized now? | **Yes — SPR-001 scope only** |
 | P0? | No |
 
-> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). `READY_FOR_UX` authorizes UX work only. It does **not** authorize Engineering / Cursor implementation.
+> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Product has accepted UX-001. Engineering / Cursor may now implement **only** the scope defined by this Sprint and UX-001. No other Product or roadmap work is authorized.
 
 ---
 
@@ -245,7 +247,7 @@ The following are **not authorized** by SPR-001:
 
 ## 8. Acceptance criteria
 
-SPR-001 may move from `READY_FOR_UX` only when the linked UX artifact demonstrates a minimal design/content solution satisfying all applicable criteria below.
+SPR-001 is accepted for Engineering against the linked UX-001 and the criteria below. Engineering must not reinterpret these criteria as permission to widen scope.
 
 ### Acquisition truth
 
@@ -266,19 +268,21 @@ SPR-001 may move from `READY_FOR_UX` only when the linked UX artifact demonstrat
 9. The user journey clearly preserves the shop as the primary merchant identity and BarberQx as the booking platform.
 10. No customer-facing wording implies that BarberQx/system messaging comes from the shop's own LINE OA unless that is actually true in the current implementation.
 11. No pre-appointment reminder claim appears.
-12. UX does not require new tenant-specific LINE messaging architecture to satisfy the design; if it does, the Sprint returns to Product review instead of expanding scope.
+12. Implementation does not introduce new tenant-specific LINE messaging architecture or sender behavior.
+13. Before brand-specific sender copy such as “รับข้อความยืนยันจาก BarberQx ผ่าน LINE” is shipped, Engineering must verify from deployment/LINE configuration that the configured global Add Friend destination and push-message channel are in fact the BarberQx platform OA/channel. Do not expose tokens/secrets in the report. If that identity cannot be verified, or the Add Friend URL and push channel do not represent the same intended BarberQx platform sender, stop that part of implementation and return `NEEDS_PRODUCT_REVIEW`; do not change LINE architecture inside SPR-001.
 
 ### Pilot operation / evidence
 
-13. The qualified-Pilot operating rule in §5.5 is usable by Founder/operator without inventing additional criteria per lead.
-14. The lightweight evidence protocol in §5.6 is defined and usable before the first Pilot shop activates.
-15. Customer feedback or feature requests are recorded as evidence/requests, not automatically converted into build scope.
+14. The qualified-Pilot operating rule in §5.5 is usable by Founder/operator without inventing additional criteria per lead.
+15. The lightweight evidence protocol in §5.6 is defined and usable before the first Pilot shop activates. No new CRM/evidence database is required by this Sprint.
+16. Customer feedback or feature requests are recorded as evidence/requests, not automatically converted into build scope.
 
 ### Protected baseline
 
-16. Proposed UX changes do not require changes to booking transaction/concurrency logic, tenant isolation, customer booking ownership, owner/barber authorization, or production LINE token verification.
-17. The existing customer booking sequence remains intact unless UX identifies a verified contradiction with this Sprint and returns it to Product.
-18. Merchant/shop identity remains primary on customer-facing booking surfaces.
+17. Proposed implementation does not change booking transaction/concurrency logic, tenant isolation, customer booking ownership, owner/barber authorization, or production LINE token verification behavior.
+18. The existing customer booking sequence remains intact.
+19. Merchant/shop identity remains primary on customer-facing booking surfaces.
+20. Existing CTA destinations remain unchanged unless the approved UX explicitly requires otherwise; UX-001 does not authorize a destination change.
 
 ---
 
@@ -303,20 +307,20 @@ Conversion, activation, and payment outcomes belong to the Pilot itself; they ar
 
 ## 10. UX involvement
 
-**Required.**
+**Completed for this gate.**
 
-UX should:
+Product reviewed [UX-001](../handoffs/UX-001-PILOT-TRUTH-POSITIONING-ALIGNMENT.md) and accepts its KEEP / CHANGE / REMOVE decisions as the minimal UX/copy solution for SPR-001, subject to the sender-identity verification guardrail in §8.13.
 
-- map the smallest set of affected surfaces/states;
-- preserve current mobile hierarchy and working flows where already aligned;
-- propose exact content/information-hierarchy changes needed for Pilot truth;
-- review changed public surfaces at 375 / 390 / 430 widths;
-- preserve shop-first brand hierarchy;
-- identify any LINE sender/identity wording that cannot be made truthful without behavior change;
-- avoid cosmetic redesign unrelated to conversion, trust, or Product truth;
-- produce `UX-001` linked to this Sprint.
+UX-001 preserves:
 
-UX does **not** decide Product truth, price validation, ICP validation, or new feature scope.
+- current mobile hierarchy and booking flow;
+- shop-first brand hierarchy;
+- booking/auth/LIFF/tenant architecture;
+- existing CTA destination;
+- no-reminder truth;
+- no new product capability.
+
+Engineering must implement the approved handoff, not redesign it. Material deviation returns to Product/UX review.
 
 ---
 
@@ -324,11 +328,15 @@ UX does **not** decide Product truth, price validation, ICP validation, or new f
 
 ### Expected risk: Low–Medium
 
-Most approved work should be content/information-hierarchy alignment on existing surfaces.
+Most approved work is content/information-hierarchy alignment on existing surfaces.
+
+### Known verification risk
+
+The repository shows that booking-confirmation push uses a global platform LINE channel token and the Add Friend UI uses a global configured LINE OA URL rather than per-shop credentials. The repository does not itself encode the deployed OA display identity. Therefore brand-specific sender wording is authorized only after the configuration check in §8.13.
 
 ### Risk escalation condition
 
-Risk becomes **High / Product review required** if UX concludes that truthful LINE representation requires changing:
+Risk becomes **High / Product review required** if truthful LINE representation would require changing:
 
 - tenant-specific messaging architecture;
 - LIFF / LINE authentication;
@@ -342,7 +350,7 @@ Those changes are not authorized in SPR-001.
 
 ## 12. Do-not-touch constraints
 
-Protect throughout this Sprint and any later implementation review:
+Protect throughout implementation:
 
 - booking transaction and slot-concurrency behavior;
 - double-booking protection;
@@ -353,39 +361,42 @@ Protect throughout this Sprint and any later implementation review:
 - Super Admin separation;
 - LINE identity/auth verification;
 - LIFF return/auth behavior unless a separately verified defect is escalated;
+- actual booking-confirmation sender behavior;
+- LINE channel/token architecture and per-tenant messaging model;
 - barber availability and schedule logic;
 - existing booking create/cancel reliability;
 - shop-first customer branding;
-- working Sales Page/mobile behavior that is not implicated by this Sprint;
-- current CTA destination unless the approved UX demonstrates that terminology/expectation can no longer remain coherent without a scoped change.
+- working Sales Page/mobile behavior not implicated by UX-001;
+- CTA destinations;
+- Trial Lead statuses, fields, persistence model, filters, notes workflow, and API/data contract;
+- database schema and migrations;
+- environment-variable semantics and secret handling.
 
-Do not refactor protected code merely because SPR-001 touches nearby UI/copy later.
+Do not refactor protected code merely because SPR-001 touches nearby UI/copy. If Engineering believes a protected boundary must change, stop and return to Product instead of implementing that change.
 
 ---
 
 ## 13. Dependencies
 
-Resolved before opening this Sprint:
+Resolved:
 
 - Founder approved Assisted 30-Day Pilot → [PD-009](../04-PRODUCT-DECISIONS.md#pd-009)
 - Founder approved current-architecture LINE truth guardrail → [PD-010](../04-PRODUCT-DECISIONS.md#pd-010)
 - Founder kept 10-barber packaging as unvalidated hypothesis → [PD-011](../04-PRODUCT-DECISIONS.md#pd-011)
 - 599 THB/month remains working price hypothesis → [PD-005](../04-PRODUCT-DECISIONS.md#pd-005)
 - reminder claim prohibition remains active → [PD-006](../04-PRODUCT-DECISIONS.md#pd-006)
+- UX-001 created with UX recommendation `UX_APPROVED`
+- Product review accepted UX-001 on 2026-09-15
 
-Required for next transition:
+Engineering precondition:
 
-- UX reads current implementation and Product/Brand sources.
-- UX creates `UX-001` linked to SPR-001.
-- Product reviews UX strictly against this Sprint and Product Decisions.
-
-Only after Product accepts the UX handoff may SPR-001 move to `UX_APPROVED`, and only after the subsequent Product gate may it move to `READY_FOR_ENGINEERING`.
+- verify the deployed global LINE Add Friend destination / push channel identity before shipping copy that names BarberQx as the actual LINE sender, per §8.13.
 
 ---
 
 ## 14. Unresolved Product decisions
 
-**No unresolved Product decision currently blocks `READY_FOR_UX`.**
+**No unresolved Product decision blocks Engineering from starting the approved non-LINE-architecture work in SPR-001.**
 
 The following remain hypotheses/questions, not Sprint-001 blockers and not build authorization:
 
@@ -398,12 +409,160 @@ The following remain hypotheses/questions, not Sprint-001 blockers and not build
 - whether pre-appointment reminders solve a repeated material no-show problem;
 - whether complex Stats deserve current navigation prominence.
 
-If UX discovers that the current LINE architecture cannot be represented truthfully without behavior change, that becomes a new Product-review question before Engineering; UX must not decide it by expanding this Sprint.
+The only implementation-time verification risk is the actual deployed identity of the global LINE Add Friend/push channel. If it is not verifiably the BarberQx platform sender assumed by UX-001, that LINE copy is blocked and must return to Product review; this does not authorize sender/architecture changes.
 
 ---
 
-## 15. State
+## 15. Product review of UX-001
 
-**READY_FOR_UX**
+### Result
 
-STOP before Engineering.
+**APPROVED — READY_FOR_ENGINEERING**
+
+Product verified that UX-001:
+
+1. stays inside SPR-001 scope;
+2. respects PD-009 Assisted 30-Day Pilot;
+3. respects PD-010 merchant-first LINE entry and truthful platform/system sender representation;
+4. respects PD-011 by removing the public 10-barber package promise rather than strengthening it;
+5. introduces no reminder, no-show, pricing-validation, social-proof, booking-feature, CRM, analytics, or LINE-architecture scope;
+6. preserves booking/auth/LIFF/tenant/security boundaries;
+7. proposes the smallest necessary changes: copy, terminology, information hierarchy, and existing-surface alignment only.
+
+Repository verification also supports UX-001's statement that BarberQx does not ask shops for LINE OA passwords/credentials: the existing LINE OA install-request validation rejects password/credential/token/secret fields. This is not permission to add credential handling.
+
+### State transition record
+
+- `READY_FOR_UX` → UX recommendation `UX_APPROVED` via UX-001
+- UX-001 → **Product-approved**
+- `UX_APPROVED` → **READY_FOR_ENGINEERING** via Product review on 2026-09-15
+
+---
+
+## 16. Exact Engineering scope
+
+Engineering / Cursor is authorized to make the **smallest implementation necessary** to realize UX-001 on existing surfaces.
+
+### 16.1 Sales Page / marketing copy
+
+- replace scoped open Free Trial wording with Assisted 30-Day Pilot wording;
+- align primary/final CTA labels and nearby expectation copy while preserving existing destinations;
+- state assisted qualification/setup expectations truthfully;
+- preserve 599 THB/month/shop as the post-Pilot continuation price to test without implying validated willingness-to-pay;
+- remove visible public “up to 10 barbers” plan/package promise;
+- remove/rewrite unsupported adoption/social-proof wording;
+- strengthen barber-specific differentiation only with shipped mechanisms already named in UX-001;
+- preserve existing layout/components unless minimal content fit requires a local spacing/text-wrap adjustment.
+
+### 16.2 `/trial` application surface
+
+- change visible Free Trial terminology to Pilot application terminology;
+- add approved assisted-qualification/setup expectation before submit and in success state;
+- keep existing form submission route, validation, rate limiting, storage, lead fields, and data model unchanged;
+- do not create accounts or self-service activation behavior;
+- preserve credential-safety behavior and do not request/store LINE OA passwords, tokens, or secrets.
+
+### 16.3 Booking success / My Bookings LINE copy
+
+- change Add Friend/system-message wording to confirmation-only language approved by UX-001;
+- remove reminder/alert/no-show implication;
+- preserve booking success details, shop identity, action order, Add Friend behavior, push behavior, and My Bookings behavior;
+- use brand-specific “BarberQx” sender wording only after the configuration verification required by §8.13;
+- do not alter sender behavior, push logic, channel tokens, LIFF/auth, or per-shop messaging architecture.
+
+### 16.4 Super Admin / Trial Lead terminology
+
+- change visible user-facing labels from Trial terminology to Pilot terminology where specified by UX-001;
+- keep internal statuses, fields, filters, notes, persistence, API contracts, and workflow unchanged;
+- no CRM expansion.
+
+### 16.5 Localization and claim locks
+
+- keep Thai and English/localized variants semantically aligned where the existing surface supports both locales;
+- update/add focused copy/UX tests only where needed to lock the approved Pilot, price, reminder, social-proof, and sender-truth rules;
+- do not turn copy tests into new Product behavior.
+
+No other implementation is authorized.
+
+---
+
+## 17. Required tests and checks
+
+Engineering must report exact commands and results in `RPT-001-ENG`.
+
+### Automated baseline
+
+Run at minimum:
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:security`
+- `npm run test:booking`
+- `npm run test:onboarding`
+- `npm run build`
+
+Existing relevant suites include marketing layout/trial-form/lead tests, LINE OA credential-safety tests, booking-success UX tests, auth/security tests, and onboarding tests. Do not weaken tests to make new copy pass.
+
+### Required claim/copy checks
+
+Verify on scoped surfaces that:
+
+- open self-service Free Trial claims are gone;
+- Assisted 30-Day Pilot expectation is consistent;
+- `/trial` does not imply instant account/system access;
+- 599 THB/month/shop is framed as post-Pilot continuation price, not validated pricing;
+- public “up to 10 barbers” package promise is absent;
+- unsupported adoption/social-proof wording is absent;
+- reminder / pre-appointment alert / no-show-reduction claims are absent;
+- LINE confirmation/Add Friend wording does not imply the shop OA is the sender;
+- brand-specific BarberQx sender wording is used only after §8.13 verification.
+
+### Responsive/manual checks
+
+Review all changed public/customer surfaces at:
+
+- 375px
+- 390px
+- 430px
+- desktop
+
+At minimum check:
+
+- Sales Page affected sections/CTA/pricing/FAQ/final CTA;
+- `/trial` pre-submit, form, validation/error, and success states;
+- booking-success Add Friend/system-message state;
+- My Bookings Add Friend/system-message state;
+- any changed Super Admin/Pilot Applicant labels at representative mobile and desktop widths.
+
+Pass conditions:
+
+- no horizontal overflow;
+- no logo/merchant-brand cropping regression;
+- CTA remains usable and existing destination is unchanged;
+- shop identity/details remain visually above optional BarberQx platform-message UI;
+- critical controls retain existing accessible focus/touch behavior;
+- Thai/English copy does not create contradictory Product truth.
+
+### Protected-boundary regression check
+
+Engineering report must explicitly confirm that the implementation did **not** change:
+
+- booking transaction/concurrency code;
+- auth/LIFF/customer identity code;
+- tenant/shop-scoping logic;
+- booking create/cancel behavior;
+- LINE push sender behavior/channel architecture;
+- database schema/migrations;
+- Trial Lead API/data model/status workflow.
+
+If any of those files/behaviors must change, stop and return to Product before proceeding.
+
+---
+
+## 18. State
+
+**READY_FOR_ENGINEERING**
+
+Engineering / Cursor is authorized to implement SPR-001 only, using UX-001 as the approved handoff and the constraints above.
+
+STOP before Engineering execution in Product review.
