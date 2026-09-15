@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-15 |
-| State | **READY_FOR_QA** |
+| State | **PASS** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -12,12 +12,13 @@
 | Product review | **APPROVED — 2026-09-15** |
 | Source / rationale type | Product Decisions + explicit Founder-approved operational requirement |
 | Source / rationale | BarberQx Alignment Plan v1 (Marketing + Product + UX/UI audits), Founder approval, [PD-009](../04-PRODUCT-DECISIONS.md#pd-009), [PD-010](../04-PRODUCT-DECISIONS.md#pd-010), [PD-011](../04-PRODUCT-DECISIONS.md#pd-011) |
-| Next allowed transition | `PASS` by QA, or reject to `IMPLEMENTED` |
-| Engineering authorized now? | Complete — awaiting QA |
+| Next allowed transition | `LOCKED` by Product |
+| Engineering authorized now? | Complete — QA passed |
 | Engineering report | [RPT-001-ENG](../reports/RPT-001-ENG.md) |
+| QA report | [RPT-001-QA](../reports/RPT-001-QA.md) |
 | P0? | No |
 
-> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Engineering completed the QA FAQ sender-claim fix. Sprint is **READY_FOR_QA**. QA owns PASS. Do not create SPR-002.
+> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Engineering completed the QA FAQ sender-claim fix and QA has **PASSED** SPR-001. Product owns the next transition to `LOCKED`. Do not create SPR-002 as part of this QA decision.
 
 ---
 
@@ -441,8 +442,9 @@ Repository verification also supports UX-001's statement that BarberQx does not 
 - `IMPLEMENTED` → **READY_FOR_QA** via Engineering verification on 2026-09-15
 - `READY_FOR_QA` → **IMPLEMENTED** via QA FAIL on 2026-09-16 (public FAQ 5 named BarberQx LINE OA while sender identity is unverified)
 - `IMPLEMENTED` → **READY_FOR_QA** via Engineering FAQ 5 sender-neutral fix + updated [RPT-001-ENG](../reports/RPT-001-ENG.md) on 2026-09-16
+- `READY_FOR_QA` → **PASS** via QA re-review + [RPT-001-QA](../reports/RPT-001-QA.md) on 2026-09-16
 
-QA owns **PASS**. Do not mark PASS in this record.
+QA has marked **PASS**. Product owns the next transition to `LOCKED`.
 
 ---
 
@@ -568,10 +570,10 @@ If any of those files/behaviors must change, stop and return to Product before p
 
 ## 18. State
 
-**READY_FOR_QA**
+**PASS**
 
-QA FAIL on public FAQ 5 sender claim is fixed with sender-neutral `marketing.faq.5.a`. Report: [RPT-001-ENG](../reports/RPT-001-ENG.md).
+QA re-reviewed commit `31d35d091dafc7f84e345145195d8f1f40e7a1a6`. The public FAQ 5 sender claim is now sender-neutral, the visible marketing sender lock is in place, and the previously approved SPR-001 scope remains intact. Report: [RPT-001-QA](../reports/RPT-001-QA.md).
 
 Sender identity remains **unverified** from deployment configuration. Brand-specific BarberQx sender wording was not shipped. LINE architecture was not changed.
 
-STOP. QA owns PASS. Do not create SPR-002.
+Product owns `PASS` → `LOCKED` under [`WORKFLOW.md`](../WORKFLOW.md).
