@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-15 |
-| State | **PASS** |
+| State | **LOCKED** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -12,13 +12,13 @@
 | Product review | **APPROVED — 2026-09-15** |
 | Source / rationale type | Product Decisions + explicit Founder-approved operational requirement |
 | Source / rationale | BarberQx Alignment Plan v1 (Marketing + Product + UX/UI audits), Founder approval, [PD-009](../04-PRODUCT-DECISIONS.md#pd-009), [PD-010](../04-PRODUCT-DECISIONS.md#pd-010), [PD-011](../04-PRODUCT-DECISIONS.md#pd-011) |
-| Next allowed transition | `LOCKED` by Product |
-| Engineering authorized now? | Complete — QA passed |
+| Next allowed transition | None — Sprint complete |
+| Engineering authorized now? | Complete — Sprint locked |
 | Engineering report | [RPT-001-ENG](../reports/RPT-001-ENG.md) |
 | QA report | [RPT-001-QA](../reports/RPT-001-QA.md) |
 | P0? | No |
 
-> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Engineering completed the QA FAQ sender-claim fix and QA has **PASSED** SPR-001. Product owns the next transition to `LOCKED`. Do not create SPR-002 as part of this QA decision.
+> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). QA passed the approved SPR-001 scope and Product completed the final `PASS` → `LOCKED` review on 2026-09-16. The delivered behavior is now the locked baseline for this Sprint. Do not create SPR-002 as part of this lock decision.
 
 ---
 
@@ -398,7 +398,7 @@ Engineering precondition:
 
 ## 14. Unresolved Product decisions
 
-**No unresolved Product decision blocks Engineering from starting the approved non-LINE-architecture work in SPR-001.**
+**No unresolved Product decision blocks the locked SPR-001 result.**
 
 The following remain hypotheses/questions, not Sprint-001 blockers and not build authorization:
 
@@ -411,7 +411,7 @@ The following remain hypotheses/questions, not Sprint-001 blockers and not build
 - whether pre-appointment reminders solve a repeated material no-show problem;
 - whether complex Stats deserve current navigation prominence.
 
-The only implementation-time verification risk is the actual deployed identity of the global LINE Add Friend/push channel. If it is not verifiably the BarberQx platform sender assumed by UX-001, that LINE copy is blocked and must return to Product review; this does not authorize sender/architecture changes.
+Sender identity remains unverified from deployment configuration. The locked implementation therefore uses the approved sender-neutral fallback and does not ship brand-specific BarberQx sender wording. This does not authorize sender/architecture changes.
 
 ---
 
@@ -443,14 +443,15 @@ Repository verification also supports UX-001's statement that BarberQx does not 
 - `READY_FOR_QA` → **IMPLEMENTED** via QA FAIL on 2026-09-16 (public FAQ 5 named BarberQx LINE OA while sender identity is unverified)
 - `IMPLEMENTED` → **READY_FOR_QA** via Engineering FAQ 5 sender-neutral fix + updated [RPT-001-ENG](../reports/RPT-001-ENG.md) on 2026-09-16
 - `READY_FOR_QA` → **PASS** via QA re-review + [RPT-001-QA](../reports/RPT-001-QA.md) on 2026-09-16
+- `PASS` → **LOCKED** via Product final review on 2026-09-16
 
-QA has marked **PASS**. Product owns the next transition to `LOCKED`.
+QA has marked **PASS** and Product has completed the final lock review.
 
 ---
 
 ## 16. Exact Engineering scope
 
-Engineering / Cursor is authorized to make the **smallest implementation necessary** to realize UX-001 on existing surfaces.
+Engineering / Cursor was authorized to make the **smallest implementation necessary** to realize UX-001 on existing surfaces.
 
 ### 16.1 Sales Page / marketing copy
 
@@ -473,10 +474,10 @@ Engineering / Cursor is authorized to make the **smallest implementation necessa
 
 ### 16.3 Booking success / My Bookings LINE copy
 
-- change Add Friend/system-message wording to confirmation-only language approved by UX-001;
+- change Add Friend/system-message wording to confirmation-only language approved by UX-001/Product fallback;
 - remove reminder/alert/no-show implication;
 - preserve booking success details, shop identity, action order, Add Friend behavior, push behavior, and My Bookings behavior;
-- use brand-specific “BarberQx” sender wording only after the configuration verification required by §8.13;
+- brand-specific BarberQx sender wording was not shipped because sender identity remains unverified;
 - do not alter sender behavior, push logic, channel tokens, LIFF/auth, or per-shop messaging architecture.
 
 ### 16.4 Super Admin / Trial Lead terminology
@@ -491,17 +492,17 @@ Engineering / Cursor is authorized to make the **smallest implementation necessa
 - update/add focused copy/UX tests only where needed to lock the approved Pilot, price, reminder, social-proof, and sender-truth rules;
 - do not turn copy tests into new Product behavior.
 
-No other implementation is authorized.
+No other implementation was authorized.
 
 ---
 
 ## 17. Required tests and checks
 
-Engineering must report exact commands and results in `RPT-001-ENG`.
+Engineering reported exact commands and results in `RPT-001-ENG`; QA independently reviewed the approved scope in `RPT-001-QA`.
 
 ### Automated baseline
 
-Run at minimum:
+Required baseline:
 
 - `npm run lint`
 - `npm run typecheck`
@@ -510,11 +511,11 @@ Run at minimum:
 - `npm run test:onboarding`
 - `npm run build`
 
-Existing relevant suites include marketing layout/trial-form/lead tests, LINE OA credential-safety tests, booking-success UX tests, auth/security tests, and onboarding tests. Do not weaken tests to make new copy pass.
+QA accepted the reported result: typecheck, security, booking, onboarding, focused claim-lock tests, and build pass. Lint continues to fail only on pre-existing unrelated findings, with no new SPR-001 lint finding attributed by QA.
 
 ### Required claim/copy checks
 
-Verify on scoped surfaces that:
+Locked result verifies on scoped surfaces that:
 
 - open self-service Free Trial claims are gone;
 - Assisted 30-Day Pilot expectation is consistent;
@@ -524,37 +525,22 @@ Verify on scoped surfaces that:
 - unsupported adoption/social-proof wording is absent;
 - reminder / pre-appointment alert / no-show-reduction claims are absent;
 - LINE confirmation/Add Friend wording does not imply the shop OA is the sender;
-- brand-specific BarberQx sender wording is used only after §8.13 verification.
+- unverified sender identity uses sender-neutral wording rather than BarberQx-as-sender claims.
 
 ### Responsive/manual checks
 
-Review all changed public/customer surfaces at:
+QA accepted responsive review at:
 
 - 375px
 - 390px
 - 430px
 - desktop
 
-At minimum check:
-
-- Sales Page affected sections/CTA/pricing/FAQ/final CTA;
-- `/trial` pre-submit, form, validation/error, and success states;
-- booking-success Add Friend/system-message state;
-- My Bookings Add Friend/system-message state;
-- any changed Super Admin/Pilot Applicant labels at representative mobile and desktop widths.
-
-Pass conditions:
-
-- no horizontal overflow;
-- no logo/merchant-brand cropping regression;
-- CTA remains usable and existing destination is unchanged;
-- shop identity/details remain visually above optional BarberQx platform-message UI;
-- critical controls retain existing accessible focus/touch behavior;
-- Thai/English copy does not create contradictory Product truth.
+Scoped public/customer surfaces preserve the approved hierarchy, CTA destinations, merchant-first branding, and interaction/accessibility behavior.
 
 ### Protected-boundary regression check
 
-Engineering report must explicitly confirm that the implementation did **not** change:
+QA confirmed the locked implementation did **not** change:
 
 - booking transaction/concurrency code;
 - auth/LIFF/customer identity code;
@@ -564,16 +550,14 @@ Engineering report must explicitly confirm that the implementation did **not** c
 - database schema/migrations;
 - Trial Lead API/data model/status workflow.
 
-If any of those files/behaviors must change, stop and return to Product before proceeding.
-
 ---
 
 ## 18. State
 
-**PASS**
+**LOCKED**
 
-QA re-reviewed commit `31d35d091dafc7f84e345145195d8f1f40e7a1a6`. The public FAQ 5 sender claim is now sender-neutral, the visible marketing sender lock is in place, and the previously approved SPR-001 scope remains intact. Report: [RPT-001-QA](../reports/RPT-001-QA.md).
+QA re-reviewed commit `31d35d091dafc7f84e345145195d8f1f40e7a1a6` and marked SPR-001 **PASS** in [RPT-001-QA](../reports/RPT-001-QA.md). Product reviewed that PASS on 2026-09-16 and completed `PASS` → `LOCKED` under [`WORKFLOW.md`](../WORKFLOW.md).
 
-Sender identity remains **unverified** from deployment configuration. Brand-specific BarberQx sender wording was not shipped. LINE architecture was not changed.
+Sender identity remains **unverified** from deployment configuration. Brand-specific BarberQx sender wording was not shipped. The approved sender-neutral fallback is the locked truth for this Sprint unless a later Product Decision explicitly revisits sender representation.
 
-Product owns `PASS` → `LOCKED` under [`WORKFLOW.md`](../WORKFLOW.md).
+No SPR-002 was created by this lock action.
