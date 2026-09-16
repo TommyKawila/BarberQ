@@ -15,6 +15,7 @@
 | Next allowed transition | `IMPLEMENTED` after authorized Engineering validation is complete and `RPT-002-ENG` exists; zero application-code change is a valid outcome |
 | Engineering authorized now? | **Yes — validation preparation / inspection / testing / diagnosis only** |
 | Feature/code implementation authorized now? | **No — non-P0 code change requires Product classification + explicit authorization first** |
+| Engineering report | [RPT-002-ENG](../reports/RPT-002-ENG.md) — validation prep only; Shop #1 unnamed |
 | P0? | No — unless a qualifying production/security incident is discovered during validation |
 
 > This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Product has accepted UX-002. `READY_FOR_ENGINEERING` in **this validation Sprint** authorizes technical validation work only: inspect, test, prepare the controlled validation environment, support the approved Shop #1 checks, diagnose findings, and report evidence. It does **not** authorize speculative fixes, feature development, onboarding/booking redesign, protected-architecture changes, or SPR-003. Any non-P0 code fix must return to Product for classification and explicit authorization before code changes begin.
@@ -855,6 +856,7 @@ No Product Decision inconsistency was found. `04-PRODUCT-DECISIONS.md` is unchan
 - UX created UX-002 with recommendation `UX_APPROVED`.
 - Product reviewed UX-002 and recorded it **Product-approved** on 2026-09-16.
 - Product transitions SPR-002 from the UX gate to **READY_FOR_ENGINEERING** for validation preparation / technical validation support only.
+- Engineering started validation prep on 2026-09-16 at commit `156baae`. Automated baseline + config inspection recorded in [RPT-002-ENG](../reports/RPT-002-ENG.md). Shop #1 is unnamed (`VAL-002-01` Activation Blocker). State stays **READY_FOR_ENGINEERING**.
 
 ### Cursor authorization
 
@@ -868,10 +870,12 @@ This authorization does **not** include any non-P0 application-code fix.
 
 **READY_FOR_ENGINEERING**
 
-Engineering / Cursor is authorized to inspect, test, prepare the controlled validation, diagnose observed behavior, support the approved Shop #1 checks, and create `RPT-002-ENG`.
+Engineering / Cursor ran validation prep (automated suites + config presence) and created `RPT-002-ENG`. Application code was not changed.
+
+Shop #1 Activation Gate has **not** started. Founder will name the tenant and run the physical LINE in-app path before Engineering may complete this Sprint.
 
 **No feature implementation is authorized. No non-P0 code fix is authorized without a later explicit Product classification and authorization.**
 
-Do not create SPR-003.
+Do not mark `IMPLEMENTED`, `READY_FOR_QA`, or `PASS`. Do not create SPR-003.
 
-STOP before Engineering execution.
+STOP. Remain **READY_FOR_ENGINEERING** until Shop #1 is identified.
