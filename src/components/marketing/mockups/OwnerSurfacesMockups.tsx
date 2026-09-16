@@ -1,10 +1,16 @@
-import { PhoneFrame } from "./PhoneFrame";
+import { PhoneFrame, type PhoneSize } from "./PhoneFrame";
 
-function TodayBoardFrame() {
+const PHONE_MOBILE = "mx-auto w-[min(64vw,268px)]";
+const PHONE_DESKTOP = "mx-auto w-full max-w-[280px]";
+const SCREEN = "flex min-h-[240px] flex-col p-3";
+
+type FrameProps = { size?: PhoneSize; fluid?: boolean; className?: string };
+
+function TodayBoardFrame({ size, fluid, className }: FrameProps) {
   const chips = ["รับคิว", "ปิดรับคิว", "คิววันนี้", "Walk-in"];
   return (
-    <PhoneFrame size="md">
-      <div className="p-3">
+    <PhoneFrame size={size} fluid={fluid} className={className ?? "mx-auto"}>
+      <div className={SCREEN}>
         <p className="text-xs font-semibold text-zinc-100">คิววันนี้</p>
         <p className="text-[10px] text-zinc-500">10 ก.ย. 2026</p>
         <div className="mt-2 flex flex-wrap gap-1">
@@ -27,10 +33,10 @@ function TodayBoardFrame() {
   );
 }
 
-function TeamFrame() {
+function TeamFrame({ size, fluid, className }: FrameProps) {
   return (
-    <PhoneFrame size="md" className="md:-mt-6 md:rotate-1">
-      <div className="p-3">
+    <PhoneFrame size={size} fluid={fluid} className={className ?? "mx-auto"}>
+      <div className={SCREEN}>
         <p className="text-xs font-semibold text-zinc-100">ทีมช่าง</p>
         <div className="mt-2 space-y-1.5">
           {[
@@ -43,25 +49,24 @@ function TeamFrame() {
             </div>
           ))}
         </div>
-        <p className="mt-3 text-[10px] font-medium text-zinc-400">ตารางเวลา · สรุป · ตั้งค่าร้าน</p>
+        <p className="mt-auto pt-3 text-[10px] font-medium text-zinc-400">ตารางเวลา · สรุป · ตั้งค่าร้าน</p>
       </div>
     </PhoneFrame>
   );
 }
 
-export function OwnerSurfacesMockups({ compact }: { compact?: boolean }) {
-  if (compact) {
-    return (
-      <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <TodayBoardFrame />
-        <TeamFrame />
-      </div>
-    );
-  }
+const FRAMES = { queue: TodayBoardFrame, team: TeamFrame } as const;
+
+export function OwnerSurfacePhone({ surface }: { surface: "queue" | "team" }) {
+  const Frame = FRAMES[surface];
   return (
-    <div className="relative flex items-end justify-center gap-4 lg:justify-start">
-      <TodayBoardFrame />
-      <TeamFrame />
-    </div>
+    <>
+      <div className="lg:hidden">
+        <Frame fluid className={PHONE_MOBILE} />
+      </div>
+      <div className="hidden lg:block">
+        <Frame fluid className={PHONE_DESKTOP} />
+      </div>
+    </>
   );
 }

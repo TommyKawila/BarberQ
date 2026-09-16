@@ -3,9 +3,12 @@
 import { useEffect } from "react";
 import Image from "next/image";
 import {
-  ArrowRight,
+  CalendarClock,
   Check,
+  ChevronDown,
+  CircleCheck,
   Clock3,
+  MessageCircle,
   MessageCircleOff,
   Store,
   Users,
@@ -14,8 +17,8 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { SalesHero } from "@/components/marketing/SalesHero";
-import { CustomerJourneyMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
-import { OwnerSurfacesMockups } from "@/components/marketing/mockups/OwnerSurfacesMockups";
+import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
+import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -129,6 +132,193 @@ function CompareCard({
   );
 }
 
+const HOW_ICONS = [MessageCircle, CalendarClock, CircleCheck] as const;
+
+function HowStep({
+  n,
+  title,
+  desc,
+  isLast,
+}: {
+  n: 1 | 2 | 3;
+  title: string;
+  desc: string;
+  isLast: boolean;
+}) {
+  const Icon = HOW_ICONS[n - 1];
+  return (
+    <li
+      className={`relative flex gap-4 pb-8 last:pb-0 lg:flex-col lg:rounded-2xl lg:border lg:p-5 lg:pb-5 ${
+        isLast
+          ? "lg:border-amber-500/30 lg:bg-amber-500/5"
+          : "lg:border-zinc-800 lg:bg-zinc-900/50"
+      }`}
+    >
+      {isLast ? null : (
+        <>
+          <span
+            aria-hidden
+            className="absolute top-7 bottom-0 left-4 w-0.5 -translate-x-1/2 bg-zinc-400 lg:hidden"
+          />
+          <span
+            aria-hidden
+            className="absolute top-10 left-full hidden h-px w-6 bg-zinc-500 lg:block"
+          />
+        </>
+      )}
+      <span className="relative z-10 w-8 shrink-0 text-center text-xl font-bold tabular-nums text-amber-400 lg:mb-3 lg:w-auto lg:text-left lg:text-3xl">
+        {String(n).padStart(2, "0")}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <Icon size={18} className="shrink-0 text-amber-400" strokeWidth={2} />
+          <h3 className="text-lg font-bold leading-snug text-zinc-50 lg:text-lg lg:font-semibold">
+            {title}
+          </h3>
+        </div>
+        <p className="mt-2 text-base leading-[1.65] text-zinc-300 lg:mt-1.5 lg:text-base lg:leading-relaxed">
+          {desc}
+        </p>
+      </div>
+    </li>
+  );
+}
+
+function CustomerJourneyStep({
+  n,
+  title,
+  desc,
+}: {
+  n: 1 | 2 | 3;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <li className="flex flex-col items-center text-center">
+      <span className="text-xl font-bold tabular-nums text-amber-400 lg:text-3xl">
+        {String(n).padStart(2, "0")}
+      </span>
+      <h3 className="mt-2 text-lg font-bold leading-snug text-zinc-50 lg:font-semibold">
+        {title}
+      </h3>
+      <p className={`mt-1.5 ${BODY}`}>{desc}</p>
+      <div className="mt-4">
+        <CustomerStepPhone step={n} />
+      </div>
+    </li>
+  );
+}
+
+function OwnerSurface({
+  label,
+  title,
+  desc,
+  surface,
+}: {
+  label: string;
+  title: string;
+  desc: string;
+  surface: "queue" | "team";
+}) {
+  return (
+    <li className="flex flex-col items-center text-center lg:items-start lg:text-left">
+      <p className="text-sm font-medium text-amber-400/90">{label}</p>
+      <h3 className="mt-2 text-lg font-bold leading-snug text-zinc-50 lg:font-semibold">
+        {title}
+      </h3>
+      <p className={`mt-1.5 ${BODY}`}>{desc}</p>
+      <div className="mt-4 w-full">
+        <OwnerSurfacePhone surface={surface} />
+      </div>
+    </li>
+  );
+}
+
+function BenefitCard({
+  n,
+  title,
+  desc,
+}: {
+  n: 1 | 2 | 3 | 4;
+  title: string;
+  desc: string;
+}) {
+  const Icon = BENEFIT_ICONS[n - 1];
+  const primary = n === 1;
+  return (
+    <li
+      className={`h-full rounded-2xl border p-4 md:p-5 ${
+        primary
+          ? "border-amber-500/30 bg-amber-500/5 lg:p-6"
+          : "border-zinc-800 bg-zinc-900/50 lg:border-transparent lg:bg-transparent lg:p-1"
+      }`}
+    >
+      <Icon size={18} className="text-amber-400 lg:size-7" strokeWidth={2} />
+      <h3 className="mt-3 text-lg font-bold leading-snug text-zinc-50 lg:mt-4 lg:text-xl">{title}</h3>
+      <p className={`mt-2 ${BODY}`}>{desc}</p>
+    </li>
+  );
+}
+
+function FitPoint({
+  n,
+  title,
+  desc,
+}: {
+  n: 1 | 2 | 3;
+  title: string;
+  desc: string;
+}) {
+  const Icon = FIT_ICONS[n - 1];
+  return (
+    <li className="border-b border-zinc-800 py-4 last:border-b-0 last:pb-0 first:pt-0">
+      <div className="flex items-start gap-3">
+        <Icon size={18} className="mt-0.5 shrink-0 text-amber-400" strokeWidth={2} />
+        <div className="min-w-0">
+          <h3 className="text-lg font-bold leading-snug text-zinc-50">{title}</h3>
+          <p className={`mt-1.5 ${BODY}`}>{desc}</p>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function SetupStep({
+  n,
+  title,
+  desc,
+  isLast,
+}: {
+  n: 1 | 2 | 3 | 4;
+  title: string;
+  desc: string;
+  isLast: boolean;
+}) {
+  return (
+    <li
+      className={`relative flex h-full gap-3 pb-6 last:pb-0 md:rounded-xl md:border md:p-4 md:pb-4 ${
+        isLast
+          ? "rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 md:p-4"
+          : "md:border-zinc-800"
+      }`}
+    >
+      {isLast ? null : (
+        <span
+          aria-hidden
+          className="absolute top-8 bottom-0 left-4 w-0.5 -translate-x-1/2 bg-zinc-700 md:hidden"
+        />
+      )}
+      <span className="relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-[11px] font-bold tabular-nums text-amber-400">
+        {String(n).padStart(2, "0")}
+      </span>
+      <div className="min-w-0 flex-1">
+        <h3 className="text-lg font-bold leading-snug text-zinc-50">{title}</h3>
+        <p className={`mt-1.5 ${BODY}`}>{desc}</p>
+      </div>
+    </li>
+  );
+}
+
 function TrialCta({
   label,
   className,
@@ -149,11 +339,12 @@ function TrialCta({
   );
 }
 
-const BENEFIT_ICONS = [MessageCircleOff, Clock3, Users, Store] as const;
+const BENEFIT_ICONS = [MessageCircleOff, Clock3, CalendarClock, Store] as const;
 const BENEFIT_KEYS = [1, 2, 3, 4] as const;
-const BARBER_CHIPS = [1, 2, 3, 4, 5, 6, 7] as const;
+const FIT_ICONS = [Users, MessageCircle, CircleCheck] as const;
+const FIT_KEYS = [1, 2, 3] as const;
 const SETUP_STEPS = [1, 2, 3, 4] as const;
-const PRICING_BENEFITS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const PRICING_BENEFITS = [1, 2, 3, 4, 5, 6] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 
@@ -245,167 +436,284 @@ export function SalesPage() {
       </section>
 
       {/* How it works */}
-      <Section id="how-it-works" title={t("marketing.how.title")} className="bg-zinc-900/30">
-        <ol className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((n) => (
-            <li key={n} className="rounded-2xl border border-zinc-800 p-5">
-              <span className="text-2xl font-bold text-amber-400">0{n}</span>
-              <p className={`mt-2 ${BODY}`}>{t(`marketing.how.${n}` as MessageKey)}</p>
-            </li>
-          ))}
-        </ol>
-      </Section>
-
-      {/* Customer experience */}
-      <Section title={t("marketing.customer.title")}>
-        <div className="grid items-center gap-8 lg:grid-cols-[1fr_1.1fr] lg:gap-10">
-          <p className={`${BODY} md:text-lg`}>{t("marketing.customer.desc")}</p>
-          <div className="hidden lg:block">
-            <CustomerJourneyMockups />
-          </div>
-          <div className="lg:hidden">
-            <CustomerJourneyMockups compact />
-          </div>
-        </div>
-      </Section>
-
-      {/* Owner experience */}
-      <Section title={t("marketing.owner.title")} className="bg-zinc-900/30">
-        <div className="grid items-center gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-10">
-          <div className="order-2 lg:order-1">
-            <div className="hidden lg:block">
-              <OwnerSurfacesMockups />
-            </div>
-            <div className="lg:hidden">
-              <OwnerSurfacesMockups compact />
-            </div>
-          </div>
-          <div className="order-1 lg:order-2">
-            <p className={`${BODY} md:text-lg`}>{t("marketing.owner.desc")}</p>
-          </div>
-        </div>
-      </Section>
-
-      {/* Benefits */}
-      <Section id="features" title={t("marketing.benefits.title")}>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {BENEFIT_KEYS.map((n, i) => {
-            const Icon = BENEFIT_ICONS[i];
-            return (
-              <div
+      <section id="how-it-works" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <p className="text-sm font-medium text-amber-400/90">
+            {t("marketing.how.eyebrow")}
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+            {t("marketing.how.title")}
+          </h2>
+          <p className={`mt-3 ${BODY}`}>{t("marketing.how.support")}</p>
+          <ol className="mt-6 grid lg:grid-cols-3 lg:gap-6">
+            {([1, 2, 3] as const).map((n) => (
+              <HowStep
                 key={n}
-                className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5"
-              >
-                <Icon size={22} className="text-amber-400" strokeWidth={2} />
-                <h3 className="mt-3 font-semibold text-zinc-100">
-                  {t(`marketing.benefits.${n}.title` as MessageKey)}
-                </h3>
-                <p className={`mt-2 ${BODY}`}>
-                  {t(`marketing.benefits.${n}.desc` as MessageKey)}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </Section>
-
-      {/* Built for barbers */}
-      <Section className="bg-zinc-900/30">
-        <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
-          {t("marketing.barber.title1")}
-          <br />
-          <span className="text-amber-400">{t("marketing.barber.title2")}</span>
-        </h2>
-        <p className="mt-4 text-sm text-zinc-500">{t("marketing.barber.vocab")}</p>
-        <div className="mt-6 flex flex-wrap gap-2">
-          {BARBER_CHIPS.map((n) => (
-            <span
-              key={n}
-              className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-200/90"
-            >
-              {t(`marketing.barber.chip${n}` as MessageKey)}
-            </span>
-          ))}
-        </div>
-      </Section>
-
-      {/* Setup */}
-      <Section title={t("marketing.setup.title")}>
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 md:p-8">
-          <ol className="flex flex-col gap-4 md:flex-row md:flex-wrap md:items-center md:gap-3">
-            {SETUP_STEPS.map((n, i) => (
-              <li key={n} className={`flex items-center gap-2 ${BODY}`}>
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-500/20 text-xs font-bold text-amber-400">
-                  {n}
-                </span>
-                <span>{t(`marketing.setup.step${n}` as MessageKey)}</span>
-                {i < SETUP_STEPS.length - 1 ? (
-                  <ArrowRight size={14} className="hidden text-zinc-600 md:inline" />
-                ) : null}
-              </li>
+                n={n}
+                title={t(`marketing.how.${n}.title` as MessageKey)}
+                desc={t(`marketing.how.${n}.desc` as MessageKey)}
+                isLast={n === 3}
+              />
             ))}
           </ol>
-          <TrialCta
-            label={t("marketing.setup.cta")}
-            className="mt-6 w-full md:w-auto"
-            fullWidth
-          />
         </div>
-      </Section>
+      </section>
+
+      {/* Customer experience */}
+      <section className="scroll-mt-20 overflow-x-clip">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <p className="text-sm font-medium text-amber-400/90">
+            {t("marketing.customer.eyebrow")}
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+            {t("marketing.customer.title")}
+          </h2>
+          <p className={`mt-3 ${BODY}`}>{t("marketing.customer.support")}</p>
+          <ol className="mt-6 grid gap-10 lg:grid-cols-3 lg:gap-6">
+            {([1, 2, 3] as const).map((n) => (
+              <CustomerJourneyStep
+                key={n}
+                n={n}
+                title={t(`marketing.customer.${n}.title` as MessageKey)}
+                desc={t(`marketing.customer.${n}.desc` as MessageKey)}
+              />
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Owner experience */}
+      <section className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <div className="lg:grid lg:grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] lg:items-start lg:gap-10">
+            <header>
+              <p className="text-sm font-medium text-amber-400/90">
+                {t("marketing.owner.eyebrow")}
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.owner.title")}
+              </h2>
+              <p className={`mt-3 ${BODY}`}>{t("marketing.owner.support")}</p>
+            </header>
+            <ol className="mt-10 grid gap-10 lg:mt-0 lg:grid-cols-2 lg:gap-6">
+              <OwnerSurface
+                label={t("marketing.owner.1.label")}
+                title={t("marketing.owner.1.title")}
+                desc={t("marketing.owner.1.desc")}
+                surface="queue"
+              />
+              <OwnerSurface
+                label={t("marketing.owner.2.label")}
+                title={t("marketing.owner.2.title")}
+                desc={t("marketing.owner.2.desc")}
+                surface="team"
+              />
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section id="features" className="scroll-mt-20 overflow-x-clip">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <p className="text-sm font-medium text-amber-400/90">
+            {t("marketing.benefits.eyebrow")}
+          </p>
+          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+            {t("marketing.benefits.title")}
+          </h2>
+          <p className={`mt-3 ${BODY}`}>{t("marketing.benefits.support")}</p>
+          <ol className="mt-6 grid gap-3 md:grid-cols-2 lg:mt-10 lg:grid-cols-4 lg:gap-8">
+            {BENEFIT_KEYS.map((n) => (
+              <BenefitCard
+                key={n}
+                n={n}
+                title={t(`marketing.benefits.${n}.title` as MessageKey)}
+                desc={t(`marketing.benefits.${n}.desc` as MessageKey)}
+              />
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Built for barbers */}
+      <section className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <div className="lg:grid lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:items-start lg:gap-10">
+            <header>
+              <p className="text-sm font-medium text-amber-400/90">
+                {t("marketing.barber.eyebrow")}
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.barber.title1")}
+                <span className="mt-1 block">{t("marketing.barber.title2")}</span>
+              </h2>
+              <p className={`mt-3 ${BODY}`}>{t("marketing.barber.support")}</p>
+            </header>
+            <ol className="mt-8 lg:mt-0">
+              {FIT_KEYS.map((n) => (
+                <FitPoint
+                  key={n}
+                  n={n}
+                  title={t(`marketing.barber.${n}.title` as MessageKey)}
+                  desc={t(`marketing.barber.${n}.desc` as MessageKey)}
+                />
+              ))}
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      {/* Setup */}
+      <section className="scroll-mt-20 overflow-x-clip">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <div className="lg:grid lg:grid-cols-[minmax(0,0.38fr)_minmax(0,0.62fr)] lg:items-start lg:gap-10">
+            <header>
+              <p className="text-sm font-medium text-amber-400/90">
+                {t("marketing.setup.eyebrow")}
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.setup.title")}
+                <span className="mt-1 block">{t("marketing.setup.title2")}</span>
+              </h2>
+              <p className={`mt-3 ${BODY}`}>{t("marketing.setup.support")}</p>
+              <div className="mt-6 hidden lg:block">
+                <TrialCta label={t("marketing.setup.cta")} />
+              </div>
+            </header>
+            <ol className="mt-8 grid md:grid-cols-2 md:gap-4 lg:mt-0">
+              {SETUP_STEPS.map((n) => (
+                <SetupStep
+                  key={n}
+                  n={n}
+                  title={t(`marketing.setup.${n}.title` as MessageKey)}
+                  desc={t(`marketing.setup.${n}.desc` as MessageKey)}
+                  isLast={n === 4}
+                />
+              ))}
+            </ol>
+            <div className="mt-8 lg:hidden">
+              <TrialCta
+                label={t("marketing.setup.cta")}
+                className="w-full"
+                fullWidth
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Pricing */}
-      <Section id="pricing" title={t("marketing.pricing.title")} className="bg-zinc-900/30">
-        <div className="mx-auto w-full max-w-[800px] rounded-2xl border border-amber-500/40 bg-zinc-900/80 p-8 md:p-10">
-          <p className="text-4xl font-bold text-amber-400 md:text-5xl">
-            {t("marketing.pricing.price")}
-          </p>
-          <p className="mt-3 text-lg text-zinc-300">{t("marketing.pricing.trial")}</p>
-          <p className="mt-1 text-sm text-zinc-500">{t("marketing.pricing.barbers")}</p>
-          <ul className="mt-6 grid gap-2 sm:grid-cols-2">
-            {PRICING_BENEFITS.map((n) => (
-              <li key={n} className={`flex items-center gap-2 ${BODY}`}>
-                <Check size={16} className="shrink-0 text-amber-400" />
-                {t(`marketing.pricing.benefit${n}` as MessageKey)}
-              </li>
-            ))}
-          </ul>
-          <TrialCta
-            label={t("marketing.pricing.cta")}
-            className="mt-8 w-full sm:w-auto"
-            fullWidth
-          />
+      <section id="pricing" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <div className="lg:grid lg:grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] lg:items-start lg:gap-10">
+            <header>
+              <p className="text-sm font-medium text-amber-400/90">
+                {t("marketing.pricing.eyebrow")}
+              </p>
+              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.pricing.title")}
+              </h2>
+              <p className={`mt-3 ${BODY}`}>{t("marketing.pricing.support")}</p>
+              <p className="mt-3 hidden text-sm text-amber-400/90 lg:block">
+                {t("marketing.pricing.reassure")}
+              </p>
+            </header>
+            <div className="mt-8 rounded-2xl border border-amber-500/40 bg-zinc-900/80 p-6 md:p-8 lg:mt-0">
+              <p className="text-4xl font-bold text-amber-400 md:text-5xl">
+                {t("marketing.pricing.price")}
+              </p>
+              <p className={`mt-3 ${BODY}`}>{t("marketing.pricing.desc")}</p>
+              <ul className="mt-6 grid gap-2">
+                {PRICING_BENEFITS.map((n) => (
+                  <li key={n} className={`flex items-start gap-2 ${BODY}`}>
+                    <Check size={16} className="mt-1 shrink-0 text-amber-400" />
+                    {t(`marketing.pricing.benefit${n}` as MessageKey)}
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 text-sm font-medium text-zinc-200">
+                {t("marketing.pricing.trial")}
+              </p>
+              <p className="mt-4 hidden text-sm leading-relaxed text-zinc-300 lg:block">
+                {t("marketing.pricing.ctaContext")}
+              </p>
+              <TrialCta
+                label={t("marketing.pricing.cta")}
+                className="mt-6 min-h-14 w-full lg:mt-4"
+                fullWidth
+              />
+              <p className="mt-3 text-center text-[13px] text-zinc-400">
+                {t("marketing.pricing.micro")}
+              </p>
+            </div>
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* FAQ */}
-      <Section id="faq" title={t("marketing.faq.title")}>
-        <div className="mx-auto max-w-3xl space-y-3">
-          {FAQ_ITEMS.map((n) => (
-            <details key={n} className="rounded-xl border border-zinc-800 bg-zinc-950 p-4">
-              <summary className="cursor-pointer font-medium text-zinc-200">
-                {t(`marketing.faq.${n}.q` as MessageKey)}
-              </summary>
-              <p className={`mt-3 ${BODY}`}>
-                {t(`marketing.faq.${n}.a` as MessageKey)}
+      <section id="faq" className="scroll-mt-20 overflow-x-clip">
+        <div className="mx-auto max-w-[1280px] px-4 py-8 md:px-6 md:py-10">
+          <div className="mx-auto max-w-[800px]">
+            <header>
+              <p className="text-sm font-medium text-amber-400/90">
+                {t("marketing.faq.eyebrow")}
               </p>
-            </details>
-          ))}
+              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.faq.title")}
+              </h2>
+              <p className={`mt-3 ${BODY}`}>{t("marketing.faq.support")}</p>
+            </header>
+            <div className="mt-6 space-y-3 md:mt-8">
+              {FAQ_ITEMS.map((n) => (
+                <details
+                  key={n}
+                  className="group rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2 md:p-4 open:border-amber-500/30 open:py-4"
+                >
+                  <summary className="flex min-h-12 cursor-pointer list-none items-start gap-3 text-zinc-50 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0 flex-1 text-base font-medium leading-snug">
+                      {t(`marketing.faq.${n}.q` as MessageKey)}
+                    </span>
+                    <ChevronDown
+                      size={18}
+                      className="mt-0.5 shrink-0 text-amber-400 transition-transform group-open:rotate-180"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  </summary>
+                  <p className={`mt-3 ${BODY}`}>
+                    {t(`marketing.faq.${n}.a` as MessageKey)}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
         </div>
-      </Section>
+      </section>
 
       {/* Final CTA */}
-      <section className="border-t border-amber-500/20 bg-zinc-900/60 py-14 md:py-20">
-        <div className="mx-auto max-w-[1280px] px-4 text-center md:px-6">
-          <h2 className="text-2xl font-bold md:text-4xl">{t("marketing.final.title")}</h2>
-          <p className={`mx-auto mt-4 max-w-xl ${BODY}`}>{t("marketing.final.subtitle")}</p>
-          <TrialCta
-            label={t("marketing.final.cta")}
-            className="mx-auto mt-8 w-full max-w-[380px]"
-            fullWidth
-          />
-          <p className="mt-4 text-[13px] text-zinc-400 md:text-sm">
-            {t("marketing.final.trust1")} • {t("marketing.final.trust2")}
-          </p>
+      <section className="overflow-x-clip border-t border-amber-500/20 bg-zinc-900/60">
+        <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
+          <div className="relative mx-auto max-w-[800px] text-center">
+            <div
+              className="pointer-events-none absolute inset-x-8 -top-6 h-20 rounded-full bg-amber-400/10 blur-2xl"
+              aria-hidden
+            />
+            <h2 className="relative text-2xl font-bold leading-tight text-zinc-50 md:text-4xl">
+              {t("marketing.final.title")}
+            </h2>
+            <p className={`relative mx-auto mt-4 max-w-xl ${BODY}`}>
+              {t("marketing.final.subtitle")}
+            </p>
+            <TrialCta
+              label={t("marketing.final.cta")}
+              className="relative mx-auto mt-8 min-h-14 w-full md:max-w-[380px]"
+              fullWidth
+            />
+            <p className="relative mt-4 text-[13px] text-zinc-400 md:text-sm">
+              {t("marketing.final.micro")}
+            </p>
+          </div>
         </div>
       </section>
 
