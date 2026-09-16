@@ -3,19 +3,21 @@
 | | |
 |---|---|
 | Date opened | 2026-09-16 |
-| State | **READY_FOR_UX** |
+| State | **READY_FOR_ENGINEERING** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
 | Founder approval | **Approved — 2026-09-16** |
+| UX handoff | [UX-002 — Pilot Readiness & Real-Use Validation](../handoffs/UX-002-PILOT-READINESS-REAL-USE-VALIDATION.md) — **Product-approved** |
+| Product review | **APPROVED — 2026-09-16** |
 | Source / rationale type | Explicit Founder-approved operational requirement + Roadmap NOW + locked SPR-001 baseline |
 | Source / rationale | Founder-approved SPR-002 concept; [`03-PRODUCT-ROADMAP.md`](../03-PRODUCT-ROADMAP.md) Pilot-readiness priorities; [`CURRENT-STATE.md`](../CURRENT-STATE.md) validation targets; [`SPR-001`](./SPR-001-PILOT-TRUTH-POSITIONING-ALIGNMENT.md) locked baseline |
-| Next allowed transition | `UX_APPROVED` after linked `UX-002` defines the bounded validation handoff |
-| Engineering authorized now? | **No** |
-| Feature/code implementation authorized now? | **No** |
+| Next allowed transition | `IMPLEMENTED` after authorized Engineering validation is complete and `RPT-002-ENG` exists; zero application-code change is a valid outcome |
+| Engineering authorized now? | **Yes — validation preparation / inspection / testing / diagnosis only** |
+| Feature/code implementation authorized now? | **No — non-P0 code change requires Product classification + explicit authorization first** |
 | P0? | No — unless a qualifying production/security incident is discovered during validation |
 
-> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). `READY_FOR_UX` authorizes **validation-handoff work only**. It does not authorize Cursor / Engineering implementation, speculative fixes, feature development, architecture changes, or SPR-003.
+> This Sprint owns delivery state under [`WORKFLOW.md`](../WORKFLOW.md). Product has accepted UX-002. `READY_FOR_ENGINEERING` in **this validation Sprint** authorizes technical validation work only: inspect, test, prepare the controlled validation environment, support the approved Shop #1 checks, diagnose findings, and report evidence. It does **not** authorize speculative fixes, feature development, onboarding/booking redesign, protected-architecture changes, or SPR-003. Any non-P0 code fix must return to Product for classification and explicit authorization before code changes begin.
 
 ---
 
@@ -74,7 +76,7 @@ No Product-reviewed customer evidence is assumed by this Sprint. Observations, c
 - real customer booking from the shop's LINE OA;
 - Founder / operator assisting setup and observing readiness;
 - UX observing tasks/states;
-- Engineering validating technical behavior only after the Product gate.
+- Engineering validating technical behavior after the Product gate.
 
 ---
 
@@ -369,9 +371,7 @@ SPR-002 success does **not** prove PMF, validated pricing, reminder need, variab
 
 ## 12. Usability failure thresholds for UX-002
 
-UX-002 must define observable thresholds using the existing product, without pre-designing solutions.
-
-At minimum distinguish:
+UX-002 defines the approved observable thresholds using the existing product, without pre-designing solutions.
 
 ### Activation-blocking usability failure
 
@@ -534,177 +534,344 @@ Default treatment:
 
 ### Verified defect rule
 
-Engineering may later diagnose a verified readiness defect after Product review, but diagnosis does not itself authorize implementation.
+Engineering may diagnose a verified readiness defect, but diagnosis does not itself authorize implementation.
 
-Before code is changed, Product must classify the finding as one of:
+Before any **non-P0** code is changed, Product must classify the finding as one of:
 
-- restore already-approved existing behavior within SPR-002;
-- P0 emergency remediation;
-- new Product scope requiring a separate Product/Founder decision.
+- restore already-approved existing behavior within SPR-002 — may be authorized only by an explicit later Product decision on that defect;
+- new Product scope requiring a separate Product/Founder decision;
+- observation/friction/feature request — record only, no implementation.
+
+A qualifying P0 follows the emergency path in WORKFLOW.
 
 No code change is assumed at Sprint start.
 
 ---
 
-## 17. UX-002 required scope
+## 17. UX-002 scope and Product review
 
-**UX involvement is required, but UX-002 is a validation handoff only.**
+[UX-002 — Pilot Readiness & Real-Use Validation](../handoffs/UX-002-PILOT-READINESS-REAL-USE-VALIDATION.md) is a **validation handoff only** and is **Product-approved**.
 
-UX-002 must define and hand back:
+Product verified that UX-002:
 
-### Customer tasks to observe
+1. stays strictly inside SPR-002 scope;
+2. does not pre-design fixes or create speculative backlog;
+3. observes the existing customer sequence **barber → date → time → confirm**;
+4. validates existing owner operation only;
+5. requires real physical-device LINE in-app validation before Shop #1 go-live;
+6. preserves the Shop #1 Activation Gate;
+7. keeps ≤15-minute setup and ≤60-second booking as measurement targets only;
+8. correctly distinguishes **P0 / Activation Blocker / Usability Friction / Feature Request**;
+9. returns activation blockers, protected-boundary changes, repeated meaningful friction, sender-truth issues, and scope-expanding responses to Product;
+10. preserves booking/auth/LIFF/tenant/concurrency/LINE and merchant-first KEEP boundaries;
+11. provides sufficient lightweight manual evidence capture without CRM/evidence software;
+12. does not implicitly authorize feature or code implementation.
+
+### UX-002 validated task scope
+
+Customer tasks:
 
 - enter from shop LINE context;
 - verify shop identity;
-- choose barber/date/time;
+- LINE/LIFF login and return;
+- select barber/date/time;
 - confirm booking;
-- understand success state;
-- access My Bookings;
-- use cancellation where permitted.
+- validate Booking Success;
+- validate sender-neutral optional Add Friend state;
+- validate My Bookings;
+- validate cancellation where permitted.
 
-### Owner tasks to observe
+Owner tasks:
 
-- access/claim correct shop;
-- complete/understand current setup requirements;
+- access correct shop;
+- verify team and hours/availability;
 - find today's queue;
-- identify barber ownership of a booking;
-- see a new customer booking;
-- inspect/manage existing barber availability controls;
-- understand enough schedule/hours state to operate Pilot bookings.
+- identify booking/barber;
+- use existing availability controls needed for Pilot operation;
+- confirm the real/test booking appears;
+- perform normal operation without developer intervention.
 
-### Mobile / LINE states
-
-- LINE/LIFF entry/loading/auth/return;
-- shop context;
-- booking form states;
-- unavailable/taken slot recovery as currently implemented;
-- success state;
-- sender-neutral optional LINE/Add Friend state;
-- My Bookings;
-- cancellation states;
-- critical owner mobile states used during Pilot setup/operation.
-
-### Usability failure thresholds
-
-Define observable criteria for:
-
-- activation-blocking usability failure;
-- non-blocking friction;
-- Product-return condition;
-- evidence-only observation.
-
-### KEEP boundaries
-
-UX-002 must explicitly preserve:
-
-- current customer sequence barber → date → time → confirm;
-- shop-first merchant identity;
-- booking/auth/LIFF/tenant architecture;
-- booking concurrency/reliability behavior;
-- sender-neutral LINE truth while sender identity is unverified;
-- current pricing/Pilot truth from SPR-001;
-- current CTA destinations;
-- existing owner task model unless a verified blocker is later classified.
-
-### Product-return criteria
-
-UX returns to Product, without designing a solution, when validation indicates:
-
-- activation-blocking usability failure;
-- a change would require new capability;
-- a change would touch protected architecture/behavior;
-- a repeated observation might justify a Product decision;
-- sender/LINE truth cannot be preserved with current behavior;
-- the proposed response would broaden Sprint scope.
-
-### UX-002 must NOT
-
-- pre-design solutions for hypothetical issues;
-- create a backlog of speculative improvements;
-- decide Product scope;
-- authorize Engineering;
-- turn observations into features;
-- redesign working surfaces merely for polish.
+UX-002 remains a supporting artifact. This Sprint owns delivery state.
 
 ---
 
-## 18. Engineering role
+## 18. Engineering validation scope — authorized now
 
-Engineering involvement is expected **after** the normal UX/Product gate, but the default role is technical validation, not feature development.
+Engineering / Cursor may now begin **validation preparation and technical validation support only**.
 
-Potential authorized Engineering activity after a future `READY_FOR_ENGINEERING` transition may include:
+### Authorized work
 
-- confirm current build/environment used for validation;
-- run existing relevant automated suites;
-- support a controlled production-like readiness check;
-- inspect/log actual technical failures encountered during approved validation;
-- confirm whether observed behavior matches existing implementation truth;
-- document verified defects;
-- create `RPT-002-ENG` describing what was validated, what changed (if anything was later authorized), and how to verify.
+Engineering may:
 
-A valid Engineering outcome may be:
+- inspect the repository and current deployment/configuration needed to understand the approved validation path, without exposing secrets;
+- confirm the current build/commit/environment that will be used for Shop #1 validation;
+- run existing automated tests and build/lint/type checks;
+- verify existing production-like configuration needed for LINE/LIFF, shop routing, Supabase, and the current booking path without altering protected architecture;
+- prepare a controlled test shop / existing safe validation context using current supported mechanisms;
+- support Founder/operator in executing the approved manual validation checklist;
+- inspect logs/state needed to diagnose an actual observed failure;
+- reproduce and classify a suspected technical defect;
+- document whether behavior matches the current approved implementation truth;
+- collect technical evidence for Product/QA;
+- create/update `RPT-002-ENG` with validation evidence and exact results.
+
+### Not authorized now
+
+Engineering may **not**:
+
+- change application code to address a non-P0 defect without a later explicit Product authorization;
+- implement a feature;
+- redesign onboarding, booking, owner surfaces, navigation, or copy;
+- add reminders, variable duration, configuration options, CRM, analytics, or other candidate scope;
+- change schema/migrations;
+- change booking/concurrency/auth/LIFF/tenant/LINE sender architecture;
+- refactor protected code because it is nearby;
+- turn usability friction or feature requests into implementation work;
+- create SPR-003.
+
+A valid Engineering outcome is:
 
 > **Existing implementation validated; no Product code change required.**
 
-Engineering is **not authorized now** to:
-
-- implement any feature;
-- fix non-P0 findings before Product classification;
-- refactor protected code;
-- change LINE/auth/LIFF/tenant/concurrency architecture;
-- implement speculative UX improvements;
-- create SPR-003.
+In this Sprint, `READY_FOR_ENGINEERING` means **ready for technical validation**, not blanket implementation permission.
 
 ---
 
-## 19. Acceptance criteria for READY_FOR_UX → next gate
+## 19. Required Engineering checks before Shop #1 activation
 
-SPR-002 remains `READY_FOR_UX` until a linked `UX-002` exists and Product can verify that it:
+Engineering must verify and record the following before the Activation Gate can pass.
 
-1. is a validation handoff only;
-2. covers the approved customer tasks;
-3. covers the approved owner tasks;
-4. covers real LINE/mobile states;
-5. defines activation-blocking vs non-blocking usability thresholds;
-6. preserves all KEEP/protected boundaries;
-7. defines Product-return criteria;
-8. does not pre-design speculative solutions;
-9. does not introduce feature scope;
-10. does not authorize Engineering implementation.
+### 19.1 Automated baseline
 
-Only after UX-002 is accepted may Product consider the next normal workflow gate.
+Run at minimum on the validation commit/environment:
+
+- `npm run lint`
+- `npm run typecheck`
+- `npm run test:security`
+- `npm run test:shop`
+- `npm run test:booking`
+- `npm run test:onboarding`
+- `npm run build`
+
+Report exact commands and results in `RPT-002-ENG`.
+
+Do not weaken or remove tests to obtain a pass.
+
+If `npm run lint` still fails only for known pre-existing, unrelated findings from the locked baseline, record the exact findings and confirm no new SPR-002-relevant lint regression. A new or relevant lint failure must be classified; it must not be silently ignored.
+
+### 19.2 Environment / production-like readiness
+
+Without printing or committing secrets, verify:
+
+- the validation build/commit is identified;
+- required production-like app/Supabase/LINE/LIFF configuration for the approved path is present enough to run the controlled validation;
+- the intended Shop #1 tenant/shop context is identified;
+- shop LINE OA/intended entry points to the correct current booking context;
+- no environment change is used to invent sender identity or bypass SPR-001 sender-neutral truth;
+- validation does not rely on local prototype/LINE mock as proof of physical-device LINE readiness.
+
+### 19.3 Shop setup / owner readiness
+
+Using current supported behavior, verify with Founder/operator evidence that:
+
+- owner accesses the correct shop tenant;
+- shop identity is correct;
+- team/barber state required for Pilot is correct;
+- hours/availability required for Pilot are correct;
+- intended LINE OA booking entry is usable;
+- owner can find today's queue;
+- owner can identify the booking/barber;
+- owner can use the existing availability controls required for Pilot operation;
+- owner sees the controlled booking correctly.
+
+### 19.4 Real customer booking path
+
+On at least one **real physical mobile device inside LINE / intended LINE in-app context**, verify:
+
+- shop LINE OA/intended entry → correct shop context;
+- LINE/LIFF login/return → correct identity/context;
+- barber → date → time → confirm succeeds using existing behavior;
+- Booking Success details are correct;
+- optional Add Friend/LINE copy is sender-neutral and non-blocking while sender identity remains unverified;
+- My Bookings contains the correct booking;
+- controlled cancellation works where current policy permits;
+- owner sees the resulting booking in the correct shop/queue.
+
+Record setup elapsed time and first-booking elapsed time where practical. The ≤15-minute and ≤60-second values remain measurement targets only.
+
+### 19.5 Responsive / interaction checks
+
+Check critical current customer and owner states at:
+
+- 375px;
+- 390px;
+- 430px;
+- desktop/reference owner viewport.
+
+Verify no activation-blocking:
+
+- horizontal overflow/clipping;
+- keyboard obstruction of required inputs/primary CTA;
+- inaccessible critical control;
+- wrong shop/merchant identity;
+- blocked confirmation or return action.
+
+### 19.6 Integrity / protected-behavior checks
+
+Use existing automated tests plus controlled validation evidence to confirm no observed:
+
+- tenant leakage;
+- wrong-shop/wrong-customer state;
+- authorization anomaly;
+- conflicting successful double booking;
+- incorrect successful booking for unavailable/taken slot;
+- data-integrity issue;
+- booking outage;
+- critical LINE/auth failure.
+
+Do not alter protected behavior merely to perform these checks.
 
 ---
 
-## 20. Dependencies
+## 20. Finding and defect-handling rules
 
-Resolved:
+Engineering must classify findings by behavior/evidence, not by desired solution.
 
-- Founder approved SPR-002 concept on 2026-09-16;
-- SPR-001 is LOCKED and is the baseline;
-- Roadmap NOW includes Pilot-ready core experience, owner onboarding readiness, customer booking reliability, first qualified Pilot shops, observing real usage, and validating HYP-004;
-- PD-001 through PD-011 remain in force;
-- reminders, variable duration, booking UX improvements, and onboarding improvements remain candidates/hypotheses unless separately promoted;
-- CURRENT-STATE remains Pre-Pilot / Pilot Readiness.
+### A. No defect found
 
-Required next:
+If the approved checks complete with no Activation Blocker or P0 issue:
 
-- UX reads this Sprint plus North Star, Product Decisions, BRAND, CURRENT-STATE, and relevant current product surfaces;
-- UX creates linked `UX-002` as a **validation handoff only**;
-- Product reviews UX-002 strictly against this Sprint before any Engineering authorization.
+1. make **no application-code change**;
+2. complete the manual evidence record with Founder/operator;
+3. record automated and production-like/manual results in `RPT-002-ENG`;
+4. record actual setup/booking measurements without converting them into claims;
+5. state explicitly that existing implementation required no Product code change;
+6. once all Engineering validation obligations are complete, Engineering may transition the Sprint `READY_FOR_ENGINEERING → IMPLEMENTED`, then `IMPLEMENTED → READY_FOR_QA` with the report/how-to-verify package.
+
+For this validation Sprint, `IMPLEMENTED` may mean **the approved validation work is completed with zero application-code change**.
+
+### B. Non-P0 defect / Activation Blocker
+
+If a real non-P0 defect prevents safe activation:
+
+1. **STOP Shop #1 normal go-live** for the affected path;
+2. capture exact reproduction steps, environment/commit, screenshots/log evidence where safe, expected vs actual behavior, and user impact;
+3. classify the finding as `NEEDS_PRODUCT_REVIEW`;
+4. diagnose enough to identify likely affected area, but **do not change application code**;
+5. return the defect to Product for classification and explicit authorization;
+6. do not move Sprint to `IMPLEMENTED` while an unresolved Activation Blocker remains.
+
+Product may later decide that the defect is:
+
+- a minimal restoration of already-approved behavior that can be explicitly authorized inside SPR-002;
+- new Product scope requiring a separate Founder/Product decision;
+- non-blocking friction/evidence only.
+
+Engineering must not make that Product decision itself.
+
+### C. P0 / security / tenant / auth / double-booking / data-integrity issue
+
+If the finding meets the P0 criteria in WORKFLOW:
+
+1. stop affected validation/go-live;
+2. immediately use the P0 emergency workflow;
+3. Product / Engineering triage the incident;
+4. immediate remediation may proceed under the P0 rules when necessary to protect security, data integrity, or booking availability;
+5. do not use P0 as permission for unrelated feature or architecture work;
+6. create/update the required implementation evidence/report;
+7. require QA and Product post-review before the durable result is locked.
+
+### D. Usability Friction / Observe
+
+If the user hesitates, needs one explanation, expresses a terminology preference, or experiences non-blocking optional-task confusion:
+
+- record the observation;
+- record frequency/repetition when more evidence appears;
+- do not change code/design;
+- return to Product only when repeated meaningful evidence meets UX-002 Product-return criteria.
+
+### E. Feature Request / Record Only
+
+For reminders, variable duration, booking horizon, cancellation configuration, CRM, analytics, navigation, or any new capability request:
+
+- record the request and evidence;
+- do not create implementation scope;
+- do not add it to SPR-002 delivery work;
+- follow PD-008 / INS review before any later roadmap decision.
 
 ---
 
-## 21. State
+## 21. Required Engineering report
 
-**READY_FOR_UX**
+Engineering must create:
 
-UX-002 validation-handoff work is authorized.
+`docs/barberqx-os/reports/RPT-002-ENG.md`
 
-**No Product feature implementation or code change is authorized at this state.**
+The report must link:
 
-No Cursor/Engineering implementation instructions have been issued.
+- this `SPR-002`;
+- Product-approved `UX-002`;
+- the locked `SPR-001` baseline where relevant.
+
+At minimum include:
+
+1. validation commit/build/environment identifier;
+2. files changed — expected to be **none for application code unless a later Product/P0 authorization exists**;
+3. exact automated commands and results;
+4. environment/config readiness result without secrets;
+5. Shop #1 qualification/evidence-record status (no unnecessary personal data in repo report);
+6. setup/activation checks and measured elapsed time;
+7. real physical-device LINE in-app test context and result;
+8. customer booking-path results;
+9. My Bookings/cancellation result;
+10. owner task results;
+11. responsive/mobile results;
+12. integrity/protected-boundary result;
+13. finding classification: none / P0 / Activation Blocker / Usability Friction / Feature Request;
+14. exact blockers and Product-return items, if any;
+15. intentional non-changes to protected boundaries;
+16. whether any application code changed and the exact Product/P0 authorization if it did;
+17. how QA should verify the Sprint result.
+
+Do not store secrets, unnecessary customer PII, or sensitive LINE credentials in the report.
+
+---
+
+## 22. Product review decision
+
+### Result
+
+**APPROVED — READY_FOR_ENGINEERING**
+
+Product accepts UX-002 as the smallest adequate validation handoff for SPR-002.
+
+It preserves the North Star customer flow and owner queue outcome, the locked SPR-001 truth, PD-008 evidence discipline, PD-010 LINE truth, manual-first Pilot operation, and all protected technical boundaries.
+
+No Product Decision inconsistency was found. `04-PRODUCT-DECISIONS.md` is unchanged.
+
+### State transition record
+
+- Founder + Product created SPR-002 at `READY_FOR_UX` on 2026-09-16.
+- UX created UX-002 with recommendation `UX_APPROVED`.
+- Product reviewed UX-002 and recorded it **Product-approved** on 2026-09-16.
+- Product transitions SPR-002 from the UX gate to **READY_FOR_ENGINEERING** for validation preparation / technical validation support only.
+
+### Cursor authorization
+
+Cursor / Engineering may now begin the validation work defined in §§18–21.
+
+This authorization does **not** include any non-P0 application-code fix.
+
+---
+
+## 23. State
+
+**READY_FOR_ENGINEERING**
+
+Engineering / Cursor is authorized to inspect, test, prepare the controlled validation, diagnose observed behavior, support the approved Shop #1 checks, and create `RPT-002-ENG`.
+
+**No feature implementation is authorized. No non-P0 code fix is authorized without a later explicit Product classification and authorization.**
 
 Do not create SPR-003.
 
-STOP before Engineering.
+STOP before Engineering execution.
