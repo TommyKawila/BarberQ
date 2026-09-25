@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertCanManageBarber, assertShopOwner, assertStaff } from "@/lib/admin-auth";
+import { assertCanManageBarber, assertShopOperator, assertStaff } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { getStore, StoreConflict } from "@/lib/data";
 import { BookingError } from "@/lib/services/booking-service";
@@ -18,7 +18,7 @@ export async function POST(
 ) {
   try {
     const staff = await assertStaff(req);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
     const { id } = await context.params;
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);

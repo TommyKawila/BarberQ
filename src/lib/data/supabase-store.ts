@@ -6,11 +6,14 @@ import {
   type CreateBarberInput,
   type CreateRecurringBreakInput,
   type ClaimOwnerInviteInput,
+  type ClaimManagerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
   type LineOaInstallRequest,
   type LineOaInstallRequestStatus,
   type RecurringBreak,
+  type ShopManager,
+  type ShopManagerInvite,
   type Staff,
   type StaffRole,
   type UpdateBarberInput,
@@ -53,7 +56,11 @@ function mapRpcError(error: { message?: string; code?: string }): never {
     "INVITE_NOT_FOUND",
     "INVITE_EXPIRED",
     "INVITE_ALREADY_CLAIMED",
+    "INVITE_REVOKED",
     "LINE_ID_TAKEN",
+    "IDENTITY_INCOMPATIBLE",
+    "MANAGER_ALREADY_ACTIVE",
+    "HAS_FUTURE_BOOKINGS",
   ];
   for (const code of codes) {
     if (message.includes(code)) throw new StoreConflict(code);
@@ -81,6 +88,48 @@ function mapStaff(row: StaffRow): Staff {
     barberId: row.barber_id,
     active: row.active,
     createdAt: new Date(row.created_at),
+  };
+}
+
+function mapShopManager(row: {
+  id: string;
+  shop_id: string;
+  line_id: string;
+  display_name: string;
+  created_at: string;
+  revoked_at: string | null;
+}): ShopManager {
+  return {
+    id: row.id,
+    shopId: row.shop_id,
+    lineId: row.line_id,
+    role: "manager",
+    displayName: row.display_name,
+    createdAt: row.created_at,
+    revokedAt: row.revoked_at,
+  };
+}
+
+function mapShopManagerInvite(row: {
+  id: string;
+  shop_id: string;
+  token: string;
+  expires_at: string;
+  consumed_at: string | null;
+  revoked_at: string | null;
+  created_at: string;
+  created_by_barber_id: string | null;
+}): ShopManagerInvite {
+  return {
+    id: row.id,
+    shopId: row.shop_id,
+    role: "manager",
+    token: row.token,
+    expiresAt: row.expires_at,
+    consumedAt: row.consumed_at,
+    revokedAt: row.revoked_at,
+    createdAt: row.created_at,
+    createdByBarberId: row.created_by_barber_id,
   };
 }
 
@@ -772,6 +821,169 @@ export const supabaseStore: BookingStore = {
     if (shopError) throw new Error(shopError.message);
     if (!shop) throw new StoreConflict("INVITE_NOT_FOUND");
     return shop as Shop;
+  },
+
+  async listShopManagers(shopId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_managers")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(mapShopManager);
+  },
+
+  async listManagerInvites(shopId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_manager_invites")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []).map(mapShopManagerInvite);
+  },
+
+  async createManagerInvite(shopId, createdByBarberId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("create_manager_invite", {
+      p_shop_id: shopId,
+      p_created_by_barber_id: createdByBarberId,
+    });
+    if (error) mapRpcError(error);
+    const row = data as { id?: string; token?: string; expires_at?: string } | null;
+    if (!row?.id || !row.token) throw new StoreConflict("NOT_FOUND");
+    return {
+      id: row.id,
+      shopId,
+      role: "manager" as const,
+      token: row.token,
+      expiresAt: row.expires_at ?? new Date().toISOString(),
+      consumedAt: null,
+      revokedAt: null,
+      createdAt: new Date().toISOString(),
+      createdByBarberId,
+    };
+  },
+
+  async getManagerInvitePreview(token) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("get_manager_invite_preview", {
+      p_invite_token: token.trim(),
+    });
+    if (error) throw new Error(error.message);
+    const result = data as {
+      found?: boolean;
+      shop_name?: string;
+      shop_slug?: string;
+      expired?: boolean;
+      consumed?: boolean;
+      revoked?: boolean;
+    } | null;
+    if (!result?.found) return null;
+    return {
+      shopName: result.shop_name ?? "",
+      shopSlug: result.shop_slug ?? "",
+      expired: Boolean(result.expired),
+      consumed: Boolean(result.consumed),
+      revoked: Boolean(result.revoked),
+    };
+  },
+
+  async claimManagerInvite(input: ClaimManagerInviteInput) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("claim_manager_invite", {
+      p_invite_token: input.inviteToken.trim(),
+      p_line_id: input.lineId.trim(),
+      p_display_name: input.displayName.trim() || "Manager",
+    });
+    if (error) mapRpcError(error);
+    const result = data as {
+      shop_id?: string;
+      shop_slug?: string;
+      manager_id?: string;
+    } | null;
+    if (!result?.shop_id || !result.manager_id) {
+      throw new StoreConflict("INVITE_NOT_FOUND");
+    }
+    return {
+      shopId: result.shop_id,
+      shopSlug: result.shop_slug ?? "",
+      managerId: result.manager_id,
+    };
+  },
+
+  async regenerateManagerInvite(shopId, inviteId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("regenerate_manager_invite", {
+      p_shop_id: shopId,
+      p_invite_id: inviteId,
+    });
+    if (error) mapRpcError(error);
+    const row = data as { id?: string; token?: string; expires_at?: string } | null;
+    if (!row?.id || !row.token) throw new StoreConflict("INVITE_NOT_FOUND");
+    return {
+      id: row.id,
+      shopId,
+      role: "manager" as const,
+      token: row.token,
+      expiresAt: row.expires_at ?? new Date().toISOString(),
+      consumedAt: null,
+      revokedAt: null,
+      createdAt: new Date().toISOString(),
+      createdByBarberId: null,
+    };
+  },
+
+  async cancelManagerInvite(shopId, inviteId) {
+    const supabase = createServiceClient();
+    const { error } = await supabase.rpc("cancel_manager_invite", {
+      p_shop_id: shopId,
+      p_invite_id: inviteId,
+    });
+    if (error) mapRpcError(error);
+    const { data, error: readError } = await supabase
+      .from("shop_manager_invites")
+      .select("*")
+      .eq("id", inviteId)
+      .eq("shop_id", shopId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!data) throw new StoreConflict("INVITE_NOT_FOUND");
+    return mapShopManagerInvite(data);
+  },
+
+  async revokeShopManager(shopId, managerId) {
+    const supabase = createServiceClient();
+    const { error } = await supabase.rpc("revoke_shop_manager", {
+      p_shop_id: shopId,
+      p_manager_id: managerId,
+    });
+    if (error) mapRpcError(error);
+    const { data, error: readError } = await supabase
+      .from("shop_managers")
+      .select("*")
+      .eq("id", managerId)
+      .eq("shop_id", shopId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!data) throw new StoreConflict("NOT_FOUND");
+    return mapShopManager(data);
+  },
+
+  async getActiveManagerByLineId(lineId) {
+    const trimmed = lineId.trim();
+    if (!trimmed) return null;
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_managers")
+      .select("*")
+      .eq("line_id", trimmed)
+      .is("revoked_at", null)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? mapShopManager(data) : null;
   },
 
   async getBarberByLineId(lineId) {

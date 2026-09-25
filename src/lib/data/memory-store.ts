@@ -8,11 +8,14 @@ import {
   type CreateRecurringBreakInput,
   type CreateBarberInput,
   type ClaimOwnerInviteInput,
+  type ClaimManagerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
   type LineOaInstallRequest,
   type LineOaInstallRequestStatus,
   type RecurringBreak,
+  type ShopManager,
+  type ShopManagerInvite,
   type Staff,
   type ShopSettings,
   type UpdateBarberInput,
@@ -55,6 +58,8 @@ interface MemoryState {
   lineOaInstallRequests: LineOaInstallRequest[];
   trialLeads: TrialLead[];
   trialLeadNotes: TrialLeadNote[];
+  shopManagers: ShopManager[];
+  shopManagerInvites: ShopManagerInvite[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -79,6 +84,8 @@ function getState(): MemoryState {
       lineOaInstallRequests: [],
       trialLeads: [],
       trialLeadNotes: [],
+      shopManagers: [],
+      shopManagerInvites: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
@@ -122,6 +129,12 @@ function getState(): MemoryState {
   }
   if (!g[GLOBAL_KEY].trialLeadNotes) {
     g[GLOBAL_KEY].trialLeadNotes = [];
+  }
+  if (!g[GLOBAL_KEY].shopManagers) {
+    g[GLOBAL_KEY].shopManagers = [];
+  }
+  if (!g[GLOBAL_KEY].shopManagerInvites) {
+    g[GLOBAL_KEY].shopManagerInvites = [];
   }
   if (!g[GLOBAL_KEY].shopSettings) {
     g[GLOBAL_KEY].shopSettings = {
@@ -791,6 +804,161 @@ export const memoryStore: BookingStore = {
     shop.updated_at = now;
 
     return { ...shop };
+  },
+
+  async listShopManagers(shopId) {
+    return getState()
+      .shopManagers.filter((m) => m.shopId === shopId)
+      .map((m) => ({ ...m }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  },
+
+  async listManagerInvites(shopId) {
+    return getState()
+      .shopManagerInvites.filter((i) => i.shopId === shopId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  },
+
+  async createManagerInvite(shopId, createdByBarberId) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const now = nowIso();
+    const invite: ShopManagerInvite = {
+      id: uuid(),
+      shopId,
+      role: "manager",
+      token: inviteToken(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      consumedAt: null,
+      revokedAt: null,
+      createdAt: now,
+      createdByBarberId,
+    };
+    getState().shopManagerInvites.push(invite);
+    return { ...invite };
+  },
+
+  async getManagerInvitePreview(token) {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    const invite = getState().shopManagerInvites.find((i) => i.token === trimmed);
+    if (!invite) return null;
+    const shop = getState().shops.find((s) => s.id === invite.shopId);
+    const expired =
+      !invite.consumedAt &&
+      !invite.revokedAt &&
+      new Date(invite.expiresAt).getTime() < Date.now();
+    return {
+      shopName: shop?.name ?? "",
+      shopSlug: shop?.slug ?? "",
+      expired,
+      consumed: Boolean(invite.consumedAt),
+      revoked: Boolean(invite.revokedAt),
+    };
+  },
+
+  async claimManagerInvite(input) {
+    const token = input.inviteToken.trim();
+    const lineId = input.lineId.trim();
+    if (!token || !lineId) throw new StoreConflict("INVALID_RANGE");
+
+    const state = getState();
+    const invite = state.shopManagerInvites.find((i) => i.token === token);
+    if (!invite) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (invite.revokedAt) throw new StoreConflict("INVITE_REVOKED");
+    if (invite.consumedAt) throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+    if (new Date(invite.expiresAt).getTime() < Date.now()) {
+      throw new StoreConflict("INVITE_EXPIRED");
+    }
+
+    const sameShop = state.shopManagers.find(
+      (m) => m.shopId === invite.shopId && m.lineId === lineId && !m.revokedAt,
+    );
+    if (sameShop) throw new StoreConflict("MANAGER_ALREADY_ACTIVE");
+
+    if (barbers.some((b) => b.line_id === lineId)) {
+      throw new StoreConflict("IDENTITY_INCOMPATIBLE");
+    }
+    if (
+      state.shopManagers.some(
+        (m) => m.lineId === lineId && !m.revokedAt && m.shopId !== invite.shopId,
+      )
+    ) {
+      throw new StoreConflict("IDENTITY_INCOMPATIBLE");
+    }
+
+    const now = nowIso();
+    const manager: ShopManager = {
+      id: uuid(),
+      shopId: invite.shopId,
+      lineId,
+      role: "manager",
+      displayName: input.displayName.trim() || "Manager",
+      createdAt: now,
+      revokedAt: null,
+    };
+    state.shopManagers.push(manager);
+    invite.consumedAt = now;
+    const shop = state.shops.find((s) => s.id === invite.shopId);
+    return {
+      shopId: invite.shopId,
+      shopSlug: shop?.slug ?? "",
+      managerId: manager.id,
+    };
+  },
+
+  async regenerateManagerInvite(shopId, inviteId) {
+    const state = getState();
+    const invite = state.shopManagerInvites.find(
+      (i) => i.id === inviteId && i.shopId === shopId,
+    );
+    if (!invite) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (invite.consumedAt) throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+    if (invite.revokedAt) throw new StoreConflict("INVITE_REVOKED");
+
+    const now = nowIso();
+    invite.revokedAt = now;
+    const next: ShopManagerInvite = {
+      id: uuid(),
+      shopId,
+      role: "manager",
+      token: inviteToken(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      consumedAt: null,
+      revokedAt: null,
+      createdAt: now,
+      createdByBarberId: invite.createdByBarberId,
+    };
+    state.shopManagerInvites.push(next);
+    return { ...next };
+  },
+
+  async cancelManagerInvite(shopId, inviteId) {
+    const invite = getState().shopManagerInvites.find(
+      (i) => i.id === inviteId && i.shopId === shopId,
+    );
+    if (!invite) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (invite.consumedAt) throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+    if (!invite.revokedAt) invite.revokedAt = nowIso();
+    return { ...invite };
+  },
+
+  async revokeShopManager(shopId, managerId) {
+    const manager = getState().shopManagers.find(
+      (m) => m.id === managerId && m.shopId === shopId,
+    );
+    if (!manager) throw new StoreConflict("NOT_FOUND");
+    if (!manager.revokedAt) manager.revokedAt = nowIso();
+    return { ...manager };
+  },
+
+  async getActiveManagerByLineId(lineId) {
+    const trimmed = lineId.trim();
+    if (!trimmed) return null;
+    const manager = getState().shopManagers.find(
+      (m) => m.lineId === trimmed && !m.revokedAt,
+    );
+    return manager ? { ...manager } : null;
   },
 
   async getBarberByLineId(lineId) {

@@ -7,6 +7,7 @@ import { ShopNameLockup } from "@/components/layout/ShopNameLockup";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
@@ -112,7 +113,7 @@ export default function AdminSettingsPage() {
   }
 
   useEffect(() => {
-    if (!ready || !profile || profile.role !== "owner") return;
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     void (async () => {
       const res = await fetch(shopApi("/settings"), { headers: authHeaders });
       if (!res.ok) return;
@@ -325,7 +326,7 @@ export default function AdminSettingsPage() {
     );
   }
 
-  if (profile.role !== "owner") {
+  if (!isShopOperatorRole(profile.role)) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.settings")}</h1>
@@ -582,6 +583,19 @@ export default function AdminSettingsPage() {
           {logoMessage ? <p className="mt-3 text-sm text-emerald-400">{logoMessage}</p> : null}
           {logoError ? <p className="mt-3 text-sm text-red-400">{logoError}</p> : null}
         </section>
+
+        {profile.role === "owner" ? (
+          <section className="rounded-2xl bg-zinc-900 p-4">
+            <h2 className="text-sm font-semibold">{t("admin.managersTitle")}</h2>
+            <p className="mt-1 text-sm text-zinc-400">{t("admin.managersHint")}</p>
+            <Link
+              href={shopPath("/admin/settings/managers")}
+              className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
+            >
+              {t("admin.managersTitle")}
+            </Link>
+          </section>
+        ) : null}
       </div>
     </AdminShell>
   );

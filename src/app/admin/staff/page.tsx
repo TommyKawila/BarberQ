@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import {
   applyOptimisticBookable,
   canToggleBookable,
@@ -65,7 +66,7 @@ export default function AdminStaffPage() {
   }, [authHeaders, shopApi, t]);
 
   useEffect(() => {
-    if (!ready || !profile || profile.role !== "owner") return;
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     void loadBarbers();
   }, [loadBarbers, profile, ready]);
 
@@ -252,7 +253,7 @@ export default function AdminStaffPage() {
     );
   }
 
-  if (profile.role !== "owner") {
+  if (!isShopOperatorRole(profile.role)) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <h1 className="text-2xl font-semibold">{t("admin.staffManagement")}</h1>

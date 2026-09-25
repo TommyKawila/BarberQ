@@ -13,7 +13,7 @@ import {
 } from "@/lib/services/slot-service";
 import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
-import type { StaffAuth } from "@/lib/admin-auth";
+import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
 import type {
   AdminColumn,
   AdminSlot,
@@ -379,7 +379,7 @@ export async function getAdminDay(
     const store = getStore();
     const allBarbers = await listBarbers(shopId);
     const barbers =
-      staff.role === "owner"
+      isShopOperatorRole(staff.role)
         ? allBarbers
         : allBarbers.filter((b) => b.id === staff.barberId);
     const settings = await store.getShopSettings(shopId);

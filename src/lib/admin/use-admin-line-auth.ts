@@ -11,8 +11,8 @@ export interface AdminProfile {
   lineId: string;
   displayName: string;
   pictureUrl?: string;
-  role: "owner" | "barber";
-  barberId: string;
+  role: "owner" | "barber" | "manager";
+  barberId: string | null;
   barberName: string;
   shopId: string | null;
 }
@@ -34,9 +34,9 @@ export function useAdminLineAuth() {
         throw new Error("Not authorized");
       }
       const data = (await res.json()) as {
-        barberId: string;
+        barberId: string | null;
         barberName: string;
-        role: "owner" | "barber";
+        role: "owner" | "barber" | "manager";
         shopId: string | null;
       };
       setProfile({

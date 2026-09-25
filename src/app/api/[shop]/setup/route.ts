@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertShopOwner, assertStaffForShop } from "@/lib/admin-auth";
+import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { getShopActivation } from "@/lib/onboarding/shop-activation-service";
@@ -15,7 +15,7 @@ export async function GET(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
     const activation = await getShopActivation(shop);
     const bookingUrl = buildShopLiffUrl(shop.slug) ?? buildShopWebUrl(shop.slug);
     return NextResponse.json({ activation, bookingUrl, slug: shop.slug });

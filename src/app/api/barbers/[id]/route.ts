@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaff, assertCanManageBarber } from "@/lib/admin-auth";
+import { assertStaff, assertCanManageBarber, isShopOperatorRole } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import {
@@ -44,7 +44,7 @@ export async function PATCH(
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
-    await assertCanManageBarber(staff, id);
+    const barberRecord = await assertCanManageBarber(staff, id);
 
     const body = await readJson<{
       offDays?: number[];
@@ -55,13 +55,20 @@ export async function PATCH(
       showProfileInBooking?: boolean;
     }>(req);
 
-    const isOwner = staff.role === "owner";
+    const isOperator = isShopOperatorRole(staff.role);
     if (
-      !isOwner &&
+      !isOperator &&
       (body.name !== undefined ||
         body.lineId !== undefined ||
         body.isBookable !== undefined ||
         body.showProfileInBooking !== undefined)
+    ) {
+      throw new BookingError("FORBIDDEN", "Shop operator required", 403);
+    }
+    if (
+      staff.role !== "owner" &&
+      barberRecord.role === "owner" &&
+      body.lineId !== undefined
     ) {
       throw new BookingError("FORBIDDEN", "Shop owner required", 403);
     }
@@ -83,13 +90,14 @@ export async function PATCH(
       throw new BookingError("INVALID_NAME", "Barber name is required", 400);
     }
 
+    const canEditOwnerLine = staff.role === "owner" || barberRecord.role !== "owner";
     const barber = await getStore().updateBarber(id, {
       offDays: body.offDays !== undefined ? normalizeOffDays(body.offDays) : undefined,
       slotDuration: body.slotDuration,
-      name: isOwner ? body.name?.trim() : undefined,
-      lineId: isOwner ? body.lineId : undefined,
-      isBookable: isOwner ? body.isBookable : undefined,
-      showProfileInBooking: isOwner ? body.showProfileInBooking : undefined,
+      name: isOperator ? body.name?.trim() : undefined,
+      lineId: isOperator && canEditOwnerLine ? body.lineId : undefined,
+      isBookable: isOperator ? body.isBookable : undefined,
+      showProfileInBooking: isOperator ? body.showProfileInBooking : undefined,
     });
     return NextResponse.json({ barber });
   } catch (error) {

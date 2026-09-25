@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaffForShop, assertShopOwner } from "@/lib/admin-auth";
+import { assertStaffForShop, assertShopOperator } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import type { ShopSettings } from "@/lib/data/types";
@@ -41,7 +41,7 @@ export async function PUT(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
     const body = await readJson<{
       logoDataUrl?: string | null;
       shopName?: string | null;

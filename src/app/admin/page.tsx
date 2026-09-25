@@ -9,6 +9,7 @@ import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import type { ShopActivation } from "@/lib/onboarding/activation";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -76,7 +77,7 @@ export default function AdminPage() {
   }, [authHeaders, dateISO, shopApi, showClosedQueue, t]);
 
   useEffect(() => {
-    if (!ready || !profile || profile.role !== "owner") return;
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     void fetch(shopApi("/setup"), { headers: authHeaders })
       .then(async (res) => {
         if (!res.ok) return;
@@ -253,8 +254,8 @@ export default function AdminPage() {
     );
   }
 
-  const isOwner = profile.role === "owner";
-  const editableBarberId = isOwner ? null : profile.barberId;
+  const isOperator = isShopOperatorRole(profile.role);
+  const editableBarberId = isOperator ? null : profile.barberId;
   const badgeRole = profile.role;
 
   async function copyBookingLink() {
@@ -309,7 +310,7 @@ export default function AdminPage() {
                 {t("admin.refresh")}
               </button>
             </div>
-            {isOwner ? (
+            {isOperator ? (
               <label className="mt-2 flex min-h-11 items-center gap-2 text-sm text-zinc-300">
                 <input
                   type="checkbox"
@@ -336,7 +337,7 @@ export default function AdminPage() {
           <span className="rounded bg-orange-700 px-2 py-0.5 text-white">{t("admin.noShow")}</span>
         </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        {isOwner && activation && !activation.ready ? (
+        {isOperator && activation && !activation.ready ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <p className="text-sm text-amber-200">{t("onboarding.bannerIncomplete")}</p>
             <Link
@@ -347,7 +348,7 @@ export default function AdminPage() {
             </Link>
           </div>
         ) : null}
-        {isOwner && activation && !activation.teamOk ? (
+        {isOperator && activation && !activation.teamOk ? (
           <div className="rounded-xl bg-zinc-900 p-4 text-sm">
             <p className="text-zinc-300">{t("onboarding.noBookableBarber")}</p>
             <Link href={shopPath("/admin/setup?step=team")} className="mt-2 text-amber-400 underline">
@@ -355,7 +356,7 @@ export default function AdminPage() {
             </Link>
           </div>
         ) : null}
-        {isOwner && activation && !activation.hoursOk ? (
+        {isOperator && activation && !activation.hoursOk ? (
           <div className="rounded-xl bg-zinc-900 p-4 text-sm">
             <p className="text-zinc-300">{t("onboarding.noHours")}</p>
             <Link href={shopPath("/admin/setup?step=hours")} className="mt-2 text-amber-400 underline">
@@ -363,7 +364,7 @@ export default function AdminPage() {
             </Link>
           </div>
         ) : null}
-        {isOwner && isToday && !hasBookingsToday && activation?.ready ? (
+        {isOperator && isToday && !hasBookingsToday && activation?.ready ? (
           <div className="rounded-xl bg-zinc-900 p-4 text-sm">
             <p className="text-zinc-300">{t("onboarding.noBookingsToday")}</p>
             <button

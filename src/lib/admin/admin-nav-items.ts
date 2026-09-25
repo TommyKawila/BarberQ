@@ -28,12 +28,12 @@ export const ADMIN_NAV_BAR_PADDING_CLASS =
   "pb-[env(safe-area-inset-bottom,0px)]";
 
 export function primaryAdminNavItems(role: ShopStaffRole): AdminNavItemId[] {
-  if (role === "owner") return ["board", "team", "stats", "more"];
+  if (role === "owner" || role === "manager") return ["board", "team", "stats", "more"];
   return ["board", "schedule", "more"];
 }
 
 export function moreAdminNavItems(role: ShopStaffRole): AdminNavDestinationId[] {
-  if (role === "owner") return ["schedule", "settings", "booking"];
+  if (role === "owner" || role === "manager") return ["schedule", "settings", "booking"];
   return ["booking"];
 }
 

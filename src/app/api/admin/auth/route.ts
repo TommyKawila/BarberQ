@@ -8,7 +8,7 @@ export async function GET(req: Request) {
   try {
     const staff = await assertStaff(req);
     return NextResponse.json({
-      barberId: staff.barberId ?? staff.staffId,
+      barberId: staff.barberId,
       barberName: staff.name,
       role: staff.role,
       shopId: staff.shopId,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaffForShop, assertShopOwner, isAdminAuthRequired } from "@/lib/admin-auth";
+import { assertStaffForShop, assertShopOperator, isAdminAuthRequired } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import { isPrototypeMode } from "@/lib/data";
@@ -20,7 +20,7 @@ export async function GET(
     let barbers = await listBookableBarbers(shop.id);
     try {
       const staff = await assertStaffForShop(req, shop.id);
-      assertShopOwner(staff);
+      assertShopOperator(staff);
       barbers = await listBarbers(shop.id);
     } catch {
       // public customer listing
@@ -45,7 +45,7 @@ export async function POST(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
 
     const body = await readJson<{
       name?: string;

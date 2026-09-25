@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertShopOwner, assertStaffForShop } from "@/lib/admin-auth";
+import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import {
@@ -35,7 +35,7 @@ export async function GET(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
     const request = await getStore().getLatestLineOaInstallRequest(shop.id);
     return NextResponse.json({ request });
   } catch (error) {
@@ -51,7 +51,7 @@ export async function POST(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
 
     const body = await readJson<Record<string, unknown>>(req);
     let input;

@@ -11,7 +11,7 @@ import type { Appointment, Barber } from "@/types/booking";
 export const ADMIN_TOKEN_KEY = "barberq_admin_token";
 const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
 
-export type ShopStaffRole = "owner" | "barber";
+export type ShopStaffRole = "owner" | "barber" | "manager";
 
 export interface StaffAuth {
   staffId: string;
@@ -38,17 +38,32 @@ export function getAdminTokenFromRequest(req: Request): string {
   return req.headers.get("x-admin-token") ?? "";
 }
 
+export function isShopOperatorRole(role: ShopStaffRole): boolean {
+  return role === "owner" || role === "manager";
+}
+
 export async function getStaffFromLineId(lineId: string): Promise<StaffAuth | null> {
   if (!lineId) return null;
   const barber = await getStore().getBarberByLineId(lineId);
-  if (!barber || !barber.shop_id || barber.is_active === false) return null;
-  const role: ShopStaffRole = barber.role === "owner" ? "owner" : "barber";
+  if (barber && barber.shop_id && barber.is_active !== false) {
+    const role: ShopStaffRole = barber.role === "owner" ? "owner" : "barber";
+    return {
+      staffId: barber.id,
+      name: barber.name,
+      role,
+      barberId: barber.id,
+      shopId: barber.shop_id,
+      lineId,
+    };
+  }
+  const manager = await getStore().getActiveManagerByLineId(lineId);
+  if (!manager) return null;
   return {
-    staffId: barber.id,
-    name: barber.name,
-    role,
-    barberId: barber.id,
-    shopId: barber.shop_id,
+    staffId: manager.id,
+    name: manager.displayName,
+    role: "manager",
+    barberId: null,
+    shopId: manager.shopId,
     lineId,
   };
 }
@@ -122,6 +137,12 @@ export function assertShopOwner(staff: StaffAuth): void {
   }
 }
 
+export function assertShopOperator(staff: StaffAuth): void {
+  if (!isShopOperatorRole(staff.role)) {
+    throw new BookingError("FORBIDDEN", "Shop operator required", 403);
+  }
+}
+
 /** @deprecated Use assertShopOwner for shop-scoped owner checks */
 export function assertSuperAdmin(staff: StaffAuth): void {
   assertShopOwner(staff);
@@ -134,7 +155,7 @@ export async function canManageBarber(
   if (!staff.shopId) return false;
   const barber = await getStore().getBarber(barberId);
   if (!barber || barber.shop_id !== staff.shopId) return false;
-  if (staff.role === "owner") return true;
+  if (staff.role === "owner" || staff.role === "manager") return true;
   return staff.barberId === barberId;
 }
 

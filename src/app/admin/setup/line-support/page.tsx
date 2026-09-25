@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { getOptionalBarberqSupportLineUrl } from "@/lib/env";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -89,7 +90,7 @@ export default function LineSupportPage() {
   }, [authHeaders, shopApi, t]);
 
   useEffect(() => {
-    if (!ready || !profile || profile.role !== "owner") return;
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     void load();
   }, [load, profile, ready]);
 
@@ -126,7 +127,7 @@ export default function LineSupportPage() {
     );
   }
 
-  if (!profile || profile.role !== "owner") {
+  if (!profile || !isShopOperatorRole(profile.role)) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
         <p className="text-sm text-red-400">{t("admin.forbiddenOwnerOnly")}</p>

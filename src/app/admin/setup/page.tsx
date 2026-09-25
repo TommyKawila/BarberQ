@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -143,7 +144,7 @@ function SetupContent() {
   }, [authHeaders, shopApi]);
 
   useEffect(() => {
-    if (!ready || !profile || profile.role !== "owner") return;
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -358,7 +359,7 @@ function SetupContent() {
     );
   }
 
-  if (profile.role !== "owner") {
+  if (!isShopOperatorRole(profile.role)) {
     return null;
   }
 

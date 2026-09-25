@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BarberAvatar } from "@/components/barber/BarberAvatar";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { formatBreaksSummary, formatOffDaysSummary } from "@/lib/barber/schedule-summary";
 import { fitLogoFile } from "@/lib/image/fit-logo";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -86,7 +87,7 @@ export default function EditBarberPage() {
   }, [authHeaders, barberId, t]);
 
   useEffect(() => {
-    if (!ready || !profile || profile.role !== "owner") return;
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     void load();
   }, [load, profile, ready]);
 
@@ -127,7 +128,9 @@ export default function EditBarberPage() {
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
           name: trimmed,
-          lineId: lineId.trim() || null,
+          ...(profile?.role === "owner" || barber?.role !== "owner"
+            ? { lineId: lineId.trim() || null }
+            : {}),
           isBookable,
           slotDuration: isBookable ? slotDuration : undefined,
           showProfileInBooking,
@@ -230,7 +233,7 @@ export default function EditBarberPage() {
     return <p className="p-4 text-sm text-zinc-400">{t("common.loading")}</p>;
   }
 
-  if (profile.role !== "owner") {
+  if (!isShopOperatorRole(profile.role)) {
     return (
       <section className="px-4 py-10">
         <p className="text-sm text-red-400">{t("admin.forbiddenOwnerOnly")}</p>
@@ -244,6 +247,7 @@ export default function EditBarberPage() {
 
   const displayName = barberLabel(barber.name, locale);
   const isOwnerBarber = barber.role === "owner";
+  const canEditOwnerLine = profile.role === "owner" || !isOwnerBarber;
 
   return (
     <AdminShell role={profile.role}>
@@ -377,6 +381,7 @@ export default function EditBarberPage() {
           ) : null}
         </section>
 
+        {canEditOwnerLine ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 className="font-semibold">{t("admin.lineAdminSection")}</h2>
           <p className="mt-1 text-sm text-zinc-400">{t("admin.lineAdminHint")}</p>
@@ -402,13 +407,14 @@ export default function EditBarberPage() {
                 type="button"
                 disabled={saving}
                 onClick={() => void unlinkLine()}
-                className="mt-3 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
+                className="mt-3 min-h-11 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
               >
                 {t("admin.unlinkLine")}
               </button>
             </>
           )}
         </section>
+        ) : null}
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 className="font-semibold">{t("admin.scheduleSection")}</h2>

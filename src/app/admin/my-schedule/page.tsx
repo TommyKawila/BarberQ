@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -48,7 +49,9 @@ function MyScheduleContent() {
   const barberParam = searchParams.get("barber");
 
   const barberId =
-    profile?.role === "owner" && barberParam ? barberParam : (profile?.barberId ?? null);
+    isShopOperatorRole(profile?.role ?? "barber") && barberParam
+      ? barberParam
+      : (profile?.barberId ?? null);
   const [barber, setBarber] = useState<Barber | null>(null);
   const [breaks, setBreaks] = useState<RecurringBreakRow[]>([]);
   const [offDays, setOffDays] = useState<number[]>([]);

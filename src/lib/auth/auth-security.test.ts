@@ -97,7 +97,20 @@ describe("admin nav visibility", () => {
       "settings",
       "booking",
     ]);
+    assert.deepEqual(adminNavItems("manager"), [
+      "board",
+      "team",
+      "stats",
+      "schedule",
+      "settings",
+      "booking",
+    ]);
     assert.deepEqual(adminNavItems("barber"), ["board", "schedule", "booking"]);
+  });
+
+  it("manager nav matches owner day-to-day set", () => {
+    assert.deepEqual(primaryAdminNavItems("manager"), ["board", "team", "stats", "more"]);
+    assert.deepEqual(moreAdminNavItems("manager"), ["schedule", "settings", "booking"]);
   });
 });
 

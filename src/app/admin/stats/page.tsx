@@ -10,6 +10,7 @@ import { StatCard } from "@/components/admin/charts/StatCard";
 import { TrendBars } from "@/components/admin/charts/TrendBars";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant } from "@/lib/services/slot-service";
@@ -72,7 +73,7 @@ export default function AdminStatsPage() {
     (totals?.completed ?? 0) -
     (totals?.cancelled ?? 0) -
     (totals?.noShow ?? 0);
-  const isOwner = profile.role === "owner";
+  const isOperator = isShopOperatorRole(profile.role);
 
   return (
     <AdminShell role={profile.role}>
@@ -166,7 +167,7 @@ export default function AdminStatsPage() {
               </section>
             ) : null}
 
-            {isOwner && report?.byBarber.length ? (
+            {isOperator && report?.byBarber.length ? (
               <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
                 <h2 className="mb-2 text-sm font-semibold">{t("admin.statsByBarber")}</h2>
                 <BarberBars

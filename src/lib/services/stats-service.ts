@@ -1,6 +1,6 @@
 import { addDays, addMinutes, differenceInMinutes, endOfMonth, parseISO, startOfMonth } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import type { StaffAuth } from "@/lib/admin-auth";
+import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
 import { isOccupyingStatus } from "@/lib/appointment-status";
 import { getStore } from "@/lib/data";
 import { listBarbers } from "@/lib/services/booking-service";
@@ -181,7 +181,7 @@ export async function getStatsReport(
   const store = getStore();
   const allBarbers = await listBarbers(staff.shopId);
   const barbers =
-    staff.role === "owner"
+    isShopOperatorRole(staff.role)
       ? allBarbers
       : allBarbers.filter((b) => b.id === staff.barberId);
   const shopSettings = await store.getShopSettings(staff.shopId);

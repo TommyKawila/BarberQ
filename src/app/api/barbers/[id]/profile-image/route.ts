@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   assertCanManageBarber,
-  assertShopOwner,
+  assertShopOperator,
   assertStaff,
 } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
@@ -27,7 +27,7 @@ export async function POST(
 ) {
   try {
     const staff = await assertStaff(req);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
     const { id } = await context.params;
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
@@ -68,7 +68,7 @@ export async function DELETE(
 ) {
   try {
     const staff = await assertStaff(req);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
     const { id } = await context.params;
     if (!isUuid(id)) {
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);

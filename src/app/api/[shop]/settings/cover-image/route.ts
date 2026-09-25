@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertStaffForShop, assertShopOwner } from "@/lib/admin-auth";
+import { assertStaffForShop, assertShopOperator } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import { CoverImageError } from "@/lib/image/validate-cover-image";
@@ -20,7 +20,7 @@ export async function POST(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
 
     const form = await req.formData();
     const file = form.get("file");
@@ -61,7 +61,7 @@ export async function DELETE(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
-    assertShopOwner(staff);
+    assertShopOperator(staff);
 
     const current = await getStore().getShopSettings(shop.id);
     await deleteShopCoverImage(current.coverImageUrl);

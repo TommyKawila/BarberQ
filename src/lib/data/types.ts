@@ -14,7 +14,10 @@ export type StoreErrorCode =
   | "INVITE_NOT_FOUND"
   | "INVITE_EXPIRED"
   | "INVITE_ALREADY_CLAIMED"
+  | "INVITE_REVOKED"
   | "LINE_ID_TAKEN"
+  | "IDENTITY_INCOMPATIBLE"
+  | "MANAGER_ALREADY_ACTIVE"
   | "HAS_FUTURE_BOOKINGS";
 
 export class StoreConflict extends Error {
@@ -123,6 +126,52 @@ export interface ClaimOwnerInviteInput {
   ownerName: string;
 }
 
+export interface ShopManager {
+  id: string;
+  shopId: string;
+  lineId: string;
+  role: "manager";
+  displayName: string;
+  createdAt: string;
+  revokedAt: string | null;
+}
+
+export interface ShopManagerInvite {
+  id: string;
+  shopId: string;
+  role: "manager";
+  token: string;
+  expiresAt: string;
+  consumedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  createdByBarberId: string | null;
+}
+
+export interface ManagerInvitePreview {
+  shopName: string;
+  shopSlug: string;
+  expired: boolean;
+  consumed: boolean;
+  revoked: boolean;
+}
+
+export interface ClaimManagerInviteInput {
+  inviteToken: string;
+  lineId: string;
+  displayName: string;
+}
+
+export interface ClaimManagerResult {
+  shopId: string;
+  shopSlug: string;
+  managerId: string;
+}
+
+export interface CreateManagerInviteResult {
+  invite: ShopManagerInvite;
+}
+
 export interface ShopInvitePreview {
   shopName: string;
   expired: boolean;
@@ -198,6 +247,15 @@ export interface BookingStore {
   getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
   regenerateOwnerInvite(shopId: string): Promise<Shop>;
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;
+  listShopManagers(shopId: string): Promise<ShopManager[]>;
+  listManagerInvites(shopId: string): Promise<ShopManagerInvite[]>;
+  createManagerInvite(shopId: string, createdByBarberId: string | null): Promise<ShopManagerInvite>;
+  getManagerInvitePreview(token: string): Promise<ManagerInvitePreview | null>;
+  claimManagerInvite(input: ClaimManagerInviteInput): Promise<ClaimManagerResult>;
+  regenerateManagerInvite(shopId: string, inviteId: string): Promise<ShopManagerInvite>;
+  cancelManagerInvite(shopId: string, inviteId: string): Promise<ShopManagerInvite>;
+  revokeShopManager(shopId: string, managerId: string): Promise<ShopManager>;
+  getActiveManagerByLineId(lineId: string): Promise<ShopManager | null>;
   getBarberByLineId(lineId: string): Promise<Barber | null>;
   getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;
   unlinkBarberLine(shopId: string, barberId: string): Promise<Barber>;

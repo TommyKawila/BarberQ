@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-25 |
-| State | **READY_FOR_ENGINEERING** |
+| State | **READY_FOR_QA** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -13,12 +13,13 @@
 | Relationship to SPR-002 | Separate delivery dependency. Do **not** add Manager scope to SPR-002. SPR-002 remains `READY_FOR_ENGINEERING` until this capability is delivered and LOCKED. |
 | UX handoff | [UX-003 — Tenant-Scoped Manager Role](../handoffs/UX-003-TENANT-SCOPED-MANAGER-ROLE.md) — **UX_APPROVED / Product-approved** |
 | Product review | **APPROVED — 2026-09-25** |
-| Next allowed transition | `IMPLEMENTED` after Engineering completes only the approved SPR-003 + UX-003 scope and creates `RPT-003-ENG` |
-| Engineering authorized now? | **Yes — SPR-003 + Product-approved UX-003 only** |
-| Feature/code implementation authorized now? | **Yes — only the approved tenant-scoped Manager MVP; no scope expansion** |
+| Next allowed transition | `PASS` after QA vs SPR-003 + UX-003 (or back to `IMPLEMENTED` on reject) |
+| Engineering authorized now? | Implementation complete for approved SPR-003 + UX-003 only |
+| Engineering report | [RPT-003-ENG](../reports/RPT-003-ENG.md) |
+| Feature/code implementation authorized now? | Complete for this Sprint — QA owns verification |
 | P0? | No |
 
-> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. Product has approved UX-003. `READY_FOR_ENGINEERING` authorizes Engineering/Cursor to implement **only** SPR-003 + UX-003. It does not authorize broad RBAC, multi-shop Manager access, generalized identity rewrites, unrelated admin redesign, or changes to SPR-002.
+> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. Product has approved UX-003. Engineering implemented only SPR-003 + UX-003 and moved the Sprint to `READY_FOR_QA`. It does not authorize broad RBAC, multi-shop Manager access, generalized identity rewrites, unrelated admin redesign, or changes to SPR-002.
 
 ---
 
@@ -788,16 +789,16 @@ It must document:
 
 ## 23. State
 
-**READY_FOR_ENGINEERING**
+**READY_FOR_QA**
 
-Engineering / Cursor is authorized to implement only the Product-approved SPR-003 + UX-003 tenant-scoped Manager MVP.
+`READY_FOR_ENGINEERING` → **IMPLEMENTED** via Engineering + [RPT-003-ENG](../reports/RPT-003-ENG.md) on 2026-09-25.
+
+`IMPLEMENTED` → **READY_FOR_QA** via Engineering verification package in the same report (how QA should verify SPR-003 + UX-003).
+
+QA owns the next transition. Do not PASS or LOCK from Engineering.
 
 **No cross-shop Manager access, custom RBAC, generalized identity rewrite, Owner claim rewrite, Barber/customer/booking redesign, or SPR-002 change is authorized.**
-
-Required next artifact: `docs/barberqx-os/reports/RPT-003-ENG.md`.
 
 Do not modify SPR-002 scope or state.
 
 Do not create SPR-004.
-
-STOP before Engineering implementation.
