@@ -138,6 +138,19 @@ Insights and feature requests do not independently authorize engineering work ([
 | Product implication | Keep any underlying implementation limit separate from positioning. Public acquisition should not use the 10-barber cap as proof, differentiation, or validated packaging until Product/Founder revisit it. |
 | Revisit condition | Pilot usage and commercial evidence justify a deliberate packaging decision. |
 
+
+## PD-012
+
+| | |
+|---|---|
+| Date | 2026-09-25 |
+| Status | Accepted |
+| Decision | BarberQx supports a first-class, tenant-scoped **Manager** role distinct from Owner and Barber. Manager authenticates with their own verified LINE identity, does not live in the barbers model, does not appear in customer barber selection, and may perform approved day-to-day shop administration. Owner remains the highest shop authority and controls Manager invitation/revocation. Multiple Managers per shop are allowed. Initial delivery does not support one Manager identity across multiple shops. |
+| Reason | Real Shop #1 preparation exposed that shop ownership and daily BarberQx operation may belong to different people. The legitimate Owner remains responsible for the tenant but may need a trusted employee to operate the system during the Pilot. Modeling that employee as a fake/non-bookable barber, sharing Owner credentials, or manually assigning LINE IDs would violate Product and security boundaries. |
+| Evidence / source | PHINX STUDIO Shop #1 operational requirement observed during SPR-002 preparation; explicit Founder approval on 2026-09-25. This is one-shop operational evidence supporting delivery planning, not proof that every shop requires Managers or that broad RBAC is needed. |
+| Product implication | Manager delivery must use a shop-bound, role-bound, expiring, one-time invite claimed through verified LINE authentication. Manager authorization must be tenant-scoped and revocable. Manager cannot promote themselves or another Manager to Owner. Existing Owner claim, Barber/customer behavior, booking/concurrency behavior, tenant isolation, and Super Admin separation remain protected. Do not manually enter LINE user IDs. Do not build cross-shop Manager access or broad permission-builder/RBAC scope in the initial delivery. |
+| Revisit condition | Pilot evidence shows a need for cross-shop management, granular permissions, additional non-barber roles, ownership delegation/transfer, or a unified Owner/Manager membership model. |
+
 ---
 
 ## Constraints (not tickets)
