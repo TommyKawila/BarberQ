@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-25 |
-| State | **READY_FOR_QA** |
+| State | **IMPLEMENTED** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -13,13 +13,13 @@
 | Relationship to SPR-002 | Separate delivery dependency. Do **not** add Manager scope to SPR-002. SPR-002 remains `READY_FOR_ENGINEERING` until this capability is delivered and LOCKED. |
 | UX handoff | [UX-003 — Tenant-Scoped Manager Role](../handoffs/UX-003-TENANT-SCOPED-MANAGER-ROLE.md) — **UX_APPROVED / Product-approved** |
 | Product review | **APPROVED — 2026-09-25** |
-| Next allowed transition | `PASS` after QA re-verifies QA-003-01, or `IMPLEMENTED` if QA rejects again |
+| Next allowed transition | `READY_FOR_QA` after required target-environment/live QA prerequisites are completed and evidence is recorded |
 | Engineering authorized now? | Implementation complete for approved SPR-003 + UX-003 only |
 | Engineering report | [RPT-003-ENG](../reports/RPT-003-ENG.md) |
 | Feature/code implementation authorized now? | Complete for this Sprint — QA owns verification |
 | P0? | No |
 
-> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. Engineering corrected QA-003-01 (Owner identity/profile mutation through Barber edit paths) and returned the Sprint to `READY_FOR_QA`. It does not authorize broad RBAC, multi-shop Manager access, generalized identity rewrites, unrelated admin redesign, or changes to SPR-002. Do not PASS or LOCK from Engineering.
+> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. QA-003-01 is fixed, but required target-environment/live LINE and responsive verification remains incomplete. QA returned the Sprint to `IMPLEMENTED` for operational verification only. No application-code change is authorized unless a new verified defect is found. Do not broaden scope or modify SPR-002.
 
 ---
 
@@ -789,7 +789,7 @@ It must document:
 
 ## 23. State
 
-**READY_FOR_QA**
+**IMPLEMENTED**
 
 `READY_FOR_ENGINEERING` → **IMPLEMENTED** via Engineering + [RPT-003-ENG](../reports/RPT-003-ENG.md) on 2026-09-25.
 
@@ -798,6 +798,10 @@ It must document:
 `READY_FOR_QA` → **IMPLEMENTED** via QA FAIL on 2026-09-25: Manager can modify Owner identity/profile fields through existing Barber edit/profile-image paths (QA-003-01; see [RPT-003-QA](../reports/RPT-003-QA.md)).
 
 `IMPLEMENTED` → **READY_FOR_QA** via QA-003-01 server/UI/tests fix + updated [RPT-003-ENG](../reports/RPT-003-ENG.md) on 2026-09-25.
+
+`READY_FOR_QA` → **IMPLEMENTED** via re-QA on 2026-09-25: QA-003-01 closed, but migration-backed target-environment live LINE/invite/revoke/tenant/responsive verification remains incomplete (QA-003-02; see [RPT-003-QA](../reports/RPT-003-QA.md)).
+
+Engineering/operations may only prepare/complete the required target QA environment and record factual evidence. Do not change application code unless a new verified defect is found. Then return to `READY_FOR_QA`.
 
 Do not PASS or LOCK from Engineering.
 
