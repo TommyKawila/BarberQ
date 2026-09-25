@@ -5,241 +5,241 @@
 | Linked Sprint | [SPR-003](../sprints/SPR-003-TENANT-SCOPED-MANAGER-ROLE.md) |
 | Linked UX | [UX-003](../handoffs/UX-003-TENANT-SCOPED-MANAGER-ROLE.md) |
 | Engineering report | [RPT-003-ENG](./RPT-003-ENG.md) |
-| Reviewed implementation commit | `6d7bb96717a1749f37de32a08957fa3b76fedc38` |
+| Original implementation commit | `6d7bb96717a1749f37de32a08957fa3b76fedc38` |
+| QA-003-01 fix commit | `65ff9a79aaad1a5a2a361b66797463ef1bff04f5` |
 | Date | 2026-09-25 |
-| QA verdict | **FAIL — RETURN_TO_ENGINEERING** |
+| Re-QA verdict | **FAIL — RETURN_TO_ENGINEERING** |
 
-## 1. Commit reviewed
+## 1. Fix commit reviewed
 
-QA reviewed GitHub `main` at/including Engineering commit `6d7bb96717a1749f37de32a08957fa3b76fedc38` against SPR-003, Product-approved UX-003, PD-012, CURRENT-STATE, WORKFLOW, BRAND, and the protected SPR-002 boundary.
+GitHub `main` is identical to `65ff9a79aaad1a5a2a361b66797463ef1bff04f5` at re-QA time.
 
-## 2. Migration state / environment
+The fix commit changes only:
 
-Static migration review completed for:
+- `src/lib/admin-auth.ts`
+- `src/app/api/barbers/[id]/route.ts`
+- `src/app/api/barbers/[id]/profile-image/route.ts`
+- `src/app/admin/staff/[id]/page.tsx`
+- `src/lib/manager/manager-owner-identity.test.ts`
+- `package.json`
+- `RPT-003-ENG.md`
+- `SPR-003-TENANT-SCOPED-MANAGER-ROLE.md`
+
+No Manager invite/membership, booking/customer, Owner claim, tenant, Super Admin, or SPR-002 file is changed by the QA-003-01 fix.
+
+## 2. QA-003-01 verification
+
+**PASS.**
+
+Engineering fixed the exact Owner-identity/profile boundary defect without introducing RBAC or broadening scope.
+
+New server guard:
+
+`assertCanMutateOwnerBarberIdentity(staff, barber)`
+
+denies a non-Owner when the target Barber record has `role === "owner"`.
+
+The guard is applied to:
+
+- Owner `name` / `lineId` mutation through PATCH `/api/barbers/{id}`;
+- Owner profile-image POST;
+- Owner profile-image DELETE.
+
+The ordinary Barber operational path remains on the existing Manager shop-operator authorization.
+
+## 3. Direct API results
+
+**PASS — code/test verification.**
+
+Focused direct route tests cover:
+
+A. Manager PATCH Owner name → **403 DENIED**, persisted name unchanged.
+
+B. Manager PATCH Owner LINE identity → **403 DENIED**, persisted LINE identity unchanged.
+
+C. Manager POST Owner profile image → **403 DENIED**.
+
+D. Manager DELETE Owner profile image → **403 DENIED**, existing image remains.
+
+E. Manager PATCH ordinary Barber name → **200 ALLOWED**.
+
+F. Manager POST/DELETE ordinary Barber profile image → **200 ALLOWED**.
+
+G. Manager ordinary-Barber operational access remains permitted by the unchanged `assertCanManageBarber` / operator path. Existing Manager authorization and shop/barber suites remain in `test:security` / `test:shop`. The focused identity test itself does not add a separate availability-toggle assertion.
+
+H. Owner PATCH own name + POST own profile image → **200 ALLOWED**.
+
+The focused test file therefore covers all four required Owner identity/profile direct server attempts and the required positive ordinary-Barber name/profile cases.
+
+## 4. UI results
+
+**PASS — static implementation review.**
+
+When Manager views an Owner Barber record:
+
+- Owner name input is read-only;
+- profile-image upload/replace/delete controls are hidden;
+- LINE identity management controls are hidden;
+- save omits Owner `name` / `lineId` from the Manager request.
+
+For an ordinary Barber, edit/profile controls remain available.
+
+No broad Team redesign is introduced by the fix.
+
+## 5. Migration state
+
+**NOT VERIFIED AS APPLIED IN A TARGET QA SUPABASE PROJECT.**
+
+Static review of `supabase/migrations/0025_shop_managers.sql` remains acceptable, but neither the Engineering report nor the QA tools available in this review provide evidence that migration 0025 has been applied to the target QA Supabase project.
+
+Therefore QA does **not** claim that live Manager invite/claim behavior has passed against the target database.
+
+Before live Manager invite/claim QA, apply/confirm migration:
 
 `supabase/migrations/0025_shop_managers.sql`
 
-Result of static review:
+No secret, invite token, or actual LINE user ID should be recorded in this report.
 
-- `shop_managers` is distinct from `barbers`;
-- role is constrained to `manager`;
-- active Manager LINE identity is globally unique through a partial unique index;
-- multiple Managers can belong to one shop;
-- revoked rows remain non-active through `revoked_at`;
-- invites are shop-bound, Manager-role-bound, expiring, single-use, and represent consumed/revoked state;
-- regenerate revokes the previous invite before creating a new one;
-- claim uses row locking and consumes the invite atomically;
-- RLS is enabled on both Manager tables;
-- Manager RPCs are revoked from `public` and granted to `service_role` only;
-- Owner and Barber are not migrated into the Manager model.
+## 6. Live LINE / invite / revoke results
 
-The QA environment available to this review did **not** provide direct access to the target Supabase project or a live LINE/LIFF session. QA therefore did **not** apply migration 0025 or perform live invite/claim testing. No live Manager invite/claim result is claimed in this report.
+**NOT COMPLETED — BLOCKING QA VERIFICATION REMAINS.**
 
-The Sprint already fails on the implementation defect in §14, so no PASS is possible. Re-QA must apply migration 0025 to the target QA Supabase project before any live invite/claim verification.
+This re-QA environment does not provide direct authenticated access to the target Supabase project plus a real LINE/LIFF session. The current Engineering report also still states that target live verification was not completed.
 
-## 3. Implementation-scope result
+QA therefore does not claim PASS for:
 
-**PASS — static scope review.**
+- Owner creating a real Manager invite in target environment;
+- real eligible Manager claiming through their own verified LINE identity;
+- active Manager role/shop display after live claim;
+- revoke → refresh/re-login denial;
+- invalid / expired / consumed / revoked / regenerated-old invite behavior in target DB;
+- incompatible-identity claim in target DB;
+- invite race/single-use behavior against target Supabase concurrency.
 
-Engineering used an additive Manager model and separate `/manager/join` flow. No custom RBAC, cross-shop Manager switcher, generalized Owner/Manager/Barber membership rewrite, customer booking redesign, or unrelated admin redesign was found in the reviewed implementation.
+Static implementation and automated memory-store tests support these behaviors, but they are not a substitute for the required target-environment verification.
 
-SPR-002 was not modified by the SPR-003 implementation commit.
+## 7. Tenant isolation
 
-## 4. Invite lifecycle result
+**PASS — static/server and automated-test evidence; target live route/API exercise remains outstanding.**
 
-**PASS — static implementation / automated-evidence review; live QA pending re-test.**
+Server authorization still resolves:
 
-The migration and server/store implementation represent:
+verified LINE identity → active Manager membership → concrete shopId
 
-- pending invite;
-- 7-day expiry;
-- consumed invite;
-- revoked invite;
-- regenerate invalidating the old invite;
-- single-use claim with row lock;
-- duplicate active identity rejection.
+and `assertStaffForShop` rejects shop mismatch.
 
-Owner Manager-management list payload uses public invite mapping that omits the token. New/regenerated invite URL is returned only from the create/regenerate response for sharing.
+Existing Manager tests cover Shop A Manager denial against Shop B and incompatible active Manager identity across shops.
 
-Live claim/regenerate/cancel behavior was not exercised by QA because migration 0025 was not applied in a target QA environment during this review.
+No tenant-isolation code changed in QA-003-01.
 
-## 5. LINE claim result
+No target live Shop A → Shop B route/API test is claimed in this report.
 
-**PASS — static authorization design; live LINE verification pending re-test.**
+## 8. Barber separation
 
-`POST /api/manager/claim` obtains identity from `assertVerifiedCustomer(req)` and uses `lineUser.userId`. Client-supplied `lineId`, `shopId`, or role values are not authoritative.
+**PASS.**
 
-The Manager claim route is separate from Owner claim. No manual Manager LINE-ID field exists in the claim UI.
+Manager remains stored in `shop_managers`, has `barberId: null`, creates no Barber record, remains absent from customer bookable-Barber queries, and receives no Barber schedule/slots.
 
-Live physical LINE/LIFF claim was not executed in this QA environment.
+QA-003-01 does not modify this model.
 
-## 6. Owner-only enforcement result
+## 9. Responsive results
 
-**FAIL — Owner identity boundary is incomplete.**
+**NOT COMPLETED LIVE — BLOCKING QA VERIFICATION REMAINS.**
 
-Manager-management endpoints correctly require `assertShopOwner`, and the Manager-management page rejects a Manager directly.
+The required interactive viewport pass at:
 
-However, the existing Barber edit path opened to Managers allows a Manager to mutate identity/profile fields of the **Owner barber record**:
+- 375px
+- 390px
+- 430px
+- desktop
 
-- `src/lib/admin-auth.ts`: `assertCanManageBarber` returns true for a Manager for any Barber record in the same shop.
-- `src/app/api/barbers/[id]/route.ts`: for an Owner barber, Manager is blocked only from changing `lineId`; `name` remains allowed because Manager is treated as a shop operator.
-- `src/app/api/barbers/[id]/profile-image/route.ts`: Manager can POST/DELETE the Owner barber's profile image.
-- `src/app/admin/staff/[id]/page.tsx`: when a Manager opens the Owner barber record, the UI still exposes editable name and profile-image controls.
+has not been completed in a target authenticated browser/LINE environment.
 
-This conflicts with SPR-003 §4.3 and required security test §15.4: **Manager must not alter Owner identity**. UX-003 also makes Owner identity / ownership controls unavailable to Manager.
+Static review confirms:
 
-The Owner LINE unlink boundary is correctly protected; the defect is the remaining Owner identity/profile mutation path.
+- relevant buttons use approximately 44px+ minimum targets;
+- Owner name becomes non-actionable for Manager;
+- Owner photo controls disappear rather than remaining misleading;
+- revoke still requires explicit confirmation;
+- role/shop hierarchy code is unchanged;
+- no broad layout redesign was introduced.
 
-## 7. Manager operational-access result
+QA does not claim responsive PASS until the required viewport states are exercised.
 
-**PASS WITH BLOCKING OWNER-BOUNDARY EXCEPTION.**
+## 10. Regression results
 
-Static review confirms Manager is enabled on approved operational surfaces through `isShopOperatorRole` / `assertShopOperator`, including board, Team, Stats, operational Settings, Setup/help and LINE OA support.
+**PASS — fix-scope/static review.**
 
-Creating/editing ordinary Barbers is authorized.
+The QA-003-01 fix does not change:
 
-The blocking exception is only the Owner record identity/profile mutation described in §6. QA is **not** requesting a redesign or new permissions model.
-
-## 8. Tenant-isolation result
-
-**PASS — static and automated-evidence review.**
-
-Server authorization resolves authenticated staff/Manager membership, retains a concrete `shopId`, and `assertStaffForShop` rejects requested-shop mismatch. Manager-management routes resolve the route shop and then require same-shop Owner authorization.
-
-Engineering's reported security suite includes Shop A / Shop B denial coverage. No client-supplied shop ID is authoritative in Manager claim.
-
-Any live cross-shop defect found during re-QA remains P0.
-
-## 9. Barber-separation result
-
-**PASS — static and automated-evidence review.**
-
-Manager membership is stored in `shop_managers`, not `barbers`. Manager auth has `barberId: null`. Customer bookable Barber queries remain Barber-backed. No Manager schedule/slot record is created by Manager claim.
-
-## 10. Revoke result
-
-**PASS — static implementation / automated-evidence review; live QA pending.**
-
-Owner-only revoke route checks same-shop Owner authority and sets `revoked_at`. Active Manager lookup excludes revoked Manager membership, so a subsequent authorization lookup fails.
-
-No code in revoke deletes LINE identity, Owner, Barber, booking, appointment, or shop data.
-
-Live revoke → refresh/re-login denial must be executed in re-QA after migration is applied.
-
-## 11. Regression result
-
-**PASS — static scope / reported automated baseline.**
-
-Reviewed changes do not rewrite:
-
-- `/owner/join` or Owner claim RPC;
-- customer booking sequence;
-- booking transaction/concurrency logic;
-- customer My Bookings;
+- Manager invite lifecycle;
+- `/manager/join`;
+- `/owner/join`;
+- Manager membership model;
+- tenant isolation architecture;
+- verified LINE claim path;
+- Manager revoke path;
+- ordinary Barber management architecture;
+- customer booking;
+- My Bookings;
 - cancellation semantics;
-- customer LINE identity;
-- Super Admin token path;
-- Barber membership model.
+- booking transaction/concurrency;
+- Super Admin separation;
+- SPR-002 scope/state.
 
-SPR-002 remains protected and unchanged by this Sprint.
+SPR-002 remains `READY_FOR_ENGINEERING`.
 
-## 12. Responsive / mobile result
+## 11. Automated test verification
 
-**NOT COMPLETED LIVE — required in re-QA.**
-
-Engineering explicitly reported that the live Chromium viewport pass was not completed. This QA environment also did not provide an interactive authenticated browser/LINE session.
-
-Static UX inspection shows:
-
-- Manager-management primary actions use 44px+ minimum heights;
-- revoke requires an explicit confirmation state;
-- statuses include text labels rather than color only;
-- Manager join primary actions use 48px minimum height;
-- layout uses wrapping/stacking patterns appropriate for narrow screens.
-
-Re-QA must explicitly exercise 375 / 390 / 430 / desktop on the required Manager-specific states after the blocking defect is fixed.
-
-## 13. Automated test verification
-
-Engineering report records:
+Engineering reports after fix:
 
 - `npm run typecheck` — PASS
-- `npm run test:security` — 181 PASS / 0 FAIL
+- focused `manager-owner-identity.test.ts` — 7/7 PASS
+- `npm run test:security` — 188 PASS
 - `npm run test:shop` — 50 PASS
 - `npm run test:booking` — 26 PASS
 - `npm run test:onboarding` — 44 PASS
 - `npm run build` — PASS
+- `npm run lint` — existing baseline: 31 errors / 9 warnings
 
-The existing Manager security tests cover invite states, verified LINE use, fake client LINE ID rejection, tenant isolation, Owner-only Manager-management, owner deactivation denial, revocation, and Barber separation.
+Code inspection confirms the focused test suite executes direct API handlers for Owner name, Owner LINE identity, Owner profile-image POST, Owner profile-image DELETE, ordinary Barber name/profile-image positive cases, and Owner self-edit positive behavior.
 
-Coverage gap relevant to this QA failure: no test currently proves that a Manager cannot PATCH the Owner barber's identity/profile fields or POST/DELETE the Owner barber profile image.
+No new SPR-003 lint regression is identified from the fix diff. The known lint baseline is not used as a failure reason.
 
-Lint still has documented `react-hooks/set-state-in-effect` findings, including the Manager hook pattern copied from the existing Owner pattern. This QA decision does not require unrelated baseline lint cleanup.
+## 12. Remaining findings
 
-## 14. Findings / classification
+### QA-003-01 — CLOSED
 
-### QA-003-01 — Manager can modify Owner identity/profile
+Owner identity/profile mutation by Manager is fixed at server and UI levels with focused regression coverage.
 
-**Classification:** QA FAIL — Owner-only security boundary accessible to Manager.
+### QA-003-02 — OPEN: target live verification prerequisite
 
-**Approved requirement:**
+**Classification: QA verification blocker, not a newly discovered Product/code defect.**
 
-- SPR-003 §4.3: Manager must not alter Owner identity.
-- SPR-003 §15.4: Manager cannot modify Owner identity.
-- UX-003 permission matrix: Owner identity / ownership controls are not Manager-accessible.
+Before QA can issue PASS, the following previously required acceptance checks must be completed in an environment where migration 0025 is applied:
 
-**Reproduction from the implementation:**
+1. real LINE Manager claim;
+2. invite lifecycle in target DB, including single-use/regenerated-old invite;
+3. revoke → refresh/re-login denial;
+4. Shop A Manager denied Shop B route/API;
+5. confirmation Manager creates no Barber/bookable record in target environment;
+6. 375 / 390 / 430 / desktop responsive pass on Manager-specific states.
 
-1. Authenticate as an active Manager for Shop A.
-2. Obtain the Owner barber record ID from Team / existing Barber list.
-3. Request `PATCH /api/barbers/{ownerBarberId}` with `{"name":"Changed by Manager"}`.
-4. `assertCanManageBarber` authorizes Manager because the Owner barber belongs to Shop A.
-5. The route blocks Owner `lineId` changes but does not block Owner `name`; the update proceeds.
-6. Similarly, `POST /api/barbers/{ownerBarberId}/profile-image` and DELETE are authorized through `assertCanManageBarber` + `assertShopOperator`.
+**No application-code change is requested for QA-003-02.** Engineering/operations only needs to prepare/identify the target QA environment with migration 0025 applied and make it available for the required QA exercise.
 
-**Expected:**
-
-Manager may operate approved day-to-day shop/Barber functions but must not alter Owner identity/profile.
-
-**Required correction scope — narrow only:**
-
-- Add a server-side guard so Manager cannot mutate Owner identity/profile fields on a Barber record whose role is `owner`.
-- At minimum protect Owner display name and Owner profile-image mutation from Manager.
-- Preserve the existing Owner LINE-ID protection.
-- Hide/disable the corresponding Owner identity/profile controls in the Manager UI so UI matches server authorization.
-- Add focused security tests for direct API attempts by Manager against Owner name and profile-image mutation.
-- Do not introduce custom RBAC.
-- Do not change Owner claim.
-- Do not change Manager invite/claim architecture.
-- Do not change booking/customer behavior.
-- Do not change SPR-002.
-- Do not broaden this fix into general admin redesign.
-
-Operational Owner-as-Barber availability/schedule behavior should not be changed unless required by the already-approved UX/Product rules; this QA return is specifically about Owner **identity/profile** mutation.
-
-### QA-003-02 — Required live verification remains outstanding
-
-**Classification:** QA verification prerequisite, not a separate Product-scope request.
-
-After QA-003-01 is fixed, re-QA must:
-
-1. apply `0025_shop_managers.sql` to the target QA Supabase project;
-2. run real eligible LINE claim;
-3. verify invite invalid/expired/consumed/revoked/regenerated states;
-4. verify Owner revoke → Manager refresh/re-login denied;
-5. verify Shop A Manager cannot access Shop B UI/API;
-6. run 375 / 390 / 430 / desktop viewport checks.
-
-No PASS may be issued without these required checks.
-
-## 15. Final QA verdict
+## 13. Final verdict
 
 **FAIL — RETURN_TO_ENGINEERING**
 
-SPR-003 must return from `READY_FOR_QA` to `IMPLEMENTED`.
+Reason: QA-003-01 is fixed, but SPR-003 still has mandatory target-environment / real-LINE / responsive acceptance verification that has not been completed. The previous QA report explicitly made those checks a prerequisite to PASS, and this re-QA has no evidence that the prerequisite was satisfied.
 
-Engineering should correct only QA-003-01, add focused regression tests, update RPT-003-ENG with the exact fix and test results, and return SPR-003 to `READY_FOR_QA`.
+Return scope is operational only:
 
-QA will then perform the required migration-backed/live re-verification.
+- do **not** change application code unless a new verified defect is found;
+- apply/confirm migration 0025 in the target QA Supabase project;
+- provide/run the real LINE/LIFF Manager test context;
+- complete required live invite/revoke/tenant/responsive checks;
+- update RPT-003-ENG only with factual environment/test evidence if Engineering participates;
+- return SPR-003 to `READY_FOR_QA`.
 
-Do not modify SPR-002. Do not create SPR-004. Do not redesign unrelated admin surfaces.
+Do not modify SPR-002. Do not create SPR-004. Do not LOCK SPR-003.
