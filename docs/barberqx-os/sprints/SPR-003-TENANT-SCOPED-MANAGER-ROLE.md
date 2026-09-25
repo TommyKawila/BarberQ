@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-25 |
-| State | **READY_FOR_QA** |
+| State | **IMPLEMENTED** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -13,13 +13,13 @@
 | Relationship to SPR-002 | Separate delivery dependency. Do **not** add Manager scope to SPR-002. SPR-002 remains `READY_FOR_ENGINEERING` until this capability is delivered and LOCKED. |
 | UX handoff | [UX-003 — Tenant-Scoped Manager Role](../handoffs/UX-003-TENANT-SCOPED-MANAGER-ROLE.md) — **UX_APPROVED / Product-approved** |
 | Product review | **APPROVED — 2026-09-25** |
-| Next allowed transition | `PASS` after QA vs SPR-003 + UX-003 (or back to `IMPLEMENTED` on reject) |
+| Next allowed transition | `READY_FOR_QA` after Engineering fixes QA-003-01 and updates RPT-003-ENG |
 | Engineering authorized now? | Implementation complete for approved SPR-003 + UX-003 only |
 | Engineering report | [RPT-003-ENG](../reports/RPT-003-ENG.md) |
 | Feature/code implementation authorized now? | Complete for this Sprint — QA owns verification |
 | P0? | No |
 
-> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. Product has approved UX-003. Engineering implemented only SPR-003 + UX-003 and moved the Sprint to `READY_FOR_QA`. It does not authorize broad RBAC, multi-shop Manager access, generalized identity rewrites, unrelated admin redesign, or changes to SPR-002.
+> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. QA found a blocking Owner-identity boundary defect (QA-003-01) and returned the Sprint to `IMPLEMENTED`. Engineering may fix only that scoped defect and then return to `READY_FOR_QA`. It does not authorize broad RBAC, multi-shop Manager access, generalized identity rewrites, unrelated admin redesign, or changes to SPR-002.
 
 ---
 
@@ -789,13 +789,15 @@ It must document:
 
 ## 23. State
 
-**READY_FOR_QA**
+**IMPLEMENTED**
 
 `READY_FOR_ENGINEERING` → **IMPLEMENTED** via Engineering + [RPT-003-ENG](../reports/RPT-003-ENG.md) on 2026-09-25.
 
-`IMPLEMENTED` → **READY_FOR_QA** via Engineering verification package in the same report (how QA should verify SPR-003 + UX-003).
+`IMPLEMENTED` → **READY_FOR_QA** via Engineering verification package in the same report.
 
-QA owns the next transition. Do not PASS or LOCK from Engineering.
+`READY_FOR_QA` → **IMPLEMENTED** via QA FAIL on 2026-09-25: Manager can modify Owner identity/profile fields through existing Barber edit/profile-image paths (QA-003-01; see [RPT-003-QA](../reports/RPT-003-QA.md)).
+
+Engineering owns the narrow corrective implementation for QA-003-01, then may return the Sprint to `READY_FOR_QA` with an updated RPT-003-ENG. Do not PASS or LOCK from Engineering.
 
 **No cross-shop Manager access, custom RBAC, generalized identity rewrite, Owner claim rewrite, Barber/customer/booking redesign, or SPR-002 change is authorized.**
 
