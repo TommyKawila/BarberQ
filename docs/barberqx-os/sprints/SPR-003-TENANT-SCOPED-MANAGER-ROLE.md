@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-25 |
-| State | **READY_FOR_UX** |
+| State | **READY_FOR_ENGINEERING** |
 | Type | Normal delivery Sprint |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -11,12 +11,14 @@
 | Source / rationale type | Product Decision + real Shop #1 operational requirement |
 | Source / rationale | [PD-012 — Tenant-scoped Manager Role](../04-PRODUCT-DECISIONS.md#pd-012), Accepted 2026-09-25; PHINX STUDIO Shop #1 operational requirement |
 | Relationship to SPR-002 | Separate delivery dependency. Do **not** add Manager scope to SPR-002. SPR-002 remains `READY_FOR_ENGINEERING` until this capability is delivered and LOCKED. |
-| Next allowed transition | `UX_APPROVED` after linked UX handoff defines the approved Manager lifecycle and permission boundaries |
-| Engineering authorized now? | **No** |
-| Feature/code implementation authorized now? | **No** |
+| UX handoff | [UX-003 — Tenant-Scoped Manager Role](../handoffs/UX-003-TENANT-SCOPED-MANAGER-ROLE.md) — **UX_APPROVED / Product-approved** |
+| Product review | **APPROVED — 2026-09-25** |
+| Next allowed transition | `IMPLEMENTED` after Engineering completes only the approved SPR-003 + UX-003 scope and creates `RPT-003-ENG` |
+| Engineering authorized now? | **Yes — SPR-003 + Product-approved UX-003 only** |
+| Feature/code implementation authorized now? | **Yes — only the approved tenant-scoped Manager MVP; no scope expansion** |
 | P0? | No |
 
-> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. `READY_FOR_UX` authorizes UX handoff work only. It does not authorize Engineering/Cursor implementation, broad RBAC, multi-shop Manager access, generalized identity rewrites, or changes to SPR-002.
+> This Sprint creates the first-class tenant-scoped Manager capability approved in PD-012. Product has approved UX-003. `READY_FOR_ENGINEERING` authorizes Engineering/Cursor to implement **only** SPR-003 + UX-003. It does not authorize broad RBAC, multi-shop Manager access, generalized identity rewrites, unrelated admin redesign, or changes to SPR-002.
 
 ---
 
@@ -721,18 +723,81 @@ Only after UX approval and Product review may SPR-003 be considered for `READY_F
 
 ---
 
-## 22. State
+## 22. Product review — UX-003
 
-**READY_FOR_UX**
+### Result
 
-UX handoff work for the approved tenant-scoped Manager MVP is authorized.
+**APPROVED**
 
-**Engineering / Cursor is NOT authorized to implement Manager capability yet.**
+Product verified that UX-003:
 
-No application code is authorized by Sprint creation alone.
+1. matches PD-012;
+2. stays inside SPR-003 scope;
+3. introduces no unauthorized capability;
+4. preserves the fixed Manager permission set;
+5. preserves Owner-only membership/security boundaries;
+6. defines sufficient invite/claim/revoke and invalid/expired/consumed/revoked states;
+7. preserves server-authoritative authorization, verified LINE identity, and tenant isolation;
+8. defines appropriate mobile/LINE-first behavior at 375 / 390 / 430 / desktop;
+9. defines accessibility expectations adequate for implementation/QA;
+10. preserves all protected Owner/Barber/customer/booking/concurrency/SPR-002 boundaries.
+
+No material Product conflict was found. No Founder re-review is required.
+
+### Engineering scope now authorized
+
+Engineering may implement only the tenant-scoped Manager MVP defined by this Sprint and Product-approved UX-003, including:
+
+- Manager membership data model distinct from `barbers`;
+- Manager invite data/state required by the approved lifecycle;
+- Owner-only Manager management;
+- secure shop-bound/role-bound/expiring/single-use invite generation;
+- Manager claim through verified LINE identity;
+- active Manager authorization scoped to exactly one shop;
+- approved existing admin access for Manager;
+- Owner-only revoke behavior;
+- invalid/expired/consumed/revoked invite handling;
+- Manager vs Owner role indication;
+- server-side Owner-only enforcement;
+- tenant-isolation enforcement;
+- required security/regression tests.
+
+Engineering must not invent additional Manager powers or broaden architecture.
+
+### Required Engineering report
+
+Engineering must create:
+
+`docs/barberqx-os/reports/RPT-003-ENG.md`
+
+It must document:
+
+- implementation commit(s);
+- files/schema/migrations changed;
+- Manager membership/invite model implemented;
+- authorization model and tenant-scoping checks;
+- invite/claim/revoke implementation;
+- Owner-only enforcement;
+- Manager operational surfaces enabled;
+- explicit protected non-changes;
+- exact security and regression tests/results;
+- responsive/mobile verification;
+- how QA should verify every SPR-003 + UX-003 acceptance criterion.
+
+---
+
+## 23. State
+
+**READY_FOR_ENGINEERING**
+
+Engineering / Cursor is authorized to implement only the Product-approved SPR-003 + UX-003 tenant-scoped Manager MVP.
+
+**No cross-shop Manager access, custom RBAC, generalized identity rewrite, Owner claim rewrite, Barber/customer/booking redesign, or SPR-002 change is authorized.**
+
+Required next artifact: `docs/barberqx-os/reports/RPT-003-ENG.md`.
 
 Do not modify SPR-002 scope or state.
 
 Do not create SPR-004.
 
-STOP before Engineering.
+STOP before Engineering implementation.
