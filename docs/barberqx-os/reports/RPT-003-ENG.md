@@ -6,7 +6,7 @@
 | Linked UX | [UX-003](../handoffs/UX-003-TENANT-SCOPED-MANAGER-ROLE.md) |
 | Date | 2026-09-25 |
 | Author | Engineering / Cursor |
-| Sprint state after this report | **READY_FOR_QA** |
+| Sprint state after this report | **READY_FOR_QA** (QA-003-01 fix) |
 
 ## Implementation summary
 
@@ -88,3 +88,55 @@ Live Chromium viewport pass at 375 / 390 / 430 / desktop was not completed in th
 12. Viewport 375 / 390 / 430 / desktop: no horizontal overflow, 44px targets, status not color-only.
 
 Do not PASS or LOCK this Sprint from this report.
+
+## QA-003-01 fix
+
+QA FAIL (`d3a89bed`) returned SPR-003 to `IMPLEMENTED` because Manager could still change Owner identity/profile through Barber edit paths. `assertCanManageBarber()` correctly allows Manager shop-wide operational access; it must not also authorize Owner identity mutation.
+
+Root cause: PATCH `/api/barbers/{id}` only blocked Manager from changing Owner `lineId`. Owner `name` and Owner profile-image POST/DELETE stayed on the operational `assertCanManageBarber` path. Team UI still exposed name and photo controls for the Owner barber record.
+
+Server protection (no invite/membership/RBAC rewrite):
+
+- `assertCanMutateOwnerBarberIdentity(staff, barber)` — if the target barber `role === "owner"` and the caller is not Owner, 403 `FORBIDDEN`.
+- PATCH `/api/barbers/{id}` calls it whenever `name` or `lineId` is present.
+- POST/DELETE `/api/barbers/{id}/profile-image` call it after shop-scope manage, before upload/replace/delete.
+
+UI (smallest Team/Barber change):
+
+- On `/admin/staff/[id]`, Manager viewing an Owner record: name is read-only; profile upload/delete hidden; LINE unlink/edit hidden; save omits `name`/`lineId`.
+- Owner may still edit own name/photo/LINE. Manager may still edit ordinary Barber name/photo/availability.
+
+Files:
+
+- `src/lib/admin-auth.ts`
+- `src/app/api/barbers/[id]/route.ts`
+- `src/app/api/barbers/[id]/profile-image/route.ts`
+- `src/app/admin/staff/[id]/page.tsx`
+- `src/lib/manager/manager-owner-identity.test.ts`
+- `package.json` (`test:security` includes the new file)
+
+Focused tests (direct API, memory store, Bearer LINE):
+
+- A Manager PATCH Owner name → 403, name unchanged
+- B Manager POST Owner profile image → 403
+- C Manager DELETE Owner profile image → 403
+- D Manager PATCH ordinary Barber name → 200
+- E Manager POST/DELETE ordinary Barber profile image → 200
+- F Manager PATCH Owner `lineId` → 403
+- G Owner PATCH own name + POST own profile image → 200
+- H existing Manager/cross-shop suite still in `test:security`
+
+Verification (2026-09-25), all pass except documented lint baseline:
+
+- `npm run typecheck` — pass
+- focused `src/lib/manager/manager-owner-identity.test.ts` — 7 pass / 0 fail
+- `npm run test:security` — 188 pass / 0 fail (was 181; +7 QA-003-01)
+- `npm run test:shop` — 50 pass
+- `npm run test:booking` — 26 pass
+- `npm run test:onboarding` — 44 pass
+- `npm run build` — pass
+- `npm run lint` — 40 problems (31 errors, 9 warnings); same pre-existing `react-hooks/set-state-in-effect` / unused-import baseline. Unrelated files were not fixed.
+
+Ordinary Barber management by Manager is unchanged. Invite architecture, membership model, `/manager/join`, `/owner/join`, Owner claim, tenant membership, verified LINE flow, booking/customer behavior, SPR-002, and SPR-004 were not changed.
+
+QA re-verify: as Manager, PATCH Owner name and POST/DELETE Owner profile-image must 403; Owner self-edit and ordinary Barber edit/photo must still work. Do not PASS or LOCK from this report.

@@ -127,9 +127,8 @@ export default function EditBarberPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
-          name: trimmed,
           ...(profile?.role === "owner" || barber?.role !== "owner"
-            ? { lineId: lineId.trim() || null }
+            ? { name: trimmed, lineId: lineId.trim() || null }
             : {}),
           isBookable,
           slotDuration: isBookable ? slotDuration : undefined,
@@ -247,7 +246,7 @@ export default function EditBarberPage() {
 
   const displayName = barberLabel(barber.name, locale);
   const isOwnerBarber = barber.role === "owner";
-  const canEditOwnerLine = profile.role === "owner" || !isOwnerBarber;
+  const canEditOwnerIdentity = profile.role === "owner" || !isOwnerBarber;
 
   return (
     <AdminShell role={profile.role}>
@@ -286,8 +285,16 @@ export default function EditBarberPage() {
             {t("admin.barberName")}
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3"
+              readOnly={!canEditOwnerIdentity}
+              onChange={(e) => {
+                if (!canEditOwnerIdentity) return;
+                setName(e.target.value);
+              }}
+              className={`min-h-11 rounded-lg border px-3 ${
+                canEditOwnerIdentity
+                  ? "border-zinc-700 bg-zinc-950"
+                  : "border-zinc-800 bg-zinc-950 text-zinc-400"
+              }`}
             />
           </label>
           <p className="mt-1 text-xs text-zinc-500">{t("admin.barberNameHint")}</p>
@@ -307,34 +314,38 @@ export default function EditBarberPage() {
           <div className="mt-4 flex items-center gap-4">
             <BarberAvatar name={barber.name} imageUrl={barber.profile_image_url} size="lg" />
             <div className="flex flex-col gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void uploadPhoto(file);
-                  e.target.value = "";
-                }}
-              />
-              <button
-                type="button"
-                disabled={uploading}
-                onClick={() => fileInputRef.current?.click()}
-                className="rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-200 disabled:opacity-50"
-              >
-                {t("admin.uploadProfilePhoto")}
-              </button>
-              {barber.profile_image_url ? (
-                <button
-                  type="button"
-                  disabled={uploading}
-                  onClick={() => void deletePhoto()}
-                  className="rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
-                >
-                  {t("admin.deleteProfilePhoto")}
-                </button>
+              {canEditOwnerIdentity ? (
+                <>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void uploadPhoto(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 py-2 text-sm text-zinc-200 disabled:opacity-50"
+                  >
+                    {t("admin.uploadProfilePhoto")}
+                  </button>
+                  {barber.profile_image_url ? (
+                    <button
+                      type="button"
+                      disabled={uploading}
+                      onClick={() => void deletePhoto()}
+                      className="min-h-11 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
+                    >
+                      {t("admin.deleteProfilePhoto")}
+                    </button>
+                  ) : null}
+                </>
               ) : null}
             </div>
           </div>
@@ -381,7 +392,7 @@ export default function EditBarberPage() {
           ) : null}
         </section>
 
-        {canEditOwnerLine ? (
+        {canEditOwnerIdentity ? (
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 className="font-semibold">{t("admin.lineAdminSection")}</h2>
           <p className="mt-1 text-sm text-zinc-400">{t("admin.lineAdminHint")}</p>

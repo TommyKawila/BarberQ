@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   assertCanManageBarber,
+  assertCanMutateOwnerBarberIdentity,
   assertShopOperator,
   assertStaff,
 } from "@/lib/admin-auth";
@@ -33,6 +34,7 @@ export async function POST(
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
     const barber = await assertCanManageBarber(staff, id);
+    assertCanMutateOwnerBarberIdentity(staff, barber);
     if (!barber.shop_id) {
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
@@ -74,6 +76,7 @@ export async function DELETE(
       throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
     }
     const barber = await assertCanManageBarber(staff, id);
+    assertCanMutateOwnerBarberIdentity(staff, barber);
     if (!barber.shop_id) {
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }

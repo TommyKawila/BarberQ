@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
-import { assertStaff, assertCanManageBarber, isShopOperatorRole } from "@/lib/admin-auth";
+import {
+  assertStaff,
+  assertCanManageBarber,
+  assertCanMutateOwnerBarberIdentity,
+  isShopOperatorRole,
+} from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import {
@@ -65,12 +70,8 @@ export async function PATCH(
     ) {
       throw new BookingError("FORBIDDEN", "Shop operator required", 403);
     }
-    if (
-      staff.role !== "owner" &&
-      barberRecord.role === "owner" &&
-      body.lineId !== undefined
-    ) {
-      throw new BookingError("FORBIDDEN", "Shop owner required", 403);
+    if (body.name !== undefined || body.lineId !== undefined) {
+      assertCanMutateOwnerBarberIdentity(staff, barberRecord);
     }
 
     if (body.offDays !== undefined) {
@@ -90,12 +91,11 @@ export async function PATCH(
       throw new BookingError("INVALID_NAME", "Barber name is required", 400);
     }
 
-    const canEditOwnerLine = staff.role === "owner" || barberRecord.role !== "owner";
     const barber = await getStore().updateBarber(id, {
       offDays: body.offDays !== undefined ? normalizeOffDays(body.offDays) : undefined,
       slotDuration: body.slotDuration,
       name: isOperator ? body.name?.trim() : undefined,
-      lineId: isOperator && canEditOwnerLine ? body.lineId : undefined,
+      lineId: isOperator ? body.lineId : undefined,
       isBookable: isOperator ? body.isBookable : undefined,
       showProfileInBooking: isOperator ? body.showProfileInBooking : undefined,
     });

@@ -143,6 +143,16 @@ export function assertShopOperator(staff: StaffAuth): void {
   }
 }
 
+/** Name, LINE, and profile-image of an Owner barber stay Owner-only. */
+export function assertCanMutateOwnerBarberIdentity(
+  staff: StaffAuth,
+  barber: Pick<Barber, "role">,
+): void {
+  if (barber.role === "owner" && staff.role !== "owner") {
+    throw new BookingError("FORBIDDEN", "Shop owner required", 403);
+  }
+}
+
 /** @deprecated Use assertShopOwner for shop-scoped owner checks */
 export function assertSuperAdmin(staff: StaffAuth): void {
   assertShopOwner(staff);
