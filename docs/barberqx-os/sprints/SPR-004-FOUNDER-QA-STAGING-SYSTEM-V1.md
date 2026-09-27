@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | Date opened | 2026-09-27 |
-| State | **READY_FOR_ENGINEERING** |
+| State | **READY_FOR_QA** |
 | Type | Normal delivery Sprint — test infrastructure / development workflow |
 | Phase | Pre-Pilot / Pilot Readiness |
 | Product owner | Product / R&D |
@@ -14,12 +14,13 @@
 | Relationship to SPR-003 | Separate infrastructure work. Do **not** modify SPR-003 scope or state. Does not block ongoing PHINX Manager live validation. |
 | UX handoff | [UX-004 — Founder QA / Staging System v1](../handoffs/UX-004-FOUNDER-QA-STAGING-SYSTEM-V1.md) — **UX_APPROVED / Product-approved** |
 | Product review | **APPROVED — 2026-09-27** |
-| Next allowed transition | `IMPLEMENTED` after Engineering completes only the approved SPR-004 + UX-004 scope and creates `RPT-004-ENG` |
-| Engineering authorized now? | **Yes — SPR-004 + Product-approved UX-004 only** |
-| Application/code implementation authorized now? | **Yes — only infrastructure/config/QA tooling/tests/docs required by SPR-004; no unrelated Product behavior changes** |
+| Next allowed transition | `PASS` after QA vs SPR-004 + UX-004, or `IMPLEMENTED` if QA rejects |
+| Engineering authorized now? | Implementation complete for approved SPR-004 + UX-004 only |
+| Application/code implementation authorized now? | Complete for this Sprint — QA owns verification |
+| Engineering report | [RPT-004-ENG](../reports/RPT-004-ENG.md) |
 | P0? | No |
 
-> SPR-004 establishes isolated Founder QA / Staging infrastructure so the Founder can repeat real-auth end-to-end validation before involving real Pilot shops. Product has approved UX-004. `READY_FOR_ENGINEERING` authorizes Engineering to implement **only** SPR-004 + UX-004, preserving the required implementation order and fail-closed Production safeguards. It does not authorize unrelated Product behavior changes, `/__qa`, auth shortcuts, Production reset capability, or changes to SPR-002 / SPR-003.
+> SPR-004 establishes isolated Founder QA / Staging infrastructure so the Founder can repeat real-auth end-to-end validation before involving real Pilot shops. Engineering implemented CLI verify/reset plus the FQA runbook and returned the Sprint to `READY_FOR_QA`. Live `qa:verify` is NOT READY until isolated Vercel/Supabase/LINE infrastructure is provisioned. Do not PASS or LOCK from Engineering. It does not authorize `/__qa`, auth shortcuts, Production reset, or changes to SPR-002 / SPR-003.
 
 ---
 
@@ -996,16 +997,16 @@ The report must document at minimum:
 
 ## 28. State
 
-**READY_FOR_ENGINEERING**
+**READY_FOR_QA**
 
-Engineering is authorized to implement only the Product-approved SPR-004 + UX-004 Founder QA / Staging System v1 scope.
+`READY_FOR_ENGINEERING` → **IMPLEMENTED** via Engineering + [RPT-004-ENG](../reports/RPT-004-ENG.md) on 2026-09-27.
 
-**Production safety is a release blocker:** any reset path capable of targeting Production, PHINX, an arbitrary tenant, or an unknown environment is unacceptable.
+`IMPLEMENTED` → **READY_FOR_QA** via the same Engineering verification package.
+
+Live Founder QA infrastructure is **MANUAL PROVISIONING REQUIRED**. `qa:verify` is not READY against a real Founder QA environment in this delivery.
+
+Do not PASS or LOCK from Engineering.
+
+**Production safety remains a release blocker:** any reset path capable of targeting Production, PHINX, an arbitrary tenant, or an unknown environment is unacceptable.
 
 No `/__qa`, auth bypass, impersonation, login-as, manual LINE IDs, Product UI redesign, SPR-002 change, or SPR-003 change is authorized.
-
-Required next artifact:
-
-`docs/barberqx-os/reports/RPT-004-ENG.md`
-
-STOP before Engineering implementation.
