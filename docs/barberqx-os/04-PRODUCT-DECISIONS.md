@@ -151,6 +151,19 @@ Insights and feature requests do not independently authorize engineering work ([
 | Product implication | Manager delivery must use a shop-bound, role-bound, expiring, one-time invite claimed through verified LINE authentication. Manager authorization must be tenant-scoped and revocable. Manager cannot promote themselves or another Manager to Owner. Existing Owner claim, Barber/customer behavior, booking/concurrency behavior, tenant isolation, and Super Admin separation remain protected. Do not manually enter LINE user IDs. Do not build cross-shop Manager access or broad permission-builder/RBAC scope in the initial delivery. |
 | Revisit condition | Pilot evidence shows a need for cross-shop management, granular permissions, additional non-barber roles, ownership delegation/transfer, or a unified Owner/Manager membership model. |
 
+
+## PD-013
+
+| | |
+|---|---|
+| Date | 2026-09-27 |
+| Status | Accepted |
+| Decision | BarberQx must maintain an isolated **Founder QA / Staging** environment for production-equivalent pre-Pilot validation. The operating model is three environments: LOCAL for mocks/memory and automated development tests; FOUNDER QA / STAGING with separate deployment, separate Supabase data, dedicated LINE/LIFF QA configuration, real LINE authentication, synthetic deterministic test data, canonical resettable QA tenant, isolation sentinel, and Founder-controlled Owner/Manager/Customer identities; and PRODUCTION for PHINX and future real Pilot shops only. |
+| Reason | PHINX preparation exposed that relying on real Pilot Owners/Managers/customers for basic end-to-end QA slows development and makes Pilot users act as the primary QA environment. Founder QA should catch auth, tenant, Manager, booking, My Bookings, admin, and responsive regressions independently before real-shop validation. |
+| Evidence / source | Explicit Founder approval on 2026-09-27 following the BarberQx Solo-Founder Testing System v1 Product/Infrastructure proposal. This is an operating/infrastructure decision, not customer evidence and not a replacement for real Pilot validation. |
+| Product implication | Founder QA must be isolated from Production; use separate deployment and Supabase project; use real LINE/LIFF auth; use synthetic data only; maintain a canonical resettable QA tenant and non-reset isolation sentinel; fail closed against Production; never use auth bypass, impersonation, manual LINE-ID assignment, arbitrary tenant reset, Production DB cloning, PHINX copying, or real Pilot shops as resettable fixtures. Production auth/security rules must not be weakened. Future security-sensitive/end-to-end work should use Local automated checks plus appropriate Founder QA before involving Pilot shops. |
+| Revisit condition | The testing/release model materially changes, a safer replacement for the Founder QA environment is approved, or team scale requires broader staging/test infrastructure. |
+
 ---
 
 ## Constraints (not tickets)
