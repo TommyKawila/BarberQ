@@ -63,6 +63,8 @@ Open [http://localhost:3000](http://localhost:3000). Copy env from [`.env.exampl
 
 Without `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`, the app uses the memory store (prototype). Production requires those plus `NEXT_PUBLIC_LIFF_ID`, `NEXT_PUBLIC_APP_URL`, and `SUPERADMIN_TOKEN`.
 
+Dedicated QA environment (Tommy): step-by-step Thai guide in [`docs/qa-setup.md`](docs/qa-setup.md).
+
 ```bash
 npm run lint
 npm run typecheck
