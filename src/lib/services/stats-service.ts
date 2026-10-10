@@ -153,10 +153,6 @@ function recurringBreakMinutes(dateISO: string, barberId: string, breaks: { barb
   return minutes;
 }
 
-function hourInBangkok(iso: string): number {
-  return Number(formatInTimeZone(parseISO(iso), SHOP_TIMEZONE, "H"));
-}
-
 function overlapsHour(startIso: string, endIso: string, hour: number, dateISO: string): number {
   const hourStart = fromZonedTime(`${dateISO}T${String(hour).padStart(2, "0")}:00:00`, SHOP_TIMEZONE);
   const hourEnd = addMinutes(hourStart, 60);
