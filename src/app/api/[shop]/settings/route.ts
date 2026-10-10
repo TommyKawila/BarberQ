@@ -26,7 +26,8 @@ export async function GET(
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const settings = await getStore().getShopSettings(shop.id);
-    const { shopId: _shopId, ...publicSettings } = settings;
+    const { shopId: _, ...publicSettings } = settings;
+    void _;
     return NextResponse.json(publicSettings);
   } catch (error) {
     return jsonError(error);

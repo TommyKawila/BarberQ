@@ -7,12 +7,9 @@ import {
   type BookingStore,
   type CreateRecurringBreakInput,
   type CreateBarberInput,
-  type ClaimOwnerInviteInput,
-  type ClaimManagerInviteInput,
   type CreateShopInput,
   type CreateStaffInput,
   type LineOaInstallRequest,
-  type LineOaInstallRequestStatus,
   type RecurringBreak,
   type ShopManager,
   type ShopManagerInvite,
@@ -23,7 +20,6 @@ import {
 import {
   isOpenLineOaInstallStatus,
   LINE_OA_INSTALL_STATUSES,
-  type CreateLineOaInstallRequestInput,
 } from "@/lib/onboarding/line-oa-install";
 import {
   TRIAL_LEAD_STATUSES,
@@ -40,7 +36,7 @@ import {
   validateRecurringBreakInput,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
-import { DEFAULT_SHOP_HOURS, normalizeShopHours } from "@/lib/shop/shop-hours";
+import { DEFAULT_SHOP_HOURS } from "@/lib/shop/shop-hours";
 import { slugifyShopName } from "@/lib/shop/slug";
 
 const GLOBAL_KEY = "__barberq_memory_store__";
