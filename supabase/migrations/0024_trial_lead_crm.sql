@@ -1,4 +1,4 @@
-00.alter table trial_leads
+alter table trial_leads
   add column if not exists follow_up_at timestamptz;
 
 create index if not exists trial_leads_follow_up_at_idx

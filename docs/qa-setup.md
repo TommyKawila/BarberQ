@@ -178,8 +178,9 @@ Endpoint URL ใน Console ต้องชี้ไปที่ **โดเม�
 ### 3.4 Deploy แล้วเช็คหน้าเว็บ
 
 1. Deploy โปรเจกต์ QA  
-2. เปิด `https://<โดเมน-QA>/barberqpilottest` ในเบราว์เซอร์ — ควรเห็นหน้าร้าน (ร้านยัง `pending` อาจยังจองไม่ได้จนกว่า Owner claim)  
-3. เปิด `https://<โดเมน-QA>/superadmin` ใส่ `SUPERADMIN_TOKEN` ของ QA
+2. เปิด `https://<โดเมน-QA>/superadmin` ใส่ `SUPERADMIN_TOKEN` ของ QA  
+3. **อย่าตกใจถ้า** `https://<โดเมน-QA>/barberqpilottest` ได้ **404** — ในโค้ด (`src/app/[shop]/layout.tsx`) ร้านที่ `status !== "active"` ถูก `notFound()` จงใจ ดังนั้นร้าน `pending` (ยังไม่ claim) = 404 เป็นพฤติกรรมปกติ ไม่ใช่ env พัง  
+4. ต้อง Owner claim ให้ร้านเป็น `active` ก่อน หน้าจอง/บอร์ดถึงจะเปิดได้ (ดูส่วน 4.1)
 
 ### 3.5 อัปเดต manifest ใน repo (หลังได้ Project Ref + Hostname จริง)
 
