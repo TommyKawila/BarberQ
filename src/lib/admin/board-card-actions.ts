@@ -1,5 +1,5 @@
 import { allowsNoShow } from "@/lib/appointment-status";
-import type { AdminSlot } from "@/types/booking";
+import type { AdminSlot, AppointmentSource } from "@/types/booking";
 
 export type BoardCardActionId =
   | "completed"
@@ -9,6 +9,14 @@ export type BoardCardActionId =
   | "cancel"
   | "call";
 
+/** Cancel is available for every booking source on the queue board. */
+export const BOARD_CANCEL_SOURCES: readonly AppointmentSource[] = [
+  "line",
+  "walk_in",
+  "phone",
+  "chat",
+] as const;
+
 export interface BoardCardActionFlags {
   canOpenSheet: boolean;
   canComplete: boolean;
@@ -17,6 +25,8 @@ export interface BoardCardActionFlags {
   canLateCalled: boolean;
   canCancel: boolean;
   canCall: boolean;
+  /** True when cancel confirm should mention LINE push (customer has LINE id). */
+  cancelNotifiesLine: boolean;
 }
 
 /** Which staff actions are available on a booked board card. */
@@ -40,6 +50,7 @@ export function getBookedCardActions(
       canLateCalled: false,
       canCancel: false,
       canCall: false,
+      cancelNotifiesLine: false,
     };
   }
 
@@ -47,6 +58,9 @@ export function getBookedCardActions(
   const endPassed = new Date(slot.endTime).getTime() <= now;
   const canLateCalled =
     Boolean(slot.isLate) && slot.source !== "walk_in" && !slot.lateCalledAt;
+  // Source must never gate cancel — phone/chat/walk-in/LINE all cancel.
+  const sourceAllowsCancel =
+    !slot.source || BOARD_CANCEL_SOURCES.includes(slot.source);
 
   return {
     canOpenSheet: true,
@@ -54,7 +68,8 @@ export function getBookedCardActions(
     canLeft: !showNoShow,
     canNoShow: showNoShow && endPassed,
     canLateCalled,
-    canCancel: true,
+    canCancel: sourceAllowsCancel,
     canCall: Boolean(slot.customerPhone?.trim()),
+    cancelNotifiesLine: Boolean(slot.customerLineId?.trim()),
   };
 }

@@ -72,7 +72,11 @@ export function BookedSlotActionsSheet({
 
         {confirmCancel ? (
           <div className="flex flex-col gap-3">
-            <p className="text-sm text-zinc-300">{t("admin.confirmCancelBody")}</p>
+            <p className="text-sm text-zinc-300">
+              {flags.cancelNotifiesLine
+                ? t("admin.confirmCancelBodyLine")
+                : t("admin.confirmCancelBodyNoLine")}
+            </p>
             <button
               type="button"
               disabled={pending}

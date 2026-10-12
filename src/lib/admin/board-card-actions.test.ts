@@ -2,9 +2,13 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { getBookedCardActions } from "@/lib/admin/board-card-actions";
+import {
+  BOARD_CANCEL_SOURCES,
+  getBookedCardActions,
+} from "@/lib/admin/board-card-actions";
+import { shouldSendLineCancelPush } from "@/lib/line/shop-cancel-notify";
 import { dictionary } from "@/lib/i18n/dictionary";
-import type { AdminSlot } from "@/types/booking";
+import type { AdminSlot, AppointmentSource } from "@/types/booking";
 
 const root = resolve(import.meta.dirname, "../..");
 
@@ -23,18 +27,29 @@ function bookedSlot(overrides: Partial<AdminSlot> = {}): AdminSlot {
   };
 }
 
-describe("board card actions", () => {
-  it("LINE confirmed booking can open sheet with cancel + complete", () => {
-    const flags = getBookedCardActions(bookedSlot(), {
-      canEdit: true,
-      nowMs: Date.parse("2026-10-14T05:00:00.000Z"),
+describe("board card cancel for every source", () => {
+  for (const source of BOARD_CANCEL_SOURCES) {
+    it(`cancel available for ${source} bookings`, () => {
+      const flags = getBookedCardActions(
+        bookedSlot({
+          source,
+          customerLineId: source === "line" ? "U-customer" : null,
+        }),
+        { canEdit: true, nowMs: Date.parse("2026-10-14T05:00:00.000Z") },
+      );
+      assert.equal(flags.canOpenSheet, true);
+      assert.equal(flags.canCancel, true);
+      assert.equal(flags.cancelNotifiesLine, source === "line");
     });
-    assert.equal(flags.canOpenSheet, true);
-    assert.equal(flags.canCancel, true);
-    assert.equal(flags.canComplete, true);
-    assert.equal(flags.canCall, true);
-    assert.equal(flags.canLeft, false);
-    assert.equal(flags.canNoShow, false);
+  }
+
+  it("covers line, walk_in, phone, and chat", () => {
+    assert.deepEqual([...BOARD_CANCEL_SOURCES].sort(), [
+      "chat",
+      "line",
+      "phone",
+      "walk_in",
+    ]);
   });
 
   it("no-show appears after end time for LINE bookings", () => {
@@ -56,10 +71,30 @@ describe("board card actions", () => {
     assert.equal(flags.canCancel, true);
   });
 
+  it("phone and chat can open sheet with cancel (no LINE notify flag)", () => {
+    for (const source of ["phone", "chat"] as AppointmentSource[]) {
+      const flags = getBookedCardActions(
+        bookedSlot({ source, customerLineId: null }),
+        { canEdit: true },
+      );
+      assert.equal(flags.canCancel, true);
+      assert.equal(flags.cancelNotifiesLine, false);
+    }
+  });
+
   it("non-editable staff cannot open sheet", () => {
     const flags = getBookedCardActions(bookedSlot(), { canEdit: false });
     assert.equal(flags.canOpenSheet, false);
     assert.equal(flags.canCancel, false);
+  });
+});
+
+describe("LINE cancel push gating", () => {
+  it("sends LINE push only when customer_line_id is present", () => {
+    assert.equal(shouldSendLineCancelPush({ customer_line_id: "U123" }), true);
+    assert.equal(shouldSendLineCancelPush({ customer_line_id: "  " }), false);
+    assert.equal(shouldSendLineCancelPush({ customer_line_id: null }), false);
+    assert.equal(shouldSendLineCancelPush({ customer_line_id: undefined }), false);
   });
 });
 
@@ -75,11 +110,15 @@ describe("board cancel UX wiring", () => {
     assert.doesNotMatch(grid, /staffCancellable && !markable/);
   });
 
-  it("sheet has confirm dialog copy in TH/EN", () => {
-    assert.match(dictionary.th["admin.confirmCancelTitle"], /ยกเลิก/);
-    assert.match(dictionary.en["admin.confirmCancelTitle"], /Cancel/i);
-    assert.match(dictionary.th["admin.confirmCancelBody"], /LINE/);
-    assert.match(dictionary.en["admin.confirmCancelBody"], /LINE/);
+  it("sheet picks LINE vs non-LINE confirm copy", () => {
+    const sheet = readFileSync(
+      resolve(root, "components/admin/BookedSlotActionsSheet.tsx"),
+      "utf8",
+    );
+    assert.match(sheet, /confirmCancelBodyLine/);
+    assert.match(sheet, /confirmCancelBodyNoLine/);
+    assert.match(dictionary.th["admin.confirmCancelBodyNoLine"], /ไม่ส่งข้อความ LINE/);
+    assert.match(dictionary.en["admin.confirmCancelBodyNoLine"], /no LINE message/i);
   });
 
   it("staff cancel route notifies LINE + Web Push", () => {
@@ -90,5 +129,14 @@ describe("board cancel UX wiring", () => {
     assert.match(route, /notifyCustomerShopCancel/);
     assert.match(route, /notifyStaffWebPush/);
     assert.match(route, /event:\s*"cancel"/);
+  });
+
+  it("shop-cancel-notify skips push without LINE user", () => {
+    const notify = readFileSync(
+      resolve(root, "lib/line/shop-cancel-notify.ts"),
+      "utf8",
+    );
+    assert.match(notify, /shouldSendLineCancelPush/);
+    assert.match(notify, /if \(!shouldSendLineCancelPush/);
   });
 });

@@ -19,7 +19,8 @@ export async function PATCH(
     const appointment = await staffCancelBooking(id);
     const shop = await resolveShopFromAppointment(appointment);
     if (shop) {
-      // Shop cancel → LINE push to customer (quota) + Web Push to staff (scope rules).
+      // LINE push only if customer has LINE id (no quota for phone/chat/walk-in).
+      // Web Push to staff always (scope rules), for every booking source.
       void notifyCustomerShopCancel(shop, before).catch(() => {});
       void notifyStaffWebPush({
         shopId: shop.id,
