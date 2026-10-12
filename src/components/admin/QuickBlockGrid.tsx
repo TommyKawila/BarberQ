@@ -1,7 +1,13 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
+import {
+  BookedSlotActionsSheet,
+  type BookedSlotSheetAction,
+} from "@/components/admin/BookedSlotActionsSheet";
+import { getBookedCardActions } from "@/lib/admin/board-card-actions";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { allowsNoShow } from "@/lib/appointment-status";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import {
   barberLabel,
@@ -9,7 +15,6 @@ import {
   type AdminSlot,
   type AppointmentSource,
 } from "@/types/booking";
-import Link from "next/link";
 
 interface QuickBlockGridProps {
   columns: AdminColumn[];
@@ -59,11 +64,6 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
   return "bg-emerald-700 text-white";
 }
 
-function canMarkOutcome(slot: AdminSlot): boolean {
-  // completed/left allowed early; no_show timing enforced server-side
-  return slot.kind === "booked" && slot.status === "confirmed" && Boolean(slot.appointmentId);
-}
-
 export function QuickBlockGrid({
   columns,
   pendingKey,
@@ -83,8 +83,30 @@ export function QuickBlockGrid({
 }: QuickBlockGridProps) {
   const { locale, t } = useI18n();
   const now = Date.now();
+  const [sheet, setSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    slot: AdminSlot;
+  } | null>(null);
   // Combined A+B: fit up to 5 barbers without horizontal scroll
   const colCount = Math.min(Math.max(columns.length, 1), 5);
+
+  function handleSheetAction(action: BookedSlotSheetAction) {
+    if (!sheet) return;
+    const { barberId, slot } = sheet;
+    if (action === "cancel") {
+      onCancel?.(barberId, slot);
+      setSheet(null);
+      return;
+    }
+    if (action === "late_called") {
+      onLateCalled?.(barberId, slot);
+      setSheet(null);
+      return;
+    }
+    onOutcome?.(barberId, slot, action);
+    setSheet(null);
+  }
 
   if (columns.length === 0) {
     return (
@@ -112,6 +134,7 @@ export function QuickBlockGrid({
   }
 
   return (
+    <>
     <div
       className="grid gap-1.5 pb-1"
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -151,16 +174,9 @@ export function QuickBlockGrid({
                 const booked = slot.kind === "booked";
                 const locked = slot.kind === "blocked" && slot.reason === "break";
                 const blockedManual = slot.kind === "blocked" && slot.reason !== "break";
-                const markable = canMarkOutcome(slot) && canEdit && onOutcome;
-                const lateConfirmed =
-                  booked && slot.status === "confirmed" && Boolean(slot.isLate) && canEdit;
-                const staffCancellable =
-                  booked &&
-                  slot.status === "confirmed" &&
-                  Boolean(slot.appointmentId) &&
-                  canEdit &&
-                  Boolean(onCancel);
-                const showNoShow = allowsNoShow(slot.source);
+                const actions = getBookedCardActions(slot, { canEdit, nowMs: now });
+                const sheetOpenable =
+                  actions.canOpenSheet && Boolean(onOutcome || onCancel || onLateCalled);
                 const label =
                   slot.kind === "booked"
                     ? slot.status === "completed"
@@ -178,13 +194,25 @@ export function QuickBlockGrid({
                         : slot.reason || t("admin.walkIn")
                       : t("admin.free");
 
-                if (markable || lateConfirmed || staffCancellable) {
+                if (sheetOpenable) {
                   return (
-                    <div
+                    <button
                       key={slot.startTime}
-                      className={`min-h-14 rounded-lg px-1 py-1.5 text-left ${slotClass(slot, outcomePending || latePending || cancelPending)}`}
+                      type="button"
+                      aria-label={t("admin.openBookingActions")}
+                      disabled={outcomePending || latePending || cancelPending}
+                      onClick={() =>
+                        setSheet({
+                          barberId: column.barber.id,
+                          barberName: column.barber.name,
+                          slot,
+                        })
+                      }
+                      className={`min-h-14 rounded-lg px-1 py-1.5 text-left transition disabled:opacity-60 ${slotClass(slot, outcomePending || latePending || cancelPending)}`}
                     >
-                      <div className="text-[11px] font-bold sm:text-xs">{formatSlotTime(slot.startTime)}</div>
+                      <div className="text-[11px] font-bold sm:text-xs">
+                        {formatSlotTime(slot.startTime)}
+                      </div>
                       <div className="truncate text-[10px] font-medium leading-tight sm:text-[11px]">
                         {slot.customerName}
                       </div>
@@ -194,73 +222,14 @@ export function QuickBlockGrid({
                         </div>
                       ) : null}
                       {slot.customerPhone ? (
-                        <a
-                          href={`tel:${slot.customerPhone}`}
-                          className="mt-0.5 block truncate text-[9px] font-semibold underline"
-                        >
+                        <div className="mt-0.5 truncate text-[9px] font-semibold underline">
                           {slot.customerPhone}
-                        </a>
+                        </div>
                       ) : null}
-                      <div className="mt-1 flex flex-col gap-1">
-                        {lateConfirmed && slot.source !== "walk_in" ? (
-                          slot.lateCalledAt ? (
-                            <div className="rounded bg-zinc-950/40 px-1 py-1 text-center text-[9px] font-semibold">
-                              ✓ {t("admin.called")}
-                            </div>
-                          ) : onLateCalled ? (
-                            <button
-                              type="button"
-                              disabled={latePending}
-                              onClick={() => onLateCalled(column.barber.id, slot)}
-                              className="rounded bg-zinc-950/50 px-1 py-1 text-[9px] font-semibold hover:bg-zinc-950/70 disabled:opacity-50"
-                            >
-                              📞 {t("admin.markCalled")}
-                            </button>
-                          ) : null
-                        ) : null}
-                        {markable ? (
-                          <div className="flex flex-col gap-1">
-                            <button
-                              type="button"
-                              disabled={outcomePending}
-                              onClick={() => onOutcome(column.barber.id, slot, "completed")}
-                              className="rounded bg-zinc-950/50 px-1 py-1 text-[9px] font-semibold hover:bg-zinc-950/70 disabled:opacity-50"
-                            >
-                              ✓ {t("admin.markDone")}
-                            </button>
-                            {!showNoShow ? (
-                              <button
-                                type="button"
-                                disabled={outcomePending}
-                                onClick={() => onOutcome(column.barber.id, slot, "left")}
-                                className="rounded bg-zinc-950/50 px-1 py-1 text-[9px] font-semibold hover:bg-zinc-950/70 disabled:opacity-50"
-                              >
-                                {t("admin.markLeft")}
-                              </button>
-                            ) : new Date(slot.endTime).getTime() <= now ? (
-                              <button
-                                type="button"
-                                disabled={outcomePending}
-                                onClick={() => onOutcome(column.barber.id, slot, "no_show")}
-                                className="rounded bg-zinc-950/50 px-1 py-1 text-[9px] font-semibold hover:bg-zinc-950/70 disabled:opacity-50"
-                              >
-                                ✗ {t("admin.markNoShow")}
-                              </button>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        {staffCancellable && !markable ? (
-                          <button
-                            type="button"
-                            disabled={cancelPending}
-                            onClick={() => onCancel?.(column.barber.id, slot)}
-                            className="rounded bg-zinc-950/50 px-1 py-1 text-[9px] font-semibold hover:bg-zinc-950/70 disabled:opacity-50"
-                          >
-                            {t("admin.cancelBooking")}
-                          </button>
-                        ) : null}
+                      <div className="mt-1 rounded bg-zinc-950/40 px-1 py-1 text-center text-[9px] font-semibold">
+                        {t("admin.tapForActions")}
                       </div>
-                    </div>
+                    </button>
                   );
                 }
 
@@ -297,5 +266,20 @@ export function QuickBlockGrid({
         );
       })}
     </div>
+    <BookedSlotActionsSheet
+      open={Boolean(sheet)}
+      barberId={sheet?.barberId ?? ""}
+      barberName={sheet?.barberName ?? ""}
+      slot={sheet?.slot ?? { startTime: "", endTime: "", available: false, kind: "free" }}
+      pending={Boolean(
+        sheet &&
+          (outcomePendingKey === `${sheet.barberId}:${sheet.slot.startTime}` ||
+            latePendingKey === `${sheet.barberId}:${sheet.slot.startTime}` ||
+            cancelPendingKey === `${sheet.barberId}:${sheet.slot.startTime}`),
+      )}
+      onClose={() => setSheet(null)}
+      onAction={handleSheetAction}
+    />
+    </>
   );
 }
