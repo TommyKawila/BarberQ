@@ -18,7 +18,7 @@ export async function PATCH(
     const body = await readJson<{ outcome?: string }>(req);
     const outcome = body.outcome;
 
-    if (outcome !== "completed" && outcome !== "no_show") {
+    if (outcome !== "completed" && outcome !== "no_show" && outcome !== "left") {
       throw new BookingError("INVALID_OUTCOME", "Invalid outcome", 400);
     }
 

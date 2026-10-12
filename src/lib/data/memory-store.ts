@@ -279,20 +279,24 @@ export const memoryStore: BookingStore = {
     return withBarberLock(input.barberId, async () => {
       const barber = getBarberSync(input.barberId);
       if (!barber) throw new StoreConflict("BARBER_NOT_FOUND");
+      if (input.endTime <= input.startTime) throw new StoreConflict("INVALID_RANGE");
       const conflict = overlapsBusy(input.barberId, input.startTime, input.endTime);
       if (conflict) throw new StoreConflict(conflict);
+      const ref = input.customerRef?.trim() || null;
+      const phone = input.customerPhone?.trim() || null;
       const row: Appointment = {
         id: uuid(),
         barber_id: input.barberId,
-        customer_ref: input.customerRef,
+        customer_ref: ref,
         customer_name: input.customerName,
-        customer_phone: input.customerPhone,
+        customer_phone: phone,
         start_time: input.startTime.toISOString(),
         end_time: input.endTime.toISOString(),
         status: "confirmed",
         created_at: nowIso(),
         cancel_token: uuid().replace(/-/g, ""),
         customer_line_id: input.customerLineId ?? null,
+        source: input.source ?? "line",
       };
       getState().appointments.push(row);
       return row;
@@ -432,13 +436,18 @@ export const memoryStore: BookingStore = {
     if (idx === -1) throw new StoreConflict("NOT_FOUND");
     const row = state.appointments[idx];
     if (row.status !== "confirmed") throw new StoreConflict("NOT_CANCELLABLE");
-    if (new Date(row.end_time).getTime() > Date.now()) {
+    const now = Date.now();
+    if (outcome === "no_show" && new Date(row.end_time).getTime() > now) {
       throw new StoreConflict("INVALID_OUTCOME");
     }
+    const endMs = new Date(row.end_time).getTime();
+    const shorten = (outcome === "completed" || outcome === "left") && endMs > now;
     const updated = {
       ...row,
       status: outcome,
+      end_time: shorten ? new Date(now).toISOString() : row.end_time,
       completed_at: outcome === "completed" ? nowIso() : row.completed_at,
+      cancelled_at: outcome === "left" ? nowIso() : row.cancelled_at,
     };
     state.appointments[idx] = updated;
     return updated;

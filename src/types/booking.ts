@@ -1,4 +1,13 @@
-export type AppointmentStatus = "confirmed" | "cancelled" | "completed" | "no_show";
+export type AppointmentStatus =
+  | "confirmed"
+  | "cancelled"
+  | "completed"
+  | "no_show"
+  | "left";
+
+export type AppointmentSource = "line" | "phone" | "chat" | "walk_in";
+
+export type StaffBookingSource = "phone" | "chat" | "walk_in";
 
 export type BarberRole = "owner" | "barber";
 
@@ -33,9 +42,9 @@ export interface Shop {
 export interface Appointment {
   id: string;
   barber_id: string;
-  customer_ref: string;
+  customer_ref: string | null;
   customer_name: string;
-  customer_phone: string;
+  customer_phone: string | null;
   start_time: string;
   end_time: string;
   status: AppointmentStatus;
@@ -45,6 +54,7 @@ export interface Appointment {
   cancel_token?: string | null;
   late_called_at?: string | null;
   customer_line_id?: string | null;
+  source?: AppointmentSource;
 }
 
 export interface TimeBlock {
@@ -72,10 +82,11 @@ export type AdminSlotKind = "free" | "booked" | "blocked";
 export interface AdminSlot extends Slot {
   kind: AdminSlotKind;
   customerName?: string;
-  customerPhone?: string;
+  customerPhone?: string | null;
   customerLineId?: string | null;
   appointmentId?: string;
   status?: AppointmentStatus;
+  source?: AppointmentSource;
   isLate?: boolean;
   lateCalledAt?: string | null;
   blockId?: string;
@@ -94,6 +105,17 @@ export interface CreateBookingInput {
   customerPhone: string;
   customerRef: string;
   customerLineId?: string;
+  source?: AppointmentSource;
+}
+
+export interface CreateStaffBookingInput {
+  barberId: string;
+  startTime: string;
+  source: StaffBookingSource;
+  customerName?: string;
+  customerPhone?: string;
+  /** Optional shortened end when walk-in would collide with the next booking */
+  endTime?: string;
 }
 
 export interface ApiErrorBody {

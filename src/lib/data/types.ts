@@ -1,4 +1,11 @@
-import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
+import type {
+  Appointment,
+  AppointmentSource,
+  Barber,
+  BusyInterval,
+  Shop,
+  TimeBlock,
+} from "@/types/booking";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
 
 export type StoreErrorCode =
@@ -34,12 +41,13 @@ export class StoreConflict extends Error {
 
 export interface CreateAppointmentInput {
   barberId: string;
-  customerRef: string;
+  customerRef?: string | null;
   customerName: string;
-  customerPhone: string;
+  customerPhone?: string | null;
   startTime: Date;
   endTime: Date;
-  customerLineId?: string;
+  customerLineId?: string | null;
+  source?: AppointmentSource;
 }
 
 export interface CreateBlockInput {
