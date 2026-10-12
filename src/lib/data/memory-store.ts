@@ -440,12 +440,17 @@ export const memoryStore: BookingStore = {
     if (outcome === "no_show" && new Date(row.end_time).getTime() > now) {
       throw new StoreConflict("INVALID_OUTCOME");
     }
+    const startMs = new Date(row.start_time).getTime();
     const endMs = new Date(row.end_time).getTime();
-    const shorten = (outcome === "completed" || outcome === "left") && endMs > now;
+    // Only shorten while in progress; before start keep range valid (end > start)
+    const inProgress = now >= startMs && now < endMs;
+    const shorten =
+      (outcome === "completed" || outcome === "left") && inProgress;
+    const shortenedEnd = new Date(Math.max(now, startMs + 1000)).toISOString();
     const updated = {
       ...row,
       status: outcome,
-      end_time: shorten ? new Date(now).toISOString() : row.end_time,
+      end_time: shorten ? shortenedEnd : row.end_time,
       completed_at: outcome === "completed" ? nowIso() : row.completed_at,
       cancelled_at: outcome === "left" ? nowIso() : row.cancelled_at,
     };

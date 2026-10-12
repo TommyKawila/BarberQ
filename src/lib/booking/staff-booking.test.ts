@@ -165,6 +165,44 @@ describe("staff booking + source (P3)", () => {
     assert.ok(done.completed_at);
   });
 
+  it("left on future appointment keeps end_time valid and frees slot", async () => {
+    const shop = await memoryStore.createShop({
+      name: "P3 Future Left Shop",
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "FutureLeftBarber",
+      slotDuration: 30,
+    });
+    const slot = await firstFutureSlot(barber.id);
+    assert.ok(slot);
+    assert.ok(new Date(slot!.startTime).getTime() > Date.now() + 60_000);
+
+    const walkIn = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: slot!.startTime,
+      source: "walk_in",
+    });
+    const originalEnd = walkIn.end_time;
+    assert.ok(new Date(walkIn.start_time).getTime() > Date.now());
+
+    const left = await markAppointmentOutcome(walkIn.id, "left");
+    assert.equal(left.status, "left");
+    assert.equal(left.end_time, originalEnd);
+    assert.ok(new Date(left.end_time).getTime() > new Date(left.start_time).getTime());
+
+    // left does not block overlap — same slot bookable again
+    const again = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: slot!.startTime,
+      source: "phone",
+      customerName: "After Left",
+    });
+    assert.equal(again.status, "confirmed");
+    assert.equal(again.source, "phone");
+  });
+
   it("no_show rejected for walk-in", async () => {
     const shop = await memoryStore.createShop({
       name: "P3 NoShow Shop",
