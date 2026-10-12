@@ -11,4 +11,8 @@ export function isBlockingStatus(status: AppointmentStatus): boolean {
   return BLOCKING.includes(status);
 }
 
-export type AppointmentOutcome = "completed" | "no_show";
+export type AppointmentOutcome = "completed" | "no_show" | "left";
+
+export function allowsNoShow(source: string | null | undefined): boolean {
+  return source !== "walk_in";
+}

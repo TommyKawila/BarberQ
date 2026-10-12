@@ -15,15 +15,24 @@ import type { Appointment, Barber, TimeBlock } from "@/types/booking";
 
 export type StatsRange = "day" | "week" | "month";
 
+export interface StatsBySource {
+  line: number;
+  phone: number;
+  chat: number;
+  walk_in: number;
+}
+
 export interface StatsTotals {
   uniqueCustomers: number;
   booked: number;
   cancelled: number;
   completed: number;
   noShow: number;
+  left: number;
   walkIns: number;
   newCustomers: number;
   utilizationPct: number;
+  bySource: StatsBySource;
 }
 
 export interface StatsHourRow {
@@ -203,7 +212,11 @@ export async function getStatsReport(
   const scopedBlocks = blocks.filter((b) => barberIds.has(b.barber_id));
 
   const occupying = scopedAppointments.filter((a) => isOccupyingStatus(a.status));
-  const phones = new Set(occupying.map((a) => a.customer_phone));
+  const phones = new Set(
+    occupying
+      .filter((a) => a.source !== "walk_in" && a.customer_phone)
+      .map((a) => a.customer_phone as string),
+  );
 
   const priorAppointments = await store.listAppointmentsInRange(
     new Date(0),
@@ -211,10 +224,24 @@ export async function getStatsReport(
   );
   const priorPhones = new Set(
     priorAppointments
-      .filter((a) => barberIds.has(a.barber_id) && isOccupyingStatus(a.status))
-      .map((a) => a.customer_phone),
+      .filter(
+        (a) =>
+          barberIds.has(a.barber_id) &&
+          isOccupyingStatus(a.status) &&
+          a.source !== "walk_in" &&
+          a.customer_phone,
+      )
+      .map((a) => a.customer_phone as string),
   );
   const newCustomers = [...phones].filter((p) => !priorPhones.has(p)).length;
+
+  const bySource: StatsBySource = { line: 0, phone: 0, chat: 0, walk_in: 0 };
+  for (const row of scopedAppointments) {
+    const src = row.source ?? "line";
+    if (src in bySource) bySource[src as keyof StatsBySource] += 1;
+  }
+  const walkInAppointments = scopedAppointments.filter((a) => a.source === "walk_in");
+  const noShowEligible = scopedAppointments.filter((a) => a.source !== "walk_in");
 
   let availableMinutes = 0;
   let occupiedMinutes = 0;
@@ -239,10 +266,12 @@ export async function getStatsReport(
     booked: scopedAppointments.length,
     cancelled: scopedAppointments.filter((a) => a.status === "cancelled").length,
     completed: scopedAppointments.filter((a) => a.status === "completed").length,
-    noShow: scopedAppointments.filter((a) => a.status === "no_show").length,
-    walkIns: scopedBlocks.length,
+    noShow: noShowEligible.filter((a) => a.status === "no_show").length,
+    left: scopedAppointments.filter((a) => a.status === "left").length,
+    walkIns: walkInAppointments.length,
     newCustomers,
     utilizationPct: availableMinutes > 0 ? Math.round((occupiedMinutes / availableMinutes) * 100) : 0,
+    bySource,
   };
 
   const shopHoursSet = new Set<number>();
@@ -261,11 +290,14 @@ export async function getStatsReport(
     for (const dayISO of dayList) {
       for (const row of occupying) {
         if (formatInTimeZone(parseISO(row.start_time), SHOP_TIMEZONE, "yyyy-MM-dd") !== dayISO) continue;
-        booked += overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        const mins = overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        if (row.source === "walk_in") walkIn += mins;
+        else booked += mins;
       }
       for (const row of scopedBlocks) {
         if (formatInTimeZone(parseISO(row.start_time), SHOP_TIMEZONE, "yyyy-MM-dd") !== dayISO) continue;
-        walkIn += overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        // Manual blocks still occupy capacity but are not walk-in appointments
+        booked += overlapsHour(row.start_time, row.end_time, hour, dayISO);
       }
     }
     const capacity = barbers.length * 60;

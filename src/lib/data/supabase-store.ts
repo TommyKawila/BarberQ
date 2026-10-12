@@ -208,35 +208,75 @@ export const supabaseStore: BookingStore = {
 
   async createAppointment(input) {
     const supabase = createServiceClient();
+    const source = input.source ?? "line";
     const { data, error } = await supabase.rpc("create_appointment", {
       p_barber_id: input.barberId,
-      p_customer_ref: input.customerRef,
+      p_customer_ref: input.customerRef ?? null,
       p_customer_name: input.customerName,
-      p_customer_phone: input.customerPhone,
+      p_customer_phone: input.customerPhone ?? null,
       p_start_time: input.startTime.toISOString(),
       p_customer_line_id: input.customerLineId ?? null,
+      p_source: source,
+      p_end_time: input.endTime.toISOString(),
     });
     if (!error) return data as Appointment;
 
-    const missingLineParam =
+    const missingP3Params =
       error.code === "PGRST202" ||
-      (error.message ?? "").includes("p_customer_line_id");
-    if (!missingLineParam) mapRpcError(error);
+      (error.message ?? "").includes("p_source") ||
+      (error.message ?? "").includes("p_end_time");
+    if (!missingP3Params) {
+      const missingLineParam =
+        error.code === "PGRST202" ||
+        (error.message ?? "").includes("p_customer_line_id");
+      if (!missingLineParam) mapRpcError(error);
 
-    const { data: legacy, error: legacyError } = await supabase.rpc("create_appointment", {
+      const { data: legacy, error: legacyError } = await supabase.rpc("create_appointment", {
+        p_barber_id: input.barberId,
+        p_customer_ref: input.customerRef ?? "",
+        p_customer_name: input.customerName,
+        p_customer_phone: input.customerPhone ?? "",
+        p_start_time: input.startTime.toISOString(),
+      });
+      if (legacyError) mapRpcError(legacyError);
+      const appointment = legacy as Appointment;
+      if (!input.customerLineId && source === "line") return appointment;
+
+      const { data: patched, error: patchError } = await supabase
+        .from("appointments")
+        .update({
+          customer_line_id: input.customerLineId ?? null,
+          source,
+          end_time: input.endTime.toISOString(),
+          customer_ref: input.customerRef ?? null,
+          customer_phone: input.customerPhone ?? null,
+        })
+        .eq("id", appointment.id)
+        .select("*")
+        .maybeSingle();
+      if (patchError) throw new Error(patchError.message);
+      return (patched as Appointment | null) ?? appointment;
+    }
+
+    // Migration 0026 not applied yet: fall back to 0013 signature + patch
+    const { data: mid, error: midError } = await supabase.rpc("create_appointment", {
       p_barber_id: input.barberId,
-      p_customer_ref: input.customerRef,
+      p_customer_ref: input.customerRef ?? "",
       p_customer_name: input.customerName,
-      p_customer_phone: input.customerPhone,
+      p_customer_phone: input.customerPhone ?? "",
       p_start_time: input.startTime.toISOString(),
+      p_customer_line_id: input.customerLineId ?? null,
     });
-    if (legacyError) mapRpcError(legacyError);
-    const appointment = legacy as Appointment;
-    if (!input.customerLineId) return appointment;
-
+    if (midError) mapRpcError(midError);
+    const appointment = mid as Appointment;
     const { data: patched, error: patchError } = await supabase
       .from("appointments")
-      .update({ customer_line_id: input.customerLineId })
+      .update({
+        source,
+        end_time: input.endTime.toISOString(),
+        customer_ref: input.customerRef ?? null,
+        customer_phone: input.customerPhone ?? null,
+      })
       .eq("id", appointment.id)
       .select("*")
       .maybeSingle();
