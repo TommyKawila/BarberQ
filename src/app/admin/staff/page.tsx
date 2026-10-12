@@ -78,7 +78,9 @@ export default function AdminStaffPage() {
       if (!res.ok) return;
       const counts: Record<string, number> = {};
       for (const col of json.columns ?? []) {
-        counts[col.barber.id] = col.slots.filter((s) => s.kind === "booked").length;
+        if (!col?.barber?.id) continue;
+        const slots = Array.isArray(col.slots) ? col.slots : [];
+        counts[col.barber.id] = slots.filter((s) => s.kind === "booked").length;
       }
       setTodayCounts(counts);
     } catch {

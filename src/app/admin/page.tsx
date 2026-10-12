@@ -347,6 +347,17 @@ export default function AdminPage() {
     });
   }
 
+  // Hooks must stay above any early return (auth loading used to crash after ready).
+  const freeNow = useMemo(() => (isToday ? listFreeBarbersNow(columns) : []), [columns, isToday]);
+  const mini = useMemo(() => computeBoardMiniStats(columns), [columns]);
+  const hasBookingsToday = useMemo(
+    () => columns.some((col) => (col.slots ?? []).some((slot) => slot.kind === "booked")),
+    [columns],
+  );
+  const setupIncomplete = Boolean(
+    activation && (!activation.teamOk || !activation.hoursOk || !activation.ready),
+  );
+
   if (!ready || !profile) {
     return (
       <section className="flex min-h-full flex-col gap-4 px-4 py-10">
@@ -366,13 +377,6 @@ export default function AdminPage() {
     setBookingLinkCopied(true);
     window.setTimeout(() => setBookingLinkCopied(false), 2000);
   }
-
-  const hasBookingsToday = columns.some((col) =>
-    col.slots.some((slot) => slot.kind === "booked"),
-  );
-  const freeNow = useMemo(() => (isToday ? listFreeBarbersNow(columns) : []), [columns, isToday]);
-  const mini = useMemo(() => computeBoardMiniStats(columns), [columns]);
-  const setupIncomplete = Boolean(activation && (!activation.teamOk || !activation.hoursOk || !activation.ready));
 
   return (
     <AdminShell role={profile.role}>

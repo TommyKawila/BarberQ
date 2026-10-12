@@ -9,18 +9,23 @@ interface HourlyBarsProps {
 
 export function HourlyBars({ rows, labels }: HourlyBarsProps) {
   if (rows.length === 0) return null;
-  const max = Math.max(...rows.map((r) => r.booked + r.walkIn + r.blocked + r.free), 1);
+  const max = Math.max(
+    ...rows.map((r) => (r.booked ?? 0) + (r.walkIn ?? 0) + (r.blocked ?? 0) + (r.free ?? 0)),
+    1,
+  );
 
   return (
     <div className="space-y-2">
       <div className="flex items-end gap-1" style={{ height: 120 }}>
         {rows.map((row) => {
-          const busy = row.booked + row.walkIn;
-          const total = busy + row.blocked + row.free;
+          const busy = (row.booked ?? 0) + (row.walkIn ?? 0);
+          const blocked = row.blocked ?? 0;
+          const free = row.free ?? 0;
+          const total = busy + blocked + free;
           const h = (total / max) * 100;
           const busyH = total > 0 ? (busy / total) * h : 0;
-          const blockedH = total > 0 ? (row.blocked / total) * h : 0;
-          const freeH = total > 0 ? (row.free / total) * h : 0;
+          const blockedH = total > 0 ? (blocked / total) * h : 0;
+          const freeH = total > 0 ? (free / total) * h : 0;
           return (
             <div key={row.hour} className="flex flex-1 flex-col items-center gap-1">
               <div className="flex w-full flex-col justify-end" style={{ height: 100 }}>

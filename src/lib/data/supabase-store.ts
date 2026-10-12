@@ -441,14 +441,24 @@ export const supabaseStore: BookingStore = {
     options?: MarkOutcomeOptions,
   ) {
     const supabase = createServiceClient();
-    const { data, error } = await supabase.rpc("mark_appointment_outcome", {
+    // Prefer 4-arg RPC (0032); fall back to 2-arg if migration not applied.
+    const withPrice = await supabase.rpc("mark_appointment_outcome", {
       p_appointment_id: appointmentId,
       p_status: outcome,
       p_service_id: options?.serviceId ?? null,
       p_price_baht: options?.priceBaht ?? null,
     });
-    if (error) mapRpcError(error);
-    return data as Appointment;
+    if (!withPrice.error) return withPrice.data as Appointment;
+    const msg = withPrice.error.message ?? "";
+    if (/Could not find the function|PGRST202|price_baht|service_id/i.test(msg)) {
+      const legacy = await supabase.rpc("mark_appointment_outcome", {
+        p_appointment_id: appointmentId,
+        p_status: outcome,
+      });
+      if (legacy.error) mapRpcError(legacy.error);
+      return legacy.data as Appointment;
+    }
+    mapRpcError(withPrice.error);
   },
 
   async listShopServices(shopId, opts) {
@@ -461,7 +471,12 @@ export const supabaseStore: BookingStore = {
       .order("created_at", { ascending: true });
     if (!opts?.includeInactive) query = query.eq("is_active", true);
     const { data, error } = await query;
-    if (error) throw new Error(error.message);
+    // Degrade when migration 0031 not applied yet (relation missing).
+    if (error) {
+      const msg = error.message ?? "";
+      if (/shop_services|does not exist|42P01/i.test(msg)) return [];
+      throw new Error(error.message);
+    }
     return (data ?? []) as ShopService[];
   },
 
@@ -500,7 +515,13 @@ export const supabaseStore: BookingStore = {
       })
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      const msg = error.message ?? "";
+      if (/shop_services|does not exist|42P01/i.test(msg)) {
+        throw new StoreConflict("SERVICE_NOT_FOUND", "Run migration 0031_shop_services first");
+      }
+      throw new Error(error.message);
+    }
     return data as ShopService;
   },
 

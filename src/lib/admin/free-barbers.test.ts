@@ -8,6 +8,18 @@ function col(partial: Partial<AdminColumn> & { barber: AdminColumn["barber"]; sl
 }
 
 describe("free-barbers helpers", () => {
+  it("does not throw on null/malformed columns", () => {
+    assert.deepEqual(listFreeBarbersNow(null), []);
+    assert.deepEqual(listFreeBarbersNow(undefined), []);
+    assert.deepEqual(listFreeBarbersNow([{ barber: { id: "x", name: "X", slot_duration_minutes: 30, off_days: [], created_at: "" }, slots: undefined as unknown as [] }]), []);
+    assert.deepEqual(computeBoardMiniStats(null), { remaining: 0, done: 0, freeSlots: 0 });
+    assert.deepEqual(computeBoardMiniStats([{ barber: { id: "x", name: "X", slot_duration_minutes: 30, off_days: [], created_at: "" }, slots: undefined as unknown as [] }]), {
+      remaining: 0,
+      done: 0,
+      freeSlots: 0,
+    });
+  });
+
   it("lists free barbers with freeUntil through consecutive free slots", () => {
     const now = new Date("2026-10-12T05:00:00.000Z");
     const columns = [

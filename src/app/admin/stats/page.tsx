@@ -15,6 +15,7 @@ import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
+import { normalizeStatsReport } from "@/lib/admin/stats-report-safe";
 import type { StatsRange, StatsReport } from "@/lib/services/stats-service";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 
@@ -59,14 +60,22 @@ export default function AdminStatsPage() {
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.loadFailed"));
         setOffline(false);
+        setReport(null);
+        return;
+      }
+      const normalized = normalizeStatsReport(json);
+      if (!normalized) {
+        setError(t("admin.loadFailed"));
+        setReport(null);
         return;
       }
       setError(null);
       setOffline(false);
-      setReport(json);
+      setReport(normalized);
     } catch {
       setOffline(true);
       setError(t("admin.statsOffline"));
+      setReport(null);
     } finally {
       setLoadingStats(false);
     }
@@ -207,7 +216,7 @@ export default function AdminStatsPage() {
               <div className="grid grid-cols-3 gap-2">
                 <StatCard
                   label={t("admin.statsRevenue")}
-                  value={t("admin.statsBaht").replace("{amount}", String(totals.revenueBaht))}
+                  value={t("admin.statsBaht").replace("{amount}", String(totals.revenueBaht ?? 0))}
                   accent="amber"
                   delta={comparison?.revenueDelta}
                 />
@@ -232,7 +241,7 @@ export default function AdminStatsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <StatCard
                   label={t("admin.statsUtilization")}
-                  value={`${totals.utilizationPct}%`}
+                  value={`${totals.utilizationPct ?? 0}%`}
                   accent="zinc"
                 />
                 <StatCard
