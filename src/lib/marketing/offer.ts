@@ -51,9 +51,11 @@ export function resolveMarketingTierForBarberCount(
   return null;
 }
 
-/** Fill `{days}` / `{quota}` placeholders from marketingOffer. */
+/** Fill `{days}` / `{quota}` / `{price}` placeholders from marketingOffer. */
 export function fillOfferCopy(template: string): string {
+  const starter = formatBaht(marketingOffer.tiers[0].monthlyPriceThb);
   return template
     .replaceAll("{days}", String(marketingOffer.trialDays))
-    .replaceAll("{quota}", String(marketingOffer.lineFreePushQuota));
+    .replaceAll("{quota}", String(marketingOffer.lineFreePushQuota))
+    .replaceAll("{price}", starter);
 }

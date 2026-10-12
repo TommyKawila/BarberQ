@@ -41,6 +41,6 @@ describe("marketingOffer single source of truth", () => {
   it("formats baht and offer copy placeholders", () => {
     assert.equal(formatBaht(599), "฿599");
     assert.equal(formatBaht(999), "฿999");
-    assert.match(fillOfferCopy("{days}-day / {quota} msgs"), /30-day \/ 300 msgs/);
+    assert.match(fillOfferCopy("{days}-day / {quota} msgs / from {price}"), /30-day \/ 300 msgs \/ from ฿599/);
   });
 });

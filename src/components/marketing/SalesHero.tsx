@@ -1,6 +1,5 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { HeroProductMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
@@ -8,8 +7,6 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-
-const HERO_TRUST = [1, 2, 3] as const;
 
 export function SalesHero() {
   const { t } = useI18n();
@@ -32,14 +29,8 @@ export function SalesHero() {
         <div className="mx-auto grid w-full max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[48%_52%] lg:items-center lg:gap-10 lg:px-6">
           <div className="text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-            <h1 className="mt-3 text-[2.5rem] font-bold leading-[1.15] text-zinc-50 md:text-[3.25rem] md:leading-[1.12] lg:text-[3.75rem]">
-              <span className="block text-amber-400">BarberQx</span>
-              {t("marketing.hero.titleLine1")}
-              <br />
-              {t("marketing.hero.titleLine2")}{" "}
-              <span className="whitespace-nowrap text-amber-400">
-                {t("marketing.hero.titleHighlight")}
-              </span>
+            <h1 className="mt-3 text-[2.25rem] font-bold leading-[1.2] text-zinc-50 md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
+              {t("marketing.hero.title")}
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300 md:text-lg">
               {t("marketing.hero.subtitle")}
@@ -57,21 +48,13 @@ export function SalesHero() {
               </a>
             </div>
             <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              {td("marketing.hero.ctaExpect")}
+              {td("marketing.hero.micro")}
             </p>
-            <ul className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
-              {HERO_TRUST.map((n) => (
-                <li
-                  key={n}
-                  className="flex items-center gap-1.5 text-[13px] text-zinc-400 md:text-sm"
-                >
-                  <Check size={14} className="shrink-0 text-amber-400" strokeWidth={2.5} />
-                  {t(`marketing.hero.trust${n}` as MessageKey)}
-                </li>
-              ))}
-            </ul>
           </div>
-          <div className="hero-phones-enter relative w-full" aria-label={t("marketing.hero.productAlt")}>
+          <div
+            className="hero-phones-enter relative w-full"
+            aria-label={t("marketing.hero.productAlt")}
+          >
             <HeroProductMockups />
           </div>
         </div>

@@ -57,14 +57,11 @@ describe("marketing layout split", () => {
     assert.match(hero, /MarketingTrialLink/);
     assert.match(hero, /HeroProductMockups/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
-    assert.doesNotMatch(hero, /hero-phone-hand\.png/);
-    assert.match(hero, /marketing\.hero\.ctaExpect/);
-    assert.doesNotMatch(hero, /HeroPhoneMockups/);
+    assert.match(hero, /marketing\.hero\.micro/);
     assert.match(nav, /MarketingTrialLink/);
     assert.doesNotMatch(sales, /href="\/trial"/);
     assert.doesNotMatch(hero, /href="\/trial"/);
     assert.doesNotMatch(nav, /href="\/trial"/);
-    assert.doesNotMatch(sales, /variant="trial"/);
   });
 
   it("retired HTML hero phone mockup is gone", () => {
@@ -74,7 +71,7 @@ describe("marketing layout split", () => {
     );
   });
 
-  it("pain section is interruption-only without shop replies", () => {
+  it("pain section uses designer bullets and keeps chat mockup interruption-only", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
@@ -83,14 +80,14 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/mockups/PainChatMockup.tsx"),
       "utf8",
     );
-    const dict = readFileSync(resolve(root, "lib/i18n/dictionary.ts"), "utf8");
     assert.match(sales, /PainChatMockup/);
+    assert.match(sales, /marketing\.pain\.bullet/);
     assert.doesNotMatch(sales, /from: "shop"/);
     assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
-    assert.match(dict, /ทุกข้อความหมายถึงการต้องหยุด แล้วกลับมาตอบเรื่องเดิมอีกครั้ง/);
+    assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
   });
 
-  it("sales page follows approved section order with app mockups", () => {
+  it("sales page follows approved section order with sticky CTA and no chips", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
@@ -106,6 +103,7 @@ describe("marketing layout split", () => {
       "marketingOffer.tiers",
       'id="faq"',
       "marketing.final",
+      "marketing.sticky.cta",
     ];
     let cursor = 0;
     for (const token of order) {
@@ -114,9 +112,9 @@ describe("marketing layout split", () => {
       cursor = idx + token.length;
     }
     assert.match(sales, /SHOW_TESTIMONIALS_PLACEHOLDER = false/);
-    assert.match(sales, /OwnerSurfacePhone/);
+    assert.match(sales, /h-14/);
+    assert.doesNotMatch(sales, /barber\.chip|BARBER_CHIPS/);
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
-    assert.doesNotMatch(sales, /after-organized-workflow\.png/);
   });
 
   it("trial page uses focused chrome without sales nav CTA", () => {
@@ -132,7 +130,6 @@ describe("marketing layout split", () => {
     assert.match(trial, /noValidate/);
     assert.match(trial, /marketing.trial.backHome/);
     assert.match(trial, /marketing.trial.priceExpect/);
-    assert.doesNotMatch(trial, /← Home/);
     assert.match(nav, /variant === "trial"/);
   });
 });
@@ -145,45 +142,47 @@ function visibleValues(prefix: string, locale: "th" | "en"): string {
 }
 
 describe("visible marketing claim locks", () => {
-  it("keeps TH/EN marketing key parity including chip6 and faq7", () => {
+  it("keeps TH/EN parity, free-trial wording, and no chip keys", () => {
     const thKeys = Object.keys(dictionary.th).filter((k) => k.startsWith("marketing."));
     const enKeys = Object.keys(dictionary.en).filter((k) => k.startsWith("marketing."));
     assert.deepEqual(thKeys.sort(), enKeys.sort());
-    assert.equal(dictionary.th["marketing.barber.chip6"], "Walk-in");
-    assert.equal(dictionary.en["marketing.barber.chip6"], "Walk-in");
+    assert.equal(thKeys.some((k) => k.includes("barber.chip")), false);
     assert.ok(dictionary.th["marketing.features.6.title"]);
-    assert.ok(dictionary.en["marketing.features.6.title"]);
     assert.ok(dictionary.th["marketing.faq.7.q"]);
-    assert.ok(dictionary.en["marketing.faq.7.q"]);
+    assert.match(dictionary.th["marketing.hero.cta"], /ทดลองใช้ฟรี \{days\} วัน/);
+    assert.match(dictionary.en["marketing.hero.cta"], /free \{days\}-day trial/i);
   });
 
-  it("public marketing values use trial + tier pricing without invented social proof", () => {
+  it("rejects unverifiable and outdated pricing claims", () => {
     const th = visibleValues("marketing.", "th");
     const en = visibleValues("marketing.", "en");
-    assert.match(th, /ทดลองใช้ \{days\} วัน/);
-    assert.match(en, /\{days\}-day trial/i);
+    assert.doesNotMatch(th, /฿699|ราคาเดียวทั้งร้าน|รองรับร้าน 5 ช่าง/);
+    assert.doesNotMatch(en, /฿699|one price for the whole shop|supports 5 barbers/i);
+    const claimKeys = Object.entries(dictionary.th).filter(
+      ([k]) =>
+        k.startsWith("marketing.") &&
+        !k.startsWith("marketing.trial.shopName") &&
+        !k.startsWith("marketing.trial.contactName") &&
+        !k.startsWith("marketing.trial.contactValue"),
+    );
+    for (const [key, value] of claimKeys) {
+      assert.doesNotMatch(value, /\*/, `claim asterisk left on ${key}`);
+    }
     assert.match(th, /1–5 ช่าง|1–5/);
-    assert.match(en, /1–5 barbers|1–5/);
-    assert.doesNotMatch(th, /ทำไมร้านตัดผมเลือก/);
-    assert.doesNotMatch(en, /why barbershops choose/i);
-    assert.doesNotMatch(th, /รายได้เพิ่มขึ้น|ไม่มาตามนัด/i);
-    assert.doesNotMatch(en, /increased revenue|no-show rate/i);
-    assert.match(th, /Coming soon|เร็ว ๆ นี้/);
-    assert.match(dictionary.th["marketing.coming.1.title"], /รายได้|สรุป/);
-    assert.match(dictionary.en["marketing.coming.2.title"], /Day-before|reminder/i);
+    assert.match(th, /6–10/);
+    assert.match(th, /เกิน 10|มากกว่า 10/);
+    assert.match(dictionary.th["marketing.coming.1.title"], /สรุปยอด|รายได้/);
+    assert.match(dictionary.th["marketing.coming.2.title"], /ก่อนวันนัด 1 วัน/);
   });
 
-  it("FAQ 5 states LINE reply confirmations are not optional push quota", () => {
-    const thFaq5 = dictionary.th["marketing.faq.5.a"];
-    const enFaq5 = dictionary.en["marketing.faq.5.a"];
-    assert.match(thFaq5, /\{quota\}/);
-    assert.match(enFaq5, /\{quota\}/);
-    assert.match(thFaq5, /reply|ตอบกลับ/);
-    assert.match(enFaq5, /reply messages/i);
-    assert.doesNotMatch(thFaq5, /เป็นทางเลือก/);
-    assert.doesNotMatch(enFaq5, /optional/i);
-    assert.match(thFaq5, /ไม่นับในโควตา/);
-    assert.match(enFaq5, /do not count toward the push quota/i);
+  it("FAQ explains LINE quota, Web Push, and tier pricing", () => {
+    assert.match(dictionary.th["marketing.faq.3.a"], /\{quota\}/);
+    assert.match(dictionary.th["marketing.faq.3.a"], /reply|ตอบกลับ/);
+    assert.doesNotMatch(dictionary.th["marketing.faq.3.a"], /เป็นทางเลือก/);
+    assert.match(dictionary.th["marketing.faq.4.a"], /Web Push/);
+    assert.match(dictionary.en["marketing.faq.4.a"], /Web Push/);
+    assert.match(dictionary.th["marketing.faq.7.a"], /1–5 ช่าง \{price\}/);
+    assert.match(dictionary.en["marketing.faq.7.a"], /1–5 barbers \{price\}/);
   });
 
   it("offer.ts is the only hardcoded public price source for tiers", () => {

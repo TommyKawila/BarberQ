@@ -40,10 +40,18 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
         <BarberQxLogo priority className="h-auto w-[90px] justify-self-start md:w-[120px]" />
         {isTrial ? null : (
           <nav className="hidden items-center justify-center gap-6 text-sm text-zinc-300 md:flex">
-            <a href="#how-it-works" className="hover:text-amber-400">{t("marketing.nav.how")}</a>
-            <a href="#features" className="hover:text-amber-400">{t("marketing.nav.features")}</a>
-            <a href="#pricing" className="hover:text-amber-400">{t("marketing.nav.pricing")}</a>
-            <a href="#faq" className="hover:text-amber-400">{t("marketing.nav.faq")}</a>
+            <a href="#how-it-works" className="hover:text-amber-400">
+              {t("marketing.nav.how")}
+            </a>
+            <a href="#features" className="hover:text-amber-400">
+              {t("marketing.nav.features")}
+            </a>
+            <a href="#pricing" className="hover:text-amber-400">
+              {t("marketing.nav.pricing")}
+            </a>
+            <a href="#faq" className="hover:text-amber-400">
+              {t("marketing.nav.faq")}
+            </a>
           </nav>
         )}
         <div className="flex items-center justify-end gap-2 justify-self-end">
@@ -51,7 +59,7 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
           {isTrial ? null : (
             <>
               <MarketingTrialLink className="inline-flex min-h-11 items-center rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 md:hidden">
-                {td("marketing.hero.ctaShort")}
+                {td("marketing.nav.trialShort")}
               </MarketingTrialLink>
               <MarketingTrialLink className="hidden min-h-11 items-center rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex">
                 {td("marketing.nav.trial")}

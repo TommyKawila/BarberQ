@@ -5,13 +5,13 @@ import {
   Bell,
   CalendarClock,
   Check,
-  ChevronDown,
   CircleCheck,
-  Clock3,
   MessageCircle,
-  MessageCircleOff,
+  MessageSquare,
+  Minus,
+  Phone,
+  Plus,
   Smartphone,
-  Store,
   Users,
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -27,25 +27,26 @@ import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
 import {
   fillOfferCopy,
-  formatBaht,
   marketingOffer,
   tierBarberRangeLabel,
   tierPricePerMonthLabel,
 } from "@/lib/marketing/offer";
 
-const HOW_ICONS = [MessageCircle, CalendarClock, CircleCheck] as const;
+const HOW_ICONS = [MessageCircle, CircleCheck, Smartphone] as const;
 const FEATURE_ICONS = [
-  MessageCircleOff,
-  Clock3,
+  MessageCircle,
   Users,
-  Store,
-  Smartphone,
+  Phone,
+  CircleCheck,
   CalendarClock,
+  Bell,
 ] as const;
-const COMING_ICONS = [Store, Bell] as const;
+const COMING_ICONS = [MessageSquare, Bell] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7] as const;
+const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const PAIN_BULLETS = [1, 2, 3, 4] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
-/** Keep testimonials out of the live page until real quotes exist. */
+/** Never render testimonials in production until real reviews exist. */
 const SHOW_TESTIMONIALS_PLACEHOLDER = false;
 
 function TrialCta({
@@ -68,12 +69,26 @@ function TrialCta({
   );
 }
 
+function LineCta({ label, className }: { label: string; className?: string }) {
+  const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
+  if (!supportUrl) return null;
+  return (
+    <a
+      href={supportUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={() => trackMarketingEvent("support_line_click")}
+      className={`inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-500/50 px-6 py-3 font-semibold text-amber-300 hover:bg-amber-500/10 ${className ?? ""}`}
+    >
+      {label}
+    </a>
+  );
+}
+
 function ContactCta({ label, className }: { label: string; className?: string }) {
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   if (!supportUrl) {
-    return (
-      <TrialCta label={label} className={className} fullWidth />
-    );
+    return <TrialCta label={label} className={className} fullWidth />;
   }
   return (
     <a
@@ -90,6 +105,7 @@ function ContactCta({ label, className }: { label: string; className?: string })
 
 export function SalesPage() {
   const { t, locale } = useI18n();
+  const td = (key: MessageKey) => fillOfferCopy(t(key));
 
   useEffect(() => {
     trackMarketingEvent("sales_page_view");
@@ -102,10 +118,8 @@ export function SalesPage() {
     t("marketing.pain.chat4"),
   ];
 
-  const td = (key: MessageKey) => fillOfferCopy(t(key));
-
   return (
-    <div className="min-h-full bg-zinc-950 text-zinc-50">
+    <div className="min-h-full bg-zinc-950 pb-16 text-zinc-50 md:pb-0">
       <LiffCallbackRedirect />
       <AttributionCapture />
       <SalesHero />
@@ -115,15 +129,19 @@ export function SalesPage() {
         <div className="mx-auto grid max-w-[1280px] items-center gap-6 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,54%)_minmax(0,46%)] lg:gap-10">
           <div>
             <h2 className="text-[1.75rem] font-bold leading-[1.2] text-zinc-50 md:text-4xl lg:text-[2.5rem]">
-              {t("marketing.pain.titleLine1")}
-              <br />
-              {t("marketing.pain.titleLine2")}
+              {t("marketing.pain.title")}
             </h2>
-            <p className="mt-4 text-[15px] leading-relaxed text-zinc-400 md:text-base">
-              {t("marketing.pain.supportQuotes")}
+            <ul className="mt-6 space-y-3">
+              {PAIN_BULLETS.map((n) => (
+                <li key={n} className={`flex gap-3 ${BODY}`}>
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden />
+                  <span>{t(`marketing.pain.bullet${n}` as MessageKey)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-6 text-sm font-medium text-amber-400/90 md:text-base">
+              {t("marketing.pain.close")}
             </p>
-            <p className={`mt-2 ${BODY}`}>{t("marketing.pain.support")}</p>
-            <p className="mt-4 text-sm text-amber-400/90">{t("marketing.pain.emphasis")}</p>
           </div>
           <PainChatMockup messages={painMessages} footer={t("marketing.pain.visualFooter")} />
         </div>
@@ -136,7 +154,6 @@ export function SalesPage() {
           <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
             {t("marketing.how.title")}
           </h2>
-          <p className={`mt-3 max-w-2xl ${BODY}`}>{t("marketing.how.support")}</p>
           <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:gap-6">
             {([1, 2, 3] as const).map((n) => {
               const Icon = HOW_ICONS[n - 1];
@@ -235,13 +252,8 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* Testimonials placeholder — hidden until real reviews exist */}
       {SHOW_TESTIMONIALS_PLACEHOLDER ? (
-        <section
-          id="testimonials"
-          className="scroll-mt-20 overflow-x-clip bg-zinc-900/30"
-          aria-hidden
-        >
+        <section id="testimonials" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30" aria-hidden>
           <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6">
             <p className="text-sm font-medium text-zinc-500">
               {t("marketing.testimonials.placeholder")}
@@ -250,7 +262,7 @@ export function SalesPage() {
         </section>
       ) : null}
 
-      {/* Pricing */}
+      {/* Pricing: 2 tiers + contact row */}
       <section id="pricing" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
           <p className="text-sm font-medium text-amber-400/90">
@@ -261,7 +273,7 @@ export function SalesPage() {
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
 
-          <div className="mt-8 grid gap-4 lg:grid-cols-3">
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
             {marketingOffer.tiers.map((tier) => (
               <div
                 key={tier.id}
@@ -273,55 +285,49 @@ export function SalesPage() {
                 <p className="mt-2 text-3xl font-bold text-amber-400 md:text-4xl">
                   {tierPricePerMonthLabel(tier, locale)}
                 </p>
-                <p className={`mt-3 ${BODY}`}>
-                  {locale === "th"
-                    ? `ร้านที่มีช่าง ${tier.minBarbers}–${tier.maxBarbers} คน`
-                    : `Shops with ${tier.minBarbers}–${tier.maxBarbers} barbers`}
-                </p>
+                <p className="mt-2 text-sm text-zinc-400">{t("marketing.pricing.tierSameFeatures")}</p>
                 <ul className="mt-5 space-y-2">
-                  {([1, 2, 3, 4] as const).map((n) => (
+                  {PRICING_INCLUDES.map((n) => (
                     <li key={n} className={`flex items-start gap-2 ${BODY}`}>
                       <Check size={16} className="mt-1 shrink-0 text-amber-400" />
-                      {t(`marketing.pricing.benefit${n}` as MessageKey)}
+                      {t(`marketing.pricing.include${n}` as MessageKey)}
                     </li>
                   ))}
                 </ul>
-                <TrialCta
-                  label={td("marketing.pricing.cta")}
-                  className="mt-auto pt-6"
-                  fullWidth
-                />
+                <TrialCta label={td("marketing.pricing.cta")} className="mt-auto pt-6" fullWidth />
               </div>
             ))}
+          </div>
 
-            <div className="flex flex-col rounded-2xl border border-zinc-700 bg-zinc-950/40 p-6 md:p-7">
+          <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
+            <div>
               <p className="text-sm font-medium text-zinc-400">
                 {t("marketing.pricing.contactRange")}
               </p>
-              <p className="mt-2 text-3xl font-bold text-zinc-100 md:text-4xl">
+              <p className="mt-1 text-xl font-bold text-zinc-100">
                 {t("marketing.pricing.contactTitle")}
               </p>
-              <p className={`mt-3 ${BODY}`}>{t("marketing.pricing.contactDesc")}</p>
-              <ContactCta
-                label={t("marketing.pricing.contactCta")}
-                className="mt-auto pt-6"
-              />
+              <p className={`mt-1 ${BODY}`}>{t("marketing.pricing.contactDesc")}</p>
+            </div>
+            <ContactCta label={t("marketing.pricing.contactCta")} className="sm:w-auto sm:min-w-[180px]" />
+          </div>
+
+          <div className="mt-8 grid gap-6 md:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-200">
+                {t("marketing.pricing.requiresTitle")}
+              </h3>
+              <p className={`mt-2 ${BODY}`}>{t("marketing.pricing.requiresBody")}</p>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-zinc-200">
+                {t("marketing.pricing.excludesTitle")}
+              </h3>
+              <p className={`mt-2 ${BODY}`}>{td("marketing.pricing.excludesBody")}</p>
             </div>
           </div>
 
-          <ul className="mt-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {([1, 2, 3, 4] as const).map((n) => (
-              <li key={n} className="flex items-start gap-2 text-sm text-zinc-400">
-                <Check size={16} className="mt-0.5 shrink-0 text-amber-400" />
-                {td(`marketing.pricing.assure${n}` as MessageKey)}
-              </li>
-            ))}
-          </ul>
-          <p className="mt-4 text-sm text-zinc-500">
-            {locale === "th"
-              ? `เริ่มจาก ${formatBaht(marketingOffer.tiers[0].monthlyPriceThb)} / เดือน สำหรับร้าน 1–5 ช่าง`
-              : `From ${formatBaht(marketingOffer.tiers[0].monthlyPriceThb)} / month for 1–5 barbers`}
-          </p>
+          <p className="mt-6 text-sm text-zinc-400">{td("marketing.pricing.micro")}</p>
         </div>
       </section>
 
@@ -333,31 +339,32 @@ export function SalesPage() {
             <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
               {t("marketing.faq.title")}
             </h2>
-            <p className={`mt-3 ${BODY}`}>{t("marketing.faq.support")}</p>
             <div className="mt-6 space-y-3 md:mt-8">
-              {FAQ_ITEMS.map((n) => {
-                const answerKey = `marketing.faq.${n}.a` as MessageKey;
-                const answer = td(answerKey);
-                return (
-                  <details
-                    key={n}
-                    className="group rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-2 md:p-4 open:border-amber-500/30 open:py-4"
-                  >
-                    <summary className="flex min-h-11 cursor-pointer list-none items-start gap-3 text-zinc-50 [&::-webkit-details-marker]:hidden">
-                      <span className="min-w-0 flex-1 text-base font-medium leading-snug">
-                        {t(`marketing.faq.${n}.q` as MessageKey)}
-                      </span>
-                      <ChevronDown
-                        size={18}
-                        className="mt-0.5 shrink-0 text-amber-400 transition-transform group-open:rotate-180"
-                        strokeWidth={2}
-                        aria-hidden
-                      />
-                    </summary>
-                    <p className={`mt-3 ${BODY}`}>{answer}</p>
-                  </details>
-                );
-              })}
+              {FAQ_ITEMS.map((n) => (
+                <details
+                  key={n}
+                  className="group rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 open:border-amber-500/30 open:pb-4"
+                >
+                  <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 py-2 text-zinc-50 [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0 flex-1 text-base font-medium leading-snug">
+                      {t(`marketing.faq.${n}.q` as MessageKey)}
+                    </span>
+                    <Plus
+                      size={18}
+                      className="shrink-0 text-amber-400 group-open:hidden"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                    <Minus
+                      size={18}
+                      className="hidden shrink-0 text-amber-400 group-open:block"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  </summary>
+                  <p className={`pb-2 ${BODY}`}>{td(`marketing.faq.${n}.a` as MessageKey)}</p>
+                </details>
+              ))}
             </div>
           </div>
         </div>
@@ -369,14 +376,10 @@ export function SalesPage() {
           <h2 className="text-2xl font-bold leading-tight text-zinc-50 md:text-4xl">
             {t("marketing.final.title")}
           </h2>
-          <p className={`mx-auto mt-4 max-w-xl ${BODY}`}>
-            {td("marketing.final.subtitle")}
-          </p>
-          <TrialCta
-            label={td("marketing.final.cta")}
-            className="mx-auto mt-8 w-full md:max-w-[380px]"
-            fullWidth
-          />
+          <div className="mx-auto mt-8 flex w-full max-w-[480px] flex-col gap-3 sm:flex-row sm:justify-center">
+            <TrialCta label={td("marketing.final.cta")} className="flex-1" fullWidth />
+            <LineCta label={t("marketing.final.lineCta")} className="flex-1" />
+          </div>
           <p className="mt-4 text-[13px] text-zinc-400 md:text-sm">
             {td("marketing.final.micro")}
           </p>
@@ -384,6 +387,13 @@ export function SalesPage() {
       </section>
 
       <MarketingFooter />
+
+      {/* Sticky mobile CTA — 56px */}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-4 backdrop-blur md:hidden">
+        <MarketingTrialLink className="flex h-14 w-full items-center justify-center font-semibold text-amber-400">
+          {td("marketing.sticky.cta")}
+        </MarketingTrialLink>
+      </div>
     </div>
   );
 }
