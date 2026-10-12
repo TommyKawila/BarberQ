@@ -5,9 +5,12 @@ import { BarberQxLogo } from "@/components/brand/BarberQxLogo";
 import { LanguageToggle } from "@/components/layout/LanguageToggle";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/dictionary";
+import { fillOfferCopy } from "@/lib/marketing/offer";
 
 export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial" }) {
   const { t } = useI18n();
+  const td = (key: MessageKey) => fillOfferCopy(t(key));
   const isTrial = variant === "trial";
   const [scrolled, setScrolled] = useState(false);
 
@@ -48,10 +51,10 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
           {isTrial ? null : (
             <>
               <MarketingTrialLink className="inline-flex min-h-11 items-center rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 md:hidden">
-                {t("marketing.hero.ctaShort")}
+                {td("marketing.hero.ctaShort")}
               </MarketingTrialLink>
               <MarketingTrialLink className="hidden min-h-11 items-center rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex">
-                {t("marketing.nav.trial")}
+                {td("marketing.nav.trial")}
               </MarketingTrialLink>
             </>
           )}

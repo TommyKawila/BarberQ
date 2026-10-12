@@ -1,40 +1,71 @@
-import { PhoneFrame } from "./PhoneFrame";
+import { PhoneFrame, type PhoneSize } from "./PhoneFrame";
 
-function CoverFrame() {
+const PHONE = "mx-auto";
+const PHONE_MOBILE = "mx-auto w-[min(64vw,268px)]";
+const SCREEN = "flex min-h-[240px] flex-col";
+
+type FrameProps = { size?: PhoneSize; fluid?: boolean };
+
+function CoverFrame({ size, fluid }: FrameProps) {
   return (
-    <PhoneFrame size="md" className="md:-rotate-2">
-      <div className="h-28 bg-gradient-to-br from-amber-500/40 to-zinc-800 px-3 pt-4">
-        <p className="text-xs font-semibold text-zinc-100">PHINX STUDIO</p>
-        <p className="text-[10px] text-zinc-400">จองคิวตัดผม</p>
-      </div>
-      <div className="p-3">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-[10px] text-zinc-300">
-          ดูคิวของฉัน
+    <PhoneFrame size={size} fluid={fluid} className={fluid ? PHONE_MOBILE : PHONE}>
+      <div className={SCREEN}>
+        <div className="h-28 bg-gradient-to-br from-amber-500/40 to-zinc-800 px-3 pt-4">
+          <p className="text-xs font-semibold text-zinc-100">PHINX STUDIO</p>
+          <p className="text-[10px] text-zinc-400">จองคิวตัดผม</p>
+        </div>
+        <div className="p-3">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-[10px] text-zinc-300">
+            ดูคิวของฉัน
+          </div>
+          <div className="mt-2 rounded-lg bg-amber-500 py-2 text-center text-[10px] font-semibold text-zinc-950">
+            จองคิว
+          </div>
         </div>
       </div>
     </PhoneFrame>
   );
 }
 
-function BarberDateFrame() {
+function BarberDateFrame({ size, fluid }: FrameProps) {
   return (
-    <PhoneFrame size="md" className="z-10 md:-mt-4">
-      <div className="space-y-2 p-3">
+    <PhoneFrame size={size} fluid={fluid} className={fluid ? PHONE_MOBILE : PHONE}>
+      <div className={`${SCREEN} justify-center space-y-2 p-3`}>
         <p className="text-[10px] text-zinc-500">ช่าง</p>
         <div className="flex gap-1.5">
-          <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] text-amber-300">ช่าง A</span>
-          <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400">ช่าง B</span>
+          <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] text-amber-300">
+            ช่าง A
+          </span>
+          <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400">
+            ช่าง B
+          </span>
         </div>
         <p className="text-[10px] text-zinc-500">วันที่</p>
         <div className="flex gap-1">
           {["10", "11", "12"].map((d, i) => (
-            <span key={d} className={`rounded px-2 py-0.5 text-[10px] ${i === 0 ? "bg-amber-500 font-medium text-zinc-950" : "border border-zinc-700 text-zinc-400"}`}>{d}</span>
+            <span
+              key={d}
+              className={`rounded px-2 py-0.5 text-[10px] ${
+                i === 0
+                  ? "bg-amber-500 font-medium text-zinc-950"
+                  : "border border-zinc-700 text-zinc-400"
+              }`}
+            >
+              {d}
+            </span>
           ))}
         </div>
         <p className="text-[10px] text-zinc-500">เวลา</p>
         <div className="grid grid-cols-3 gap-1">
           {["10:00", "10:30", "11:00"].map((t, i) => (
-            <span key={t} className={`rounded py-1 text-center text-[9px] ${i === 1 ? "bg-amber-500 text-zinc-950" : "border border-zinc-700 text-zinc-400"}`}>{t}</span>
+            <span
+              key={t}
+              className={`rounded py-1 text-center text-[9px] ${
+                i === 1 ? "bg-amber-500 text-zinc-950" : "border border-zinc-700 text-zinc-400"
+              }`}
+            >
+              {t}
+            </span>
           ))}
         </div>
       </div>
@@ -42,17 +73,17 @@ function BarberDateFrame() {
   );
 }
 
-function SummaryFrame() {
+function SummaryFrame({ size, fluid }: FrameProps) {
   return (
-    <PhoneFrame size="md" className="md:rotate-2 md:-mt-2">
-      <div className="p-3">
+    <PhoneFrame size={size} fluid={fluid} className={fluid ? PHONE_MOBILE : PHONE}>
+      <div className={`${SCREEN} p-3`}>
         <p className="text-xs font-semibold text-zinc-200">สรุปการจอง</p>
         <div className="mt-2 space-y-1.5 rounded-lg border border-zinc-800 bg-zinc-900 p-2.5 text-[10px] text-zinc-400">
           <p>ช่าง A · 10 ก.ย.</p>
           <p>10:30 · 30 นาที</p>
           <p className="text-zinc-300">คุณสมชาย</p>
         </div>
-        <div className="mt-3 rounded-lg bg-amber-500 py-2 text-center text-[10px] font-semibold text-zinc-950">
+        <div className="mt-auto rounded-lg bg-amber-500 py-2 text-center text-[10px] font-semibold text-zinc-950">
           ยืนยัน
         </div>
       </div>
@@ -60,21 +91,57 @@ function SummaryFrame() {
   );
 }
 
+const FRAMES = [CoverFrame, BarberDateFrame, SummaryFrame] as const;
+
+export function CustomerStepPhone({ step }: { step: 1 | 2 | 3 }) {
+  const Frame = FRAMES[step - 1];
+  return (
+    <>
+      <div className="lg:hidden">
+        <Frame fluid />
+      </div>
+      <div className="hidden lg:block">
+        <Frame size="md" />
+      </div>
+    </>
+  );
+}
+
 export function CustomerJourneyMockups({ compact }: { compact?: boolean }) {
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <CoverFrame />
-        <BarberDateFrame />
-        <SummaryFrame />
+        <CoverFrame fluid />
+        <BarberDateFrame fluid />
+        <SummaryFrame fluid />
       </div>
     );
   }
   return (
     <div className="relative flex items-end justify-center gap-3 md:gap-4 lg:justify-end">
-      <CoverFrame />
-      <BarberDateFrame />
-      <SummaryFrame />
+      <CoverFrame size="sm" />
+      <BarberDateFrame size="md" />
+      <SummaryFrame size="sm" />
+    </div>
+  );
+}
+
+export function HeroProductMockups() {
+  return (
+    <div className="relative flex w-full items-end justify-center gap-2 md:gap-3 lg:justify-end">
+      <div
+        className="pointer-events-none absolute inset-[10%] rounded-full bg-amber-400/15 blur-3xl"
+        aria-hidden
+      />
+      <div className="relative -rotate-3 scale-90 opacity-90 md:scale-95">
+        <CoverFrame size="sm" />
+      </div>
+      <div className="relative z-10">
+        <BarberDateFrame size="md" />
+      </div>
+      <div className="relative hidden rotate-3 scale-90 sm:block md:scale-95">
+        <SummaryFrame size="sm" />
+      </div>
     </div>
   );
 }
