@@ -55,6 +55,22 @@ export interface Appointment {
   late_called_at?: string | null;
   customer_line_id?: string | null;
   source?: AppointmentSource;
+  /** Snapshot service when marked completed */
+  service_id?: string | null;
+  /** Snapshot price (THB) when marked completed */
+  price_baht?: number | null;
+}
+
+export interface ShopService {
+  id: string;
+  shop_id: string;
+  name: string;
+  price_baht: number;
+  is_default: boolean;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TimeBlock {

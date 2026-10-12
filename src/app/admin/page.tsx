@@ -9,6 +9,8 @@ import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
+import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
+import { computeBoardMiniStats, listFreeBarbersNow } from "@/lib/admin/free-barbers";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
@@ -17,6 +19,7 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot, StaffBookingSource } from "@/types/booking";
+import type { FreeBarberNow } from "@/lib/admin/free-barbers";
 
 interface ApiError {
   error?: {
@@ -48,6 +51,7 @@ export default function AdminPage() {
     slot: AdminSlot;
     shortenUntil?: string | null;
   } | null>(null);
+  const [whoFreeOpen, setWhoFreeOpen] = useState(false);
   const todayISO = dateISOFromInstant(new Date());
   const isToday = dateISO === todayISO;
   const dateLocale = locale === "th" ? th : enUS;
@@ -330,26 +334,16 @@ export default function AdminPage() {
   }
 
   function onWhoIsFree() {
-    const now = Date.now();
-    let best: { barberId: string; slot: AdminSlot; freeAt: number } | null = null;
-    for (const column of columns) {
-      for (const slot of column.slots) {
-        if (slot.kind !== "free" || !slot.available) continue;
-        const freeAt = new Date(slot.startTime).getTime();
-        if (freeAt < now - 5 * 60_000) continue;
-        if (!best || freeAt < best.freeAt) {
-          best = { barberId: column.barber.id, slot, freeAt };
-        }
-      }
-    }
-    if (!best) {
-      setError(t("admin.staffBook.noFreeBarber"));
-      return;
-    }
-    void createStaffBooking({
-      barberId: best.barberId,
-      startTime: new Date().toISOString(),
-      source: "walk_in",
+    setWhoFreeOpen(true);
+  }
+
+  function onWalkInFromFreeSheet(row: FreeBarberNow) {
+    setWhoFreeOpen(false);
+    setSheet({
+      barberId: row.barberId,
+      barberName: row.barberName,
+      slot: row.slot,
+      shortenUntil: null,
     });
   }
 
@@ -376,111 +370,140 @@ export default function AdminPage() {
   const hasBookingsToday = columns.some((col) =>
     col.slots.some((slot) => slot.kind === "booked"),
   );
+  const freeNow = useMemo(() => (isToday ? listFreeBarbersNow(columns) : []), [columns, isToday]);
+  const mini = useMemo(() => computeBoardMiniStats(columns), [columns]);
+  const setupIncomplete = Boolean(activation && (!activation.teamOk || !activation.hoursOk || !activation.ready));
 
   return (
     <AdminShell role={profile.role}>
       <div className="flex flex-col gap-4 px-3 py-4">
-        <header className="flex items-start justify-between gap-2">
+        <header className="flex flex-col gap-3">
           <div className="min-w-0">
             {mockMode ? (
-              <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
+              <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[11px] uppercase tracking-wide text-amber-400">
                 {t("common.prototypeMode")}
               </span>
             ) : null}
-            <div className="flex flex-wrap items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => shiftDay(-1)}
-                className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200"
-              >
-                {t("admin.previousDay")}
-              </button>
-              <button
-                type="button"
-                disabled={isToday}
-                onClick={() => setDateISO(todayISO)}
-                className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200 disabled:opacity-40"
-              >
-                {t("admin.today")}
-              </button>
-              <button
-                type="button"
-                onClick={() => shiftDay(1)}
-                className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200"
-              >
-                {t("admin.nextDay")}
-              </button>
-              <button
-                type="button"
-                onClick={() => void loadDay()}
-                className="rounded-lg bg-zinc-800 px-2.5 py-1.5 text-xs text-zinc-200"
-              >
-                {t("admin.refresh")}
-              </button>
-              {isToday ? (
-                <button
-                  type="button"
-                  onClick={onWhoIsFree}
-                  className="rounded-lg bg-rose-700 px-2.5 py-1.5 text-xs font-semibold text-white"
-                >
-                  {t("admin.whoIsFree")}
-                </button>
-              ) : null}
-            </div>
-            {isOperator ? (
-              <label className="mt-2 flex min-h-11 items-center gap-2 text-sm text-zinc-300">
-                <input
-                  type="checkbox"
-                  checked={showClosedQueue}
-                  onChange={(event) => setShowClosedQueue(event.target.checked)}
-                  className="h-4 w-4"
-                />
-                {t("admin.showClosedQueueBarbers")}
-              </label>
-            ) : null}
-            <h1 className="mt-2 text-xl font-semibold">
+            <h1 className="text-xl font-semibold">
               {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
             </h1>
             <p className="text-sm text-zinc-400">{displayDate}</p>
             <AdminSessionBadge name={profile.displayName || profile.barberName} role={badgeRole} />
           </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => shiftDay(-1)}
+              className="min-h-11 min-w-11 rounded-xl bg-zinc-800 text-sm text-zinc-200"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              disabled={isToday}
+              onClick={() => setDateISO(todayISO)}
+              className="min-h-11 rounded-xl bg-zinc-800 px-3 text-sm text-zinc-200 disabled:opacity-40"
+            >
+              {t("admin.today")}
+            </button>
+            <button
+              type="button"
+              onClick={() => shiftDay(1)}
+              className="min-h-11 min-w-11 rounded-xl bg-zinc-800 text-sm text-zinc-200"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              onClick={() => void loadDay()}
+              className="min-h-11 rounded-xl bg-zinc-800 px-3 text-sm text-zinc-200"
+            >
+              {t("admin.refresh")}
+            </button>
+            {isToday ? (
+              <button
+                type="button"
+                onClick={onWhoIsFree}
+                className="min-h-11 rounded-xl bg-rose-700 px-3 text-sm font-semibold text-white"
+              >
+                {t("admin.whoIsFree")}
+              </button>
+            ) : null}
+          </div>
+          {isOperator ? (
+            <label className="flex min-h-11 items-center gap-3 text-sm text-zinc-300">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={showClosedQueue}
+                onClick={() => setShowClosedQueue((v) => !v)}
+                className={`relative min-h-11 w-14 shrink-0 rounded-full transition ${
+                  showClosedQueue ? "bg-amber-400" : "bg-zinc-700"
+                }`}
+              >
+                <span
+                  className={`absolute top-1 left-1 h-9 w-9 rounded-full bg-white shadow transition ${
+                    showClosedQueue ? "translate-x-6" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              {t("admin.showClosedQueueBarbers")}
+            </label>
+          ) : null}
         </header>
-        <div className="flex flex-wrap gap-1.5 text-[10px] text-zinc-400 sm:text-[11px]">
+
+        <div className="grid grid-cols-3 gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
+          <div className="text-center">
+            <p className="text-lg font-semibold tabular-nums text-amber-400">{mini.remaining}</p>
+            <p className="text-[11px] text-zinc-400">
+              {t("admin.miniRemaining").replace("{n}", String(mini.remaining))}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold tabular-nums text-zinc-100">{mini.done}</p>
+            <p className="text-[11px] text-zinc-400">
+              {t("admin.miniDone").replace("{n}", String(mini.done))}
+            </p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-semibold tabular-nums text-emerald-400">{mini.freeSlots}</p>
+            <p className="text-[11px] text-zinc-400">
+              {t("admin.miniFree").replace("{n}", String(mini.freeSlots))}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 text-[11px] text-zinc-400">
           <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>
           <span className="rounded bg-sky-700 px-2 py-0.5 text-white">{t("admin.sourceLine")}</span>
-          <span className="rounded bg-teal-700 px-2 py-0.5 text-white">{t("admin.sourcePhone")}</span>
-          <span className="rounded bg-indigo-700 px-2 py-0.5 text-white">{t("admin.sourceChat")}</span>
           <span className="rounded bg-rose-700 px-2 py-0.5 text-white">{t("admin.sourceWalkIn")}</span>
-          <span className="rounded bg-red-600 px-2 py-0.5 text-white">{t("admin.staffBook.blockTime")}</span>
+          <span className="rounded border border-red-500/60 bg-red-950 px-2 py-0.5 text-red-200">
+            {t("admin.staffBook.blockTime")}
+          </span>
           <span className="rounded bg-yellow-600 px-2 py-0.5 text-zinc-950">{t("admin.late")}</span>
           <span className="rounded bg-zinc-600 px-2 py-0.5 text-white">{t("admin.completed")}</span>
-          <span className="rounded bg-orange-700 px-2 py-0.5 text-white">{t("admin.noShow")}</span>
-          <span className="rounded bg-zinc-700 px-2 py-0.5 text-zinc-200">{t("admin.left")}</span>
         </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        {isOperator && activation && !activation.ready ? (
+        {isOperator && setupIncomplete ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
-            <p className="text-sm text-amber-200">{t("onboarding.bannerIncomplete")}</p>
+            <p className="text-sm font-medium text-amber-200">{t("admin.onboardingChecklistTitle")}</p>
+            <ul className="mt-2 space-y-1 text-sm text-amber-100/90">
+              {!activation?.teamOk ? <li>• {t("onboarding.noBookableBarber")}</li> : null}
+              {!activation?.hoursOk ? <li>• {t("onboarding.noHours")}</li> : null}
+              {activation && !activation.ready && activation.teamOk && activation.hoursOk ? (
+                <li>• {t("onboarding.bannerIncomplete")}</li>
+              ) : null}
+            </ul>
             <Link
-              href={shopPath("/admin/setup")}
-              className="mt-2 flex min-h-11 items-center justify-center rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950"
+              href={shopPath(
+                !activation?.teamOk
+                  ? "/admin/setup?step=team"
+                  : !activation?.hoursOk
+                    ? "/admin/setup?step=hours"
+                    : "/admin/setup",
+              )}
+              className="mt-3 flex min-h-11 items-center justify-center rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950"
             >
-              {t("onboarding.bannerCta")}
-            </Link>
-          </div>
-        ) : null}
-        {isOperator && activation && !activation.teamOk ? (
-          <div className="rounded-xl bg-zinc-900 p-4 text-sm">
-            <p className="text-zinc-300">{t("onboarding.noBookableBarber")}</p>
-            <Link href={shopPath("/admin/setup?step=team")} className="mt-2 text-amber-400 underline">
-              {t("onboarding.bannerCta")}
-            </Link>
-          </div>
-        ) : null}
-        {isOperator && activation && !activation.hoursOk ? (
-          <div className="rounded-xl bg-zinc-900 p-4 text-sm">
-            <p className="text-zinc-300">{t("onboarding.noHours")}</p>
-            <Link href={shopPath("/admin/setup?step=hours")} className="mt-2 text-amber-400 underline">
               {t("onboarding.bannerCta")}
             </Link>
           </div>
@@ -543,6 +566,12 @@ export default function AdminPage() {
             onBlock={() => void onBlockSlot(sheet.barberId, sheet.slot)}
           />
         ) : null}
+        <WhoIsFreeSheet
+          open={whoFreeOpen}
+          rows={freeNow}
+          onClose={() => setWhoFreeOpen(false)}
+          onWalkIn={onWalkInFromFreeSheet}
+        />
       </div>
     </AdminShell>
   );
