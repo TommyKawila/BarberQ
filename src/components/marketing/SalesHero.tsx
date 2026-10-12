@@ -13,7 +13,7 @@ export function SalesHero() {
   const td = (key: MessageKey) => fillOfferCopy(t(key));
 
   return (
-    <div className="relative overflow-x-clip">
+    <div className="relative max-w-full overflow-x-clip">
       <div className="absolute inset-0 overflow-hidden" aria-hidden>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(244,183,64,0.16),transparent_50%),radial-gradient(ellipse_at_90%_20%,rgba(39,39,42,0.9),transparent_45%),linear-gradient(180deg,#0B0B0B_0%,#18181B_55%,#0B0B0B_100%)]" />
         <div
@@ -25,34 +25,34 @@ export function SalesHero() {
         />
       </div>
       <MarketingNav />
-      <section className="relative flex flex-col pb-10 pt-6 md:min-h-[640px] md:pb-12 lg:min-h-[680px] lg:pt-8">
-        <div className="mx-auto grid w-full max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[48%_52%] lg:items-center lg:gap-10 lg:px-6">
-          <div className="text-left">
+      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-12 lg:min-h-[680px] lg:pt-8">
+        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,48%)_minmax(0,52%)] lg:items-center lg:gap-10 lg:px-6">
+          <div className="min-w-0 max-w-full text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-            <h1 className="mt-3 text-[2.25rem] font-bold leading-[1.2] text-zinc-50 md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
+            <h1 className="mt-3 break-words text-[2rem] font-bold leading-[1.2] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
               {t("marketing.hero.title")}
             </h1>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-zinc-300 md:text-lg">
+            <p className="mt-4 max-w-full break-words text-base leading-relaxed text-zinc-300 md:max-w-xl md:text-lg">
               {t("marketing.hero.subtitle")}
             </p>
-            <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center">
-              <MarketingTrialLink className="inline-flex min-h-11 w-full items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 md:w-auto">
+            <div className="mt-8 flex w-full max-w-full flex-col gap-3 md:flex-row md:items-center">
+              <MarketingTrialLink className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl bg-amber-400 px-4 py-3 text-center font-semibold text-zinc-950 sm:px-6 md:w-auto">
                 {td("marketing.hero.cta")}
               </MarketingTrialLink>
               <a
                 href="#how-it-works"
                 onClick={() => trackMarketingEvent("how_it_works_click")}
-                className="inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-500/80 px-6 py-3 font-medium text-zinc-200 md:w-auto"
+                className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border border-zinc-500/80 px-4 py-3 text-center font-medium text-zinc-200 sm:px-6 md:w-auto"
               >
                 {t("marketing.hero.secondary")}
               </a>
             </div>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+            <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
               {td("marketing.hero.micro")}
             </p>
           </div>
           <div
-            className="hero-phones-enter relative w-full"
+            className="hero-phones-enter relative w-full min-w-0 max-w-full"
             aria-label={t("marketing.hero.productAlt")}
           >
             <HeroProductMockups />

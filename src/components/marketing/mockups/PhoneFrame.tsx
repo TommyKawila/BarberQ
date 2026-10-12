@@ -19,7 +19,9 @@ export function PhoneFrame({
     <div
       aria-hidden="true"
       style={fluid ? undefined : { width: width ?? WIDTH[size] }}
-      className={`shrink-0 rounded-[2rem] border-4 border-zinc-700 bg-zinc-900 p-2 shadow-2xl ${className ?? ""}`}
+      className={`box-border rounded-[2rem] border-4 border-zinc-700 bg-zinc-900 p-2 shadow-2xl ${
+        fluid ? "w-full max-w-full min-w-0" : "shrink-0"
+      } ${className ?? ""}`}
     >
       <div className="overflow-hidden rounded-[1.5rem] bg-zinc-950">{children}</div>
     </div>

@@ -119,7 +119,7 @@ export function SalesPage() {
   ];
 
   return (
-    <div className="min-h-full bg-zinc-950 pb-16 text-zinc-50 md:pb-0">
+    <div className="min-h-full max-w-full overflow-x-clip bg-zinc-950 pb-16 text-zinc-50 md:pb-0">
       <LiffCallbackRedirect />
       <AttributionCapture />
       <SalesHero />

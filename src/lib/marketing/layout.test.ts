@@ -58,10 +58,24 @@ describe("marketing layout split", () => {
     assert.match(hero, /HeroProductMockups/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /marketing\.hero\.micro/);
+    assert.match(hero, /min-w-0/);
+    assert.match(hero, /max-w-full/);
     assert.match(nav, /MarketingTrialLink/);
     assert.doesNotMatch(sales, /href="\/trial"/);
     assert.doesNotMatch(hero, /href="\/trial"/);
     assert.doesNotMatch(nav, /href="\/trial"/);
+  });
+
+  it("hero mockups stay fluid on mobile instead of fixed side-by-side phones", () => {
+    const mockups = readFileSync(
+      resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
+      "utf8",
+    );
+    const heroFn = mockups.slice(mockups.indexOf("export function HeroProductMockups"));
+    assert.match(heroFn, /md:hidden/);
+    assert.match(heroFn, /BarberDateFrame fluid/);
+    assert.doesNotMatch(heroFn, /size="md"/);
+    assert.match(heroFn, /overflow-hidden/);
   });
 
   it("retired HTML hero phone mockup is gone", () => {

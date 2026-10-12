@@ -1,14 +1,18 @@
 import { PhoneFrame, type PhoneSize } from "./PhoneFrame";
 
 const PHONE = "mx-auto";
-const PHONE_MOBILE = "mx-auto w-[min(64vw,268px)]";
+const PHONE_MOBILE = "mx-auto w-full max-w-[min(64vw,268px)]";
 const SCREEN = "flex min-h-[240px] flex-col";
 
-type FrameProps = { size?: PhoneSize; fluid?: boolean };
+type FrameProps = { size?: PhoneSize; fluid?: boolean; className?: string };
 
-function CoverFrame({ size, fluid }: FrameProps) {
+function CoverFrame({ size, fluid, className }: FrameProps) {
   return (
-    <PhoneFrame size={size} fluid={fluid} className={fluid ? PHONE_MOBILE : PHONE}>
+    <PhoneFrame
+      size={size}
+      fluid={fluid}
+      className={className ?? (fluid ? PHONE_MOBILE : PHONE)}
+    >
       <div className={SCREEN}>
         <div className="h-28 bg-gradient-to-br from-amber-500/40 to-zinc-800 px-3 pt-4">
           <p className="text-xs font-semibold text-zinc-100">PHINX STUDIO</p>
@@ -27,9 +31,13 @@ function CoverFrame({ size, fluid }: FrameProps) {
   );
 }
 
-function BarberDateFrame({ size, fluid }: FrameProps) {
+function BarberDateFrame({ size, fluid, className }: FrameProps) {
   return (
-    <PhoneFrame size={size} fluid={fluid} className={fluid ? PHONE_MOBILE : PHONE}>
+    <PhoneFrame
+      size={size}
+      fluid={fluid}
+      className={className ?? (fluid ? PHONE_MOBILE : PHONE)}
+    >
       <div className={`${SCREEN} justify-center space-y-2 p-3`}>
         <p className="text-[10px] text-zinc-500">ช่าง</p>
         <div className="flex gap-1.5">
@@ -73,9 +81,13 @@ function BarberDateFrame({ size, fluid }: FrameProps) {
   );
 }
 
-function SummaryFrame({ size, fluid }: FrameProps) {
+function SummaryFrame({ size, fluid, className }: FrameProps) {
   return (
-    <PhoneFrame size={size} fluid={fluid} className={fluid ? PHONE_MOBILE : PHONE}>
+    <PhoneFrame
+      size={size}
+      fluid={fluid}
+      className={className ?? (fluid ? PHONE_MOBILE : PHONE)}
+    >
       <div className={`${SCREEN} p-3`}>
         <p className="text-xs font-semibold text-zinc-200">สรุปการจอง</p>
         <div className="mt-2 space-y-1.5 rounded-lg border border-zinc-800 bg-zinc-900 p-2.5 text-[10px] text-zinc-400">
@@ -128,19 +140,26 @@ export function CustomerJourneyMockups({ compact }: { compact?: boolean }) {
 
 export function HeroProductMockups() {
   return (
-    <div className="relative flex w-full items-end justify-center gap-2 md:gap-3 lg:justify-end">
+    <div className="relative w-full max-w-full min-w-0 overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-[10%] rounded-full bg-amber-400/15 blur-3xl"
+        className="pointer-events-none absolute inset-[12%] rounded-full bg-amber-400/15 blur-3xl"
         aria-hidden
       />
-      <div className="relative -rotate-3 scale-90 opacity-90 md:scale-95">
-        <CoverFrame size="sm" />
+      {/* Mobile: one phone that always fits the content column */}
+      <div className="relative mx-auto w-full max-w-[min(100%,260px)] md:hidden">
+        <BarberDateFrame fluid />
       </div>
-      <div className="relative z-10">
-        <BarberDateFrame size="md" />
-      </div>
-      <div className="relative hidden rotate-3 scale-90 sm:block md:scale-95">
-        <SummaryFrame size="sm" />
+      {/* md+: scaled pair that cannot exceed the column */}
+      <div className="relative hidden w-full max-w-full items-end justify-center gap-2 overflow-hidden md:flex lg:justify-end lg:gap-3">
+        <div className="w-[min(42%,200px)] shrink">
+          <CoverFrame fluid />
+        </div>
+        <div className="relative z-10 w-[min(52%,240px)] shrink-0">
+          <BarberDateFrame fluid />
+        </div>
+        <div className="hidden w-[min(42%,200px)] shrink lg:block">
+          <SummaryFrame fluid />
+        </div>
       </div>
     </div>
   );
