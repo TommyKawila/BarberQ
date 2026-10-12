@@ -20,6 +20,7 @@ import type {
   Appointment,
   Barber,
   CreateBookingInput,
+  CreateStaffBookingInput,
   Slot,
   TimeBlock,
 } from "@/types/booking";
@@ -51,6 +52,7 @@ function mapStoreError(error: unknown): BookingError {
       NOT_FOUND: ["Appointment not found", 404],
       INVALID_RANGE: ["Invalid time range", 400],
       INVALID_OUTCOME: ["Cannot mark outcome yet", 400],
+      INVALID_SOURCE: ["Invalid booking source", 400],
       LINE_ID_TAKEN: ["This LINE account is already linked", 409],
       HAS_FUTURE_BOOKINGS: ["Barber has future bookings", 409],
     };
@@ -187,11 +189,119 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
       startTime: start,
       endTime: end,
       customerLineId: input.customerLineId,
+      source: input.source ?? "line",
     });
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
   }
+}
+
+function roundDownToFiveMinutes(date: Date): Date {
+  const ms = 5 * 60_000;
+  return new Date(Math.floor(date.getTime() / ms) * ms);
+}
+
+async function nextWalkInLabel(shopId: string, dayISO: string): Promise<string> {
+  const range = dayRangeUtc(dayISO);
+  const barbers = await getStore().listBarbersByShop(shopId);
+  const barberIds = new Set(barbers.map((b) => b.id));
+  const dayAppointments = await getStore().listDayAppointments(range.from, range.to);
+  const walkIns = dayAppointments.filter(
+    (a) => barberIds.has(a.barber_id) && a.source === "walk_in",
+  );
+  return `Walk-in #${walkIns.length + 1}`;
+}
+
+export async function createStaffBooking(
+  shopId: string,
+  input: CreateStaffBookingInput,
+  now: Date = new Date(),
+): Promise<Appointment> {
+  const source = input.source;
+  if (source !== "phone" && source !== "chat" && source !== "walk_in") {
+    throw new BookingError("INVALID_SOURCE", "Invalid booking source", 400);
+  }
+  if (!isUuid(input.barberId)) {
+    throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
+  }
+
+  const barber = await assertBarberInShop(input.barberId, shopId);
+  if (barber.is_active === false) {
+    throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+  }
+
+  let start = new Date(input.startTime);
+  if (Number.isNaN(start.getTime())) {
+    throw new BookingError("INVALID_TIME", "Invalid start time", 400);
+  }
+
+  // Walk-in "start now" may land mid-slot; allow up to 30 minutes in the past for forgotten taps
+  if (source === "walk_in" && Math.abs(start.getTime() - now.getTime()) < 2 * 60_000) {
+    start = roundDownToFiveMinutes(now);
+  }
+  const earliest = addMinutes(now, -30);
+  if (start.getTime() < earliest.getTime()) {
+    throw new BookingError("SLOT_PAST", "Cannot book a past slot", 400);
+  }
+
+  let name = (input.customerName ?? "").trim();
+  const phoneRaw = (input.customerPhone ?? "").trim();
+  if (source === "walk_in") {
+    if (!name) {
+      name = await nextWalkInLabel(shopId, dateISOFromInstant(start));
+    }
+  } else if (!name) {
+    throw new BookingError("INVALID_NAME", "Customer name is required", 400);
+  }
+
+  if (phoneRaw && !/^0\d{8,9}$/.test(phoneRaw)) {
+    throw new BookingError("INVALID_PHONE", "Enter a valid Thai phone number", 400);
+  }
+
+  const defaultEnd = addMinutes(start, barber.slot_duration_minutes);
+  let end = defaultEnd;
+  if (input.endTime) {
+    end = new Date(input.endTime);
+    if (Number.isNaN(end.getTime()) || end <= start) {
+      throw new BookingError("INVALID_RANGE", "Invalid time range", 400);
+    }
+    if (end.getTime() > defaultEnd.getTime()) {
+      throw new BookingError("INVALID_RANGE", "End time exceeds slot duration", 400);
+    }
+  }
+
+  try {
+    return await getStore().createAppointment({
+      barberId: input.barberId,
+      customerRef: null,
+      customerName: name,
+      customerPhone: phoneRaw || null,
+      startTime: start,
+      endTime: end,
+      customerLineId: null,
+      source,
+    });
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+export async function findNextConflictEnd(
+  barberId: string,
+  start: Date,
+  proposedEnd: Date,
+): Promise<Date | null> {
+  const busy = await getStore().getBusyIntervals(barberId, start, proposedEnd);
+  let soonest: Date | null = null;
+  for (const row of busy) {
+    const busyStart = new Date(row.start_time);
+    if (busyStart > start && busyStart < proposedEnd) {
+      if (!soonest || busyStart < soonest) soonest = busyStart;
+    }
+  }
+  return soonest;
 }
 
 export async function listCustomerBookings(customerLineId: string): Promise<Appointment[]> {
@@ -348,15 +458,20 @@ export async function markLateCalled(appointmentId: string): Promise<Appointment
 
 export async function markAppointmentOutcome(
   appointmentId: string,
-  outcome: "completed" | "no_show",
+  outcome: "completed" | "no_show" | "left",
 ): Promise<Appointment> {
   if (!isUuid(appointmentId)) {
     throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
   }
-  if (outcome !== "completed" && outcome !== "no_show") {
+  if (outcome !== "completed" && outcome !== "no_show" && outcome !== "left") {
     throw new BookingError("INVALID_OUTCOME", "Invalid outcome", 400);
   }
   try {
+    const existing = await getStore().getAppointment(appointmentId);
+    if (!existing) throw new BookingError("NOT_FOUND", "Appointment not found", 404);
+    if (outcome === "no_show" && existing.source === "walk_in") {
+      throw new BookingError("INVALID_OUTCOME", "Walk-in cannot be marked no-show", 400);
+    }
     return await getStore().markAppointmentOutcome(appointmentId, outcome);
   } catch (error) {
     if (error instanceof BookingError) throw error;
@@ -445,6 +560,7 @@ export async function getAdminDay(
             customerLineId: appointment.customer_line_id ?? null,
             appointmentId: appointment.id,
             status: appointment.status,
+            source: appointment.source ?? "line",
             isLate: appointment.status === "confirmed" && isLate(appointment.start_time, now),
             lateCalledAt: appointment.late_called_at ?? null,
           };

@@ -72,7 +72,8 @@ export default function AdminStatsPage() {
     (totals?.booked ?? 0) -
     (totals?.completed ?? 0) -
     (totals?.cancelled ?? 0) -
-    (totals?.noShow ?? 0);
+    (totals?.noShow ?? 0) -
+    (totals?.left ?? 0);
   const isOperator = isShopOperatorRole(profile.role);
 
   return (
@@ -133,9 +134,21 @@ export default function AdminStatsPage() {
               <h2 className="mb-2 text-sm font-semibold">{t("admin.statsUtilization")}</h2>
               <p className="text-2xl font-semibold tabular-nums">{totals.utilizationPct}%</p>
               <p className="mt-1 text-xs text-zinc-500">
-                {t("admin.statsWalkIns")}: {totals.walkIns} · {t("admin.statsNewCustomers")}: {totals.newCustomers} · {t("admin.noShow")}: {totals.noShow}
+                {t("admin.statsWalkIns")}: {totals.walkIns} · {t("admin.statsNewCustomers")}: {totals.newCustomers} · {t("admin.noShow")}: {totals.noShow} · {t("admin.statsLeft")}: {totals.left}
               </p>
             </section>
+
+            {totals.bySource ? (
+              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
+                <h2 className="mb-2 text-sm font-semibold">{t("admin.statsBySource")}</h2>
+                <div className="grid grid-cols-2 gap-2">
+                  <StatCard label={t("admin.sourceLine")} value={totals.bySource.line} accent="sky" />
+                  <StatCard label={t("admin.sourcePhone")} value={totals.bySource.phone} accent="emerald" />
+                  <StatCard label={t("admin.sourceChat")} value={totals.bySource.chat} accent="amber" />
+                  <StatCard label={t("admin.sourceWalkIn")} value={totals.bySource.walk_in} accent="red" />
+                </div>
+              </section>
+            ) : null}
 
             <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
               <h2 className="mb-2 text-sm font-semibold">{t("admin.statsOutcomes")}</h2>

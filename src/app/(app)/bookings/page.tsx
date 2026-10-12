@@ -34,6 +34,8 @@ function statusLabel(status: AppointmentStatus, t: (key: MessageKey) => string):
       return t("booking.statusCompleted");
     case "no_show":
       return t("booking.statusNoShow");
+    case "left":
+      return t("booking.statusLeft");
     default:
       return status;
   }
