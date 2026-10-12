@@ -10,8 +10,8 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
-import { computeBoardMiniStats, listFreeBarbersNow } from "@/lib/admin/free-barbers";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import type { ShopActivation } from "@/lib/onboarding/activation";
@@ -64,6 +64,12 @@ export default function AdminPage() {
         { locale: dateLocale },
       ),
     [dateISO, dateLocale],
+  );
+  // Unconditional — never after auth early-return (React #310).
+  const { freeNow, mini, hasBookingsToday, setupIncomplete } = useAdminTodayDerived(
+    columns,
+    isToday,
+    activation,
   );
 
   function shiftDay(days: number) {
@@ -346,17 +352,6 @@ export default function AdminPage() {
       shortenUntil: null,
     });
   }
-
-  // Hooks must stay above any early return (auth loading used to crash after ready).
-  const freeNow = useMemo(() => (isToday ? listFreeBarbersNow(columns) : []), [columns, isToday]);
-  const mini = useMemo(() => computeBoardMiniStats(columns), [columns]);
-  const hasBookingsToday = useMemo(
-    () => columns.some((col) => (col.slots ?? []).some((slot) => slot.kind === "booked")),
-    [columns],
-  );
-  const setupIncomplete = Boolean(
-    activation && (!activation.teamOk || !activation.hoursOk || !activation.ready),
-  );
 
   if (!ready || !profile) {
     return (
