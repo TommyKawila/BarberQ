@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { jsonError } from "@/lib/api-response";
 import { resolveShopParam } from "@/lib/shop/api-route";
-import { getAvailableSlots } from "@/lib/services/booking-service";
+import {
+  BookingError,
+  getAvailableSlots,
+  getAvailableSlotsForShop,
+} from "@/lib/services/booking-service";
 import { getStore } from "@/lib/data";
-import { BookingError } from "@/lib/services/booking-service";
 
 export const runtime = "nodejs";
 
@@ -18,11 +21,16 @@ export async function GET(
     const barberId = searchParams.get("barberId");
     const date = searchParams.get("date");
 
-    if (!barberId || !date) {
+    if (!date) {
       return NextResponse.json(
-        { error: { code: "INVALID_QUERY", message: "barberId and date are required" } },
+        { error: { code: "INVALID_QUERY", message: "date is required" } },
         { status: 400 },
       );
+    }
+
+    if (!barberId) {
+      const slotsByBarberId = await getAvailableSlotsForShop(shop.id, date);
+      return NextResponse.json({ slotsByBarberId });
     }
 
     const barber = await getStore().getBarber(barberId);
