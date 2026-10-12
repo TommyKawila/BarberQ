@@ -399,7 +399,10 @@ export function BookingApp() {
           customerPhone: normalizeCustomerPhone(phone ?? ""),
         }),
       });
-      const json = (await res.json()) as { appointment?: Appointment } & ApiError;
+      const json = (await res.json()) as {
+        appointment?: Appointment;
+        lineReplyHint?: { triggerText?: string };
+      } & ApiError;
       if (!res.ok || !json.appointment) {
         const code = json.error?.code;
         if (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") {
@@ -410,6 +413,18 @@ export function BookingApp() {
           setMessage(t(bookingErrorI18nKey(code)));
         }
         return;
+      }
+      // Reply/non-quota path: send short trigger in chat so webhook can reply Flex.
+      // Graceful degrade: booking already saved; in-app success still shows if this fails.
+      const trigger = json.lineReplyHint?.triggerText?.trim();
+      if (trigger && !mockMode && liff.isLoggedIn?.()) {
+        try {
+          if (liff.isApiAvailable?.("sendMessages")) {
+            await liff.sendMessages([{ type: "text", text: trigger }]);
+          }
+        } catch {
+          /* outside LINE chat / missing chat_message.write — OK */
+        }
       }
       setPhone(normalizeCustomerPhone(phone ?? ""));
       const barberName = selectedBarber

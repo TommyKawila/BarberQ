@@ -33,6 +33,7 @@ const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
   schedule: "admin.nav.schedule",
   stats: "admin.nav.stats",
   settings: "admin.nav.settings",
+  notifications: "admin.settingsNotifications",
   booking: "admin.nav.booking",
   more: "admin.nav.more",
 };
@@ -40,6 +41,7 @@ const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
 const MORE_HINTS: Partial<Record<AdminNavDestinationId, MessageKey>> = {
   schedule: "admin.moreScheduleHint",
   settings: "admin.moreSettingsHint",
+  notifications: "admin.settingsNotificationsHint",
   booking: "admin.moreBookingHint",
 };
 
@@ -74,6 +76,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     schedule: shopPath(ADMIN_NAV_PATHS.schedule),
     stats: shopPath(ADMIN_NAV_PATHS.stats),
     settings: shopPath(ADMIN_NAV_PATHS.settings),
+    notifications: shopPath(ADMIN_NAV_PATHS.notifications),
     booking: shopPath(ADMIN_NAV_PATHS.booking),
   };
 

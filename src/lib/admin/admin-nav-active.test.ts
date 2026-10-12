@@ -13,6 +13,7 @@ const hrefs = {
   schedule: "/demo/admin/my-schedule",
   stats: "/demo/admin/stats",
   settings: "/demo/admin/settings",
+  notifications: "/demo/admin/settings/notifications",
   booking: "/demo",
 };
 
