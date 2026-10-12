@@ -1,0 +1,5 @@
+Source: https://github.com/poteto/brainmaxxing (review skill)
+Copyright (c) 2026 Lauren Tan
+License: MIT (see LICENSE in this directory)
+Adapted for BarberQ / Cursor: grounded in this repo's stack and skills (how, verify-barberq); no brain/ vault, hooks, or memory loop.
+Vendored as a project-local Cursor skill under .cursor/skills/review/
