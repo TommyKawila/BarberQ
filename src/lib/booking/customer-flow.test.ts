@@ -21,6 +21,7 @@ import {
   createBooking,
   createBookingForShop,
   getAvailableSlots,
+  getAvailableSlotsForShop,
   listBookableBarbers,
   listCustomerBookingsForShop,
 } from "@/lib/services/booking-service";
@@ -226,5 +227,34 @@ describe("customer booking service", () => {
     });
     const phinxOnly = await listCustomerBookingsForShop(CUSTOMER_REF, PHINX_SHOP);
     assert.ok(!phinxOnly.some((a) => a.barber_id === otherBarber.id));
+  });
+
+  it("getAvailableSlotsForShop matches per-barber slots and marks taken", async () => {
+    const dates = getBookableDates();
+    const dateISO = dates[0];
+    assert.ok(dateISO);
+    const byBarber = await getAvailableSlotsForShop(PHINX_SHOP, dateISO!);
+    const bookable = await listBookableBarbers(PHINX_SHOP);
+    assert.ok(bookable.length > 0);
+    for (const barber of bookable) {
+      assert.ok(barber.id in byBarber);
+      const single = await getAvailableSlots(barber.id, dateISO!);
+      assert.deepEqual(byBarber[barber.id], single);
+    }
+    const tideSlots = byBarber[TIDE_ID] ?? [];
+    const free = tideSlots.find((s) => s.available);
+    if (free) {
+      await createBooking({
+        barberId: TIDE_ID,
+        startTime: free.startTime,
+        customerName: "Bulk",
+        customerPhone: "0855555555",
+        customerRef: "line-bulk-slot",
+        customerLineId: "line-bulk-slot",
+      });
+      const after = await getAvailableSlotsForShop(PHINX_SHOP, dateISO!);
+      const match = after[TIDE_ID]?.find((s) => s.startTime === free.startTime);
+      assert.equal(match?.available, false);
+    }
   });
 });

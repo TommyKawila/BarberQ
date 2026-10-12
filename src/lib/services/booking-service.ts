@@ -11,6 +11,7 @@ import {
   isLate,
   recurringBreaksForDate,
 } from "@/lib/services/slot-service";
+import { isBlockingStatus } from "@/lib/appointment-status";
 import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
@@ -127,6 +128,70 @@ export async function getAvailableSlots(
       store.listRecurringBreaks(barberId),
     ]);
     return generateSlots({ dateISO, barber, busy, recurringBreaks, shopHours, now });
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+/**
+ * Availability for every bookable barber on a date in one round-trip.
+ * Uses the same busy rules as getAvailableSlots (blocking appointments + blocks + breaks).
+ */
+export async function getAvailableSlotsForShop(
+  shopId: string,
+  dateISO: string,
+  now: Date = new Date(),
+): Promise<Record<string, Slot[]>> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
+    throw new BookingError("INVALID_DATE", "Date must be YYYY-MM-DD", 400);
+  }
+  const bookable = getBookableDates(now);
+  if (!bookable.includes(dateISO)) {
+    throw new BookingError("OUT_OF_WINDOW", "Date is outside the 7-day booking window", 400);
+  }
+
+  try {
+    const store = getStore();
+    const barbers = await listBookableBarbers(shopId);
+    if (barbers.length === 0) return {};
+
+    const settings = await store.getShopSettings(shopId);
+    const shopHours = normalizeShopHours(settings.hours);
+    const range = dayRangeUtc(dateISO);
+    const barberIds = new Set(barbers.map((barber) => barber.id));
+
+    const [allBooked, allBlocked, allBreaks] = await Promise.all([
+      store.listDayAppointments(range.from, range.to),
+      store.listDayBlocks(range.from, range.to),
+      Promise.all(barbers.map((barber) => store.listRecurringBreaks(barber.id))),
+    ]);
+
+    const booked = allBooked.filter(
+      (row) => barberIds.has(row.barber_id) && isBlockingStatus(row.status),
+    );
+    const blocked = allBlocked.filter((row) => barberIds.has(row.barber_id));
+
+    const result: Record<string, Slot[]> = {};
+    barbers.forEach((barber, index) => {
+      const busy = [
+        ...booked
+          .filter((row) => row.barber_id === barber.id)
+          .map((row) => ({ start_time: row.start_time, end_time: row.end_time })),
+        ...blocked
+          .filter((row) => row.barber_id === barber.id)
+          .map((row) => ({ start_time: row.start_time, end_time: row.end_time })),
+      ];
+      result[barber.id] = generateSlots({
+        dateISO,
+        barber,
+        busy,
+        recurringBreaks: allBreaks[index] ?? [],
+        shopHours,
+        now,
+      });
+    });
+    return result;
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);

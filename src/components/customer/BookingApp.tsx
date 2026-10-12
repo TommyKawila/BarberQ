@@ -27,6 +27,14 @@ import {
   staffIdentityKey,
   type ShopStaffMe,
 } from "@/lib/booking/customer-flow";
+import {
+  mergeSlotsCache,
+  reconcileSelectedStart,
+  shouldApplySlotResponse,
+  slotAvailabilityKey,
+  slotsDisplayLoading,
+  slotsForDisplay,
+} from "@/lib/booking/slot-availability-ui";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { useLineAuth } from "@/lib/line/use-line-auth";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
@@ -65,7 +73,9 @@ export function BookingApp() {
   const [barberId, setBarberId] = useState<string | null>(null);
   const [dateISO, setDateISO] = useState<string | null>(dates[0] ?? null);
   const [slots, setSlots] = useState<Slot[]>([]);
+  const [slotsOwnerKey, setSlotsOwnerKey] = useState<string | null>(null);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsCache, setSlotsCache] = useState<ReadonlyMap<string, Slot[]>>(() => new Map());
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useBrowserStorage(PHONE_KEY);
@@ -78,6 +88,8 @@ export function BookingApp() {
   const selectedStartRef = useRef<string | null>(null);
   const submittingRef = useRef(false);
   const missingAddUrlWarned = useRef(false);
+  const slotsCacheRef = useRef(slotsCache);
+  const desiredSlotsKeyRef = useRef<string | null>(null);
   const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
 
   useEffect(() => {
@@ -87,6 +99,10 @@ export function BookingApp() {
   useEffect(() => {
     submittingRef.current = submitting;
   }, [submitting]);
+
+  useEffect(() => {
+    slotsCacheRef.current = slotsCache;
+  }, [slotsCache]);
 
   useEffect(() => {
     if (profile?.displayName && !customerName) {
@@ -128,37 +144,96 @@ export function BookingApp() {
 
   const shopClosedToday = activeDate ? isShopClosedOnDate(hours, activeDate) : false;
 
+  const desiredSlotsKey = useMemo(() => {
+    if (!barberId || !activeDate) return null;
+    if (isCustomerDateDisabled(activeDate, hours, selectedBarber?.off_days ?? [])) return null;
+    return slotAvailabilityKey(barberId, activeDate);
+  }, [barberId, activeDate, hours, selectedBarber]);
+
+  useEffect(() => {
+    desiredSlotsKeyRef.current = desiredSlotsKey;
+  }, [desiredSlotsKey]);
+
+  const displaySlots = slotsForDisplay({
+    desiredKey: desiredSlotsKey,
+    ownerKey: slotsOwnerKey,
+    slots,
+    cache: slotsCache,
+  });
+  const displaySlotsLoading = slotsDisplayLoading({
+    desiredKey: desiredSlotsKey,
+    ownerKey: slotsOwnerKey,
+    slotsLoading,
+    cache: slotsCache,
+  });
+
+  const applySlots = useCallback(
+    (
+      key: string,
+      fresh: Slot[],
+      opts: { reconcileSelection: boolean },
+    ) => {
+      setSlotsCache((prev) => {
+        const next = new Map(prev);
+        next.set(key, fresh);
+        slotsCacheRef.current = next;
+        return next;
+      });
+      if (!shouldApplySlotResponse(key, desiredSlotsKeyRef.current)) return;
+      setSlots(fresh);
+      setSlotsOwnerKey(key);
+      setLastUpdated(new Date());
+      setSlotsLoading(false);
+      if (opts.reconcileSelection) {
+        setSelectedStart((prev) => {
+          const next = reconcileSelectedStart(prev, fresh);
+          if (prev && !next) setMessage(t("booking.slotUnavailable"));
+          return next;
+        });
+      }
+    },
+    [t],
+  );
+
   const loadSlots = useCallback(
-    async (targetBarberId: string, targetDate: string, silent: boolean) => {
+    async (
+      targetBarberId: string,
+      targetDate: string,
+      silent: boolean,
+      signal?: AbortSignal,
+    ) => {
+      const key = slotAvailabilityKey(targetBarberId, targetDate);
       if (isShopClosedOnDate(hours, targetDate)) {
-        setSlots([]);
-        setLastUpdated(new Date());
-        if (!silent) setSlotsLoading(false);
+        applySlots(key, [], { reconcileSelection: true });
         return [];
       }
-      if (!silent) {
+      if (!silent && !slotsCacheRef.current.has(key)) {
         setSlotsLoading(true);
-        setSelectedStart(null);
       }
-      const res = await fetch(
-        shopApi(`/slots?barberId=${encodeURIComponent(targetBarberId)}&date=${encodeURIComponent(targetDate)}`),
-      );
-      const json = (await res.json()) as { slots?: Slot[] };
-      const fresh = json.slots ?? [];
-      setSlots(fresh);
-      setLastUpdated(new Date());
-      if (!silent) {
-        setSlotsLoading(false);
-      } else {
-        const current = selectedStartRef.current;
-        if (current && !fresh.some((s) => s.startTime === current && s.available)) {
-          setSelectedStart(null);
-          setMessage(t("booking.slotUnavailable"));
+      try {
+        const res = await fetch(
+          shopApi(
+            `/slots?barberId=${encodeURIComponent(targetBarberId)}&date=${encodeURIComponent(targetDate)}`,
+          ),
+          { signal },
+        );
+        const json = (await res.json()) as { slots?: Slot[] };
+        const fresh = json.slots ?? [];
+        applySlots(key, fresh, {
+          reconcileSelection: silent || Boolean(selectedStartRef.current),
+        });
+        return fresh;
+      } catch (error) {
+        if (signal?.aborted || (error instanceof DOMException && error.name === "AbortError")) {
+          return [];
         }
+        if (!silent && shouldApplySlotResponse(key, desiredSlotsKeyRef.current)) {
+          setSlotsLoading(false);
+        }
+        throw error;
       }
-      return fresh;
     },
-    [shopApi, t, hours],
+    [shopApi, hours, applySlots],
   );
 
   const silentRefresh = useCallback(async () => {
@@ -166,6 +241,20 @@ export function BookingApp() {
     if (isCustomerDateDisabled(activeDate, hours, selectedBarber?.off_days ?? [])) return;
     await loadSlots(barberId, activeDate, true);
   }, [barberId, activeDate, selectedBarber, loadSlots, hours]);
+
+  function handleBarberChange(nextId: string) {
+    if (nextId === barberId) return;
+    setBarberId(nextId);
+    setSelectedStart(null);
+    setMessage(null);
+  }
+
+  function handleDateChange(nextDate: string) {
+    if (nextDate === dateISO) return;
+    setDateISO(nextDate);
+    setSelectedStart(null);
+    setMessage(null);
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -189,17 +278,57 @@ export function BookingApp() {
     };
   }, [shopApi]);
 
+  // Prefetch all barbers for the selected date (one bulk request).
+  useEffect(() => {
+    if (!activeDate || barbers.length === 0) return;
+    if (isShopClosedOnDate(hours, activeDate)) return;
+    const ac = new AbortController();
+    const dateForRequest = activeDate;
+    void (async () => {
+      try {
+        const res = await fetch(
+          shopApi(`/slots?date=${encodeURIComponent(dateForRequest)}`),
+          { signal: ac.signal },
+        );
+        const json = (await res.json()) as { slotsByBarberId?: Record<string, Slot[]> };
+        if (ac.signal.aborted) return;
+        const byBarber = json.slotsByBarberId ?? {};
+        setSlotsCache((prev) => {
+          const next = new Map(prev);
+          mergeSlotsCache(next, dateForRequest, byBarber);
+          slotsCacheRef.current = next;
+          return next;
+        });
+        const currentKey = desiredSlotsKeyRef.current;
+        const currentBarberId = currentKey?.split("|")[0] ?? null;
+        if (
+          currentBarberId &&
+          byBarber[currentBarberId] &&
+          currentKey === slotAvailabilityKey(currentBarberId, dateForRequest)
+        ) {
+          applySlots(currentKey, byBarber[currentBarberId], { reconcileSelection: true });
+        }
+      } catch (error) {
+        if (ac.signal.aborted || (error instanceof DOMException && error.name === "AbortError")) {
+          return;
+        }
+      }
+    })();
+    return () => {
+      ac.abort();
+    };
+  }, [activeDate, barbers, hours, shopApi, applySlots]);
+
+  // Load / refresh the selected barber+date; abort in-flight work on switch.
   useEffect(() => {
     if (!barberId || !activeDate) return;
     if (isCustomerDateDisabled(activeDate, hours, selectedBarber?.off_days ?? [])) return;
-    let cancelled = false;
-    void (async () => {
-      await Promise.resolve();
-      if (cancelled) return;
-      await loadSlots(barberId, activeDate, false);
-    })();
+    const key = slotAvailabilityKey(barberId, activeDate);
+    const hasCache = slotsCacheRef.current.has(key);
+    const ac = new AbortController();
+    void loadSlots(barberId, activeDate, hasCache, ac.signal);
     return () => {
-      cancelled = true;
+      ac.abort();
     };
   }, [barberId, activeDate, selectedBarber, loadSlots, hours]);
 
@@ -356,7 +485,7 @@ export function BookingApp() {
     );
   }
 
-  const selectedSlot = slots.find((slot) => slot.startTime === selectedStart);
+  const selectedSlot = displaySlots.find((slot) => slot.startTime === selectedStart);
   const dateLocale = locale === "th" ? th : enUS;
   const summaryDate =
     activeDate && selectedSlot
@@ -430,7 +559,7 @@ export function BookingApp() {
       <section className="flex flex-col gap-2">
         <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepBarber")}</h2>
         <p className="text-sm text-zinc-400">{t("booking.selectBarberHint")}</p>
-        <BarberSelector barbers={barbers} value={barberId} onChange={setBarberId} />
+        <BarberSelector barbers={barbers} value={barberId} onChange={handleBarberChange} />
       </section>
 
       <section className="flex flex-col gap-2">
@@ -441,7 +570,7 @@ export function BookingApp() {
           value={activeDate}
           barber={selectedBarber}
           hours={hours}
-          onChange={setDateISO}
+          onChange={handleDateChange}
         />
       </section>
 
@@ -451,7 +580,7 @@ export function BookingApp() {
             <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepTime")}</h2>
             <p className="mt-0.5 text-sm text-zinc-400">{t("booking.selectTimeHint")}</p>
           </div>
-          {lastUpdated ? (
+          {lastUpdated && !displaySlotsLoading ? (
             <p className="shrink-0 text-[10px] text-zinc-600">
               {t("booking.lastUpdated")}{" "}
               {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm:ss")}
@@ -459,9 +588,9 @@ export function BookingApp() {
           ) : null}
         </div>
         <SlotPicker
-          slots={slots}
+          slots={displaySlots}
           value={selectedStart}
-          loading={slotsLoading}
+          loading={displaySlotsLoading}
           shopClosed={shopClosedToday}
           onChange={(start) => {
             setSelectedStart(start);
