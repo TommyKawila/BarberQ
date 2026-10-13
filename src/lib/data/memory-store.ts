@@ -8,14 +8,17 @@ import {
   type CreateRecurringBreakInput,
   type CreateBarberInput,
   type CreateShopInput,
+  type CreateShopServiceInput,
   type CreateStaffInput,
   type LineOaInstallRequest,
+  type MarkOutcomeOptions,
   type RecurringBreak,
   type ShopManager,
   type ShopManagerInvite,
   type Staff,
   type ShopSettings,
   type UpdateBarberInput,
+  type UpdateShopServiceInput,
 } from "@/lib/data/types";
 import {
   isOpenLineOaInstallStatus,
@@ -28,7 +31,7 @@ import {
   type TrialLeadNote,
   type TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
-import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
+import type { Appointment, Barber, BusyInterval, Shop, ShopService, TimeBlock } from "@/types/booking";
 import {
   countBreaksForWeekday,
   normalizeOffDays,
@@ -51,6 +54,7 @@ interface MemoryState {
   staff: Staff[];
   recurringBreaks: RecurringBreak[];
   shops: Shop[];
+  shopServices: ShopService[];
   lineOaInstallRequests: LineOaInstallRequest[];
   trialLeads: TrialLead[];
   trialLeadNotes: TrialLeadNote[];
@@ -77,6 +81,7 @@ function getState(): MemoryState {
         createdAt: new Date(),
       })),
       recurringBreaks: [],
+      shopServices: [],
       lineOaInstallRequests: [],
       trialLeads: [],
       trialLeadNotes: [],
@@ -430,7 +435,11 @@ export const memoryStore: BookingStore = {
     });
   },
 
-  async markAppointmentOutcome(appointmentId, outcome: AppointmentOutcome) {
+  async markAppointmentOutcome(
+    appointmentId,
+    outcome: AppointmentOutcome,
+    options?: MarkOutcomeOptions,
+  ) {
     const state = getState();
     const idx = state.appointments.findIndex((a) => a.id === appointmentId);
     if (idx === -1) throw new StoreConflict("NOT_FOUND");
@@ -440,6 +449,9 @@ export const memoryStore: BookingStore = {
     if (outcome === "no_show" && new Date(row.end_time).getTime() > now) {
       throw new StoreConflict("INVALID_OUTCOME");
     }
+    if (options?.priceBaht != null && options.priceBaht < 0) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
     const startMs = new Date(row.start_time).getTime();
     const endMs = new Date(row.end_time).getTime();
     // Only shorten while in progress; before start keep range valid (end > start)
@@ -447,14 +459,114 @@ export const memoryStore: BookingStore = {
     const shorten =
       (outcome === "completed" || outcome === "left") && inProgress;
     const shortenedEnd = new Date(Math.max(now, startMs + 1000)).toISOString();
+
+    let serviceId = row.service_id ?? null;
+    let priceBaht = row.price_baht ?? null;
+    if (outcome === "completed") {
+      const barber = getBarberSync(row.barber_id);
+      const shopId = barber?.shop_id ?? null;
+      if (options?.serviceId) {
+        const service = state.shopServices.find(
+          (s) => s.id === options.serviceId && s.shop_id === shopId && s.is_active,
+        );
+        if (!service) throw new StoreConflict("SERVICE_NOT_FOUND");
+        serviceId = service.id;
+        priceBaht = options.priceBaht ?? service.price_baht;
+      } else if (options?.priceBaht != null) {
+        priceBaht = options.priceBaht;
+      } else if (priceBaht == null && shopId) {
+        const services = state.shopServices
+          .filter((s) => s.shop_id === shopId && s.is_active)
+          .sort((a, b) => Number(b.is_default) - Number(a.is_default) || a.sort_order - b.sort_order);
+        const def = services[0];
+        if (def) {
+          serviceId = def.id;
+          priceBaht = def.price_baht;
+        }
+      }
+    }
+
     const updated = {
       ...row,
       status: outcome,
       end_time: shorten ? shortenedEnd : row.end_time,
       completed_at: outcome === "completed" ? nowIso() : row.completed_at,
       cancelled_at: outcome === "left" ? nowIso() : row.cancelled_at,
+      service_id: outcome === "completed" ? serviceId : row.service_id,
+      price_baht: outcome === "completed" ? priceBaht : row.price_baht,
     };
     state.appointments[idx] = updated;
+    return updated;
+  },
+
+  async listShopServices(shopId, opts) {
+    return getState()
+      .shopServices.filter(
+        (s) => s.shop_id === shopId && (opts?.includeInactive || s.is_active),
+      )
+      .sort((a, b) => a.sort_order - b.sort_order || a.created_at.localeCompare(b.created_at));
+  },
+
+  async getDefaultShopService(shopId) {
+    const list = await this.listShopServices(shopId);
+    return list.find((s) => s.is_default) ?? list[0] ?? null;
+  },
+
+  async createShopService(input: CreateShopServiceInput) {
+    const state = getState();
+    if (!state.shops.some((s) => s.id === input.shopId)) {
+      throw new StoreConflict("NOT_FOUND");
+    }
+    if (!Number.isFinite(input.priceBaht) || input.priceBaht < 0) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    const name = input.name.trim();
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+    const isDefault = Boolean(input.isDefault) || state.shopServices.filter((s) => s.shop_id === input.shopId && s.is_active).length === 0;
+    if (isDefault) {
+      for (const s of state.shopServices) {
+        if (s.shop_id === input.shopId && s.is_default) s.is_default = false;
+      }
+    }
+    const now = nowIso();
+    const row: ShopService = {
+      id: uuid(),
+      shop_id: input.shopId,
+      name,
+      price_baht: Math.round(input.priceBaht),
+      is_default: isDefault,
+      is_active: true,
+      sort_order: input.sortOrder ?? state.shopServices.filter((s) => s.shop_id === input.shopId).length,
+      created_at: now,
+      updated_at: now,
+    };
+    state.shopServices.push(row);
+    return row;
+  },
+
+  async updateShopService(serviceId, shopId, input: UpdateShopServiceInput) {
+    const state = getState();
+    const idx = state.shopServices.findIndex((s) => s.id === serviceId && s.shop_id === shopId);
+    if (idx === -1) throw new StoreConflict("SERVICE_NOT_FOUND");
+    const row = state.shopServices[idx];
+    if (input.priceBaht != null && (!Number.isFinite(input.priceBaht) || input.priceBaht < 0)) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    if (input.isDefault) {
+      for (const s of state.shopServices) {
+        if (s.shop_id === shopId && s.is_default) s.is_default = false;
+      }
+    }
+    const updated: ShopService = {
+      ...row,
+      name: input.name?.trim() || row.name,
+      price_baht: input.priceBaht != null ? Math.round(input.priceBaht) : row.price_baht,
+      is_default: input.isDefault ?? row.is_default,
+      is_active: input.isActive ?? row.is_active,
+      sort_order: input.sortOrder ?? row.sort_order,
+      updated_at: nowIso(),
+    };
+    state.shopServices[idx] = updated;
     return updated;
   },
 

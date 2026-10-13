@@ -78,18 +78,18 @@ describe("admin nav visibility", () => {
     ]);
   });
 
-  it("barber sees Today/Schedule/More", () => {
-    assert.deepEqual(primaryAdminNavItems("barber"), ["board", "schedule", "more"]);
+  it("barber sees Today/Stats/More (D5 personal summary)", () => {
+    assert.deepEqual(primaryAdminNavItems("barber"), ["board", "stats", "more"]);
   });
 
-  it("barber more sheet has notifications and booking", () => {
-    assert.deepEqual(moreAdminNavItems("barber"), ["notifications", "booking"]);
+  it("barber more sheet has schedule, notifications and booking", () => {
+    assert.deepEqual(moreAdminNavItems("barber"), ["schedule", "notifications", "booking"]);
   });
 
-  it("barber cannot see team, stats, or settings", () => {
+  it("barber cannot see team or settings but can see stats", () => {
     const items = [...primaryAdminNavItems("barber"), ...moreAdminNavItems("barber")];
     assert.ok(!items.includes("team"));
-    assert.ok(!items.includes("stats"));
+    assert.ok(items.includes("stats"));
     assert.ok(!items.includes("settings"));
   });
 
@@ -114,6 +114,7 @@ describe("admin nav visibility", () => {
     ]);
     assert.deepEqual(adminNavItems("barber"), [
       "board",
+      "stats",
       "schedule",
       "notifications",
       "booking",

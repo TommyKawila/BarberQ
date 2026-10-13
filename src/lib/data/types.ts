@@ -4,6 +4,7 @@ import type {
   Barber,
   BusyInterval,
   Shop,
+  ShopService,
   TimeBlock,
 } from "@/types/booking";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
@@ -18,6 +19,8 @@ export type StoreErrorCode =
   | "TOO_LATE"
   | "INVALID_RANGE"
   | "INVALID_OUTCOME"
+  | "INVALID_PRICE"
+  | "SERVICE_NOT_FOUND"
   | "INVITE_NOT_FOUND"
   | "INVITE_EXPIRED"
   | "INVITE_ALREADY_CLAIMED"
@@ -26,6 +29,27 @@ export type StoreErrorCode =
   | "IDENTITY_INCOMPATIBLE"
   | "MANAGER_ALREADY_ACTIVE"
   | "HAS_FUTURE_BOOKINGS";
+
+export interface MarkOutcomeOptions {
+  serviceId?: string | null;
+  priceBaht?: number | null;
+}
+
+export interface CreateShopServiceInput {
+  shopId: string;
+  name: string;
+  priceBaht: number;
+  isDefault?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateShopServiceInput {
+  name?: string;
+  priceBaht?: number;
+  isDefault?: boolean;
+  isActive?: boolean;
+  sortOrder?: number;
+}
 
 export class StoreConflict extends Error {
   readonly code: StoreErrorCode;
@@ -233,13 +257,21 @@ export interface BookingStore {
   listDayAppointments(from: Date, to: Date): Promise<Appointment[]>;
   listDayBlocks(from: Date, to: Date): Promise<TimeBlock[]>;
   listAppointmentsInRange(from: Date, to: Date): Promise<Appointment[]>;
-  markAppointmentOutcome(appointmentId: string, outcome: AppointmentOutcome): Promise<Appointment>;
+  markAppointmentOutcome(
+    appointmentId: string,
+    outcome: AppointmentOutcome,
+    options?: MarkOutcomeOptions,
+  ): Promise<Appointment>;
   cancelAppointmentByToken(token: string): Promise<Appointment>;
   getAppointmentByCancelToken(token: string): Promise<Appointment | null>;
   markLateCalled(appointmentId: string): Promise<Appointment>;
   listCustomerAppointments(customerLineId: string): Promise<Appointment[]>;
   getShopSettings(shopId: string): Promise<ShopSettings>;
   setShopSettings(shopId: string, input: Omit<ShopSettings, "shopId">): Promise<void>;
+  listShopServices(shopId: string, opts?: { includeInactive?: boolean }): Promise<ShopService[]>;
+  createShopService(input: CreateShopServiceInput): Promise<ShopService>;
+  updateShopService(serviceId: string, shopId: string, input: UpdateShopServiceInput): Promise<ShopService>;
+  getDefaultShopService(shopId: string): Promise<ShopService | null>;
   getStaffByToken(token: string): Promise<Staff | null>;
   listStaff(): Promise<Staff[]>;
   createStaff(input: CreateStaffInput): Promise<Staff>;

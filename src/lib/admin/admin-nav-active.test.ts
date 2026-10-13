@@ -35,13 +35,13 @@ describe("admin primary nav active state", () => {
     assert.equal(isPrimaryNavActive("board", hrefs.settings, hrefs, false, more), false);
   });
 
-  it("barber today/schedule/more", () => {
+  it("barber today/stats/more (schedule in More)", () => {
     const more = moreAdminNavItems("barber");
     assert.equal(isPrimaryNavActive("board", "/demo/admin", hrefs, false, more), true);
-    assert.equal(isPrimaryNavActive("schedule", hrefs.schedule, hrefs, false, more), true);
+    assert.equal(isPrimaryNavActive("stats", hrefs.stats, hrefs, false, more), true);
     assert.equal(isPrimaryNavActive("more", hrefs.booking, hrefs, false, more), true);
     assert.equal(isPrimaryNavActive("more", hrefs.notifications, hrefs, false, more), true);
-    assert.equal(isPrimaryNavActive("more", hrefs.schedule, hrefs, false, more), false);
+    assert.equal(isPrimaryNavActive("more", hrefs.schedule, hrefs, false, more), true);
   });
 
   it("customer booking href is shop slug not generic slash", () => {

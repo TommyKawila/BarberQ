@@ -585,11 +585,22 @@ export default function AdminSettingsPage() {
         </section>
 
         <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.servicesTitle")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.servicesHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/services")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
+          >
+            {t("admin.servicesTitle")}
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
           <h2 className="text-sm font-semibold">{t("admin.settingsLine")}</h2>
           <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsLineHint")}</p>
           <Link
             href={shopPath("/admin/settings/line")}
-            className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
           >
             {t("admin.settingsLine")}
           </Link>

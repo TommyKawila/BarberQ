@@ -1,4 +1,4 @@
-import { addDays, addMinutes, differenceInMinutes, endOfMonth, parseISO, startOfMonth } from "date-fns";
+import { addDays, addMinutes, differenceInMinutes, endOfMonth, parseISO, startOfMonth, subDays, subMonths } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
 import { isOccupyingStatus } from "@/lib/appointment-status";
@@ -31,8 +31,30 @@ export interface StatsTotals {
   left: number;
   walkIns: number;
   newCustomers: number;
+  returningCustomers: number;
+  returningRatePct: number | null;
+  cancelNoShowRatePct: number | null;
   utilizationPct: number;
+  revenueBaht: number;
+  waitMinutesAvg: number | null;
   bySource: StatsBySource;
+}
+
+export interface StatsComparison {
+  completedDelta: number;
+  completedDeltaPct: number | null;
+  revenueDelta: number;
+  returningRateDeltaPct: number | null;
+  waitMinutesDelta: number | null;
+  cutoffApplied: boolean;
+  previous: {
+    from: string;
+    to: string;
+    completed: number;
+    revenueBaht: number;
+    returningRatePct: number | null;
+    waitMinutesAvg: number | null;
+  };
 }
 
 export interface StatsHourRow {
@@ -40,6 +62,9 @@ export interface StatsHourRow {
   booked: number;
   walkIn: number;
   free: number;
+  blocked: number;
+  /** Chair occupied % for this hour across barbers/days in range */
+  chairBusyPct: number;
 }
 
 export interface StatsBarberRow {
@@ -49,6 +74,7 @@ export interface StatsBarberRow {
   completed: number;
   cancelled: number;
   minutes: number;
+  revenueBaht: number;
 }
 
 export interface StatsTrendRow {
@@ -66,13 +92,23 @@ export interface StatsBlockRow {
   reason: string;
 }
 
+export interface StatsInsight {
+  /** Machine key for UI templates */
+  kind: "peak_hour" | "quiet_hour" | "trend_up" | "trend_down" | "empty";
+  hour?: number;
+  completed?: number;
+  prevCompleted?: number;
+}
+
 export interface StatsReport {
-  range: { from: string; to: string; label: string; kind: StatsRange };
+  range: { from: string; to: string; label: string; kind: StatsRange; displayLabel: string };
   totals: StatsTotals;
+  comparison: StatsComparison;
   byHour: StatsHourRow[];
   byBarber: StatsBarberRow[];
   trend: StatsTrendRow[];
   blocks: StatsBlockRow[];
+  insight: StatsInsight;
 }
 
 function parseDateISO(dateISO: string): void {
@@ -113,16 +149,69 @@ function monthBounds(dateISO: string): { from: string; to: string } {
   };
 }
 
-function resolveRange(kind: StatsRange, dateISO: string): { from: string; to: string; label: string } {
+function thaiShortDate(dateISO: string): string {
+  const d = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
+  const day = formatInTimeZone(d, SHOP_TIMEZONE, "d");
+  const monthNum = Number(formatInTimeZone(d, SHOP_TIMEZONE, "M"));
+  const months = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  return `${day} ${months[monthNum - 1]}`;
+}
+
+function resolveRange(kind: StatsRange, dateISO: string): { from: string; to: string; label: string; displayLabel: string } {
   if (kind === "day") {
-    return { from: dateISO, to: dateISO, label: dateISO };
+    return { from: dateISO, to: dateISO, label: dateISO, displayLabel: thaiShortDate(dateISO) };
   }
   if (kind === "week") {
     const bounds = weekBounds(dateISO);
-    return { ...bounds, label: `${bounds.from} – ${bounds.to}` };
+    return {
+      ...bounds,
+      label: `${bounds.from} – ${bounds.to}`,
+      displayLabel: `${thaiShortDate(bounds.from)}–${thaiShortDate(bounds.to)}`,
+    };
   }
   const bounds = monthBounds(dateISO);
-  return { ...bounds, label: formatInTimeZone(fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE), SHOP_TIMEZONE, "MMMM yyyy") };
+  const anchor = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
+  const monthNum = Number(formatInTimeZone(anchor, SHOP_TIMEZONE, "M"));
+  const year = formatInTimeZone(anchor, SHOP_TIMEZONE, "yyyy");
+  const months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+  return {
+    ...bounds,
+    label: formatInTimeZone(anchor, SHOP_TIMEZONE, "MMMM yyyy"),
+    displayLabel: `${months[monthNum - 1]} ${year}`,
+  };
+}
+
+function previousRange(
+  kind: StatsRange,
+  fromISO: string,
+  toISO: string,
+): { from: string; to: string } {
+  if (kind === "day") {
+    const prev = formatInTimeZone(
+      subDays(fromZonedTime(`${fromISO}T12:00:00`, SHOP_TIMEZONE), 1),
+      SHOP_TIMEZONE,
+      "yyyy-MM-dd",
+    );
+    return { from: prev, to: prev };
+  }
+  if (kind === "week") {
+    const prevFrom = formatInTimeZone(
+      subDays(fromZonedTime(`${fromISO}T12:00:00`, SHOP_TIMEZONE), 7),
+      SHOP_TIMEZONE,
+      "yyyy-MM-dd",
+    );
+    const prevTo = formatInTimeZone(
+      subDays(fromZonedTime(`${toISO}T12:00:00`, SHOP_TIMEZONE), 7),
+      SHOP_TIMEZONE,
+      "yyyy-MM-dd",
+    );
+    return { from: prevFrom, to: prevTo };
+  }
+  const anchor = fromZonedTime(`${fromISO}T12:00:00`, SHOP_TIMEZONE);
+  const prevMonth = subMonths(anchor, 1);
+  const prevFrom = formatInTimeZone(startOfMonth(prevMonth), SHOP_TIMEZONE, "yyyy-MM-dd");
+  const prevTo = formatInTimeZone(endOfMonth(prevMonth), SHOP_TIMEZONE, "yyyy-MM-dd");
+  return { from: prevFrom, to: prevTo };
 }
 
 function appointmentMinutes(row: Appointment): number {
@@ -173,10 +262,151 @@ function overlapsHour(startIso: string, endIso: string, hour: number, dateISO: s
   return differenceInMinutes(overlapEnd, overlapStart);
 }
 
+function applyCutoff(rows: Appointment[], cutoff: Date | null): Appointment[] {
+  if (!cutoff) return rows;
+  return rows.filter((a) => parseISO(a.start_time).getTime() <= cutoff.getTime());
+}
+
+function applyBlockCutoff(rows: TimeBlock[], cutoff: Date | null): TimeBlock[] {
+  if (!cutoff) return rows;
+  return rows.filter((b) => parseISO(b.start_time).getTime() <= cutoff.getTime());
+}
+
+function pctDelta(current: number, previous: number): number | null {
+  if (previous === 0) return current === 0 ? 0 : null;
+  return Math.round(((current - previous) / previous) * 100);
+}
+
+function computeWaitAvg(completed: Appointment[]): number | null {
+  const waits: number[] = [];
+  for (const row of completed) {
+    if (row.source !== "walk_in") continue;
+    const mins = differenceInMinutes(parseISO(row.start_time), parseISO(row.created_at));
+    if (mins >= 0 && mins < 24 * 60) waits.push(mins);
+  }
+  if (!waits.length) return null;
+  return Math.round(waits.reduce((a, b) => a + b, 0) / waits.length);
+}
+
+interface TotalsInput {
+  appointments: Appointment[];
+  blocks: TimeBlock[];
+  barbers: Barber[];
+  dayList: string[];
+  breaksFlat: { barberId: string; weekday: number; startTime: string; endTime: string }[];
+  shopHours: ReturnType<typeof normalizeShopHours>;
+  priorPhones: Set<string>;
+}
+
+function computeTotals(input: TotalsInput): StatsTotals {
+  const { appointments, blocks, barbers, dayList, breaksFlat, shopHours, priorPhones } = input;
+  const occupying = appointments.filter((a) => isOccupyingStatus(a.status));
+  const phones = new Set(
+    occupying
+      .filter((a) => a.source !== "walk_in" && a.customer_phone)
+      .map((a) => a.customer_phone as string),
+  );
+  const newCustomers = [...phones].filter((p) => !priorPhones.has(p)).length;
+  const returningCustomers = Math.max(0, phones.size - newCustomers);
+  const returningRatePct =
+    phones.size > 0 ? Math.round((returningCustomers / phones.size) * 100) : null;
+
+  const bySource: StatsBySource = { line: 0, phone: 0, chat: 0, walk_in: 0 };
+  for (const row of appointments) {
+    const src = row.source ?? "line";
+    if (src in bySource) bySource[src as keyof StatsBySource] += 1;
+  }
+  const walkInAppointments = appointments.filter((a) => a.source === "walk_in");
+  const noShowEligible = appointments.filter((a) => a.source !== "walk_in");
+  const cancelled = appointments.filter((a) => a.status === "cancelled").length;
+  const completedRows = appointments.filter((a) => a.status === "completed");
+  const completed = completedRows.length;
+  const noShow = noShowEligible.filter((a) => a.status === "no_show").length;
+  const booked = appointments.length;
+  const cancelNoShowRatePct =
+    booked > 0 ? Math.round(((cancelled + noShow) / booked) * 100) : null;
+
+  let availableMinutes = 0;
+  let occupiedMinutes = 0;
+  for (const dayISO of dayList) {
+    for (const barber of barbers) {
+      const breakMin = recurringBreakMinutes(dayISO, barber.id, breaksFlat);
+      availableMinutes += openMinutesForBarber(dayISO, barber, breakMin, shopHours);
+    }
+  }
+  for (const row of occupying) occupiedMinutes += appointmentMinutes(row);
+  for (const row of blocks) occupiedMinutes += blockMinutes(row);
+
+  const revenueBaht = completedRows.reduce((sum, a) => sum + (a.price_baht ?? 0), 0);
+
+  return {
+    uniqueCustomers: phones.size,
+    booked,
+    cancelled,
+    completed,
+    noShow,
+    left: appointments.filter((a) => a.status === "left").length,
+    walkIns: walkInAppointments.length,
+    newCustomers,
+    returningCustomers,
+    returningRatePct,
+    cancelNoShowRatePct,
+    utilizationPct: availableMinutes > 0 ? Math.round((occupiedMinutes / availableMinutes) * 100) : 0,
+    revenueBaht,
+    waitMinutesAvg: computeWaitAvg(completedRows),
+    bySource,
+  };
+}
+
+function buildInsight(
+  byHour: StatsHourRow[],
+  trend: StatsTrendRow[],
+  totals: StatsTotals,
+): StatsInsight {
+  if (totals.completed === 0 && totals.booked === 0) return { kind: "empty" };
+  if (byHour.length) {
+    const peak = [...byHour].sort((a, b) => b.booked + b.walkIn - (a.booked + a.walkIn))[0];
+    const quiet = [...byHour].sort((a, b) => a.booked + a.walkIn - (b.booked + b.walkIn))[0];
+    if (peak && peak.booked + peak.walkIn > 0) {
+      return { kind: "peak_hour", hour: peak.hour };
+    }
+    if (quiet) return { kind: "quiet_hour", hour: quiet.hour };
+  }
+  if (trend.length >= 2) {
+    const last = trend[trend.length - 1];
+    const prev = trend[trend.length - 2];
+    if (last.completed > prev.completed) {
+      return { kind: "trend_up", completed: last.completed, prevCompleted: prev.completed };
+    }
+    if (last.completed < prev.completed) {
+      return { kind: "trend_down", completed: last.completed, prevCompleted: prev.completed };
+    }
+  }
+  return { kind: "empty" };
+}
+
+/** Shift period navigation anchor */
+export function shiftStatsAnchor(kind: StatsRange, dateISO: string, direction: -1 | 1): string {
+  parseDateISO(dateISO);
+  const noon = fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE);
+  if (kind === "day") {
+    return formatInTimeZone(addDays(noon, direction), SHOP_TIMEZONE, "yyyy-MM-dd");
+  }
+  if (kind === "week") {
+    return formatInTimeZone(addDays(noon, direction * 7), SHOP_TIMEZONE, "yyyy-MM-dd");
+  }
+  const shifted = direction > 0 ? addDays(endOfMonth(noon), 1) : subMonths(startOfMonth(noon), 0);
+  if (direction < 0) {
+    return formatInTimeZone(startOfMonth(subMonths(noon, 1)), SHOP_TIMEZONE, "yyyy-MM-dd");
+  }
+  return formatInTimeZone(startOfMonth(shifted), SHOP_TIMEZONE, "yyyy-MM-dd");
+}
+
 export async function getStatsReport(
   kind: StatsRange,
   dateISO: string,
   staff: StaffAuth,
+  now: Date = new Date(),
 ): Promise<StatsReport> {
   parseDateISO(dateISO);
   const rangeMeta = resolveRange(kind, dateISO);
@@ -208,15 +438,14 @@ export async function getStatsReport(
     })),
   );
 
+  const todayISO = formatInTimeZone(now, SHOP_TIMEZONE, "yyyy-MM-dd");
+  const rangeIncludesNow = rangeMeta.from <= todayISO && todayISO <= rangeMeta.to;
+  // Same-time cutoff applies to the *previous* period for fair comparison.
+  // Current period shows the full selected range (including later-today bookings).
+  const cutoff = rangeIncludesNow ? now : null;
+
   const scopedAppointments = appointments.filter((a) => barberIds.has(a.barber_id));
   const scopedBlocks = blocks.filter((b) => barberIds.has(b.barber_id));
-
-  const occupying = scopedAppointments.filter((a) => isOccupyingStatus(a.status));
-  const phones = new Set(
-    occupying
-      .filter((a) => a.source !== "walk_in" && a.customer_phone)
-      .map((a) => a.customer_phone as string),
-  );
 
   const priorAppointments = await store.listAppointmentsInRange(
     new Date(0),
@@ -233,45 +462,95 @@ export async function getStatsReport(
       )
       .map((a) => a.customer_phone as string),
   );
-  const newCustomers = [...phones].filter((p) => !priorPhones.has(p)).length;
 
-  const bySource: StatsBySource = { line: 0, phone: 0, chat: 0, walk_in: 0 };
-  for (const row of scopedAppointments) {
-    const src = row.source ?? "line";
-    if (src in bySource) bySource[src as keyof StatsBySource] += 1;
-  }
-  const walkInAppointments = scopedAppointments.filter((a) => a.source === "walk_in");
-  const noShowEligible = scopedAppointments.filter((a) => a.source !== "walk_in");
-
-  let availableMinutes = 0;
-  let occupiedMinutes = 0;
   const dayList = datesInRange(rangeMeta.from, rangeMeta.to);
+  const totals = computeTotals({
+    appointments: scopedAppointments,
+    blocks: scopedBlocks,
+    barbers,
+    dayList,
+    breaksFlat,
+    shopHours,
+    priorPhones,
+  });
 
-  for (const dayISO of dayList) {
-    for (const barber of barbers) {
-      const breakMin = recurringBreakMinutes(dayISO, barber.id, breaksFlat);
-      availableMinutes += openMinutesForBarber(dayISO, barber, breakMin, shopHours);
+  // Previous period with same-time cutoff
+  const prevMeta = previousRange(kind, rangeMeta.from, rangeMeta.to);
+  const prevFromRange = dayRangeUtc(prevMeta.from);
+  const prevToRange = dayRangeUtc(prevMeta.to);
+  const [prevAppointmentsRaw, prevBlocksRaw] = await Promise.all([
+    store.listAppointmentsInRange(prevFromRange.from, prevToRange.to),
+    store.listDayBlocks(prevFromRange.from, prevToRange.to),
+  ]);
+
+  let prevCutoff: Date | null = null;
+  if (cutoff) {
+    const clock = formatInTimeZone(now, SHOP_TIMEZONE, "HH:mm:ss.SSS");
+    // Map cutoff to previous period's corresponding calendar day
+    if (kind === "day") {
+      prevCutoff = fromZonedTime(`${prevMeta.from}T${clock}`, SHOP_TIMEZONE);
+    } else {
+      // Same offset from period start
+      const offsetMs = now.getTime() - fromZonedTime(`${rangeMeta.from}T00:00:00`, SHOP_TIMEZONE).getTime();
+      prevCutoff = new Date(fromZonedTime(`${prevMeta.from}T00:00:00`, SHOP_TIMEZONE).getTime() + offsetMs);
     }
   }
 
-  for (const row of occupying) {
-    occupiedMinutes += appointmentMinutes(row);
-  }
-  for (const row of scopedBlocks) {
-    occupiedMinutes += blockMinutes(row);
-  }
+  const prevAppointments = applyCutoff(
+    prevAppointmentsRaw.filter((a) => barberIds.has(a.barber_id)),
+    prevCutoff,
+  );
+  const prevBlocks = applyBlockCutoff(
+    prevBlocksRaw.filter((b) => barberIds.has(b.barber_id)),
+    prevCutoff,
+  );
+  const prevPrior = await store.listAppointmentsInRange(
+    new Date(0),
+    new Date(prevFromRange.from.getTime() - 1),
+  );
+  const prevPriorPhones = new Set(
+    prevPrior
+      .filter(
+        (a) =>
+          barberIds.has(a.barber_id) &&
+          isOccupyingStatus(a.status) &&
+          a.source !== "walk_in" &&
+          a.customer_phone,
+      )
+      .map((a) => a.customer_phone as string),
+  );
+  const prevDayList = datesInRange(prevMeta.from, prevMeta.to);
+  const prevTotals = computeTotals({
+    appointments: prevAppointments,
+    blocks: prevBlocks,
+    barbers,
+    dayList: prevDayList,
+    breaksFlat,
+    shopHours,
+    priorPhones: prevPriorPhones,
+  });
 
-  const totals: StatsTotals = {
-    uniqueCustomers: phones.size,
-    booked: scopedAppointments.length,
-    cancelled: scopedAppointments.filter((a) => a.status === "cancelled").length,
-    completed: scopedAppointments.filter((a) => a.status === "completed").length,
-    noShow: noShowEligible.filter((a) => a.status === "no_show").length,
-    left: scopedAppointments.filter((a) => a.status === "left").length,
-    walkIns: walkInAppointments.length,
-    newCustomers,
-    utilizationPct: availableMinutes > 0 ? Math.round((occupiedMinutes / availableMinutes) * 100) : 0,
-    bySource,
+  const comparison: StatsComparison = {
+    completedDelta: totals.completed - prevTotals.completed,
+    completedDeltaPct: pctDelta(totals.completed, prevTotals.completed),
+    revenueDelta: totals.revenueBaht - prevTotals.revenueBaht,
+    returningRateDeltaPct:
+      totals.returningRatePct != null && prevTotals.returningRatePct != null
+        ? totals.returningRatePct - prevTotals.returningRatePct
+        : null,
+    waitMinutesDelta:
+      totals.waitMinutesAvg != null && prevTotals.waitMinutesAvg != null
+        ? totals.waitMinutesAvg - prevTotals.waitMinutesAvg
+        : null,
+    cutoffApplied: Boolean(cutoff),
+    previous: {
+      from: prevMeta.from,
+      to: prevMeta.to,
+      completed: prevTotals.completed,
+      revenueBaht: prevTotals.revenueBaht,
+      returningRatePct: prevTotals.returningRatePct,
+      waitMinutesAvg: prevTotals.waitMinutesAvg,
+    },
   };
 
   const shopHoursSet = new Set<number>();
@@ -283,12 +562,14 @@ export async function getStatsReport(
     for (let h = openH; h < closeH; h += 1) shopHoursSet.add(h);
   }
   const hours = [...shopHoursSet].sort((a, b) => a - b);
+  const occupyingScoped = scopedAppointments.filter((a) => isOccupyingStatus(a.status));
 
   const byHour: StatsHourRow[] = hours.map((hour) => {
     let booked = 0;
     let walkIn = 0;
+    let blocked = 0;
     for (const dayISO of dayList) {
-      for (const row of occupying) {
+      for (const row of occupyingScoped) {
         if (formatInTimeZone(parseISO(row.start_time), SHOP_TIMEZONE, "yyyy-MM-dd") !== dayISO) continue;
         const mins = overlapsHour(row.start_time, row.end_time, hour, dayISO);
         if (row.source === "walk_in") walkIn += mins;
@@ -296,13 +577,20 @@ export async function getStatsReport(
       }
       for (const row of scopedBlocks) {
         if (formatInTimeZone(parseISO(row.start_time), SHOP_TIMEZONE, "yyyy-MM-dd") !== dayISO) continue;
-        // Manual blocks still occupy capacity but are not walk-in appointments
-        booked += overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        blocked += overlapsHour(row.start_time, row.end_time, hour, dayISO);
       }
     }
-    const capacity = barbers.length * 60;
-    const free = Math.max(0, capacity - booked - walkIn);
-    return { hour, booked, walkIn, free };
+    const capacity = Math.max(1, barbers.length * 60 * dayList.length);
+    const busy = booked + walkIn + blocked;
+    const free = Math.max(0, barbers.length * 60 * dayList.length - busy);
+    return {
+      hour,
+      booked,
+      walkIn,
+      free,
+      blocked,
+      chairBusyPct: Math.round((busy / capacity) * 100),
+    };
   });
 
   const byBarber: StatsBarberRow[] = barbers.map((barber) => {
@@ -310,6 +598,9 @@ export async function getStatsReport(
     const mins = rows
       .filter((a) => isOccupyingStatus(a.status))
       .reduce((sum, a) => sum + appointmentMinutes(a), 0);
+    const revenueBaht = rows
+      .filter((a) => a.status === "completed")
+      .reduce((sum, a) => sum + (a.price_baht ?? 0), 0);
     return {
       barberId: barber.id,
       name: barber.name,
@@ -317,6 +608,7 @@ export async function getStatsReport(
       completed: rows.filter((a) => a.status === "completed").length,
       cancelled: rows.filter((a) => a.status === "cancelled").length,
       minutes: mins,
+      revenueBaht,
     };
   });
 
@@ -342,11 +634,19 @@ export async function getStatsReport(
   }));
 
   return {
-    range: { from: rangeMeta.from, to: rangeMeta.to, label: rangeMeta.label, kind },
+    range: {
+      from: rangeMeta.from,
+      to: rangeMeta.to,
+      label: rangeMeta.label,
+      kind,
+      displayLabel: rangeMeta.displayLabel,
+    },
     totals,
+    comparison,
     byHour,
     byBarber,
     trend,
     blocks: blocksOut,
+    insight: buildInsight(byHour, trend, totals),
   };
 }

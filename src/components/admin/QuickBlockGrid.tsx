@@ -60,7 +60,8 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
     if (slot.source === "chat") return "bg-indigo-700 text-white";
     return "bg-sky-700 text-white";
   }
-  if (slot.kind === "blocked") return "bg-red-600 text-white";
+  // Blocked: distinct from walk-in (rose solid) — dark red + border
+  if (slot.kind === "blocked") return "border border-red-400/70 bg-red-950 text-red-100";
   return "bg-emerald-700 text-white";
 }
 
@@ -155,7 +156,7 @@ export function QuickBlockGrid({
                 <button
                   type="button"
                   onClick={() => onWalkInQuick(column.barber.id)}
-                  className="mt-1 w-full rounded-md bg-rose-700/80 px-1 py-1 text-[10px] font-semibold text-white"
+                  className="mt-1 min-h-11 w-full rounded-md bg-rose-700/80 px-1 py-1 text-[11px] font-semibold text-white"
                 >
                   {t("admin.addWalkIn")}
                 </button>

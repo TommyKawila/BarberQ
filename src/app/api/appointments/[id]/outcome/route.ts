@@ -15,7 +15,11 @@ export async function PATCH(
   try {
     const staff = await assertStaff(req);
     const { id } = await context.params;
-    const body = await readJson<{ outcome?: string }>(req);
+    const body = await readJson<{
+      outcome?: string;
+      serviceId?: string | null;
+      priceBaht?: number | null;
+    }>(req);
     const outcome = body.outcome;
 
     if (outcome !== "completed" && outcome !== "no_show" && outcome !== "left") {
@@ -23,7 +27,10 @@ export async function PATCH(
     }
 
     await assertCanManageAppointment(staff, id);
-    const appointment = await markAppointmentOutcome(id, outcome);
+    const appointment = await markAppointmentOutcome(id, outcome, {
+      serviceId: body.serviceId,
+      priceBaht: body.priceBaht,
+    });
     return NextResponse.json({ appointment });
   } catch (error) {
     return jsonError(error);

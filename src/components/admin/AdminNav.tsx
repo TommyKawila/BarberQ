@@ -215,10 +215,12 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
               );
             }
             const href = hrefs[item as AdminNavDestinationId];
+            const labelKey =
+              item === "stats" && role === "barber" ? "admin.statsMySummary" : NAV_LABELS[item];
             return (
               <Link key={item} href={href} className={className} aria-current={active ? "page" : undefined}>
                 <NavIcon id={item} />
-                <span>{t(NAV_LABELS[item])}</span>
+                <span>{t(labelKey)}</span>
               </Link>
             );
           })}
