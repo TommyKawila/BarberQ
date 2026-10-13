@@ -1,89 +1,92 @@
 "use client";
 
 import Image from "next/image";
-import { Check } from "lucide-react";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
+import { HeroProductMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
+import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-
-const HERO_TRUST = [1, 2, 3] as const;
+import { handPhoneHero } from "@/lib/marketing/screens";
 
 export function SalesHero() {
   const { t } = useI18n();
+  const td = (key: MessageKey) => fillOfferCopy(t(key));
 
   return (
-    <div className="relative overflow-x-clip">
-      <div className="absolute inset-0 overflow-hidden">
-        <Image
-          src="/marketing/barberqx/hero-barbershop-bg.png"
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-[65%_center] md:object-right"
+    <div className="relative max-w-full overflow-x-clip">
+      {/* Full-bleed ambience — dark barbershop atmosphere under cutout / mobile visual */}
+      <div className="absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_18%_0%,rgba(244,183,64,0.14),transparent_48%),radial-gradient(ellipse_at_88%_18%,rgba(244,183,64,0.08),transparent_42%),radial-gradient(ellipse_at_70%_80%,rgba(39,39,42,0.95),transparent_50%),linear-gradient(165deg,#09090B_0%,#18181B_48%,#0B0B0B_100%)]" />
+        <div
+          className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4B740' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+          }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950/90 to-zinc-950/25 md:bg-gradient-to-r md:from-zinc-950 md:via-zinc-950/75 md:to-zinc-950/25" />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-zinc-950 md:h-24" />
+        {/* Soft vignette so right-column cutout sits in a lit pocket */}
+        <div className="absolute inset-0 hidden bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent md:block" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/40" />
       </div>
+
       <MarketingNav />
-      <section className="relative flex flex-col pb-6 pt-6 md:min-h-[640px] md:pb-8 lg:min-h-[680px] lg:pt-8">
-        <div className="mx-auto grid w-full max-w-[1280px] flex-1 items-center gap-4 px-4 lg:grid-cols-[48%_52%] lg:items-end lg:gap-10 lg:px-6">
-          <div className="text-left">
+      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[700px] lg:pt-10">
+        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-8 lg:px-6">
+          <div className="relative z-10 min-w-0 max-w-full text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-            <h1 className="mt-3 text-[2.5rem] font-bold leading-[1.15] md:text-[3.25rem] md:leading-[1.12] lg:text-[3.75rem]">
-              {t("marketing.hero.titleLine1")}
-              <br />
-              {t("marketing.hero.titleLine2")}{" "}
-              <span className="whitespace-nowrap text-amber-400">{t("marketing.hero.titleHighlight")}</span>
+            <h1 className="mt-3 break-words text-[2rem] font-bold leading-[1.2] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
+              {t("marketing.hero.title")}
             </h1>
-            <p className="mt-4 text-base leading-relaxed text-zinc-300 md:text-lg">
+            <p className="mt-4 max-w-full break-words text-base leading-relaxed text-zinc-300 md:max-w-xl md:text-lg">
               {t("marketing.hero.subtitle")}
-              <br />
-              {t("marketing.hero.subtitle2")}
             </p>
-            <div className="mt-8 flex flex-col gap-3 md:flex-row md:items-center">
-              <MarketingTrialLink className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 md:w-auto">
-                {t("marketing.hero.cta")}
-              </MarketingTrialLink>
-              <a
-                href="#how-it-works"
-                onClick={() => trackMarketingEvent("how_it_works_click")}
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-zinc-500/80 px-6 py-3 font-medium text-zinc-200 md:w-auto"
-              >
-                {t("marketing.hero.secondary")}
-              </a>
-            </div>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-              {t("marketing.hero.ctaExpect")}
-            </p>
-            <ul className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-x-4 sm:gap-y-2">
-              {HERO_TRUST.map((n) => (
-                <li
-                  key={n}
-                  className="flex items-center gap-1.5 text-[13px] text-zinc-400 md:text-sm"
+
+            <div className="relative mt-8 max-w-full md:max-w-xl">
+              <div className="relative flex w-full max-w-full flex-col gap-3 md:flex-row md:items-center">
+                <MarketingTrialLink className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl bg-amber-400 px-4 py-3 text-center font-semibold text-zinc-950 sm:px-6 md:w-auto">
+                  {td("marketing.hero.cta")}
+                </MarketingTrialLink>
+                <a
+                  href="#how-it-works"
+                  onClick={() => trackMarketingEvent("how_it_works_click")}
+                  className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/30 px-4 py-3 text-center font-medium text-zinc-100 sm:px-6 md:w-auto"
                 >
-                  <Check size={14} className="shrink-0 text-amber-400" strokeWidth={2.5} />
-                  {t(`marketing.hero.trust${n}` as MessageKey)}
-                </li>
-              ))}
-            </ul>
+                  {t("marketing.hero.secondary")}
+                </a>
+              </div>
+            </div>
+
+            <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
+              {td("marketing.hero.micro")}
+            </p>
           </div>
-          <div className="hero-phones-enter relative flex w-full items-end justify-center lg:justify-end">
-            <div
-              className="pointer-events-none absolute inset-[12%] rounded-full bg-amber-400/15 blur-3xl"
-              aria-hidden
-            />
-            <Image
-              src="/marketing/barberqx/hero-phone-hand.png"
-              alt={t("marketing.hero.productAlt")}
-              width={1536}
-              height={1024}
-              priority
-              sizes="(max-width: 767px) 100vw, (max-width: 1023px) 480px, 580px"
-              className="relative h-auto w-[min(108%,420px)] max-w-none object-contain drop-shadow-[0_20px_36px_rgba(0,0,0,0.4)] md:w-[min(100%,390px)] lg:w-[min(100%,580px)]"
-            />
+
+          {/* Desktop: transparent cutout in the RIGHT column — full phone screen visible */}
+          <div
+            className="hero-phones-enter relative hidden w-full min-w-0 max-w-full md:flex md:justify-end md:self-center"
+            aria-label={t("marketing.hero.productAlt")}
+          >
+            <div className="relative w-full max-w-[min(100%,340px)] lg:max-w-[360px] xl:max-w-[380px]">
+              <Image
+                src={handPhoneHero.cutout}
+                alt=""
+                width={handPhoneHero.cutoutWidth}
+                height={handPhoneHero.cutoutHeight}
+                priority
+                sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, 340px"
+                className="h-auto w-full object-contain drop-shadow-[0_28px_60px_rgba(0,0,0,0.55)]"
+              />
+            </div>
+          </div>
+
+          {/* Mobile: keep large hand-phone product visual (unchanged) */}
+          <div
+            className="hero-phones-enter relative w-full min-w-0 max-w-full md:hidden"
+            aria-label={t("marketing.hero.productAlt")}
+          >
+            <HeroProductMockups />
           </div>
         </div>
       </section>

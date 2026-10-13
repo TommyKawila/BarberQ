@@ -15,6 +15,7 @@ import {
   getTrialFormFieldErrors,
   type TrialFormField,
 } from "@/lib/marketing/trial-form-ux";
+import { fillOfferCopy } from "@/lib/marketing/offer";
 
 const TRUST = [1, 2, 3, 4] as const;
 const ERROR_KEY: Record<TrialFormField, MessageKey> = {
@@ -39,6 +40,7 @@ function fieldClass(invalid: boolean): string {
 
 export function TrialForm() {
   const { t, locale } = useI18n();
+  const td = (key: MessageKey) => fillOfferCopy(t(key));
   const [shopName, setShopName] = useState("");
   const [contactName, setContactName] = useState("");
   const [contactValue, setContactValue] = useState("");
@@ -200,9 +202,9 @@ export function TrialForm() {
       <MarketingNav variant="trial" />
       <div className="mx-auto grid w-full max-w-[1080px] flex-1 items-start gap-10 px-4 py-10 md:grid-cols-2 md:gap-12 md:px-6 md:py-16">
         <div>
-          <h1 className="text-3xl font-bold leading-tight md:text-4xl">{t("marketing.trial.title")}</h1>
+          <h1 className="text-3xl font-bold leading-tight md:text-4xl">{td("marketing.trial.title")}</h1>
           <p className="mt-4 text-[15px] leading-relaxed text-zinc-300 md:text-base">
-            {t("marketing.trial.subtitle")}
+            {td("marketing.trial.subtitle")}
           </p>
           <ul className="mt-6 space-y-2.5">
             {TRUST.map((n) => (
@@ -211,15 +213,15 @@ export function TrialForm() {
                 className="flex items-center gap-2 text-[15px] text-zinc-300"
               >
                 <Check size={16} className="shrink-0 text-amber-400" strokeWidth={2.5} />
-                {t(`marketing.trial.trust${n}` as MessageKey)}
+                {td(`marketing.trial.trust${n}` as MessageKey)}
               </li>
             ))}
           </ul>
           <p className="mt-6 text-sm leading-relaxed text-zinc-400">
-            {t("marketing.trial.afterSubmit")}
+            {td("marketing.trial.afterSubmit")}
           </p>
           <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-            {t("marketing.trial.priceExpect")}
+            {td("marketing.trial.priceExpect")}
           </p>
         </div>
 

@@ -1,62 +1,46 @@
-import { PhoneFrame } from "./PhoneFrame";
+import { HandPhoneComposite } from "./HandPhoneComposite";
+import { PhoneScreen } from "./PhoneScreen";
+import type { PhoneSize } from "./PhoneFrame";
+import type { MarketingScreenKey } from "@/lib/marketing/screens";
 
-function CoverFrame() {
+/** Match marketing.how.1–3 copy: book flow → LINE ticket → shop queue board */
+const STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
+  1: "choose",
+  2: "ticket",
+  3: "adminQueue",
+};
+
+type FrameProps = {
+  screen: MarketingScreenKey;
+  size?: PhoneSize;
+  fluid?: boolean;
+  className?: string;
+  priority?: boolean;
+};
+
+function ScreenFrame({ screen, size, fluid, className, priority }: FrameProps) {
   return (
-    <PhoneFrame size="md" className="md:-rotate-2">
-      <div className="h-28 bg-gradient-to-br from-amber-500/40 to-zinc-800 px-3 pt-4">
-        <p className="text-xs font-semibold text-zinc-100">PHINX STUDIO</p>
-        <p className="text-[10px] text-zinc-400">จองคิวตัดผม</p>
-      </div>
-      <div className="p-3">
-        <div className="rounded-lg border border-zinc-800 bg-zinc-900 px-2.5 py-2 text-[10px] text-zinc-300">
-          ดูคิวของฉัน
-        </div>
-      </div>
-    </PhoneFrame>
+    <PhoneScreen
+      screen={screen}
+      size={size}
+      fluid={fluid}
+      className={className}
+      priority={priority}
+    />
   );
 }
 
-function BarberDateFrame() {
+export function CustomerStepPhone({ step }: { step: 1 | 2 | 3 }) {
+  const screen = STEP_SCREENS[step];
   return (
-    <PhoneFrame size="md" className="z-10 md:-mt-4">
-      <div className="space-y-2 p-3">
-        <p className="text-[10px] text-zinc-500">ช่าง</p>
-        <div className="flex gap-1.5">
-          <span className="rounded-full bg-amber-500/20 px-2.5 py-1 text-[10px] text-amber-300">ช่าง A</span>
-          <span className="rounded-full border border-zinc-700 px-2.5 py-1 text-[10px] text-zinc-400">ช่าง B</span>
-        </div>
-        <p className="text-[10px] text-zinc-500">วันที่</p>
-        <div className="flex gap-1">
-          {["10", "11", "12"].map((d, i) => (
-            <span key={d} className={`rounded px-2 py-0.5 text-[10px] ${i === 0 ? "bg-amber-500 font-medium text-zinc-950" : "border border-zinc-700 text-zinc-400"}`}>{d}</span>
-          ))}
-        </div>
-        <p className="text-[10px] text-zinc-500">เวลา</p>
-        <div className="grid grid-cols-3 gap-1">
-          {["10:00", "10:30", "11:00"].map((t, i) => (
-            <span key={t} className={`rounded py-1 text-center text-[9px] ${i === 1 ? "bg-amber-500 text-zinc-950" : "border border-zinc-700 text-zinc-400"}`}>{t}</span>
-          ))}
-        </div>
+    <>
+      <div className="lg:hidden">
+        <ScreenFrame screen={screen} fluid />
       </div>
-    </PhoneFrame>
-  );
-}
-
-function SummaryFrame() {
-  return (
-    <PhoneFrame size="md" className="md:rotate-2 md:-mt-2">
-      <div className="p-3">
-        <p className="text-xs font-semibold text-zinc-200">สรุปการจอง</p>
-        <div className="mt-2 space-y-1.5 rounded-lg border border-zinc-800 bg-zinc-900 p-2.5 text-[10px] text-zinc-400">
-          <p>ช่าง A · 10 ก.ย.</p>
-          <p>10:30 · 30 นาที</p>
-          <p className="text-zinc-300">คุณสมชาย</p>
-        </div>
-        <div className="mt-3 rounded-lg bg-amber-500 py-2 text-center text-[10px] font-semibold text-zinc-950">
-          ยืนยัน
-        </div>
+      <div className="hidden lg:block">
+        <ScreenFrame screen={screen} size="md" />
       </div>
-    </PhoneFrame>
+    </>
   );
 }
 
@@ -64,17 +48,35 @@ export function CustomerJourneyMockups({ compact }: { compact?: boolean }) {
   if (compact) {
     return (
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <CoverFrame />
-        <BarberDateFrame />
-        <SummaryFrame />
+        <ScreenFrame screen="landing" fluid />
+        <ScreenFrame screen="choose" fluid />
+        <ScreenFrame screen="summary" fluid />
       </div>
     );
   }
   return (
     <div className="relative flex items-end justify-center gap-3 md:gap-4 lg:justify-end">
-      <CoverFrame />
-      <BarberDateFrame />
-      <SummaryFrame />
+      <ScreenFrame screen="landing" size="sm" />
+      <ScreenFrame screen="choose" size="md" />
+      <ScreenFrame screen="summary" size="sm" />
+    </div>
+  );
+}
+
+export function HeroProductMockups() {
+  return (
+    <div className="relative w-full max-w-full min-w-0 overflow-x-clip">
+      <div
+        className="pointer-events-none absolute inset-[8%] rounded-full bg-amber-400/15 blur-3xl"
+        aria-hidden
+      />
+      {/*
+        Mobile: break out of section px-4 so the hand-phone fills the screen width.
+        Desktop: constrained column, right-aligned on large screens.
+      */}
+      <div className="relative -mx-4 w-[calc(100%+2rem)] max-w-none md:mx-0 md:w-full md:max-w-[min(100%,440px)] lg:ml-auto lg:mr-0 lg:max-w-[min(100%,480px)]">
+        <HandPhoneComposite priority />
+      </div>
     </div>
   );
 }
