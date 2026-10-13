@@ -70,6 +70,31 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(nav, /href="\/trial"/);
   });
 
+  it("how-it-works desktop steps map screens to matching copy", () => {
+    const mockups = readFileSync(
+      resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
+      "utf8",
+    );
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    // Desktop 3-col layout
+    assert.match(sales, /lg:grid-cols-3/);
+    assert.match(sales, /CustomerStepPhone/);
+    // Desktop uses size="md" PhoneFrame (not only mobile fluid)
+    const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
+    assert.match(stepFn, /hidden lg:block/);
+    assert.match(stepFn, /size="md"/);
+    // Step → screen: book UI, LINE ticket, admin board
+    assert.match(mockups, /1:\s*"choose"/);
+    assert.match(mockups, /2:\s*"ticket"/);
+    assert.match(mockups, /3:\s*"adminQueue"/);
+    assert.match(dictionary.th["marketing.how.1.desc"], /เลือกช่าง|วัน|เวลา/);
+    assert.match(dictionary.th["marketing.how.2.title"], /บัตรคิว/);
+    assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|แจ้งเตือน/);
+  });
+
   it("hero uses pre-composited hand-phone as primary visual with overflow guards", () => {
     const mockups = readFileSync(
       resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
