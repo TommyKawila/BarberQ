@@ -16,24 +16,49 @@ export function SalesHero() {
 
   return (
     <div className="relative max-w-full overflow-x-clip">
-      {/* Full-bleed ambience — dark barbershop atmosphere under cutout / mobile visual */}
-      <div className="absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_18%_0%,rgba(244,183,64,0.14),transparent_48%),radial-gradient(ellipse_at_88%_18%,rgba(244,183,64,0.08),transparent_42%),radial-gradient(ellipse_at_70%_80%,rgba(39,39,42,0.95),transparent_50%),linear-gradient(165deg,#09090B_0%,#18181B_48%,#0B0B0B_100%)]" />
+      {/* Mobile-only atmosphere (product photo stays in the column below) */}
+      <div className="absolute inset-0 overflow-hidden md:hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(244,183,64,0.16),transparent_50%),radial-gradient(ellipse_at_90%_20%,rgba(39,39,42,0.9),transparent_45%),linear-gradient(180deg,#0B0B0B_0%,#18181B_55%,#0B0B0B_100%)]" />
         <div
-          className="absolute inset-0 opacity-[0.06]"
+          className="absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4B740' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
           }}
         />
-        {/* Soft vignette so right-column cutout sits in a lit pocket */}
-        <div className="absolute inset-0 hidden bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent md:block" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/40" />
+      </div>
+
+      {/*
+        Desktop: FULL rectangular hand-phone photo (real barbershop scene — no oval cutout),
+        anchored to the RIGHT edge so the booking screen is clearly visible.
+        Soft zinc-950 → photo fade on the left for headline + CTAs (no hard edge).
+      */}
+      <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden>
+        {/* Photo runs under the fade zone (wide right panel) so there is no hard panel edge */}
+        <div className="absolute inset-y-0 right-0 w-[72%] lg:w-[68%]">
+          <Image
+            src={handPhoneHero.composited}
+            alt=""
+            fill
+            priority
+            sizes="(min-width: 1024px) 68vw, 72vw"
+            className="object-cover object-[58%_36%]"
+          />
+        </div>
+        {/* Soft zinc-950 → photo fade over the left of the image */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(to right, #09090b 0%, #09090b 38%, rgba(9,9,11,0.94) 48%, rgba(9,9,11,0.7) 56%, rgba(9,9,11,0.28) 64%, transparent 76%)",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-transparent to-zinc-950/35" />
       </div>
 
       <MarketingNav />
-      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[700px] lg:pt-10">
-        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-8 lg:px-6">
+      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[720px] lg:pt-10">
+        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:items-center lg:gap-10 lg:px-6">
           <div className="relative z-10 min-w-0 max-w-full text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 break-words text-[2rem] font-bold leading-[1.2] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
@@ -51,7 +76,7 @@ export function SalesHero() {
                 <a
                   href="#how-it-works"
                   onClick={() => trackMarketingEvent("how_it_works_click")}
-                  className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/30 px-4 py-3 text-center font-medium text-zinc-100 sm:px-6 md:w-auto"
+                  className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-zinc-100 sm:px-6 md:w-auto"
                 >
                   {t("marketing.hero.secondary")}
                 </a>
@@ -63,25 +88,10 @@ export function SalesHero() {
             </p>
           </div>
 
-          {/* Desktop: transparent cutout in the RIGHT column — full phone screen visible */}
-          <div
-            className="hero-phones-enter relative hidden w-full min-w-0 max-w-full md:flex md:justify-end md:self-center"
-            aria-label={t("marketing.hero.productAlt")}
-          >
-            <div className="relative w-full max-w-[min(100%,340px)] lg:max-w-[360px] xl:max-w-[380px]">
-              <Image
-                src={handPhoneHero.cutout}
-                alt=""
-                width={handPhoneHero.cutoutWidth}
-                height={handPhoneHero.cutoutHeight}
-                priority
-                sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, 340px"
-                className="h-auto w-full object-contain drop-shadow-[0_28px_60px_rgba(0,0,0,0.55)]"
-              />
-            </div>
-          </div>
+          {/* Desktop visual is the right-anchored full-bleed photo above */}
+          <div className="hidden md:block" aria-hidden />
 
-          {/* Mobile: keep large hand-phone product visual (unchanged) */}
+          {/* Mobile: unchanged large hand-phone product visual */}
           <div
             className="hero-phones-enter relative w-full min-w-0 max-w-full md:hidden"
             aria-label={t("marketing.hero.productAlt")}

@@ -57,9 +57,12 @@ describe("marketing layout split", () => {
     assert.match(hero, /MarketingTrialLink/);
     assert.match(hero, /HeroProductMockups/);
     assert.match(hero, /handPhoneHero/);
-    assert.match(hero, /cutout/);
+    assert.match(hero, /handPhoneHero\.composited|composited/);
+    assert.match(hero, /object-cover/);
+    assert.match(hero, /linear-gradient\(to right/);
+    assert.match(hero, /right-0/);
     assert.match(hero, /md:hidden/);
-    assert.match(hero, /hidden md:flex|md:flex/);
+    assert.doesNotMatch(hero, /handPhoneHero\.cutout|hand-phone-cutout/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /marketing\.hero\.micro/);
     assert.match(hero, /min-w-0/);
