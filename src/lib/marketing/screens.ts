@@ -13,7 +13,7 @@ export type MarketingScreenKey = keyof typeof marketingScreens;
 /**
  * Hand-holding-phone hero — green screen chroma-keyed + screenshot pre-composited.
  * Screens include an iOS status-bar safe area (~74pt) so shop chrome clears the island.
- * Source green plate: /marketing/hand-phone.webp
+ * Mobile asset is a tight phone crop at ~1284w for iPhone DPR3.
  * Rebuild: `npm run prepare:marketing-visuals`
  */
 export const handPhoneHero = {
@@ -25,6 +25,11 @@ export const handPhoneHero = {
   mobile: "/marketing/hero/hand-phone-mobile.webp",
   width: 1122,
   height: 1402,
+  desktopWidth: 720,
+  desktopHeight: 900,
+  /** Tight phone crop @ ~428×3 for mobile hero readability */
+  mobileWidth: 1284,
+  mobileHeight: 2735,
   /** Detected green-screen rect from chroma key (pixels @ source size). */
   screen: { minX: 376, minY: 234, maxX: 748, maxY: 1040, w: 373, h: 807 },
   island: { minX: 505, minY: 243, maxX: 620, maxY: 278 },

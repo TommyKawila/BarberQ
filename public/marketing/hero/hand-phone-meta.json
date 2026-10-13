@@ -17,5 +17,15 @@
     "maxX": 620,
     "maxY": 278
   },
+  "mobileCrop": {
+    "left": 354,
+    "top": 202,
+    "width": 416,
+    "height": 886
+  },
+  "mobileSize": {
+    "width": 1284,
+    "height": 2735
+  },
   "screenshot": "screens/choose-slot.webp"
 }

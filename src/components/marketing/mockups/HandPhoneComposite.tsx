@@ -11,7 +11,7 @@ type Props = {
 
 /**
  * Primary hero visual: pre-composited hand + real booking screenshot.
- * Dynamic Island stays on top (baked in via chroma-key composite script).
+ * Mobile uses a tight high-res crop (~1284w) for DPR3 readability.
  */
 export function HandPhoneComposite({
   alt = "",
@@ -26,13 +26,13 @@ export function HandPhoneComposite({
   };
   const desktop = {
     src: handPhoneHero.desktop,
-    width: 720,
-    height: 900,
+    width: handPhoneHero.desktopWidth,
+    height: handPhoneHero.desktopHeight,
   };
   const mobile = {
     src: handPhoneHero.mobile,
-    width: 420,
-    height: 525,
+    width: handPhoneHero.mobileWidth,
+    height: handPhoneHero.mobileHeight,
   };
 
   if (variant === "full") {
@@ -44,7 +44,7 @@ export function HandPhoneComposite({
           width={full.width}
           height={full.height}
           priority={priority}
-          sizes="(max-width: 768px) 90vw, 480px"
+          sizes="(max-width: 768px) 100vw, 480px"
           className="h-auto w-full object-contain"
         />
       </div>
@@ -60,8 +60,8 @@ export function HandPhoneComposite({
           width={mobile.width}
           height={mobile.height}
           priority={priority}
-          sizes="90vw"
-          className="h-auto w-full object-contain"
+          sizes="100vw"
+          className="h-auto w-full object-contain object-center"
         />
       </div>
     );
@@ -83,7 +83,7 @@ export function HandPhoneComposite({
     );
   }
 
-  // auto: art-direction with mobile + desktop pre-renders
+  // auto: art-direction — full-bleed mobile crop + desktop pre-render
   return (
     <div className={`relative mx-auto w-full max-w-full min-w-0 ${className ?? ""}`}>
       <Image
@@ -92,8 +92,8 @@ export function HandPhoneComposite({
         width={mobile.width}
         height={mobile.height}
         priority={priority}
-        sizes="(max-width: 768px) 90vw, 420px"
-        className="h-auto w-full object-contain md:hidden"
+        sizes="100vw"
+        className="h-auto w-full object-contain object-center md:hidden"
       />
       <Image
         src={desktop.src}
@@ -101,7 +101,7 @@ export function HandPhoneComposite({
         width={desktop.width}
         height={desktop.height}
         priority={priority}
-        sizes="(min-width: 768px) 480px, 90vw"
+        sizes="(min-width: 768px) 480px, 100vw"
         className="hidden h-auto w-full object-contain md:block"
       />
     </div>

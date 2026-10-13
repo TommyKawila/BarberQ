@@ -64,13 +64,16 @@ export function CustomerJourneyMockups({ compact }: { compact?: boolean }) {
 
 export function HeroProductMockups() {
   return (
-    <div className="relative w-full max-w-full min-w-0 overflow-hidden">
+    <div className="relative w-full max-w-full min-w-0 overflow-x-clip">
       <div
         className="pointer-events-none absolute inset-[8%] rounded-full bg-amber-400/15 blur-3xl"
         aria-hidden
       />
-      {/* Primary hero: pre-composited hand + real booking screen */}
-      <div className="relative mx-auto w-full max-w-[min(100%,320px)] md:max-w-[min(100%,420px)] lg:ml-auto lg:mr-0">
+      {/*
+        Mobile: break out of section px-4 so the hand-phone fills the screen width.
+        Desktop: constrained column, right-aligned on large screens.
+      */}
+      <div className="relative -mx-4 w-[calc(100%+2rem)] max-w-none md:mx-0 md:w-full md:max-w-[min(100%,440px)] lg:ml-auto lg:mr-0 lg:max-w-[min(100%,480px)]">
         <HandPhoneComposite priority />
       </div>
     </div>

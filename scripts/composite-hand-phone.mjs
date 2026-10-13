@@ -163,7 +163,7 @@ function keyHand(raw, width, height, channels, island) {
 
 async function buildScreenshotPlate(screen, island) {
   const { access } = await import("node:fs/promises");
-  const { statusBarSvg, STATUS_BAR_PT } = await import("./lib/ios-statusbar.mjs");
+  const { statusBarPng, STATUS_BAR_PT } = await import("./lib/ios-statusbar.mjs");
 
   let src = SCREENSHOT_PADDED;
   try {
@@ -180,7 +180,7 @@ async function buildScreenshotPlate(screen, island) {
     islandBottom + 40,
   );
   const contentH = screen.h - safeH;
-  const bar = await sharp(statusBarSvg(screen.w, safeH)).png().toBuffer();
+  const bar = await statusBarPng(screen.w, safeH);
   const content = await sharp(src)
     .resize(screen.w, contentH, { fit: "cover", position: "top" })
     .png()
@@ -292,21 +292,50 @@ async function main() {
     quality: 85,
   });
 
-  // 3) Desktop (~720w) + mobile (~420w) pre-renders
+  // 3) Desktop (~720w) pre-render
   await writeWebp(result.buffer, result.width, result.height, join(OUT_DIR, "hero/hand-phone-desktop.webp"), {
     width: 720,
     quality: 84,
   });
-  await writeWebp(result.buffer, result.width, result.height, join(OUT_DIR, "hero/hand-phone-mobile.webp"), {
-    width: 420,
-    quality: 82,
-  });
+
+  // 4) Mobile: tight crop around phone (minimal hand margin), high-res for iPhone DPR3
+  const { screen } = result;
+  // Keep a sliver of hand/bezel so it still reads as "held phone", but maximize screen pixels
+  const padX = Math.round(screen.w * 0.06);
+  const padTop = Math.round(screen.h * 0.04);
+  const padBottom = Math.round(screen.h * 0.06);
+  const cropLeft = Math.max(0, screen.minX - padX);
+  const cropTop = Math.max(0, screen.minY - padTop);
+  const cropRight = Math.min(result.width, screen.maxX + padX);
+  const cropBottom = Math.min(result.height, screen.maxY + padBottom);
+  const crop = {
+    left: cropLeft,
+    top: cropTop,
+    width: cropRight - cropLeft,
+    height: cropBottom - cropTop,
+  };
+  const mobileTargetW = 1284; // 428 CSS px @3x
+  const mobilePath = join(OUT_DIR, "hero/hand-phone-mobile.webp");
+  await sharp(result.buffer, {
+    raw: { width: result.width, height: result.height, channels: 4 },
+  })
+    .extract(crop)
+    .resize(mobileTargetW, Math.round((mobileTargetW / crop.width) * crop.height), {
+      fit: "fill",
+      kernel: "lanczos3",
+    })
+    .webp({ quality: 88, effort: 5 })
+    .toFile(mobilePath);
+  const mobileMeta = await sharp(mobilePath).metadata();
+  console.log("wrote", mobilePath, `${mobileMeta.width}x${mobileMeta.height}`, "crop", crop);
 
   // Persist detected coords for docs/tests
   const meta = {
     image: { width: result.width, height: result.height },
     screen: result.screen,
     island: result.island,
+    mobileCrop: crop,
+    mobileSize: { width: mobileMeta.width, height: mobileMeta.height },
     screenshot: "screens/choose-slot.webp",
   };
   await sharp(Buffer.from(JSON.stringify(meta, null, 2)))

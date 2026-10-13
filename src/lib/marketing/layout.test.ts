@@ -81,16 +81,20 @@ describe("marketing layout split", () => {
     );
     const heroFn = mockups.slice(mockups.indexOf("export function HeroProductMockups"));
     assert.match(heroFn, /HandPhoneComposite/);
-    assert.match(heroFn, /overflow-hidden/);
+    assert.match(heroFn, /overflow-x-clip|overflow-hidden/);
     assert.match(heroFn, /max-w-full/);
+    // Mobile hero breaks out of section padding to fill screen width
+    assert.match(heroFn, /calc\(100%\+2rem\)|w-\[calc/);
     assert.match(hand, /handPhoneHero/);
     assert.match(hand, /handPhoneHero\.mobile/);
     assert.match(hand, /handPhoneHero\.desktop/);
+    assert.match(hand, /sizes="100vw"/);
     assert.match(phone, /Dynamic Island|dynamic island/i);
     assert.match(phone, /390\s*\/\s*844/);
     const screens = readFileSync(resolve(root, "lib/marketing/screens.ts"), "utf8");
     assert.match(screens, /hand-phone-mobile\.webp/);
     assert.match(screens, /hand-phone-desktop\.webp/);
+    assert.match(screens, /mobileWidth:\s*1284/);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/hand-phone.webp")),
       "hand-phone.webp missing",
