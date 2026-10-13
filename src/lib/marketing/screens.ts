@@ -12,8 +12,9 @@ export type MarketingScreenKey = keyof typeof marketingScreens;
 
 /**
  * Hand-holding-phone hero — green screen chroma-keyed + screenshot pre-composited.
+ * Screens include an iOS status-bar safe area (~74pt) so shop chrome clears the island.
  * Source green plate: /marketing/hand-phone.webp
- * Rebuild: `node scripts/composite-hand-phone.mjs`
+ * Rebuild: `npm run prepare:marketing-visuals`
  */
 export const handPhoneHero = {
   /** Original green-screen plate (owner asset). */

@@ -58,7 +58,7 @@ export function PhoneFrame({
           className="relative h-full w-full overflow-hidden bg-zinc-950"
           style={{ borderRadius: "12.8% / 5.9%" }}
         >
-          {/* Dynamic Island */}
+          {/* Dynamic Island — sits above status-bar safe area baked into screenshots */}
           <div
             className="pointer-events-none absolute left-1/2 top-[1.6%] z-20 -translate-x-1/2 bg-black"
             style={{
@@ -74,6 +74,7 @@ export function PhoneFrame({
             />
           </div>
 
+          {/* Screens already include ~74pt status-bar safe area above app chrome */}
           <div className="absolute inset-0 overflow-hidden">{children}</div>
         </div>
       </div>

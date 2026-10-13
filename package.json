@@ -16,7 +16,9 @@
     "test:booking": "tsx --test src/lib/booking/customer-flow.test.ts src/lib/booking/booking-success-ux.test.ts src/lib/booking/slot-availability-ui.test.ts src/lib/booking/staff-booking.test.ts",
     "test:onboarding": "tsx --test src/lib/onboarding/activation.test.ts src/lib/onboarding/setup-team-ux.test.ts src/lib/onboarding/setup-hours-ux.test.ts src/lib/onboarding/setup-hours.test.ts src/lib/onboarding/setup-link-ux.test.ts src/lib/onboarding/line-oa-install.test.ts",
     "capture:marketing-screens": "node scripts/capture-marketing-screens.mjs",
-    "composite:hand-phone": "node scripts/composite-hand-phone.mjs"
+    "pad:marketing-screens": "node scripts/pad-marketing-screens.mjs",
+    "composite:hand-phone": "node scripts/composite-hand-phone.mjs",
+    "prepare:marketing-visuals": "node scripts/capture-marketing-screens.mjs && node scripts/pad-marketing-screens.mjs && node scripts/composite-hand-phone.mjs"
   },
   "dependencies": {
     "@line/liff": "^2.31.0",

@@ -15,6 +15,11 @@ type Props = {
   priority?: boolean;
 };
 
+/**
+ * Real app screenshot inside PhoneFrame.
+ * Screens are pre-padded with an iOS status-bar safe area (~54pt) so shop
+ * chrome clears the Dynamic Island.
+ */
 export function PhoneScreen({
   screen,
   alt = "",

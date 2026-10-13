@@ -12,6 +12,7 @@ import sharp from "sharp";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "public/marketing/screens");
+const RAW_OUT = join(OUT, "raw");
 const DEMO_SHOP = "BarberQx Demo";
 const SHOP = "phinxstudio";
 const OWNER = "mock-owner-line-id";
@@ -50,12 +51,16 @@ async function renameShop(base) {
 }
 
 async function saveWebp(buffer, name) {
-  const out = join(OUT, `${name}.webp`);
-  await sharp(buffer)
+  await mkdir(RAW_OUT, { recursive: true });
+  const sized = await sharp(buffer)
     .resize(VIEW.width * SCALE, VIEW.height * SCALE, { fit: "cover", position: "top" })
-    .webp({ quality: 82, effort: 4 })
-    .toFile(out);
-  console.log("wrote", out);
+    .webp({ quality: 84, effort: 4 })
+    .toBuffer();
+  // Raw (no status bar) — pad step bakes safe area into public screens/
+  const rawPath = join(RAW_OUT, `${name}.webp`);
+  await sharp(sized).toFile(rawPath);
+  await sharp(sized).toFile(join(OUT, `${name}.webp`));
+  console.log("wrote", rawPath);
 }
 
 async function shot(page, name, { scrollY = 0 } = {}) {

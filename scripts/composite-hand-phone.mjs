@@ -19,7 +19,9 @@ const DEFAULT_SRC =
   process.argv[2] ||
   "/home/ubuntu/.cursor/projects/workspace/assets/3db5fd34b7a47ebb918a9b126b12856b8a88e564903a2956f82cfc902b7c03ab.png";
 
-const SCREENSHOT = join(SCREENS, "choose-slot.webp");
+// Prefer raw capture so we can size the safe area to THIS photo's island
+const SCREENSHOT_RAW = join(SCREENS, "raw/choose-slot.webp");
+const SCREENSHOT_PADDED = join(SCREENS, "choose-slot.webp");
 
 /** Soft green chroma: high G, low R/B */
 function greenScore(r, g, b) {
@@ -159,13 +161,49 @@ function keyHand(raw, width, height, channels, island) {
   return out;
 }
 
-async function buildScreenshotPlate(screen, targetW, targetH) {
-  // Cover the green rect; crop from top so UI chrome stays visible
-  return sharp(SCREENSHOT)
-    .resize(screen.w, screen.h, { fit: "cover", position: "top" })
+async function buildScreenshotPlate(screen, island) {
+  const { access } = await import("node:fs/promises");
+  const { statusBarSvg, STATUS_BAR_PT } = await import("./lib/ios-statusbar.mjs");
+
+  let src = SCREENSHOT_PADDED;
+  try {
+    await access(SCREENSHOT_RAW);
+    src = SCREENSHOT_RAW;
+  } catch {
+    /* use padded */
+  }
+
+  // Safe area must clear the photo island + BrandMark (~36px) breathing room
+  const islandBottom = island ? island.maxY - screen.minY : 0;
+  const safeH = Math.max(
+    Math.round((STATUS_BAR_PT * screen.w) / 390),
+    islandBottom + 40,
+  );
+  const contentH = screen.h - safeH;
+  const bar = await sharp(statusBarSvg(screen.w, safeH)).png().toBuffer();
+  const content = await sharp(src)
+    .resize(screen.w, contentH, { fit: "cover", position: "top" })
+    .png()
+    .toBuffer();
+
+  const stacked = await sharp({
+    create: {
+      width: screen.w,
+      height: screen.h,
+      channels: 4,
+      background: { r: 9, g: 9, b: 11, alpha: 1 },
+    },
+  })
+    .composite([
+      { input: bar, top: 0, left: 0 },
+      { input: content, top: safeH, left: 0 },
+    ])
     .ensureAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
+
+  console.log("hand safe area", { safeH, islandBottom, contentH });
+  return stacked;
 }
 
 async function compositeFull(handPath) {
@@ -179,7 +217,7 @@ async function compositeFull(handPath) {
   console.log("island", island);
 
   const keyed = keyHand(raw, width, height, channels, island);
-  const plate = await buildScreenshotPlate(screen, width, height);
+  const plate = await buildScreenshotPlate(screen, island);
 
   // Start from screenshot plate placed into full canvas, then overlay keyed hand
   const base = Buffer.alloc(width * height * 4, 0);

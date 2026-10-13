@@ -287,9 +287,12 @@ describe("staff booking + source (P3)", () => {
       customerRef: "line-stats-1",
       customerLineId: "line-stats-1",
     });
+    // Pick a later free slot so walk-in never collides with the LINE booking above
+    const walkInSlot = await firstFutureSlot(barber.id);
+    assert.ok(walkInSlot);
     await createStaffBooking(shop.id, {
       barberId: barber.id,
-      startTime: new Date().toISOString(),
+      startTime: walkInSlot!.startTime,
       source: "walk_in",
     });
     const staff: StaffAuth = {
