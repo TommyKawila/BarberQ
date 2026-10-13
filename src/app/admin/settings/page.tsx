@@ -584,6 +584,28 @@ export default function AdminSettingsPage() {
           {logoError ? <p className="mt-3 text-sm text-red-400">{logoError}</p> : null}
         </section>
 
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsLine")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsLineHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/line")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
+          >
+            {t("admin.settingsLine")}
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsNotifications")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsNotificationsHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/notifications")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.settingsNotifications")}
+          </Link>
+        </section>
+
         {profile.role === "owner" ? (
           <section className="rounded-2xl bg-zinc-900 p-4">
             <h2 className="text-sm font-semibold">{t("admin.managersTitle")}</h2>

@@ -13,6 +13,7 @@ const hrefs = {
   schedule: "/demo/admin/my-schedule",
   stats: "/demo/admin/stats",
   settings: "/demo/admin/settings",
+  notifications: "/demo/admin/settings/notifications",
   booking: "/demo",
 };
 
@@ -39,6 +40,7 @@ describe("admin primary nav active state", () => {
     assert.equal(isPrimaryNavActive("board", "/demo/admin", hrefs, false, more), true);
     assert.equal(isPrimaryNavActive("schedule", hrefs.schedule, hrefs, false, more), true);
     assert.equal(isPrimaryNavActive("more", hrefs.booking, hrefs, false, more), true);
+    assert.equal(isPrimaryNavActive("more", hrefs.notifications, hrefs, false, more), true);
     assert.equal(isPrimaryNavActive("more", hrefs.schedule, hrefs, false, more), false);
   });
 

@@ -69,16 +69,21 @@ describe("admin nav visibility", () => {
     assert.deepEqual(primaryAdminNavItems("owner"), ["board", "team", "stats", "more"]);
   });
 
-  it("owner more sheet has schedule, settings, booking", () => {
-    assert.deepEqual(moreAdminNavItems("owner"), ["schedule", "settings", "booking"]);
+  it("owner more sheet has schedule, settings, notifications, booking", () => {
+    assert.deepEqual(moreAdminNavItems("owner"), [
+      "schedule",
+      "settings",
+      "notifications",
+      "booking",
+    ]);
   });
 
   it("barber sees Today/Schedule/More", () => {
     assert.deepEqual(primaryAdminNavItems("barber"), ["board", "schedule", "more"]);
   });
 
-  it("barber more sheet has booking only", () => {
-    assert.deepEqual(moreAdminNavItems("barber"), ["booking"]);
+  it("barber more sheet has notifications and booking", () => {
+    assert.deepEqual(moreAdminNavItems("barber"), ["notifications", "booking"]);
   });
 
   it("barber cannot see team, stats, or settings", () => {
@@ -95,6 +100,7 @@ describe("admin nav visibility", () => {
       "stats",
       "schedule",
       "settings",
+      "notifications",
       "booking",
     ]);
     assert.deepEqual(adminNavItems("manager"), [
@@ -103,14 +109,25 @@ describe("admin nav visibility", () => {
       "stats",
       "schedule",
       "settings",
+      "notifications",
       "booking",
     ]);
-    assert.deepEqual(adminNavItems("barber"), ["board", "schedule", "booking"]);
+    assert.deepEqual(adminNavItems("barber"), [
+      "board",
+      "schedule",
+      "notifications",
+      "booking",
+    ]);
   });
 
   it("manager nav matches owner day-to-day set", () => {
     assert.deepEqual(primaryAdminNavItems("manager"), ["board", "team", "stats", "more"]);
-    assert.deepEqual(moreAdminNavItems("manager"), ["schedule", "settings", "booking"]);
+    assert.deepEqual(moreAdminNavItems("manager"), [
+      "schedule",
+      "settings",
+      "notifications",
+      "booking",
+    ]);
   });
 });
 

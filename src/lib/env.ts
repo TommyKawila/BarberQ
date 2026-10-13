@@ -74,6 +74,19 @@ export function getOptionalBarberqSupportLineUrl(): string | undefined {
   return readEnv("NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL");
 }
 
+/** App-level AES key for encrypting per-shop LINE secrets at rest. */
+export function getOptionalAppEncryptionKey(): string | undefined {
+  return readEnv("APP_ENCRYPTION_KEY");
+}
+
+export function getOptionalVapidPublicKey(): string | undefined {
+  return readEnv("NEXT_PUBLIC_VAPID_PUBLIC_KEY");
+}
+
+export function getOptionalVapidPrivateKey(): string | undefined {
+  return readEnv("VAPID_PRIVATE_KEY");
+}
+
 export function isAdminKeyRequired(): boolean {
   return !!(
     getOptionalEnv("NEXT_PUBLIC_SUPABASE_URL") &&

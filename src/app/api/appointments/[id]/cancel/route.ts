@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { assertStaff, assertCanManageAppointment } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
+import { notifyCustomerShopCancel } from "@/lib/line/shop-cancel-notify";
 import { staffCancelBooking } from "@/lib/services/booking-service";
+import { resolveShopFromAppointment } from "@/lib/shop/shop-from-appointment";
+import { notifyStaffWebPush } from "@/lib/webpush/notify";
 
 export const runtime = "nodejs";
 
@@ -12,8 +15,21 @@ export async function PATCH(
   try {
     const staff = await assertStaff(req);
     const { id } = await context.params;
-    await assertCanManageAppointment(staff, id);
+    const { appointment: before } = await assertCanManageAppointment(staff, id);
     const appointment = await staffCancelBooking(id);
+    const shop = await resolveShopFromAppointment(appointment);
+    if (shop) {
+      // LINE push only if customer has LINE id (no quota for phone/chat/walk-in).
+      // Web Push to staff always (scope rules), for every booking source.
+      void notifyCustomerShopCancel(shop, before).catch(() => {});
+      void notifyStaffWebPush({
+        shopId: shop.id,
+        shopSlug: shop.slug,
+        shopName: shop.name,
+        appointment: before,
+        event: "cancel",
+      }).catch(() => {});
+    }
     return NextResponse.json({ appointment });
   } catch (error) {
     return jsonError(error);
