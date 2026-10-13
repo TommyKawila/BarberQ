@@ -524,6 +524,7 @@ export async function markLateCalled(appointmentId: string): Promise<Appointment
 export async function markAppointmentOutcome(
   appointmentId: string,
   outcome: "completed" | "no_show" | "left",
+  options?: { serviceId?: string | null; priceBaht?: number | null },
 ): Promise<Appointment> {
   if (!isUuid(appointmentId)) {
     throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
@@ -531,13 +532,16 @@ export async function markAppointmentOutcome(
   if (outcome !== "completed" && outcome !== "no_show" && outcome !== "left") {
     throw new BookingError("INVALID_OUTCOME", "Invalid outcome", 400);
   }
+  if (options?.priceBaht != null && (!Number.isFinite(options.priceBaht) || options.priceBaht < 0)) {
+    throw new BookingError("INVALID_PRICE", "Invalid price", 400);
+  }
   try {
     const existing = await getStore().getAppointment(appointmentId);
     if (!existing) throw new BookingError("NOT_FOUND", "Appointment not found", 404);
     if (outcome === "no_show" && existing.source === "walk_in") {
       throw new BookingError("INVALID_OUTCOME", "Walk-in cannot be marked no-show", 400);
     }
-    return await getStore().markAppointmentOutcome(appointmentId, outcome);
+    return await getStore().markAppointmentOutcome(appointmentId, outcome, options);
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);

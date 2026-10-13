@@ -37,9 +37,14 @@ import {
   validateRecurringBreakInput,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
-import type { Appointment, Barber, BusyInterval, Shop, TimeBlock } from "@/types/booking";
+import type { Appointment, Barber, BusyInterval, Shop, ShopService, TimeBlock } from "@/types/booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
+import type {
+  CreateShopServiceInput,
+  MarkOutcomeOptions,
+  UpdateShopServiceInput,
+} from "@/lib/data/types";
 
 function mapRpcError(error: { message?: string; code?: string }): never {
   const message = error.message ?? "";
@@ -48,6 +53,8 @@ function mapRpcError(error: { message?: string; code?: string }): never {
     "SLOT_TAKEN",
     "SLOT_BLOCKED",
     "NOT_FOUND",
+    "INVALID_PRICE",
+    "SERVICE_NOT_FOUND",
     "NOT_OWNER",
     "NOT_CANCELLABLE",
     "TOO_LATE",
@@ -428,14 +435,125 @@ export const supabaseStore: BookingStore = {
     return (data ?? []) as Appointment[];
   },
 
-  async markAppointmentOutcome(appointmentId, outcome: AppointmentOutcome) {
+  async markAppointmentOutcome(
+    appointmentId,
+    outcome: AppointmentOutcome,
+    options?: MarkOutcomeOptions,
+  ) {
     const supabase = createServiceClient();
-    const { data, error } = await supabase.rpc("mark_appointment_outcome", {
+    // Prefer 4-arg RPC (0032); fall back to 2-arg if migration not applied.
+    const withPrice = await supabase.rpc("mark_appointment_outcome", {
       p_appointment_id: appointmentId,
       p_status: outcome,
+      p_service_id: options?.serviceId ?? null,
+      p_price_baht: options?.priceBaht ?? null,
     });
-    if (error) mapRpcError(error);
-    return data as Appointment;
+    if (!withPrice.error) return withPrice.data as Appointment;
+    const msg = withPrice.error.message ?? "";
+    if (/Could not find the function|PGRST202|price_baht|service_id/i.test(msg)) {
+      const legacy = await supabase.rpc("mark_appointment_outcome", {
+        p_appointment_id: appointmentId,
+        p_status: outcome,
+      });
+      if (legacy.error) mapRpcError(legacy.error);
+      return legacy.data as Appointment;
+    }
+    mapRpcError(withPrice.error);
+  },
+
+  async listShopServices(shopId, opts) {
+    const supabase = createServiceClient();
+    let query = supabase
+      .from("shop_services")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+    if (!opts?.includeInactive) query = query.eq("is_active", true);
+    const { data, error } = await query;
+    // Degrade when migration 0031 not applied yet (relation missing).
+    if (error) {
+      const msg = error.message ?? "";
+      if (/shop_services|does not exist|42P01/i.test(msg)) return [];
+      throw new Error(error.message);
+    }
+    return (data ?? []) as ShopService[];
+  },
+
+  async getDefaultShopService(shopId) {
+    const list = await this.listShopServices(shopId);
+    return list.find((s) => s.is_default) ?? list[0] ?? null;
+  },
+
+  async createShopService(input: CreateShopServiceInput) {
+    const supabase = createServiceClient();
+    if (!Number.isFinite(input.priceBaht) || input.priceBaht < 0) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    const name = input.name.trim();
+    if (!name) throw new StoreConflict("INVALID_RANGE");
+
+    const existing = await this.listShopServices(input.shopId);
+    const isDefault = Boolean(input.isDefault) || existing.length === 0;
+    if (isDefault) {
+      await supabase
+        .from("shop_services")
+        .update({ is_default: false, updated_at: new Date().toISOString() })
+        .eq("shop_id", input.shopId)
+        .eq("is_default", true);
+    }
+
+    const { data, error } = await supabase
+      .from("shop_services")
+      .insert({
+        shop_id: input.shopId,
+        name,
+        price_baht: Math.round(input.priceBaht),
+        is_default: isDefault,
+        is_active: true,
+        sort_order: input.sortOrder ?? existing.length,
+      })
+      .select("*")
+      .single();
+    if (error) {
+      const msg = error.message ?? "";
+      if (/shop_services|does not exist|42P01/i.test(msg)) {
+        throw new StoreConflict("SERVICE_NOT_FOUND", "Run migration 0031_shop_services first");
+      }
+      throw new Error(error.message);
+    }
+    return data as ShopService;
+  },
+
+  async updateShopService(serviceId, shopId, input: UpdateShopServiceInput) {
+    const supabase = createServiceClient();
+    if (input.priceBaht != null && (!Number.isFinite(input.priceBaht) || input.priceBaht < 0)) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    if (input.isDefault) {
+      await supabase
+        .from("shop_services")
+        .update({ is_default: false, updated_at: new Date().toISOString() })
+        .eq("shop_id", shopId)
+        .eq("is_default", true);
+    }
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    if (input.name != null) patch.name = input.name.trim();
+    if (input.priceBaht != null) patch.price_baht = Math.round(input.priceBaht);
+    if (input.isDefault != null) patch.is_default = input.isDefault;
+    if (input.isActive != null) patch.is_active = input.isActive;
+    if (input.sortOrder != null) patch.sort_order = input.sortOrder;
+
+    const { data, error } = await supabase
+      .from("shop_services")
+      .update(patch)
+      .eq("id", serviceId)
+      .eq("shop_id", shopId)
+      .select("*")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!data) throw new StoreConflict("SERVICE_NOT_FOUND");
+    return data as ShopService;
   },
 
   async listDayBlocks(from, to) {

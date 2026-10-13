@@ -1,0 +1,65 @@
+"use client";
+
+import { formatInTimeZone } from "date-fns-tz";
+import { useI18n } from "@/lib/i18n/locale-provider";
+import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
+import { barberLabel } from "@/types/booking";
+import type { FreeBarberNow } from "@/lib/admin/free-barbers";
+
+interface WhoIsFreeSheetProps {
+  open: boolean;
+  rows: FreeBarberNow[];
+  onClose: () => void;
+  onWalkIn: (row: FreeBarberNow) => void;
+}
+
+export function WhoIsFreeSheet({ open, rows, onClose, onWalkIn }: WhoIsFreeSheetProps) {
+  const { t, locale } = useI18n();
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
+      <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-lg rounded-t-2xl bg-zinc-950 p-4 pb-8 sm:rounded-2xl">
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
+        <h2 className="text-base font-semibold">{t("admin.whoIsFreeSheetTitle")}</h2>
+        {rows.length === 0 ? (
+          <p className="mt-4 text-sm text-zinc-400">{t("admin.whoIsFreeEmpty")}</p>
+        ) : (
+          <ul className="mt-4 flex flex-col gap-2">
+            {rows.map((row) => {
+              const until = formatInTimeZone(new Date(row.freeUntil), SHOP_TIMEZONE, "HH:mm");
+              return (
+                <li
+                  key={row.barberId}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-zinc-900 px-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium">{barberLabel(row.barberName, locale)}</p>
+                    <p className="text-[11px] text-zinc-400">
+                      {t("admin.whoIsFreeUntil").replace("{time}", until)}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onWalkIn(row)}
+                    className="min-h-11 shrink-0 rounded-xl bg-rose-700 px-3 text-[11px] font-semibold text-white sm:text-sm"
+                  >
+                    {t("admin.whoIsFreeWalkIn")}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-4 min-h-11 w-full rounded-xl border border-zinc-700 text-sm text-zinc-300"
+        >
+          {t("common.cancel")}
+        </button>
+      </div>
+    </div>
+  );
+}

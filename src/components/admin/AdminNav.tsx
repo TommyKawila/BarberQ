@@ -33,6 +33,7 @@ const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
   schedule: "admin.nav.schedule",
   stats: "admin.nav.stats",
   settings: "admin.nav.settings",
+  notifications: "admin.settingsNotifications",
   booking: "admin.nav.booking",
   more: "admin.nav.more",
 };
@@ -40,6 +41,7 @@ const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
 const MORE_HINTS: Partial<Record<AdminNavDestinationId, MessageKey>> = {
   schedule: "admin.moreScheduleHint",
   settings: "admin.moreSettingsHint",
+  notifications: "admin.settingsNotificationsHint",
   booking: "admin.moreBookingHint",
 };
 
@@ -74,6 +76,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     schedule: shopPath(ADMIN_NAV_PATHS.schedule),
     stats: shopPath(ADMIN_NAV_PATHS.stats),
     settings: shopPath(ADMIN_NAV_PATHS.settings),
+    notifications: shopPath(ADMIN_NAV_PATHS.notifications),
     booking: shopPath(ADMIN_NAV_PATHS.booking),
   };
 
@@ -212,10 +215,12 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
               );
             }
             const href = hrefs[item as AdminNavDestinationId];
+            const labelKey =
+              item === "stats" && role === "barber" ? "admin.statsMySummary" : NAV_LABELS[item];
             return (
               <Link key={item} href={href} className={className} aria-current={active ? "page" : undefined}>
                 <NavIcon id={item} />
-                <span>{t(NAV_LABELS[item])}</span>
+                <span>{t(labelKey)}</span>
               </Link>
             );
           })}

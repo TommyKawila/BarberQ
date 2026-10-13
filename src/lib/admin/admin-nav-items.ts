@@ -6,6 +6,7 @@ export type AdminNavItemId =
   | "schedule"
   | "stats"
   | "settings"
+  | "notifications"
   | "booking"
   | "more";
 
@@ -17,6 +18,7 @@ export const ADMIN_NAV_PATHS: Record<AdminNavDestinationId, string> = {
   schedule: "/admin/my-schedule",
   stats: "/admin/stats",
   settings: "/admin/settings",
+  notifications: "/admin/settings/notifications",
   booking: "/",
 };
 
@@ -29,12 +31,15 @@ export const ADMIN_NAV_BAR_PADDING_CLASS =
 
 export function primaryAdminNavItems(role: ShopStaffRole): AdminNavItemId[] {
   if (role === "owner" || role === "manager") return ["board", "team", "stats", "more"];
-  return ["board", "schedule", "more"];
+  // D5: barbers see personal summary ("สรุปของฉัน")
+  return ["board", "stats", "more"];
 }
 
 export function moreAdminNavItems(role: ShopStaffRole): AdminNavDestinationId[] {
-  if (role === "owner" || role === "manager") return ["schedule", "settings", "booking"];
-  return ["booking"];
+  if (role === "owner" || role === "manager") {
+    return ["schedule", "settings", "notifications", "booking"];
+  }
+  return ["schedule", "notifications", "booking"];
 }
 
 export function adminNavItems(role: ShopStaffRole): AdminNavItemId[] {

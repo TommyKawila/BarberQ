@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { AddBarberSheet } from "@/components/admin/AddBarberSheet";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { StaffActionsSheet } from "@/components/admin/StaffActionsSheet";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import {
@@ -16,10 +18,10 @@ import {
   shouldShowRemoveMenu,
   updateBarberBookableInList,
 } from "@/lib/barber/optimistic-bookable";
-import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
-import { barberLabel, type Barber } from "@/types/booking";
+import { dateISOFromInstant } from "@/lib/services/slot-service";
+import { barberLabel, type AdminColumn, type Barber } from "@/types/booking";
 
 interface ApiError {
   error?: { code?: string; message?: string; count?: number };
@@ -43,9 +45,10 @@ export default function AdminStaffPage() {
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [menuBarber, setMenuBarber] = useState<Barber | null>(null);
   const [pendingBookableIds, setPendingBookableIds] = useState<string[]>([]);
   const [bookableErrors, setBookableErrors] = useState<Record<string, string>>({});
+  const [todayCounts, setTodayCounts] = useState<Record<string, number>>({});
 
   const loadBarbers = useCallback(async () => {
     setLoadingBarbers(true);
@@ -65,10 +68,31 @@ export default function AdminStaffPage() {
     }
   }, [authHeaders, shopApi, t]);
 
+  const loadTodayCounts = useCallback(async () => {
+    try {
+      const date = dateISOFromInstant(new Date());
+      const res = await fetch(shopApi(`/block?date=${encodeURIComponent(date)}&includeClosed=1`), {
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as { columns?: AdminColumn[] };
+      if (!res.ok) return;
+      const counts: Record<string, number> = {};
+      for (const col of json.columns ?? []) {
+        if (!col?.barber?.id) continue;
+        const slots = Array.isArray(col.slots) ? col.slots : [];
+        counts[col.barber.id] = slots.filter((s) => s.kind === "booked").length;
+      }
+      setTodayCounts(counts);
+    } catch {
+      // non-blocking
+    }
+  }, [authHeaders, shopApi]);
+
   useEffect(() => {
     if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
     void loadBarbers();
-  }, [loadBarbers, profile, ready]);
+    void loadTodayCounts();
+  }, [loadBarbers, loadTodayCounts, profile, ready]);
 
   function resetForm() {
     setShowForm(false);
@@ -170,7 +194,7 @@ export default function AdminStaffPage() {
         return;
       }
       setConfirmAction(null);
-      setOpenMenuId(null);
+      setMenuBarber(null);
       await loadBarbers();
     } catch {
       setError(t("admin.networkError"));
@@ -202,7 +226,7 @@ export default function AdminStaffPage() {
         return;
       }
       setConfirmAction(null);
-      setOpenMenuId(null);
+      setMenuBarber(null);
       await loadBarbers();
     } catch {
       setError(t("admin.networkError"));
@@ -281,65 +305,26 @@ export default function AdminStaffPage() {
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         {loadingBarbers ? <p className="text-sm text-zinc-400">{t("common.loading")}</p> : null}
 
-        {!showForm ? (
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="min-h-11 rounded-xl bg-amber-400 font-semibold text-zinc-950"
-          >
-            {t("admin.addBarber")}
-          </button>
-        ) : (
-          <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="text-sm font-semibold">{t("admin.addBarber")}</h2>
-            <label className="mt-3 flex flex-col gap-1 text-sm">
-              {t("admin.barberName")}
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3 outline-none ring-amber-400 focus:ring-2"
-              />
-            </label>
-            <label className="mt-3 flex flex-col gap-1 text-sm">
-              {t("admin.barberLineHint")}
-              <input
-                value={lineId}
-                onChange={(e) => setLineId(e.target.value)}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3 outline-none ring-amber-400 focus:ring-2"
-              />
-            </label>
-            <label className="mt-3 flex flex-col gap-1 text-sm">
-              {t("admin.slotDuration")}
-              <select
-                value={slotDuration}
-                onChange={(e) => setSlotDuration(Number(e.target.value))}
-                className="min-h-11 rounded-lg bg-zinc-800 px-3"
-              >
-                {ALLOWED_SLOT_DURATIONS.map((m) => (
-                  <option key={m} value={m}>{m} {t("common.minutes")}</option>
-                ))}
-              </select>
-            </label>
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                disabled={saving || !name.trim()}
-                onClick={() => void saveBarber()}
-                className="min-h-11 flex-1 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-              >
-                {t("admin.saveBarber")}
-              </button>
-              <button
-                type="button"
-                onClick={resetForm}
-                className="min-h-11 rounded-xl border border-zinc-700 px-4 text-sm text-zinc-300"
-              >
-                {t("common.cancel")}
-              </button>
-            </div>
-            {formMessage ? <p className="mt-2 text-sm text-emerald-400">{formMessage}</p> : null}
-          </section>
-        )}
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="min-h-11 rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+        >
+          {t("admin.addBarberSheet")}
+        </button>
+        <AddBarberSheet
+          open={showForm}
+          name={name}
+          lineId={lineId}
+          slotDuration={slotDuration}
+          saving={saving}
+          formMessage={formMessage}
+          onClose={resetForm}
+          onChangeName={setName}
+          onChangeLineId={setLineId}
+          onChangeSlotDuration={setSlotDuration}
+          onSave={() => void saveBarber()}
+        />
 
         {confirmAction ? (
           <section className="rounded-2xl border border-zinc-700 bg-zinc-900 p-4">
@@ -415,60 +400,44 @@ export default function AdminStaffPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold">{displayName}</p>
                         {barber.role === "owner" ? (
-                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] text-amber-300">
+                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-300">
                             {t("admin.ownerBadge")}
                           </span>
                         ) : null}
                       </div>
-                      <p className="mt-1 text-xs text-zinc-400">
+                      <p className="mt-1 text-[11px] text-zinc-400">
                         {barber.role === "owner" ? t("admin.roleOwner") : t("admin.roleBarber")}
                         · {barber.slot_duration_minutes} {t("common.minutes")}
                       </p>
-                      <p className="mt-1 text-xs text-zinc-500">
+                      <p className="mt-1 text-[11px] text-zinc-500">
                         LINE:{" "}
                         {barber.line_id
                           ? t("admin.barberLineLinked")
                           : t("admin.barberLineNotLinked")}
                       </p>
+                      <p className="mt-1 text-[11px] text-amber-300/90">
+                        {t("admin.teamTodayBookings").replace(
+                          "{n}",
+                          String(todayCounts[barber.id] ?? 0),
+                        )}
+                      </p>
                     </div>
                     {shouldShowRemoveMenu(barber.role) ? (
-                      <details
-                        className="relative shrink-0"
-                        open={openMenuId === barber.id}
-                        onToggle={(e) => {
-                          const open = (e.currentTarget as HTMLDetailsElement).open;
-                          setOpenMenuId(open ? barber.id : null);
-                        }}
+                      <button
+                        type="button"
+                        aria-label="More"
+                        onClick={() => setMenuBarber(barber)}
+                        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-lg text-zinc-300"
                       >
-                        <summary className="cursor-pointer list-none rounded-lg bg-zinc-800 px-2 py-1 text-sm text-zinc-300">
-                          ⋯
-                        </summary>
-                        <div className="absolute right-0 z-10 mt-1 min-w-[11rem] rounded-lg border border-zinc-700 bg-zinc-950 py-1 shadow-lg">
-                          {barber.line_id ? (
-                            <button
-                              type="button"
-                              onClick={() => setConfirmAction({ type: "unlink", barber })}
-                              className="block w-full px-3 py-2 text-left text-xs text-zinc-200 hover:bg-zinc-800"
-                            >
-                              {t("admin.unlinkLine")}
-                            </button>
-                          ) : null}
-                          <button
-                            type="button"
-                            onClick={() => setConfirmAction({ type: "remove", barber })}
-                            className="block w-full px-3 py-2 text-left text-xs text-red-300 hover:bg-zinc-800"
-                          >
-                            {t("admin.removeFromShop")}
-                          </button>
-                        </div>
-                      </details>
+                        ⋯
+                      </button>
                     ) : null}
                   </div>
 
                   <div className="my-4 border-t border-zinc-800" />
 
                   <section>
-                    <h3 className="text-sm font-semibold text-zinc-200">{t("admin.queueSection")}</h3>
+                    <h3 className="text-sm font-semibold text-zinc-200">{t("admin.teamOnlineBooking")}</h3>
                     <div className="mt-3 flex items-start justify-between gap-3">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -482,14 +451,14 @@ export default function AdminStaffPage() {
                             {t(statusLabelKey)}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-zinc-500">
+                        <p className="mt-1 text-[11px] text-zinc-500">
                           {t(statusHintKey).replace("{name}", displayName)}
                         </p>
                         {isPending ? (
-                          <p className="mt-1 text-xs text-zinc-400">{t("admin.savingBookable")}</p>
+                          <p className="mt-1 text-[11px] text-zinc-400">{t("admin.savingBookable")}</p>
                         ) : null}
                         {cardError ? (
-                          <p className="mt-1 text-xs text-red-400">{cardError}</p>
+                          <p className="mt-1 text-[11px] text-red-400">{cardError}</p>
                         ) : null}
                       </div>
                       <button
@@ -547,14 +516,14 @@ export default function AdminStaffPage() {
                     <p className="text-sm font-medium">{barberLabel(barber.name, locale)}</p>
                     <div className="mt-1 flex items-center gap-2">
                       <span className="h-2.5 w-2.5 shrink-0 rounded-full bg-zinc-500" aria-hidden />
-                      <p className="text-xs text-zinc-500">{t("admin.removedBarberStatus")}</p>
+                      <p className="text-[11px] text-zinc-500">{t("admin.removedBarberStatus")}</p>
                     </div>
                   </div>
                   <button
                     type="button"
                     disabled={actionBusy}
                     onClick={() => void restoreToShop(barber)}
-                    className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 disabled:opacity-50"
+                    className="min-h-11 rounded-lg border border-zinc-700 px-3 text-[11px] text-zinc-200 disabled:opacity-50"
                   >
                     {t("admin.restoreToShop")}
                   </button>
@@ -563,6 +532,21 @@ export default function AdminStaffPage() {
             </div>
           </details>
         ) : null}
+
+        <StaffActionsSheet
+          barber={menuBarber}
+          onClose={() => setMenuBarber(null)}
+          onUnlink={() => {
+            if (!menuBarber) return;
+            setConfirmAction({ type: "unlink", barber: menuBarber });
+            setMenuBarber(null);
+          }}
+          onRemove={() => {
+            if (!menuBarber) return;
+            setConfirmAction({ type: "remove", barber: menuBarber });
+            setMenuBarber(null);
+          }}
+        />
       </div>
     </AdminShell>
   );
