@@ -3,10 +3,11 @@ import { PhoneScreen } from "./PhoneScreen";
 import type { PhoneSize } from "./PhoneFrame";
 import type { MarketingScreenKey } from "@/lib/marketing/screens";
 
+/** Match marketing.how.1–3 copy: book flow → LINE ticket → shop queue board */
 const STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
-  1: "landing",
-  2: "choose",
-  3: "summary",
+  1: "choose",
+  2: "ticket",
+  3: "adminQueue",
 };
 
 type FrameProps = {
