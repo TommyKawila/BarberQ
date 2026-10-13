@@ -6,6 +6,7 @@ export const marketingScreens = {
   ticket: "/marketing/screens/queue-ticket.webp",
   adminQueue: "/marketing/screens/admin-queue.webp",
   adminTeam: "/marketing/screens/admin-team.webp",
+  adminStats: "/marketing/screens/admin-stats.webp",
 } as const;
 
 export type MarketingScreenKey = keyof typeof marketingScreens;
@@ -21,10 +22,14 @@ export const handPhoneHero = {
   source: "/marketing/hand-phone.webp",
   /** Full-res composite (screenshot under Dynamic Island). */
   composited: "/marketing/hero/hand-phone-composited.webp",
+  /** Transparent hand+phone cutout for desktop right-column hero. */
+  cutout: "/marketing/hero/hand-phone-cutout.webp",
   desktop: "/marketing/hero/hand-phone-desktop.webp",
   mobile: "/marketing/hero/hand-phone-mobile.webp",
   width: 1122,
   height: 1402,
+  cutoutWidth: 580,
+  cutoutHeight: 1065,
   desktopWidth: 720,
   desktopHeight: 900,
   /** Tight phone crop @ ~428×3 for mobile hero readability */

@@ -215,6 +215,16 @@ async function main() {
   await hideChrome(page);
   await shot(page, "admin-team");
 
+  // 7) Admin summary / revenue (D5)
+  await page.goto(`${BASE}/${SHOP}/admin/stats`, { waitUntil: "networkidle" });
+  await page.waitForFunction(
+    () => /สรุป|Summary|ลูกค้า/i.test(document.body?.innerText || ""),
+    { timeout: 20000 },
+  );
+  await page.waitForTimeout(800);
+  await hideChrome(page);
+  await shot(page, "admin-stats");
+
   await browser.close();
   console.log("Done. Screens in", OUT);
 }

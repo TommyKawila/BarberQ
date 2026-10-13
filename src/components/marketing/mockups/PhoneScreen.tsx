@@ -10,6 +10,7 @@ type Props = {
   screen: MarketingScreenKey;
   alt?: string;
   size?: PhoneSize;
+  width?: number;
   fluid?: boolean;
   className?: string;
   priority?: boolean;
@@ -24,6 +25,7 @@ export function PhoneScreen({
   screen,
   alt = "",
   size,
+  width,
   fluid,
   className,
   priority,
@@ -31,6 +33,7 @@ export function PhoneScreen({
   return (
     <PhoneFrame
       size={size}
+      width={width}
       fluid={fluid}
       className={className ?? (fluid ? PHONE_MOBILE : PHONE)}
     >

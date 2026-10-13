@@ -16,40 +16,25 @@ export function SalesHero() {
 
   return (
     <div className="relative max-w-full overflow-x-clip">
-      {/* Mobile / fallback atmosphere (no photo plane) */}
-      <div className="absolute inset-0 overflow-hidden md:hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(244,183,64,0.16),transparent_50%),radial-gradient(ellipse_at_90%_20%,rgba(39,39,42,0.9),transparent_45%),linear-gradient(180deg,#0B0B0B_0%,#18181B_55%,#0B0B0B_100%)]" />
+      {/* Full-bleed ambience — dark barbershop atmosphere under cutout / mobile visual */}
+      <div className="absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_18%_0%,rgba(244,183,64,0.14),transparent_48%),radial-gradient(ellipse_at_88%_18%,rgba(244,183,64,0.08),transparent_42%),radial-gradient(ellipse_at_70%_80%,rgba(39,39,42,0.95),transparent_50%),linear-gradient(165deg,#09090B_0%,#18181B_48%,#0B0B0B_100%)]" />
         <div
-          className="absolute inset-0 opacity-[0.07]"
+          className="absolute inset-0 opacity-[0.06]"
           style={{
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4B740' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
           }}
         />
-      </div>
-
-      {/*
-        Desktop: same hand-phone photo as a full-bleed wide hero plane —
-        barbershop atmosphere edge-to-edge; phone sits in the right half.
-      */}
-      <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden>
-        <Image
-          src={handPhoneHero.composited}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-[72%_42%]"
-        />
-        {/* Soft scrim so copy stays readable without boxing the CTAs */}
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/75 to-zinc-950/15" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/90 via-transparent to-zinc-950/50" />
+        {/* Soft vignette so right-column cutout sits in a lit pocket */}
+        <div className="absolute inset-0 hidden bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent md:block" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/40" />
       </div>
 
       <MarketingNav />
-      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[720px] lg:pt-10">
-        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:items-center lg:gap-10 lg:px-6">
-          <div className="min-w-0 max-w-full text-left">
+      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[700px] lg:pt-10">
+        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-8 lg:px-6">
+          <div className="relative z-10 min-w-0 max-w-full text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 break-words text-[2rem] font-bold leading-[1.2] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
               {t("marketing.hero.title")}
@@ -58,12 +43,7 @@ export function SalesHero() {
               {t("marketing.hero.subtitle")}
             </p>
 
-            {/* CTA group — desktop gets a soft blur fade so buttons stay clear on the photo */}
             <div className="relative mt-8 max-w-full md:max-w-xl">
-              <div
-                className="pointer-events-none absolute -inset-x-3 -inset-y-3 hidden rounded-2xl bg-zinc-950/45 backdrop-blur-md md:block"
-                aria-hidden
-              />
               <div className="relative flex w-full max-w-full flex-col gap-3 md:flex-row md:items-center">
                 <MarketingTrialLink className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl bg-amber-400 px-4 py-3 text-center font-semibold text-zinc-950 sm:px-6 md:w-auto">
                   {td("marketing.hero.cta")}
@@ -83,7 +63,25 @@ export function SalesHero() {
             </p>
           </div>
 
-          {/* Mobile: large hand-phone product visual. Desktop uses full-bleed bg instead. */}
+          {/* Desktop: transparent cutout in the RIGHT column — full phone screen visible */}
+          <div
+            className="hero-phones-enter relative hidden w-full min-w-0 max-w-full md:flex md:justify-end md:self-center"
+            aria-label={t("marketing.hero.productAlt")}
+          >
+            <div className="relative w-full max-w-[min(100%,340px)] lg:max-w-[360px] xl:max-w-[380px]">
+              <Image
+                src={handPhoneHero.cutout}
+                alt=""
+                width={handPhoneHero.cutoutWidth}
+                height={handPhoneHero.cutoutHeight}
+                priority
+                sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, 340px"
+                className="h-auto w-full object-contain drop-shadow-[0_28px_60px_rgba(0,0,0,0.55)]"
+              />
+            </div>
+          </div>
+
+          {/* Mobile: keep large hand-phone product visual (unchanged) */}
           <div
             className="hero-phones-enter relative w-full min-w-0 max-w-full md:hidden"
             aria-label={t("marketing.hero.productAlt")}

@@ -219,39 +219,61 @@ async function compositeFull(handPath) {
   const keyed = keyHand(raw, width, height, channels, island);
   const plate = await buildScreenshotPlate(screen, island);
 
-  // Start from screenshot plate placed into full canvas, then overlay keyed hand
-  const base = Buffer.alloc(width * height * 4, 0);
-  // Fill non-screen with black (will be covered by hand photo)
-  for (let i = 3; i < base.length; i += 4) base[i] = 255;
-
+  // Screenshot plate only in the screen rect (transparent elsewhere for cutout)
+  const screenPlate = Buffer.alloc(width * height * 4, 0);
   const { data: shot, info: shotInfo } = plate;
   for (let y = 0; y < screen.h; y++) {
     for (let x = 0; x < screen.w; x++) {
       const si = (y * shotInfo.width + x) * shotInfo.channels;
       const di = ((screen.minY + y) * width + (screen.minX + x)) * 4;
-      base[di] = shot[si];
-      base[di + 1] = shot[si + 1];
-      base[di + 2] = shot[si + 2];
-      base[di + 3] = 255;
+      screenPlate[di] = shot[si];
+      screenPlate[di + 1] = shot[si + 1];
+      screenPlate[di + 2] = shot[si + 2];
+      screenPlate[di + 3] = 255;
     }
   }
 
-  // Alpha-composite keyed hand over base
+  // Opaque plate (black outside screen) for mobile crops / legacy full-bleed
+  const opaqueBase = Buffer.from(screenPlate);
+  for (let i = 3; i < opaqueBase.length; i += 4) {
+    if (opaqueBase[i] === 0) opaqueBase[i] = 255;
+  }
+
   const out = Buffer.alloc(width * height * 4);
+  // Transparent cutout: hand + screen only (green + studio plate removed)
+  const cutout = Buffer.alloc(width * height * 4, 0);
   for (let i = 0; i < width * height; i++) {
     const o = i * 4;
-    const sr = base[o];
-    const sg = base[o + 1];
-    const sb = base[o + 2];
     const hr = keyed[o];
     const hg = keyed[o + 1];
     const hb = keyed[o + 2];
     const ha = keyed[o + 3] / 255;
-    out[o] = Math.round(hr * ha + sr * (1 - ha));
-    out[o + 1] = Math.round(hg * ha + sg * (1 - ha));
-    out[o + 2] = Math.round(hb * ha + sb * (1 - ha));
+
+    // Opaque composite over black+screen
+    const or_ = opaqueBase[o];
+    const og = opaqueBase[o + 1];
+    const ob = opaqueBase[o + 2];
+    out[o] = Math.round(hr * ha + or_ * (1 - ha));
+    out[o + 1] = Math.round(hg * ha + og * (1 - ha));
+    out[o + 2] = Math.round(hb * ha + ob * (1 - ha));
     out[o + 3] = 255;
+
+    // Cutout over transparent+screen
+    const sr = screenPlate[o];
+    const sg = screenPlate[o + 1];
+    const sb = screenPlate[o + 2];
+    const sa = screenPlate[o + 3] / 255;
+    const outA = ha + sa * (1 - ha);
+    if (outA > 0.004) {
+      cutout[o] = Math.round((hr * ha + sr * sa * (1 - ha)) / outA);
+      cutout[o + 1] = Math.round((hg * ha + sg * sa * (1 - ha)) / outA);
+      cutout[o + 2] = Math.round((hb * ha + sb * sa * (1 - ha)) / outA);
+      cutout[o + 3] = Math.round(255 * Math.min(1, outA));
+    }
   }
+
+  // Tight hand+phone crop with soft elliptical alpha — reads as a cutout on ambience
+  const cutCrop = buildSoftCutout(out, width, height, screen);
 
   return {
     width,
@@ -259,8 +281,50 @@ async function compositeFull(handPath) {
     screen,
     island,
     buffer: out,
+    cutout: cutCrop.buffer,
+    cutoutWidth: cutCrop.width,
+    cutoutHeight: cutCrop.height,
     keyedHand: keyed,
   };
+}
+
+/** Crop around phone+hand and feather edges to transparent. */
+function buildSoftCutout(opaqueRgba, width, height, screen) {
+  const padX = Math.round(screen.w * 0.28);
+  const padTop = Math.round(screen.h * 0.1);
+  const padBottom = Math.round(screen.h * 0.22);
+  const left = Math.max(0, screen.minX - padX);
+  const top = Math.max(0, screen.minY - padTop);
+  const right = Math.min(width, screen.maxX + padX);
+  const bottom = Math.min(height, screen.maxY + padBottom);
+  const cw = right - left;
+  const ch = bottom - top;
+  const buffer = Buffer.alloc(cw * ch * 4, 0);
+
+  const ecx = (screen.minX + screen.maxX) / 2 - left;
+  const ecy = (screen.minY + screen.maxY) / 2 - top + ch * 0.06;
+  const erx = cw * 0.48;
+  const ery = ch * 0.48;
+
+  for (let y = 0; y < ch; y++) {
+    for (let x = 0; x < cw; x++) {
+      const si = ((top + y) * width + (left + x)) * 4;
+      const di = (y * cw + x) * 4;
+      buffer[di] = opaqueRgba[si];
+      buffer[di + 1] = opaqueRgba[si + 1];
+      buffer[di + 2] = opaqueRgba[si + 2];
+
+      const nx = (x - ecx) / erx;
+      const ny = (y - ecy) / ery;
+      const d = Math.sqrt(nx * nx + ny * ny);
+      let alpha = 255;
+      if (d > 1.02) alpha = 0;
+      else if (d > 0.82) alpha = Math.round(255 * (1 - (d - 0.82) / 0.2));
+      // Also kill leftover pure-black letterbox if any
+      buffer[di + 3] = alpha;
+    }
+  }
+  return { buffer, width: cw, height: ch, crop: { left, top, width: cw, height: ch } };
 }
 
 async function writeWebp(raw, width, height, path, { width: tw, quality = 84 } = {}) {
@@ -287,18 +351,38 @@ async function main() {
 
   const result = await compositeFull(DEFAULT_SRC);
 
-  // 2) Full-res composited hero
+  // 2) Full-res composited hero (opaque — mobile crops / legacy)
   await writeWebp(result.buffer, result.width, result.height, join(OUT_DIR, "hero/hand-phone-composited.webp"), {
     quality: 85,
   });
 
-  // 3) Desktop (~720w) pre-render
+  // 3) Transparent cutout for desktop right-column hero (over ambience BG)
+  const cutoutPath = join(OUT_DIR, "hero/hand-phone-cutout.webp");
+  const cutTargetW = 640;
+  await sharp(result.cutout, {
+    raw: {
+      width: result.cutoutWidth,
+      height: result.cutoutHeight,
+      channels: 4,
+    },
+  })
+    .resize(
+      cutTargetW,
+      Math.round((cutTargetW / result.cutoutWidth) * result.cutoutHeight),
+      { fit: "inside", withoutEnlargement: true },
+    )
+    .webp({ quality: 88, effort: 5, alphaQuality: 100 })
+    .toFile(cutoutPath);
+  const cutoutMeta = await sharp(cutoutPath).metadata();
+  console.log("wrote", cutoutPath, `${cutoutMeta.width}x${cutoutMeta.height}`, "hasAlpha", cutoutMeta.hasAlpha);
+
+  // 5) Desktop (~720w) opaque pre-render (fallback)
   await writeWebp(result.buffer, result.width, result.height, join(OUT_DIR, "hero/hand-phone-desktop.webp"), {
     width: 720,
     quality: 84,
   });
 
-  // 4) Mobile: tight crop around phone (minimal hand margin), high-res for iPhone DPR3
+  // 6) Mobile: tight crop around phone (minimal hand margin), high-res for iPhone DPR3
   const { screen } = result;
   // Keep a sliver of hand/bezel so it still reads as "held phone", but maximize screen pixels
   const padX = Math.round(screen.w * 0.06);

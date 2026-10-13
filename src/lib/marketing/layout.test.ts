@@ -57,9 +57,9 @@ describe("marketing layout split", () => {
     assert.match(hero, /MarketingTrialLink/);
     assert.match(hero, /HeroProductMockups/);
     assert.match(hero, /handPhoneHero/);
-    assert.match(hero, /object-cover/);
-    assert.match(hero, /backdrop-blur/);
+    assert.match(hero, /cutout/);
     assert.match(hero, /md:hidden/);
+    assert.match(hero, /hidden md:flex|md:flex/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /marketing\.hero\.micro/);
     assert.match(hero, /min-w-0/);
@@ -123,6 +123,8 @@ describe("marketing layout split", () => {
     const screens = readFileSync(resolve(root, "lib/marketing/screens.ts"), "utf8");
     assert.match(screens, /hand-phone-mobile\.webp/);
     assert.match(screens, /hand-phone-desktop\.webp/);
+    assert.match(screens, /hand-phone-cutout\.webp/);
+    assert.match(screens, /admin-stats\.webp/);
     assert.match(screens, /mobileWidth:\s*1284/);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/hand-phone.webp")),
@@ -133,8 +135,16 @@ describe("marketing layout split", () => {
       "hand-phone-composited.webp missing",
     );
     assert.ok(
+      existsSync(resolve(root, "../public/marketing/hero/hand-phone-cutout.webp")),
+      "hand-phone-cutout.webp missing",
+    );
+    assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
       "choose-slot.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-stats.webp")),
+      "admin-stats.webp missing",
     );
   });
 
@@ -222,6 +232,8 @@ describe("visible marketing claim locks", () => {
     assert.deepEqual(thKeys.sort(), enKeys.sort());
     assert.equal(thKeys.some((k) => k.includes("barber.chip")), false);
     assert.ok(dictionary.th["marketing.features.6.title"]);
+    assert.ok(dictionary.th["marketing.features.7.title"]);
+    assert.ok(dictionary.th["marketing.features.surface.stats.title"]);
     assert.ok(dictionary.th["marketing.faq.7.q"]);
     assert.match(dictionary.th["marketing.hero.cta"], /ทดลองใช้ฟรี \{days\} วัน/);
     assert.match(dictionary.en["marketing.hero.cta"], /free \{days\}-day trial/i);
@@ -245,8 +257,14 @@ describe("visible marketing claim locks", () => {
     assert.match(th, /1–5 ช่าง|1–5/);
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);
-    assert.match(dictionary.th["marketing.coming.1.title"], /สรุปยอด|รายได้/);
-    assert.match(dictionary.th["marketing.coming.2.title"], /ก่อนวันนัด 1 วัน/);
+    // Summary/revenue is live (feature 7); coming soon is day-before reminder only
+    assert.match(dictionary.th["marketing.features.7.title"], /สรุปยอด|รายได้/);
+    assert.match(dictionary.th["marketing.coming.1.title"], /ก่อนวันนัด 1 วัน/);
+    assert.match(dictionary.th["marketing.coming.1.note"], /\{quota\}/);
+    assert.equal(
+      Object.keys(dictionary.th).some((k) => k === "marketing.coming.2.title"),
+      false,
+    );
   });
 
   it("FAQ explains LINE quota, Web Push, and tier pricing", () => {

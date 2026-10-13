@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import {
   Bell,
   CalendarClock,
+  ChartColumn,
   Check,
   CircleCheck,
   MessageCircle,
@@ -19,7 +20,11 @@ import { AttributionCapture } from "@/components/marketing/AttributionCapture";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { SalesHero } from "@/components/marketing/SalesHero";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
-import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
+import {
+  OwnerSurfacePhone,
+  type OwnerSurface,
+} from "@/components/marketing/mockups/OwnerSurfacesMockups";
+import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -40,8 +45,9 @@ const FEATURE_ICONS = [
   CircleCheck,
   CalendarClock,
   Bell,
+  ChartColumn,
 ] as const;
-const COMING_ICONS = [MessageSquare, Bell] as const;
+const FEATURE_SURFACES: OwnerSurface[] = ["queue", "team", "stats"];
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
@@ -179,7 +185,7 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* 6 features */}
+      {/* Live features */}
       <section id="features" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
           <p className="text-sm font-medium text-amber-400/90">
@@ -190,7 +196,7 @@ export function SalesPage() {
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{t("marketing.features.support")}</p>
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {([1, 2, 3, 4, 5, 6] as const).map((n) => {
+            {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => {
               const Icon = FEATURE_ICONS[n - 1];
               return (
                 <li
@@ -208,14 +214,25 @@ export function SalesPage() {
               );
             })}
           </ul>
-          <div className="mt-10 grid gap-6 lg:grid-cols-2 lg:items-center lg:gap-10">
-            <OwnerSurfacePhone surface="queue" />
-            <OwnerSurfacePhone surface="team" />
+          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+            {FEATURE_SURFACES.map((surface) => (
+              <figure key={surface} className="flex flex-col items-center text-center">
+                <figcaption className="mb-4 max-w-xs">
+                  <h3 className="text-base font-semibold text-zinc-50 md:text-lg">
+                    {t(`marketing.features.surface.${surface}.title` as MessageKey)}
+                  </h3>
+                  <p className={`mt-1.5 ${BODY}`}>
+                    {t(`marketing.features.surface.${surface}.desc` as MessageKey)}
+                  </p>
+                </figcaption>
+                <OwnerSurfacePhone surface={surface} />
+              </figure>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Coming soon */}
+      {/* Coming soon — day-before reminder (not live); mockup + LINE quota note */}
       <section id="coming-soon" className="scroll-mt-20 overflow-x-clip">
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
           <p className="text-sm font-medium text-amber-400/90">
@@ -225,30 +242,30 @@ export function SalesPage() {
             {t("marketing.coming.title")}
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{t("marketing.coming.support")}</p>
-          <ul className="mt-8 grid gap-4 md:grid-cols-2">
-            {([1, 2] as const).map((n) => {
-              const Icon = COMING_ICONS[n - 1];
-              return (
-                <li
-                  key={n}
-                  className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 p-5 md:p-6"
-                >
-                  <div className="flex items-center gap-2">
-                    <Icon size={20} className="text-zinc-500" strokeWidth={2} />
-                    <span className="rounded-md border border-zinc-700 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                      {t("marketing.coming.badge")}
-                    </span>
-                  </div>
-                  <h3 className="mt-3 text-lg font-semibold text-zinc-200">
-                    {t(`marketing.coming.${n}.title` as MessageKey)}
-                  </h3>
-                  <p className={`mt-2 ${BODY}`}>
-                    {t(`marketing.coming.${n}.desc` as MessageKey)}
-                  </p>
-                </li>
-              );
-            })}
-          </ul>
+          <div className="mt-8 grid items-center gap-8 rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 p-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-10 md:p-7">
+            <div>
+              <div className="flex items-center gap-2">
+                <MessageSquare size={20} className="text-zinc-500" strokeWidth={2} />
+                <span className="rounded-md border border-zinc-700 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+                  {t("marketing.coming.badge")}
+                </span>
+              </div>
+              <h3 className="mt-3 text-lg font-semibold text-zinc-200">
+                {t("marketing.coming.1.title")}
+              </h3>
+              <p className={`mt-2 ${BODY}`}>{t("marketing.coming.1.desc")}</p>
+              <p className="mt-4 rounded-xl border border-amber-500/25 bg-amber-400/5 px-3 py-2.5 text-[13px] leading-relaxed text-amber-100/90 md:text-sm">
+                {td("marketing.coming.1.note")}
+              </p>
+            </div>
+            <LineReminderMockup
+              shopName="BarberQx Demo"
+              title={t("marketing.coming.1.mockTitle")}
+              body={t("marketing.coming.1.mockBody")}
+              whenLabel={t("marketing.coming.1.mockWhen")}
+              cta={t("marketing.coming.1.mockCta")}
+            />
+          </div>
         </div>
       </section>
 
