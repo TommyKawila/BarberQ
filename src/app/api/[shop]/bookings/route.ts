@@ -40,6 +40,7 @@ export async function POST(
       startTime?: string;
       customerName?: string;
       customerPhone?: string;
+      reminderLeadMinutes?: number | null;
     }>(req);
     const appointment = await createBookingForShop(shop.id, {
       barberId: body.barberId ?? "",
@@ -48,6 +49,8 @@ export async function POST(
       customerPhone: body.customerPhone ?? "",
       customerRef: customer.userId,
       customerLineId: customer.userId,
+      reminderLeadMinutes:
+        "reminderLeadMinutes" in body ? body.reminderLeadMinutes : undefined,
     });
     // LINE confirmation is reply/non-quota via client liff.sendMessages → webhook.
     // Staff alerts use Web Push (not LINE).

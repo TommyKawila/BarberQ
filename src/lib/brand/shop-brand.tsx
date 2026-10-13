@@ -10,6 +10,8 @@ interface ShopBrandContextValue {
   lineUrl: string | null;
   phone: string | null;
   hours: ShopHours;
+  remindersEnabled: boolean;
+  reminderLeadMinutes: number;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
   setCoverImageUrl: (value: string | null) => void;
@@ -34,6 +36,8 @@ export function ShopBrandProvider({
   const [lineUrl, setLineUrl] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
   const [hours, setHours] = useState<ShopHours>(() => normalizeShopHours(null));
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [reminderLeadMinutes, setReminderLeadMinutes] = useState(120);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -47,6 +51,8 @@ export function ShopBrandProvider({
         lineUrl?: string | null;
         phone?: string | null;
         hours?: ShopHours | null;
+        remindersEnabled?: boolean;
+        reminderLeadMinutes?: number;
       };
       setLogoDataUrl(json.logoDataUrl ?? null);
       setCoverImageUrl(json.coverImageUrl ?? null);
@@ -54,6 +60,10 @@ export function ShopBrandProvider({
       setLineUrl(json.lineUrl ?? null);
       setPhone(json.phone ?? null);
       setHours(normalizeShopHours(json.hours));
+      setRemindersEnabled(Boolean(json.remindersEnabled));
+      setReminderLeadMinutes(
+        typeof json.reminderLeadMinutes === "number" ? json.reminderLeadMinutes : 120,
+      );
     } catch {
       /* ignore */
     } finally {
@@ -81,6 +91,8 @@ export function ShopBrandProvider({
       lineUrl,
       phone,
       hours,
+      remindersEnabled,
+      reminderLeadMinutes,
       loading,
       setLogoDataUrl,
       setCoverImageUrl,
@@ -89,7 +101,18 @@ export function ShopBrandProvider({
       setPhone,
       refresh,
     }),
-    [logoDataUrl, coverImageUrl, shopName, lineUrl, phone, hours, loading, refresh],
+    [
+      logoDataUrl,
+      coverImageUrl,
+      shopName,
+      lineUrl,
+      phone,
+      hours,
+      remindersEnabled,
+      reminderLeadMinutes,
+      loading,
+      refresh,
+    ],
   );
 
   return <ShopBrandContext.Provider value={value}>{children}</ShopBrandContext.Provider>;

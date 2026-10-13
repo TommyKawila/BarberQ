@@ -182,7 +182,6 @@ describe("marketing layout split", () => {
       "how-it-works",
       "CustomerStepPhone",
       'id="features"',
-      "coming-soon",
       'id="pricing"',
       "marketingOffer.tiers",
       'id="faq"',
@@ -233,6 +232,7 @@ describe("visible marketing claim locks", () => {
     assert.equal(thKeys.some((k) => k.includes("barber.chip")), false);
     assert.ok(dictionary.th["marketing.features.6.title"]);
     assert.ok(dictionary.th["marketing.features.7.title"]);
+    assert.ok(dictionary.th["marketing.features.8.title"]);
     assert.ok(dictionary.th["marketing.features.surface.stats.title"]);
     assert.ok(dictionary.th["marketing.faq.7.q"]);
     assert.match(dictionary.th["marketing.hero.cta"], /ทดลองใช้ฟรี \{days\} วัน/);
@@ -257,12 +257,12 @@ describe("visible marketing claim locks", () => {
     assert.match(th, /1–5 ช่าง|1–5/);
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);
-    // Summary/revenue is live (feature 7); coming soon is day-before reminder only
+    // Summary/revenue is live (feature 7); configurable reminders are live (feature 8)
     assert.match(dictionary.th["marketing.features.7.title"], /สรุปยอด|รายได้/);
-    assert.match(dictionary.th["marketing.coming.1.title"], /ก่อนวันนัด 1 วัน/);
-    assert.match(dictionary.th["marketing.coming.1.note"], /\{quota\}/);
+    assert.match(dictionary.th["marketing.features.8.title"], /แจ้งเตือนก่อนถึงคิว/);
+    assert.match(dictionary.th["marketing.features.8.note"], /\{quota\}/);
     assert.equal(
-      Object.keys(dictionary.th).some((k) => k === "marketing.coming.2.title"),
+      Object.keys(dictionary.th).some((k) => k === "marketing.coming.1.title"),
       false,
     );
   });

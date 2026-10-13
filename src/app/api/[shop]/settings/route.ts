@@ -15,6 +15,10 @@ import {
 import { BookingError } from "@/lib/services/booking-service";
 import { validateShopHours } from "@/lib/schedule/validation";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
+import {
+  DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
+  isReminderLeadPreset,
+} from "@/lib/reminders/presets";
 
 export const runtime = "nodejs";
 
@@ -49,6 +53,8 @@ export async function PUT(
       lineUrl?: string | null;
       phone?: string | null;
       hours?: ShopHours;
+      remindersEnabled?: boolean;
+      reminderLeadMinutes?: number;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -59,6 +65,8 @@ export async function PUT(
       lineUrl: current.lineUrl,
       phone: current.phone,
       hours: current.hours,
+      remindersEnabled: current.remindersEnabled,
+      reminderLeadMinutes: current.reminderLeadMinutes ?? DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
     };
 
     if ("logoDataUrl" in body) {
@@ -100,6 +108,17 @@ export async function PUT(
         throw new BookingError("INVALID_HOURS", hoursError, 400);
       }
       next.hours = hours;
+    }
+
+    if ("remindersEnabled" in body) {
+      next.remindersEnabled = Boolean(body.remindersEnabled);
+    }
+
+    if ("reminderLeadMinutes" in body) {
+      if (!isReminderLeadPreset(body.reminderLeadMinutes)) {
+        throw new BookingError("INVALID_REMINDER_LEAD", "Invalid reminder lead time", 400);
+      }
+      next.reminderLeadMinutes = body.reminderLeadMinutes;
     }
 
     await getStore().setShopSettings(shop.id, next);

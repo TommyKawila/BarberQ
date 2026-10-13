@@ -6,7 +6,7 @@ import { getShopLineChannelSecrets } from "@/lib/line/shop-channel";
 
 export type PushKind = Extract<
   LineMessageKind,
-  "push_cancel" | "push_reschedule" | "push_test" | "push_other"
+  "push_cancel" | "push_reschedule" | "push_reminder" | "push_test" | "push_other"
 >;
 
 export interface PushResult {

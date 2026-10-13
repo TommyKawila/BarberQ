@@ -17,7 +17,7 @@ import {
 } from "@/lib/webpush/vapid";
 import type { Appointment } from "@/types/booking";
 
-export type WebPushEvent = "new_booking" | "cancel";
+export type WebPushEvent = "new_booking" | "cancel" | "line_quota_full";
 
 function configureVapid() {
   const publicKey = getVapidPublicKey();
@@ -58,6 +58,14 @@ export function buildWebPushPayload(input: {
       tag: `booking-${input.appointment.id}`,
     };
   }
+  if (input.event === "line_quota_full") {
+    return {
+      title: `BarberQx · ${input.shopName}`,
+      body: `โควตา LINE push เต็มแล้ว · แจ้งเตือนก่อนคิวหยุดส่งชั่วคราว · ร้านต้องอัปเกรดแพ็กเกจกับ LINE เอง`,
+      url: `${buildShopWebUrl(input.shopSlug)}/admin/settings/line/quota`,
+      tag: `line-quota-${input.shopSlug}`,
+    };
+  }
   return {
     title: `BarberQx · ${input.shopName}`,
     body: `✗ ยกเลิก: ${when}\n${customer} · ${input.barberName} · ช่องนี้ว่างแล้ว`,
@@ -72,6 +80,9 @@ function shouldNotify(
   appointmentBarberId: string,
   scope: "own" | "all",
 ): boolean {
+  if (event === "line_quota_full") {
+    return sub.staffRole === "owner" || sub.staffRole === "manager";
+  }
   if (event === "new_booking" && !sub.notifyNewBooking) return false;
   if (event === "cancel" && !sub.notifyCancel) return false;
 

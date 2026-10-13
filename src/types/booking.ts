@@ -59,6 +59,10 @@ export interface Appointment {
   service_id?: string | null;
   /** Snapshot price (THB) when marked completed */
   price_baht?: number | null;
+  /** P5: minutes before start for LINE reminder; null = no reminder */
+  reminder_lead_minutes?: number | null;
+  reminder_due_at?: string | null;
+  reminder_sent_at?: string | null;
 }
 
 export interface ShopService {
@@ -122,6 +126,8 @@ export interface CreateBookingInput {
   customerRef: string;
   customerLineId?: string;
   source?: AppointmentSource;
+  /** Preferred reminder lead (minutes); resolved with fallback at create time */
+  reminderLeadMinutes?: number | null;
 }
 
 export interface CreateStaffBookingInput {

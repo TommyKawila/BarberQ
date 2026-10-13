@@ -571,7 +571,9 @@ export const supabaseStore: BookingStore = {
     const supabase = createServiceClient();
     const { data, error } = await supabase
       .from("shop_settings")
-      .select("shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours")
+      .select(
+        "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes",
+      )
       .eq("shop_id", shopId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -583,6 +585,9 @@ export const supabaseStore: BookingStore = {
       lineUrl: (data?.shop_line_url as string | null) ?? null,
       phone: (data?.shop_phone as string | null) ?? null,
       hours: data?.hours ? normalizeShopHours(data.hours as import("@/lib/shop/shop-hours").ShopHours) : null,
+      remindersEnabled: Boolean(data?.reminders_enabled ?? false),
+      reminderLeadMinutes:
+        typeof data?.reminder_lead_minutes === "number" ? data.reminder_lead_minutes : 120,
     };
   },
 
@@ -598,6 +603,8 @@ export const supabaseStore: BookingStore = {
         shop_line_url: input.lineUrl,
         shop_phone: input.phone,
         hours: input.hours,
+        reminders_enabled: input.remindersEnabled,
+        reminder_lead_minutes: input.reminderLeadMinutes,
         updated_at: new Date().toISOString(),
       });
     if (error) throw new Error(error.message);

@@ -43,6 +43,8 @@ export default function AdminPage() {
   const [bookingLinkCopied, setBookingLinkCopied] = useState(false);
   const [activation, setActivation] = useState<ShopActivation | null>(null);
   const [bookingUrl, setBookingUrl] = useState("");
+  const [lineQuotaFull, setLineQuotaFull] = useState(false);
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
   const [showClosedQueue, setShowClosedQueue] = useState(false);
   const [sheet, setSheet] = useState<{
@@ -109,6 +111,21 @@ export default function AdminPage() {
         };
         setActivation(json.activation ?? null);
         setBookingUrl(json.bookingUrl ?? buildShopLiffUrl(shopSlug) ?? buildShopWebUrl(shopSlug));
+      })
+      .catch(() => {});
+    void Promise.all([
+      fetch(shopApi("/line-quota"), { headers: authHeaders }),
+      fetch(shopApi("/settings"), { headers: authHeaders }),
+    ])
+      .then(async ([quotaRes, settingsRes]) => {
+        if (quotaRes.ok) {
+          const q = (await quotaRes.json()) as { quota?: { level?: string } };
+          setLineQuotaFull(q.quota?.level === "full");
+        }
+        if (settingsRes.ok) {
+          const s = (await settingsRes.json()) as { remindersEnabled?: boolean };
+          setRemindersEnabled(Boolean(s.remindersEnabled));
+        }
       })
       .catch(() => {});
   }, [authHeaders, profile, ready, shopApi, shopSlug]);
@@ -483,6 +500,17 @@ export default function AdminPage() {
           <span className="rounded bg-zinc-600 px-2 py-0.5 text-white">{t("admin.completed")}</span>
         </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {isOperator && remindersEnabled && lineQuotaFull ? (
+          <div className="rounded-xl border border-red-500/50 bg-red-950/40 p-4">
+            <p className="text-sm font-medium text-red-100">{t("admin.reminderBoardBannerTitle")}</p>
+            <Link
+              href={shopPath("/admin/settings/line/quota")}
+              className="mt-3 flex min-h-11 items-center justify-center rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950"
+            >
+              {t("admin.reminderBoardBannerCta")}
+            </Link>
+          </div>
+        ) : null}
         {isOperator && setupIncomplete ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <p className="text-sm font-medium text-amber-200">{t("admin.onboardingChecklistTitle")}</p>

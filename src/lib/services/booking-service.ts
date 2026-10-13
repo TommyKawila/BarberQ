@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/slot-service";
 import { isBlockingStatus } from "@/lib/appointment-status";
 import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
+import { scheduleBookingReminder } from "@/lib/reminders/schedule-booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
 import type {
@@ -246,7 +247,7 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
     const end = addMinutes(start, barber.slot_duration_minutes);
-    return await store.createAppointment({
+    const appointment = await store.createAppointment({
       barberId: input.barberId,
       customerRef,
       customerName: name,
@@ -255,6 +256,19 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
       endTime: end,
       customerLineId: input.customerLineId,
       source: input.source ?? "line",
+    });
+
+    if (!barber.shop_id) return appointment;
+    const settings = await store.getShopSettings(barber.shop_id);
+    const preferred =
+      input.reminderLeadMinutes === undefined
+        ? settings.reminderLeadMinutes
+        : input.reminderLeadMinutes;
+    return scheduleBookingReminder({
+      shopId: barber.shop_id,
+      shopRemindersEnabled: settings.remindersEnabled,
+      appointment,
+      preferredLeadMinutes: preferred,
     });
   } catch (error) {
     if (error instanceof BookingError) throw error;

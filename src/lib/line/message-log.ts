@@ -6,6 +6,7 @@ export type LineMessageKind =
   | "reply_ticket"
   | "push_cancel"
   | "push_reschedule"
+  | "push_reminder"
   | "push_test"
   | "push_other";
 

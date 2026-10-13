@@ -107,6 +107,8 @@ function getState(): MemoryState {
       lineUrl: null,
       phone: null,
       hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+      remindersEnabled: false,
+      reminderLeadMinutes: 120,
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
@@ -147,6 +149,8 @@ function getState(): MemoryState {
         lineUrl: null,
         phone: null,
         hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+        remindersEnabled: false,
+        reminderLeadMinutes: 120,
       },
     };
   }
@@ -589,6 +593,8 @@ export const memoryStore: BookingStore = {
         lineUrl: null,
         phone: null,
         hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+        remindersEnabled: false,
+        reminderLeadMinutes: 120,
       }
     );
   },
@@ -603,6 +609,8 @@ export const memoryStore: BookingStore = {
       lineUrl: input.lineUrl,
       phone: input.phone,
       hours: input.hours,
+      remindersEnabled: input.remindersEnabled,
+      reminderLeadMinutes: input.reminderLeadMinutes,
     };
   },
 
@@ -816,6 +824,8 @@ export const memoryStore: BookingStore = {
         lineUrl: null,
         phone: null,
         hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+        remindersEnabled: false,
+        reminderLeadMinutes: 120,
       };
       return shop;
     }
@@ -846,6 +856,8 @@ export const memoryStore: BookingStore = {
       lineUrl: null,
       phone: null,
       hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+      remindersEnabled: false,
+      reminderLeadMinutes: 120,
     };
 
     barbers.push({

@@ -47,6 +47,12 @@ import {
 } from "@/lib/services/slot-service";
 import { type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { barberLabel, type Appointment, type Barber, type Slot } from "@/types/booking";
+import {
+  REMINDER_LEAD_OPTIONS,
+  reminderLeadMessageKey,
+  type ReminderLeadOption,
+} from "@/lib/reminders/labels";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 
 const PHONE_KEY = "barberq_phone";
 const POLL_MS = 10_000;
@@ -63,7 +69,15 @@ interface SuccessState {
 export function BookingApp() {
   const { t, locale } = useI18n();
   const { shopApi, shopPath } = useShopSlug();
-  const { shopName, coverImageUrl, lineUrl, phone: shopPhone, hours } = useShopBrand();
+  const {
+    shopName,
+    coverImageUrl,
+    lineUrl,
+    phone: shopPhone,
+    hours,
+    remindersEnabled,
+    reminderLeadMinutes: shopReminderLead,
+  } = useShopBrand();
   const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -79,6 +93,10 @@ export function BookingApp() {
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useBrowserStorage(PHONE_KEY);
+  const [reminderLeadOverride, setReminderLeadOverride] = useState<number | null>(null);
+  const reminderLead = remindersEnabled
+    ? (reminderLeadOverride ?? shopReminderLead)
+    : null;
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -397,6 +415,9 @@ export function BookingApp() {
           startTime: selectedStart,
           customerName: customerName.trim(),
           customerPhone: normalizeCustomerPhone(phone ?? ""),
+          ...(remindersEnabled
+            ? { reminderLeadMinutes: reminderLead === 0 ? null : reminderLead }
+            : {}),
         }),
       });
       const json = (await res.json()) as {
@@ -672,6 +693,27 @@ export function BookingApp() {
                     className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
                   />
                 </label>
+                {remindersEnabled ? (
+                  <label className="flex flex-col gap-1 text-sm">
+                    {t("booking.reminderLead")}
+                    <select
+                      value={reminderLead ?? shopReminderLead}
+                      onChange={(event) =>
+                        setReminderLeadOverride(
+                          Number(event.target.value) as ReminderLeadOption,
+                        )
+                      }
+                      className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+                    >
+                      {REMINDER_LEAD_OPTIONS.map((mins) => (
+                        <option key={mins} value={mins}>
+                          {t(reminderLeadMessageKey(mins) as MessageKey)}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="text-xs text-zinc-500">{t("booking.reminderLeadHint")}</span>
+                  </label>
+                ) : null}
               </div>
             </div>
           </section>
