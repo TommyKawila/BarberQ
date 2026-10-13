@@ -66,16 +66,30 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(nav, /href="\/trial"/);
   });
 
-  it("hero mockups stay fluid on mobile instead of fixed side-by-side phones", () => {
+  it("hero mockups stay fluid on mobile and use real screens in PhoneFrame", () => {
     const mockups = readFileSync(
       resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
       "utf8",
     );
+    const phone = readFileSync(
+      resolve(root, "components/marketing/mockups/PhoneFrame.tsx"),
+      "utf8",
+    );
     const heroFn = mockups.slice(mockups.indexOf("export function HeroProductMockups"));
     assert.match(heroFn, /md:hidden/);
-    assert.match(heroFn, /BarberDateFrame fluid/);
-    assert.doesNotMatch(heroFn, /size="md"/);
+    assert.match(heroFn, /HandPhoneComposite/);
     assert.match(heroFn, /overflow-hidden/);
+    assert.match(heroFn, /max-w-full/);
+    assert.match(phone, /Dynamic Island|dynamic island/i);
+    assert.match(phone, /390\s*\/\s*844/);
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/shop-landing.webp")),
+      "shop-landing.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
+      "choose-slot.webp missing",
+    );
   });
 
   it("retired HTML hero phone mockup is gone", () => {
