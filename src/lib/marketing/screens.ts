@@ -10,15 +10,33 @@ export const marketingScreens = {
 
 export type MarketingScreenKey = keyof typeof marketingScreens;
 
-/** Hand-holding-phone photo slot — owner supplies green-screen asset. */
+/**
+ * Hand-holding-phone hero — green screen chroma-keyed + screenshot pre-composited.
+ * Source green plate: /marketing/hand-phone.webp
+ * Rebuild: `node scripts/composite-hand-phone.mjs`
+ */
+export const handPhoneHero = {
+  /** Original green-screen plate (owner asset). */
+  source: "/marketing/hand-phone.webp",
+  /** Full-res composite (screenshot under Dynamic Island). */
+  composited: "/marketing/hero/hand-phone-composited.webp",
+  desktop: "/marketing/hero/hand-phone-desktop.webp",
+  mobile: "/marketing/hero/hand-phone-mobile.webp",
+  width: 1122,
+  height: 1402,
+  /** Detected green-screen rect from chroma key (pixels @ source size). */
+  screen: { minX: 376, minY: 234, maxX: 748, maxY: 1040, w: 373, h: 807 },
+  island: { minX: 505, minY: 243, maxX: 620, maxY: 278 },
+} as const;
+
+/** @deprecated use handPhoneHero — kept for any leftover imports */
 export const handPhoneAsset = {
-  src: "/marketing/hand-phone.webp",
-  /** Percent coords of the blank green screen within the photo (tweak when asset arrives). */
+  src: handPhoneHero.source,
   screen: {
-    top: "14%",
-    left: "29%",
-    width: "42%",
-    height: "55%",
-    borderRadius: "12% / 8%",
+    top: "16.7%",
+    left: "33.5%",
+    width: "33.2%",
+    height: "57.6%",
+    borderRadius: "12% / 6%",
   },
 } as const;

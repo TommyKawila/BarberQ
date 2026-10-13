@@ -66,24 +66,12 @@ export function HeroProductMockups() {
   return (
     <div className="relative w-full max-w-full min-w-0 overflow-hidden">
       <div
-        className="pointer-events-none absolute inset-[12%] rounded-full bg-amber-400/15 blur-3xl"
+        className="pointer-events-none absolute inset-[8%] rounded-full bg-amber-400/15 blur-3xl"
         aria-hidden
       />
-      {/* Mobile: hand-phone slot (falls back to framed phone) */}
-      <div className="relative mx-auto w-full max-w-[min(100%,280px)] md:hidden">
-        <HandPhoneComposite screen="choose" priority />
-      </div>
-      {/* md+: identical PhoneFrame screens — no overflow */}
-      <div className="relative hidden w-full max-w-full items-end justify-center gap-2 overflow-hidden md:flex lg:justify-end lg:gap-3">
-        <div className="w-[min(42%,200px)] shrink">
-          <ScreenFrame screen="landing" fluid />
-        </div>
-        <div className="relative z-10 w-[min(52%,240px)] shrink-0">
-          <HandPhoneComposite screen="choose" priority className="w-full" />
-        </div>
-        <div className="hidden w-[min(42%,200px)] shrink lg:block">
-          <ScreenFrame screen="ticket" fluid />
-        </div>
+      {/* Primary hero: pre-composited hand + real booking screen */}
+      <div className="relative mx-auto w-full max-w-[min(100%,320px)] md:max-w-[min(100%,420px)] lg:ml-auto lg:mr-0">
+        <HandPhoneComposite priority />
       </div>
     </div>
   );

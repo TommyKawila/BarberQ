@@ -1,99 +1,109 @@
-"use client";
-
 import Image from "next/image";
-import { useEffect, useState } from "react";
-import { PhoneScreen } from "./PhoneScreen";
-import {
-  handPhoneAsset,
-  marketingScreens,
-  type MarketingScreenKey,
-} from "@/lib/marketing/screens";
-
-type ScreenRect = {
-  top: string;
-  left: string;
-  width: string;
-  height: string;
-  borderRadius: string;
-};
+import { handPhoneHero } from "@/lib/marketing/screens";
 
 type Props = {
-  screen: MarketingScreenKey;
   alt?: string;
   className?: string;
-  /** Override green-screen hole coords when the owner photo differs. */
-  screenRect?: ScreenRect;
-  handSrc?: string;
   priority?: boolean;
+  /** Prefer mobile-sized WebP under md, desktop otherwise. */
+  variant?: "auto" | "mobile" | "desktop" | "full";
 };
 
 /**
- * Slots a real app screenshot into a hand-holding-phone photo (green screen).
- * Falls back to the shared PhoneFrame until public/marketing/hand-phone.webp exists.
+ * Primary hero visual: pre-composited hand + real booking screenshot.
+ * Dynamic Island stays on top (baked in via chroma-key composite script).
  */
 export function HandPhoneComposite({
-  screen,
   alt = "",
   className,
-  screenRect = handPhoneAsset.screen,
-  handSrc = handPhoneAsset.src,
   priority,
+  variant = "auto",
 }: Props) {
-  const [hasHand, setHasHand] = useState(false);
+  const full = {
+    src: handPhoneHero.composited,
+    width: handPhoneHero.width,
+    height: handPhoneHero.height,
+  };
+  const desktop = {
+    src: handPhoneHero.desktop,
+    width: 720,
+    height: 900,
+  };
+  const mobile = {
+    src: handPhoneHero.mobile,
+    width: 420,
+    height: 525,
+  };
 
-  useEffect(() => {
-    let cancelled = false;
-    void fetch(handSrc, { method: "HEAD" })
-      .then((res) => {
-        if (!cancelled) setHasHand(res.ok);
-      })
-      .catch(() => {
-        if (!cancelled) setHasHand(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [handSrc]);
-
-  if (!hasHand) {
+  if (variant === "full") {
     return (
-      <div className={className}>
-        <PhoneScreen screen={screen} alt={alt} fluid priority={priority} />
+      <div className={`relative mx-auto w-full max-w-full min-w-0 ${className ?? ""}`}>
+        <Image
+          src={full.src}
+          alt={alt}
+          width={full.width}
+          height={full.height}
+          priority={priority}
+          sizes="(max-width: 768px) 90vw, 480px"
+          className="h-auto w-full object-contain"
+        />
       </div>
     );
   }
 
+  if (variant === "mobile") {
+    return (
+      <div className={`relative mx-auto w-full max-w-full min-w-0 ${className ?? ""}`}>
+        <Image
+          src={mobile.src}
+          alt={alt}
+          width={mobile.width}
+          height={mobile.height}
+          priority={priority}
+          sizes="90vw"
+          className="h-auto w-full object-contain"
+        />
+      </div>
+    );
+  }
+
+  if (variant === "desktop") {
+    return (
+      <div className={`relative mx-auto w-full max-w-full min-w-0 ${className ?? ""}`}>
+        <Image
+          src={desktop.src}
+          alt={alt}
+          width={desktop.width}
+          height={desktop.height}
+          priority={priority}
+          sizes="480px"
+          className="h-auto w-full object-contain"
+        />
+      </div>
+    );
+  }
+
+  // auto: art-direction with mobile + desktop pre-renders
   return (
     <div className={`relative mx-auto w-full max-w-full min-w-0 ${className ?? ""}`}>
-      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "3 / 4" }}>
-        <Image
-          src={handSrc}
-          alt=""
-          fill
-          priority={priority}
-          sizes="(max-width: 768px) 90vw, 420px"
-          className="object-contain object-center"
-        />
-        <div
-          className="absolute overflow-hidden"
-          style={{
-            top: screenRect.top,
-            left: screenRect.left,
-            width: screenRect.width,
-            height: screenRect.height,
-            borderRadius: screenRect.borderRadius,
-          }}
-        >
-          <Image
-            src={marketingScreens[screen]}
-            alt={alt}
-            fill
-            sizes="200px"
-            className="object-cover object-top"
-            priority={priority}
-          />
-        </div>
-      </div>
+      <Image
+        src={mobile.src}
+        alt={alt}
+        width={mobile.width}
+        height={mobile.height}
+        priority={priority}
+        sizes="(max-width: 768px) 90vw, 420px"
+        className="h-auto w-full object-contain md:hidden"
+      />
+      <Image
+        src={desktop.src}
+        alt={alt}
+        width={desktop.width}
+        height={desktop.height}
+        priority={priority}
+        sizes="(min-width: 768px) 480px, 90vw"
+        className="hidden h-auto w-full object-contain md:block"
+      />
     </div>
   );
 }

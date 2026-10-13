@@ -1,0 +1,21 @@
+{
+  "image": {
+    "width": 1122,
+    "height": 1402
+  },
+  "screen": {
+    "minX": 376,
+    "minY": 234,
+    "maxX": 748,
+    "maxY": 1040,
+    "w": 373,
+    "h": 807
+  },
+  "island": {
+    "minX": 505,
+    "minY": 243,
+    "maxX": 620,
+    "maxY": 278
+  },
+  "screenshot": "screens/choose-slot.webp"
+}

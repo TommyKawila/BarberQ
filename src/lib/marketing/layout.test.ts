@@ -66,9 +66,13 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(nav, /href="\/trial"/);
   });
 
-  it("hero mockups stay fluid on mobile and use real screens in PhoneFrame", () => {
+  it("hero uses pre-composited hand-phone as primary visual with overflow guards", () => {
     const mockups = readFileSync(
       resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
+      "utf8",
+    );
+    const hand = readFileSync(
+      resolve(root, "components/marketing/mockups/HandPhoneComposite.tsx"),
       "utf8",
     );
     const phone = readFileSync(
@@ -76,15 +80,24 @@ describe("marketing layout split", () => {
       "utf8",
     );
     const heroFn = mockups.slice(mockups.indexOf("export function HeroProductMockups"));
-    assert.match(heroFn, /md:hidden/);
     assert.match(heroFn, /HandPhoneComposite/);
     assert.match(heroFn, /overflow-hidden/);
     assert.match(heroFn, /max-w-full/);
+    assert.match(hand, /handPhoneHero/);
+    assert.match(hand, /handPhoneHero\.mobile/);
+    assert.match(hand, /handPhoneHero\.desktop/);
     assert.match(phone, /Dynamic Island|dynamic island/i);
     assert.match(phone, /390\s*\/\s*844/);
+    const screens = readFileSync(resolve(root, "lib/marketing/screens.ts"), "utf8");
+    assert.match(screens, /hand-phone-mobile\.webp/);
+    assert.match(screens, /hand-phone-desktop\.webp/);
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/shop-landing.webp")),
-      "shop-landing.webp missing",
+      existsSync(resolve(root, "../public/marketing/hand-phone.webp")),
+      "hand-phone.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/hero/hand-phone-composited.webp")),
+      "hand-phone-composited.webp missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
