@@ -821,6 +821,11 @@ export const dictionary = {
     "admin.reminderQuotaBannerBody": "แจ้งเตือนก่อนคิวหยุดส่งชั่วคราว · ร้านต้องอัปเกรดแพ็กเกจกับ LINE เอง · การจองยังใช้ได้ปกติ",
     "admin.reminderBoardBannerTitle": "โควตา LINE เต็ม · แจ้งเตือนก่อนคิวหยุดชั่วคราว",
     "admin.reminderBoardBannerCta": "ดูโควตา",
+    "admin.reminderRunTitle": "ทดสอบส่งแจ้งเตือน (QA)",
+    "admin.reminderRunHint": "รันชุดเดียวกับ Cron — ส่งเฉพาะนัดที่ถึงเวลาแล้วและยังไม่เคยส่ง · ใช้ตอน Hobby (cron วันละครั้ง)",
+    "admin.reminderRunNow": "ส่งแจ้งเตือนที่ถึงเวลาตอนนี้",
+    "admin.reminderRunResult": "สแกน {scanned} · ส่ง {sent} · ข้าม {skipped} · โควตาเต็ม {quota}",
+    "admin.reminderRunFailed": "รันแจ้งเตือนไม่สำเร็จ",
 
     "lineConnect.checklistTitle": "เชื่อม LINE OA ของร้าน",
     "lineConnect.checklistProgress": "2 จาก 4 ขั้น · ใช้เวลาราว 15-40 นาที",
@@ -1761,6 +1766,11 @@ export const dictionary = {
     "admin.reminderQuotaBannerBody": "Appointment reminders pause until you upgrade LINE or the month resets · booking still works",
     "admin.reminderBoardBannerTitle": "LINE quota full · appointment reminders paused",
     "admin.reminderBoardBannerCta": "View quota",
+    "admin.reminderRunTitle": "Test reminders (QA)",
+    "admin.reminderRunHint": "Same worker as Cron — only due, unsent bookings · use on Hobby (daily cron)",
+    "admin.reminderRunNow": "Send due reminders now",
+    "admin.reminderRunResult": "Scanned {scanned} · sent {sent} · skipped {skipped} · quota full {quota}",
+    "admin.reminderRunFailed": "Could not run reminders",
 
     "lineConnect.checklistTitle": "Connect your shop LINE OA",
     "lineConnect.checklistProgress": "2 of 4 steps · about 15–40 minutes",

@@ -22,14 +22,17 @@ export default function ReminderSettingsPage() {
   const [quota, setQuota] = useState<ShopPushQuota | null>(null);
   const [showEnableNotice, setShowEnableNotice] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [runBusy, setRunBusy] = useState(false);
+  const [showManualRun, setShowManualRun] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
-      const [settingsRes, quotaRes] = await Promise.all([
+      const [settingsRes, quotaRes, runMetaRes] = await Promise.all([
         fetch(shopApi("/settings"), { headers: authHeaders }),
         fetch(shopApi("/line-quota"), { headers: authHeaders }),
+        fetch(shopApi("/reminders/run-due"), { headers: authHeaders }),
       ]);
       if (settingsRes.ok) {
         const s = (await settingsRes.json()) as {
@@ -45,10 +48,50 @@ export default function ReminderSettingsPage() {
         const q = (await quotaRes.json()) as { quota: ShopPushQuota };
         setQuota(q.quota);
       }
+      if (runMetaRes.ok) {
+        const meta = (await runMetaRes.json()) as { allowed?: boolean };
+        setShowManualRun(Boolean(meta.allowed));
+      }
     } catch {
       /* ignore */
     }
   }, [authHeaders, shopApi]);
+
+  async function runDueNow() {
+    setRunBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await fetch(shopApi("/reminders/run-due"), {
+        method: "POST",
+        headers: authHeaders,
+      });
+      const json = (await res.json()) as {
+        ok?: boolean;
+        scanned?: number;
+        sent?: number;
+        skipped?: number;
+        quotaSkipped?: number;
+        errors?: number;
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.reminderRunFailed"));
+        return;
+      }
+      setMessage(
+        t("admin.reminderRunResult")
+          .replace("{scanned}", String(json.scanned ?? 0))
+          .replace("{sent}", String(json.sent ?? 0))
+          .replace("{skipped}", String(json.skipped ?? 0))
+          .replace("{quota}", String(json.quotaSkipped ?? 0)),
+      );
+    } catch {
+      setError(t("admin.reminderRunFailed"));
+    } finally {
+      setRunBusy(false);
+    }
+  }
 
   useEffect(() => {
     if (!ready || !profile) return;
@@ -218,6 +261,21 @@ export default function ReminderSettingsPage() {
             ))}
           </select>
         </section>
+
+        {showManualRun && profile.role === "owner" ? (
+          <section className="rounded-2xl border border-dashed border-zinc-600 bg-zinc-900/80 p-4">
+            <h2 className="text-sm font-semibold">{t("admin.reminderRunTitle")}</h2>
+            <p className="mt-1 text-sm text-zinc-400">{t("admin.reminderRunHint")}</p>
+            <button
+              type="button"
+              disabled={runBusy || busy}
+              onClick={() => void runDueNow()}
+              className="mt-3 flex min-h-12 w-full items-center justify-center rounded-xl border border-amber-500/50 font-semibold text-amber-200 disabled:opacity-50"
+            >
+              {runBusy ? t("common.loading") : t("admin.reminderRunNow")}
+            </button>
+          </section>
+        ) : null}
 
         {message ? <p className="text-sm text-emerald-400">{message}</p> : null}
         {error ? <p className="text-sm text-red-400">{error}</p> : null}

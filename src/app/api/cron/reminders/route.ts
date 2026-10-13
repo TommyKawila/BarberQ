@@ -15,7 +15,11 @@ function assertCronAuthorized(req: Request): boolean {
   return auth === `Bearer ${secret}`;
 }
 
-/** Vercel Cron: every 5 minutes — scan due appointment reminders. */
+/**
+ * Vercel Cron — scan due appointment reminders.
+ * Hobby: vercel.json uses daily "0 1 * * *" (once/day limit).
+ * Pro (launch): change schedule to every 5 minutes ("star-slash-5 * * * *").
+ */
 export async function GET(req: Request) {
   if (!assertCronAuthorized(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
