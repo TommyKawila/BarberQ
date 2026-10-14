@@ -63,6 +63,25 @@ async function processOne(
   result: ReminderProcessResult,
   quotaNotifiedShops: Set<string>,
 ): Promise<void> {
+  // Never remind for appointments already started/past (late cron / Hobby daily).
+  // Claim sent_at so the row is expired and not retried.
+  if (new Date(row.start_time).getTime() <= now.getTime()) {
+    const claimed = await claimReminderSend(row.id, now);
+    if (claimed) {
+      result.skipped += 1;
+      console.warn(
+        JSON.stringify({
+          event: "appointment_reminder_skipped",
+          reason: "appointment_started_or_past",
+          shopId: row.shop_id,
+          appointmentId: row.id,
+          startTime: row.start_time,
+        }),
+      );
+    }
+    return;
+  }
+
   if (!shouldSendAppointmentReminder(row)) {
     const claimed = await claimReminderSend(row.id, now);
     if (claimed) result.skipped += 1;

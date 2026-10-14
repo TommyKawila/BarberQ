@@ -105,4 +105,23 @@ describe("reminder quota guard", () => {
     const result = await processDueReminders(now);
     assert.equal(result.scanned, 0);
   });
+
+  it("never sends when appointment start is already past; claims so no retry", async () => {
+    // due_at fired (e.g. 2h lead) but cron/manual run happens after start
+    seedDue({
+      start_time: "2030-06-01T07:30:00.000Z", // 14:30 ICT
+      end_time: "2030-06-01T08:00:00.000Z",
+      reminder_due_at: "2030-06-01T05:30:00.000Z",
+    });
+    const now = new Date("2030-06-01T09:15:00.000Z"); // 16:15 ICT — after start
+    const result = await processDueReminders(now);
+    assert.equal(result.scanned, 1);
+    assert.equal(result.sent, 0);
+    assert.equal(result.skipped, 1);
+    assert.ok(getMemoryReminderSentAt(APPT), "expired claim so cron will not retry");
+
+    const again = await processDueReminders(now);
+    assert.equal(again.scanned, 0);
+    assert.equal(again.sent, 0);
+  });
 });
