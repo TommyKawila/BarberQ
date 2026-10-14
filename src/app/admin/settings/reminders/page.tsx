@@ -240,6 +240,13 @@ export default function ReminderSettingsPage() {
           </div>
         </section>
 
+        <Link
+          href={shopPath("/admin/settings/message-cost")}
+          className="flex min-h-12 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-400/10 text-sm font-semibold text-amber-200"
+        >
+          {t("admin.messageCostLink")}
+        </Link>
+
         {showEnableNotice ? (
           <div
             role="alertdialog"

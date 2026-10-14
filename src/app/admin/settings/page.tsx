@@ -626,6 +626,13 @@ export default function AdminSettingsPage() {
           >
             {t("admin.settingsReminders")}
           </Link>
+          <Link
+            href={shopPath("/admin/settings/message-cost")}
+            className="mt-2 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700/80 text-sm font-medium text-amber-300"
+          >
+            {t("admin.settingsMessageCost")}
+          </Link>
+          <p className="mt-2 text-xs text-zinc-500">{t("admin.settingsMessageCostHint")}</p>
         </section>
 
         {profile.role === "owner" ? (
