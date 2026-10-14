@@ -112,7 +112,14 @@ describe("marketing layout split", () => {
     assert.match(slots, /1024/);
     assert.match(photoUi, /hidden lg:block/);
     assert.match(photoUi, /lg:hidden/);
-    assert.equal(marketingPhotoSlots.heroDesktop.src, null);
+    assert.equal(
+      marketingPhotoSlots.heroDesktop.src,
+      "/marketing/photos/hero-desktop.webp",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-desktop.webp")),
+      "hero-desktop.webp missing",
+    );
     assert.equal(marketingPhotoSlots.heroMobile.src, null);
     assert.equal(marketingPhotoSlots.barberDesktop.src, null);
     assert.equal(marketingPhotoSlots.barberMobile.src, null);

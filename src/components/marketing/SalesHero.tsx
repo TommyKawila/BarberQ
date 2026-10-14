@@ -45,14 +45,15 @@ export function SalesHero({
           objectPosition="right center"
           className="absolute inset-0 h-full w-full rounded-none border-0"
         />
+        {/* Left fade keeps headline/CTAs legible over the photo */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, #09090b 0%, #09090b 34%, rgba(9,9,11,0.92) 44%, rgba(9,9,11,0.55) 58%, rgba(9,9,11,0.15) 72%, transparent 84%)",
+              "linear-gradient(to right, #09090b 0%, #09090b 36%, rgba(9,9,11,0.96) 46%, rgba(9,9,11,0.72) 56%, rgba(9,9,11,0.28) 68%, transparent 82%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-zinc-950/30" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-transparent to-zinc-950/35" />
       </div>
 
       <MarketingNav />

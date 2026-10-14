@@ -35,7 +35,7 @@ export type MarketingPhotoSlot = {
 export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlot> = {
   heroDesktop: {
     id: "heroDesktop",
-    src: null,
+    src: "/marketing/photos/hero-desktop.webp",
     swapPath: "/marketing/photos/hero-desktop.webp",
     width: 2400,
     height: 1350,
