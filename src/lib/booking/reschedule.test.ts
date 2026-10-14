@@ -254,6 +254,17 @@ describe("P6 customer self-reschedule", () => {
     assert.equal(shouldSendLineReschedulePush({ customer_line_id: null }), false);
   });
 
+  it("customer self-reschedule route pushes ticket (separate from shop flex)", () => {
+    const route = readFileSync(resolve(root, "app/api/reschedule/route.ts"), "utf8");
+    const notify = readFileSync(
+      resolve(root, "lib/line/customer-reschedule-notify.ts"),
+      "utf8",
+    );
+    assert.match(route, /notifyCustomerSelfRescheduleTicket/);
+    assert.match(notify, /bookingConfirmPushEnabled/);
+    assert.match(notify, /push_reschedule_ticket/);
+  });
+
   it("web push reschedule payload never includes phone", () => {
     const payload = buildWebPushPayload({
       event: "reschedule",

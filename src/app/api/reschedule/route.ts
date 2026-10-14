@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { jsonError, readJson } from "@/lib/api-response";
+import { notifyCustomerSelfRescheduleTicket } from "@/lib/line/customer-reschedule-notify";
 import {
   BookingError,
   rescheduleBookingByToken,
@@ -33,6 +34,8 @@ export async function POST(req: Request) {
     );
     const shop = await resolveShopFromAppointment(after);
     if (shop) {
+      // Fire-and-forget: reschedule already committed; push failure must not fail the API.
+      void notifyCustomerSelfRescheduleTicket(shop, before, after).catch(() => {});
       void notifyStaffWebPush({
         shopId: shop.id,
         shopSlug: shop.slug,
