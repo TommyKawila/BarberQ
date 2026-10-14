@@ -17,7 +17,7 @@ import {
 } from "@/lib/webpush/vapid";
 import type { Appointment } from "@/types/booking";
 
-export type WebPushEvent = "new_booking" | "cancel" | "line_quota_full";
+export type WebPushEvent = "new_booking" | "cancel" | "reschedule" | "line_quota_full";
 
 function configureVapid() {
   const publicKey = getVapidPublicKey();
@@ -46,6 +46,8 @@ export function buildWebPushPayload(input: {
   shopSlug: string;
   appointment: Appointment;
   barberName: string;
+  previousStartTime?: string;
+  previousBarberName?: string;
 }): { title: string; body: string; url: string; tag: string } {
   const when = whenLabel(input.appointment.start_time);
   // Privacy: never include customer phone on lock screen.
@@ -66,6 +68,17 @@ export function buildWebPushPayload(input: {
       tag: `line-quota-${input.shopSlug}`,
     };
   }
+  if (input.event === "reschedule") {
+    const oldWhen = input.previousStartTime
+      ? whenLabel(input.previousStartTime)
+      : "—";
+    return {
+      title: `BarberQx · ${input.shopName}`,
+      body: `↔ เลื่อนคิว: ${oldWhen} → ${when}\n${customer} · ${input.barberName}`,
+      url: `${buildShopWebUrl(input.shopSlug)}/admin`,
+      tag: `reschedule-${input.appointment.id}`,
+    };
+  }
   return {
     title: `BarberQx · ${input.shopName}`,
     body: `✗ ยกเลิก: ${when}\n${customer} · ${input.barberName} · ช่องนี้ว่างแล้ว`,
@@ -79,17 +92,22 @@ function shouldNotify(
   event: WebPushEvent,
   appointmentBarberId: string,
   scope: "own" | "all",
+  previousBarberId?: string,
 ): boolean {
   if (event === "line_quota_full") {
     return sub.staffRole === "owner" || sub.staffRole === "manager";
   }
   if (event === "new_booking" && !sub.notifyNewBooking) return false;
   if (event === "cancel" && !sub.notifyCancel) return false;
+  // Reschedule = queue change; notify if subscribed to new bookings or cancels.
+  if (event === "reschedule" && !sub.notifyNewBooking && !sub.notifyCancel) return false;
 
   if (sub.staffRole === "owner" || sub.staffRole === "manager") return true;
 
   if (scope === "all") return true;
-  return Boolean(sub.barberId && sub.barberId === appointmentBarberId);
+  if (sub.barberId && sub.barberId === appointmentBarberId) return true;
+  if (previousBarberId && sub.barberId && sub.barberId === previousBarberId) return true;
+  return false;
 }
 
 export async function notifyStaffWebPush(input: {
@@ -98,6 +116,8 @@ export async function notifyStaffWebPush(input: {
   shopName: string;
   appointment: Appointment;
   event: WebPushEvent;
+  previousBarberId?: string;
+  previousStartTime?: string;
 }): Promise<number> {
   if (!isWebPushConfigured() || !configureVapid()) {
     console.warn(JSON.stringify({ event: "webpush_skipped", reason: "missing_vapid" }));
@@ -106,6 +126,9 @@ export async function notifyStaffWebPush(input: {
 
   const store = getStore();
   const barber = await store.getBarber(input.appointment.barber_id);
+  const previousBarber = input.previousBarberId
+    ? await store.getBarber(input.previousBarberId)
+    : null;
   const scope = await getBarberWebpushScope(input.shopId);
   const subs = await listWebPushSubscriptions(input.shopId);
   const payload = buildWebPushPayload({
@@ -114,11 +137,23 @@ export async function notifyStaffWebPush(input: {
     shopSlug: input.shopSlug,
     appointment: input.appointment,
     barberName: barber?.name ?? "—",
+    previousStartTime: input.previousStartTime,
+    previousBarberName: previousBarber?.name,
   });
 
   let sent = 0;
   for (const sub of subs) {
-    if (!shouldNotify(sub, input.event, input.appointment.barber_id, scope)) continue;
+    if (
+      !shouldNotify(
+        sub,
+        input.event,
+        input.appointment.barber_id,
+        scope,
+        input.previousBarberId,
+      )
+    ) {
+      continue;
+    }
     try {
       await webpush.sendNotification(
         {

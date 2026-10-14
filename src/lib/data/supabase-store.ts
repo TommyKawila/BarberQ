@@ -58,6 +58,8 @@ function mapRpcError(error: { message?: string; code?: string }): never {
     "NOT_OWNER",
     "NOT_CANCELLABLE",
     "TOO_LATE",
+    "NOT_RESCHEDULABLE",
+    "RESCHEDULE_LIMIT",
     "INVALID_RANGE",
     "INVALID_OUTCOME",
     "INVITE_NOT_FOUND",
@@ -336,6 +338,36 @@ export const supabaseStore: BookingStore = {
     });
     if (error) mapRpcError(error);
     return data as Appointment;
+  },
+
+  async rescheduleAppointmentByToken(token, newBarberId, newStartTime, newEndTime) {
+    const supabase = createServiceClient();
+    const before = await this.getAppointmentByCancelToken(token);
+    if (!before) throw new StoreConflict("NOT_FOUND");
+    const { data, error } = await supabase.rpc("reschedule_appointment_by_token", {
+      p_cancel_token: token,
+      p_new_barber_id: newBarberId,
+      p_new_start_time: newStartTime.toISOString(),
+    });
+    if (error) mapRpcError(error);
+    const after = data as Appointment;
+    // RPC computes end from barber duration; ignore client end when present.
+    void newEndTime;
+    return { before, after };
+  },
+
+  async staffRescheduleAppointment(appointmentId, newBarberId, newStartTime, newEndTime) {
+    const supabase = createServiceClient();
+    const before = await this.getAppointment(appointmentId);
+    if (!before) throw new StoreConflict("NOT_FOUND");
+    const { data, error } = await supabase.rpc("staff_reschedule_appointment", {
+      p_appointment_id: appointmentId,
+      p_new_barber_id: newBarberId,
+      p_new_start_time: newStartTime.toISOString(),
+    });
+    if (error) mapRpcError(error);
+    void newEndTime;
+    return { before, after: data as Appointment };
   },
 
   async getAppointmentByCancelToken(token) {

@@ -69,6 +69,12 @@ export function bookingErrorI18nKey(code: string | undefined): MessageKey {
       return "booking.slotPast";
     case "INVALID_SLOT":
       return "booking.invalidSlot";
+    case "TOO_LATE":
+      return "booking.rescheduleTooLate";
+    case "RESCHEDULE_LIMIT":
+      return "booking.rescheduleLimit";
+    case "NOT_RESCHEDULABLE":
+      return "booking.rescheduleFailed";
     default:
       return "booking.failed";
   }

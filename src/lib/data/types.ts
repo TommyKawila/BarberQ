@@ -17,6 +17,8 @@ export type StoreErrorCode =
   | "NOT_OWNER"
   | "NOT_CANCELLABLE"
   | "TOO_LATE"
+  | "NOT_RESCHEDULABLE"
+  | "RESCHEDULE_LIMIT"
   | "INVALID_RANGE"
   | "INVALID_OUTCOME"
   | "INVALID_PRICE"
@@ -273,6 +275,18 @@ export interface BookingStore {
   ): Promise<Appointment>;
   cancelAppointmentByToken(token: string): Promise<Appointment>;
   getAppointmentByCancelToken(token: string): Promise<Appointment | null>;
+  rescheduleAppointmentByToken(
+    token: string,
+    newBarberId: string,
+    newStartTime: Date,
+    newEndTime: Date,
+  ): Promise<{ before: Appointment; after: Appointment }>;
+  staffRescheduleAppointment(
+    appointmentId: string,
+    newBarberId: string,
+    newStartTime: Date,
+    newEndTime: Date,
+  ): Promise<{ before: Appointment; after: Appointment }>;
   markLateCalled(appointmentId: string): Promise<Appointment>;
   listCustomerAppointments(customerLineId: string): Promise<Appointment[]>;
   getShopSettings(shopId: string): Promise<ShopSettings>;

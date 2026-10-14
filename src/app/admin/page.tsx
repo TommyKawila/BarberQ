@@ -39,6 +39,16 @@ export default function AdminPage() {
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
   const [latePendingKey, setLatePendingKey] = useState<string | null>(null);
   const [cancelPendingKey, setCancelPendingKey] = useState<string | null>(null);
+  const [reschedulePendingKey, setReschedulePendingKey] = useState<string | null>(null);
+  const [rescheduleFrom, setRescheduleFrom] = useState<{
+    appointmentId: string;
+    customerName: string;
+    customerLineId?: string | null;
+  } | null>(null);
+  const [rescheduleTarget, setRescheduleTarget] = useState<{
+    barberId: string;
+    slot: AdminSlot;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [bookingLinkCopied, setBookingLinkCopied] = useState(false);
   const [activation, setActivation] = useState<ShopActivation | null>(null);
@@ -343,6 +353,57 @@ export default function AdminPage() {
     }
   }
 
+  function onRescheduleStart(_barberId: string, slot: AdminSlot) {
+    if (!slot.appointmentId) return;
+    setRescheduleFrom({
+      appointmentId: slot.appointmentId,
+      customerName: slot.customerName ?? "ลูกค้า",
+      customerLineId: slot.customerLineId,
+    });
+    setRescheduleTarget(null);
+    setError(null);
+  }
+
+  async function confirmStaffReschedule() {
+    if (!profile || !rescheduleFrom || !rescheduleTarget) return;
+    const key = `${rescheduleTarget.barberId}:${rescheduleTarget.slot.startTime}`;
+    setReschedulePendingKey(key);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/appointments/${rescheduleFrom.appointmentId}/reschedule`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", ...authHeaders },
+          body: JSON.stringify({
+            barberId: rescheduleTarget.barberId,
+            startTime: rescheduleTarget.slot.startTime,
+          }),
+        },
+      );
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        return;
+      }
+      setRescheduleFrom(null);
+      setRescheduleTarget(null);
+      await loadDay();
+    } catch {
+      setError(t("admin.networkError"));
+    } finally {
+      setReschedulePendingKey(null);
+    }
+  }
+
+  function handleFreeSlot(barberId: string, slot: AdminSlot) {
+    if (rescheduleFrom) {
+      setRescheduleTarget({ barberId, slot });
+      return;
+    }
+    openSheetForSlot(barberId, slot);
+  }
+
   function onWalkInQuick(barberId: string) {
     const slot = findNextFreeSlot(barberId);
     if (!slot) {
@@ -511,6 +572,29 @@ export default function AdminPage() {
             </Link>
           </div>
         ) : null}
+        {rescheduleFrom ? (
+          <div
+            className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3"
+            data-testid="admin-reschedule-banner"
+          >
+            <p className="text-sm text-amber-100">
+              {t("admin.rescheduleModeBanner").replace(
+                "{name}",
+                rescheduleFrom.customerName,
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setRescheduleFrom(null);
+                setRescheduleTarget(null);
+              }}
+              className="mt-2 min-h-10 w-full rounded-lg border border-zinc-600 text-sm text-zinc-200"
+            >
+              {t("admin.rescheduleModeCancel")}
+            </button>
+          </div>
+        ) : null}
         {isOperator && setupIncomplete ? (
           <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
             <p className="text-sm font-medium text-amber-200">{t("admin.onboardingChecklistTitle")}</p>
@@ -554,16 +638,57 @@ export default function AdminPage() {
           latePendingKey={latePendingKey}
           cancelPendingKey={cancelPendingKey}
           editableBarberId={editableBarberId}
-          onFreeSlot={(id, slot) => openSheetForSlot(id, slot)}
+          onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
           onWalkInQuick={(id) => onWalkInQuick(id)}
           onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
           onLateCalled={(id, slot) => void onLateCalled(id, slot)}
           onCancel={(id, slot) => void onCancel(id, slot)}
+          onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
           onUnblock={(id, slot) => void onUnblock(id, slot)}
           bookingHref={shopPath("/")}
           onCopyBookingLink={() => void copyBookingLink()}
           bookingLinkCopied={bookingLinkCopied}
         />
+        {rescheduleTarget && rescheduleFrom ? (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
+            <button
+              type="button"
+              aria-label={t("common.cancel")}
+              className="absolute inset-0"
+              onClick={() => setRescheduleTarget(null)}
+              disabled={Boolean(reschedulePendingKey)}
+            />
+            <div
+              role="dialog"
+              aria-modal="true"
+              className="relative z-10 w-full max-w-md rounded-t-2xl bg-zinc-950 px-4 pb-8 pt-4 shadow-xl sm:rounded-2xl"
+              data-testid="admin-reschedule-confirm"
+            >
+              <h2 className="text-base font-semibold">{t("admin.confirmRescheduleTitle")}</h2>
+              <p className="mt-2 text-sm text-zinc-300">
+                {rescheduleFrom.customerLineId?.trim()
+                  ? t("admin.confirmRescheduleBodyLine")
+                  : t("admin.confirmRescheduleBodyNoLine")}
+              </p>
+              <button
+                type="button"
+                disabled={Boolean(reschedulePendingKey)}
+                onClick={() => void confirmStaffReschedule()}
+                className="mt-4 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+              >
+                {t("admin.confirmRescheduleAction")}
+              </button>
+              <button
+                type="button"
+                disabled={Boolean(reschedulePendingKey)}
+                onClick={() => setRescheduleTarget(null)}
+                className="mt-2 min-h-11 w-full rounded-xl border border-zinc-700 text-sm text-zinc-200 disabled:opacity-50"
+              >
+                {t("common.back")}
+              </button>
+            </div>
+          </div>
+        ) : null}
         {sheet ? (
           <StaffBookingSheet
             open

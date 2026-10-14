@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import liff from "@line/liff";
+import { RescheduleFlow } from "@/components/customer/RescheduleFlow";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { ReminderLeadChips } from "@/components/customer/ReminderLeadChips";
 import { sortAppointmentsUpcomingFirst } from "@/lib/booking/customer-flow";
@@ -13,8 +14,10 @@ import { useLineAuth } from "@/lib/line/use-line-auth";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
+import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 import {
   canCancelAt,
+  canCustomerReschedule,
   CANCEL_LEAD_MINUTES,
   formatSlotTime,
   SHOP_TIMEZONE,
@@ -58,9 +61,11 @@ export default function MyBookingsPage() {
   } = useShopBrand();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [hours, setHours] = useState<ShopHours>(normalizeShopHours(null));
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
+  const [rescheduleApt, setRescheduleApt] = useState<Appointment | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
@@ -69,17 +74,20 @@ export default function MyBookingsPage() {
     if (!ready || !profile) return;
     let cancelled = false;
     void (async () => {
-      const [bookingsRes, barbersRes] = await Promise.all([
+      const [bookingsRes, barbersRes, settingsRes] = await Promise.all([
         fetch(shopApi("/bookings"), {
           headers: getLineAuthHeaders(mockMode ? profile.userId : undefined),
         }),
         fetch(shopApi("/barbers")),
+        fetch(shopApi("/settings")),
       ]);
       if (cancelled) return;
       const bookingsJson = (await bookingsRes.json()) as { appointments?: Appointment[] };
       const barbersJson = (await barbersRes.json()) as { barbers?: Barber[] };
+      const settingsJson = (await settingsRes.json()) as { hours?: ShopHours | null };
       setAppointments(bookingsJson.appointments ?? []);
       setBarbers(barbersJson.barbers ?? []);
+      setHours(normalizeShopHours(settingsJson.hours ?? null));
       setLoading(false);
     })();
     return () => {
@@ -205,6 +213,7 @@ export default function MyBookingsPage() {
           {sortedAppointments.map((apt) => {
             const barber = barbers.find((b) => b.id === apt.barber_id);
             const cancellable = canCancelAt(apt.start_time) && apt.status === "confirmed";
+            const reschedulable = canCustomerReschedule(apt);
             const dateLabel = formatInTimeZone(
               new Date(apt.start_time),
               SHOP_TIMEZONE,
@@ -213,7 +222,7 @@ export default function MyBookingsPage() {
             );
 
             return (
-              <div key={apt.id} className="rounded-xl bg-zinc-900 p-4">
+              <div key={apt.id} className="rounded-xl bg-zinc-900 p-4" data-testid="my-booking-card">
                 {shopName ? <p className="text-xs text-zinc-500">{shopName}</p> : null}
                 <h3 className="font-semibold">
                   {barber ? barberLabel(barber.name, locale) : "—"}
@@ -223,6 +232,9 @@ export default function MyBookingsPage() {
                   {formatSlotTime(apt.start_time)} – {formatSlotTime(apt.end_time)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">{statusLabel(apt.status, t)}</p>
+                {(apt.reschedule_count ?? 0) >= 1 && apt.status === "confirmed" ? (
+                  <p className="mt-1 text-xs text-zinc-500">{t("booking.rescheduleUsed")}</p>
+                ) : null}
                 {(() => {
                   const key = reminderDisplayMessageKey(apt.reminder_lead_minutes);
                   const canEditReminder =
@@ -272,14 +284,29 @@ export default function MyBookingsPage() {
                   );
                 })()}
                 {cancellable && apt.cancel_token ? (
-                  <button
-                    type="button"
-                    disabled={submittingId === apt.id}
-                    onClick={() => void handleCancel(apt)}
-                    className="mt-3 w-full min-h-11 rounded-lg bg-red-500 text-sm font-semibold disabled:opacity-50"
-                  >
-                    {submittingId === apt.id ? t("booking.cancelling") : t("booking.cancel")}
-                  </button>
+                  <div className="mt-3 grid grid-cols-2 gap-2">
+                    {reschedulable ? (
+                      <button
+                        type="button"
+                        disabled={submittingId === apt.id}
+                        onClick={() => setRescheduleApt(apt)}
+                        className="min-h-11 rounded-lg border border-amber-400/70 text-sm font-semibold text-amber-300 disabled:opacity-50"
+                        data-testid="reschedule-btn"
+                      >
+                        {t("booking.reschedule")}
+                      </button>
+                    ) : (
+                      <div />
+                    )}
+                    <button
+                      type="button"
+                      disabled={submittingId === apt.id}
+                      onClick={() => void handleCancel(apt)}
+                      className="min-h-11 rounded-lg bg-red-500 text-sm font-semibold disabled:opacity-50"
+                    >
+                      {submittingId === apt.id ? t("booking.cancelling") : t("booking.cancel")}
+                    </button>
+                  </div>
                 ) : apt.status === "confirmed" ? (
                   <div className="mt-3 space-y-2">
                     <p className="text-xs text-amber-400">
@@ -317,6 +344,22 @@ export default function MyBookingsPage() {
       >
         {t("booking.bookAnother")}
       </Link>
+
+      {rescheduleApt ? (
+        <RescheduleFlow
+          appointment={rescheduleApt}
+          barbers={barbers}
+          hours={hours}
+          onClose={() => setRescheduleApt(null)}
+          onDone={(updated) => {
+            setAppointments((prev) =>
+              prev.map((a) => (a.id === updated.id ? updated : a)),
+            );
+            setRescheduleApt(null);
+            setMessage(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
