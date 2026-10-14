@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   fillOfferCopy,
   formatBaht,
+  marketingClaims,
   marketingOffer,
   resolveMarketingTierForBarberCount,
 } from "@/lib/marketing/offer";
@@ -18,6 +19,11 @@ describe("marketingOffer single source of truth", () => {
     assert.equal(marketingOffer.contactFromBarbers, 11);
     assert.equal(marketingOffer.trialDays, 30);
     assert.equal(marketingOffer.lineFreePushQuota, 300);
+  });
+
+  it("keeps short-lead and self-reschedule claims off by default", () => {
+    assert.equal(marketingClaims.reminderShortLeads, false);
+    assert.equal(marketingClaims.customerSelfReschedule, false);
   });
 
   it("resolves seat counts to tiers or contact", () => {
@@ -38,9 +44,12 @@ describe("marketingOffer single source of truth", () => {
     assert.equal(resolveMarketingTierForBarberCount(20), "contact");
   });
 
-  it("formats baht and offer copy placeholders", () => {
+  it("formats baht and offer copy placeholders including price2", () => {
     assert.equal(formatBaht(599), "฿599");
     assert.equal(formatBaht(999), "฿999");
-    assert.match(fillOfferCopy("{days}-day / {quota} msgs / from {price}"), /30-day \/ 300 msgs \/ from ฿599/);
+    assert.match(
+      fillOfferCopy("{days}-day / {quota} msgs / from {price} / tier2 {price2}"),
+      /30-day \/ 300 msgs \/ from ฿599 \/ tier2 ฿999/,
+    );
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bell,
   CalendarClock,
@@ -8,7 +8,6 @@ import {
   Check,
   CircleCheck,
   MessageCircle,
-  MessageSquare,
   Minus,
   Phone,
   Plus,
@@ -17,40 +16,34 @@ import {
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
+import { ClarityMarketingScript } from "@/components/marketing/ClarityMarketingScript";
 import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
+import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
 import { SalesHero } from "@/components/marketing/SalesHero";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
-import {
-  OwnerSurfacePhone,
-  type OwnerSurface,
-} from "@/components/marketing/mockups/OwnerSurfacesMockups";
+import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
+import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
+import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
 import {
   fillOfferCopy,
+  marketingClaims,
   marketingOffer,
   tierBarberRangeLabel,
+  tierPerDayHint,
   tierPricePerMonthLabel,
 } from "@/lib/marketing/offer";
 
 const HOW_ICONS = [MessageCircle, CircleCheck, Smartphone] as const;
-const FEATURE_ICONS = [
-  MessageCircle,
-  Users,
-  Phone,
-  CircleCheck,
-  CalendarClock,
-  Bell,
-  ChartColumn,
-  MessageSquare,
-] as const;
-const FEATURE_SURFACES: OwnerSurface[] = ["queue", "team", "stats"];
-const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7] as const;
-const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const BOARD_ICONS = [Phone, CalendarClock, Users, Bell] as const;
+const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
+const TRIAL_BOX_ITEMS = [1, 2, 3, 4] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 /** Never render testimonials in production until real reviews exist. */
 const SHOW_TESTIMONIALS_PLACEHOLDER = false;
@@ -59,14 +52,17 @@ function TrialCta({
   label,
   className,
   fullWidth,
+  placement,
 }: {
   label: string;
   className?: string;
   fullWidth?: boolean;
+  placement: string;
 }) {
   return (
     <MarketingTrialLink
-      className={`inline-flex min-h-11 items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 ${
+      placement={placement}
+      className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 ${
         fullWidth ? "w-full" : ""
       } ${className ?? ""}`}
     >
@@ -75,7 +71,15 @@ function TrialCta({
   );
 }
 
-function LineCta({ label, className }: { label: string; className?: string }) {
+function LineCta({
+  label,
+  className,
+  placement,
+}: {
+  label: string;
+  className?: string;
+  placement: string;
+}) {
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   if (!supportUrl) return null;
   return (
@@ -83,8 +87,8 @@ function LineCta({ label, className }: { label: string; className?: string }) {
       href={supportUrl}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => trackMarketingEvent("support_line_click")}
-      className={`inline-flex min-h-11 items-center justify-center rounded-xl border border-amber-500/50 px-6 py-3 font-semibold text-amber-300 hover:bg-amber-500/10 ${className ?? ""}`}
+      onClick={() => trackMarketingEvent("support_line_click", { cta_location: placement })}
+      className={`inline-flex min-h-12 items-center justify-center rounded-xl border border-amber-500/50 px-6 py-3 font-semibold text-amber-300 hover:bg-amber-500/10 ${className ?? ""}`}
     >
       {label}
     </a>
@@ -94,15 +98,15 @@ function LineCta({ label, className }: { label: string; className?: string }) {
 function ContactCta({ label, className }: { label: string; className?: string }) {
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   if (!supportUrl) {
-    return <TrialCta label={label} className={className} fullWidth />;
+    return <TrialCta label={label} className={className} fullWidth placement="pricing" />;
   }
   return (
     <a
       href={supportUrl}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => trackMarketingEvent("support_line_click")}
-      className={`inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-amber-500/50 bg-transparent px-6 py-3 font-semibold text-amber-300 hover:bg-amber-500/10 ${className ?? ""}`}
+      onClick={() => trackMarketingEvent("support_line_click", { cta_location: "pricing" })}
+      className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-amber-500/50 bg-transparent px-6 py-3 font-semibold text-amber-300 hover:bg-amber-500/10 ${className ?? ""}`}
     >
       {label}
     </a>
@@ -112,9 +116,86 @@ function ContactCta({ label, className }: { label: string; className?: string })
 export function SalesPage() {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
+  const heroCtaRef = useRef<HTMLDivElement | null>(null);
+  const finalCtaRef = useRef<HTMLElement | null>(null);
+  const pricingRef = useRef<HTMLElement | null>(null);
+  const lineSectionRef = useRef<HTMLElement | null>(null);
+  const [showSticky, setShowSticky] = useState(false);
 
   useEffect(() => {
     trackMarketingEvent("sales_page_view");
+  }, []);
+
+  useEffect(() => {
+    const heroEl = heroCtaRef.current;
+    const finalEl = finalCtaRef.current;
+    if (!heroEl) return;
+
+    let heroVisible = true;
+    let finalVisible = false;
+
+    const sync = () => setShowSticky(!heroVisible && !finalVisible);
+
+    const heroObs = new IntersectionObserver(
+      ([entry]) => {
+        heroVisible = entry.isIntersecting;
+        sync();
+      },
+      { threshold: 0 },
+    );
+    heroObs.observe(heroEl);
+
+    let finalObs: IntersectionObserver | null = null;
+    if (finalEl) {
+      finalObs = new IntersectionObserver(
+        ([entry]) => {
+          finalVisible = entry.isIntersecting;
+          sync();
+        },
+        { threshold: 0.15 },
+      );
+      finalObs.observe(finalEl);
+    }
+
+    return () => {
+      heroObs.disconnect();
+      finalObs?.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    const pricingEl = pricingRef.current;
+    const lineEl = lineSectionRef.current;
+    const seen = { pricing: false, line: false };
+
+    const observers: IntersectionObserver[] = [];
+    if (pricingEl) {
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && !seen.pricing) {
+            seen.pricing = true;
+            trackMarketingEvent("pricing_view");
+          }
+        },
+        { threshold: 0.35 },
+      );
+      obs.observe(pricingEl);
+      observers.push(obs);
+    }
+    if (lineEl) {
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting && !seen.line) {
+            seen.line = true;
+            trackMarketingEvent("line_section_view");
+          }
+        },
+        { threshold: 0.3 },
+      );
+      obs.observe(lineEl);
+      observers.push(obs);
+    }
+    return () => observers.forEach((o) => o.disconnect());
   }, []);
 
   const painMessages = [
@@ -124,17 +205,32 @@ export function SalesPage() {
     t("marketing.pain.chat4"),
   ];
 
+  const lineBullets = [
+    "marketing.line.bullet1",
+    marketingClaims.reminderShortLeads
+      ? "marketing.line.bullet2ShortLeads"
+      : "marketing.line.bullet2",
+    ...(marketingClaims.customerSelfReschedule
+      ? (["marketing.line.bullet3"] as const)
+      : []),
+  ] as const;
+
   return (
-    <div className="min-h-full max-w-full overflow-x-clip bg-zinc-950 pb-16 text-zinc-50 md:pb-0">
+    <div
+      className={`min-h-full max-w-full overflow-x-clip bg-zinc-950 text-zinc-50 ${
+        showSticky ? "pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0" : "md:pb-0"
+      }`}
+    >
+      <ClarityMarketingScript />
       <LiffCallbackRedirect />
       <AttributionCapture />
-      <SalesHero />
+      <SalesHero heroCtaRef={heroCtaRef} />
 
       {/* Pain */}
       <section className="overflow-x-clip bg-zinc-900/40">
         <div className="mx-auto grid max-w-[1280px] items-center gap-6 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,54%)_minmax(0,46%)] lg:gap-10">
           <div>
-            <h2 className="text-[1.75rem] font-bold leading-[1.2] text-zinc-50 md:text-4xl lg:text-[2.5rem]">
+            <h2 className="text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-4xl lg:text-[2.5rem]">
               {t("marketing.pain.title")}
             </h2>
             <ul className="mt-6 space-y-3">
@@ -153,11 +249,60 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* 3 steps */}
-      <section id="how-it-works" className="scroll-mt-20 overflow-x-clip">
+      {/* LINE Signature */}
+      <section
+        id="line-messages"
+        ref={lineSectionRef}
+        className="scroll-mt-20 overflow-x-clip"
+      >
+        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12">
+          <div className="order-2 flex flex-col items-center gap-6 lg:order-1">
+            <LineReminderMockup
+              shopName="BarberQx Demo"
+              title={t("marketing.line.mockTitle")}
+              body={t("marketing.line.mockBody")}
+              whenLabel={t("marketing.line.mockWhen")}
+              cta={t("marketing.line.mockCta")}
+            />
+            <PhoneScreen screen="ticket" fluid className="mx-auto w-[min(64vw,200px)]" />
+          </div>
+          <div className="order-1 lg:order-2">
+            <p className="text-sm font-medium text-amber-400/90">{t("marketing.line.eyebrow")}</p>
+            <h2 className="mt-2 text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+              {t("marketing.line.title")}
+            </h2>
+            <ul className="mt-6 space-y-4">
+              {lineBullets.map((key) => (
+                <li key={key} className={`flex gap-3 ${BODY}`}>
+                  <Check size={18} className="mt-0.5 shrink-0 text-amber-400" />
+                  <span>{td(key as MessageKey)}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-5 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2.5 text-[13px] leading-relaxed text-zinc-400 md:text-sm">
+              {t("marketing.line.evidence")}
+            </p>
+            <div className="mt-5 rounded-2xl border border-amber-500/25 bg-amber-400/5 p-4 md:p-5">
+              <h3 className="text-base font-semibold text-amber-200">
+                {td("marketing.line.costTitle")}
+              </h3>
+              <p className={`mt-2 ${BODY}`}>{td("marketing.line.costBody")}</p>
+              <p className="mt-3 text-sm font-medium text-zinc-200">
+                {td("marketing.line.costClose")}
+              </p>
+            </div>
+            <div className="mt-6 flex w-full max-w-[480px] flex-col gap-3 sm:flex-row">
+              <TrialCta label={td("marketing.line.cta")} fullWidth placement="line" />
+              <LineCta label={t("marketing.line.lineCta")} className="flex-1" placement="line" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section id="how-it-works" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
-          <p className="text-sm font-medium text-amber-400/90">{t("marketing.how.eyebrow")}</p>
-          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+          <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
             {t("marketing.how.title")}
           </h2>
           <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:gap-6">
@@ -182,57 +327,94 @@ export function SalesPage() {
               );
             })}
           </ol>
+          <p className="mt-8 text-center text-sm text-zinc-400">{t("marketing.how.micro")}</p>
         </div>
       </section>
 
-      {/* Live features */}
-      <section id="features" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
-        <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
-          <p className="text-sm font-medium text-amber-400/90">
-            {t("marketing.features.eyebrow")}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
-            {t("marketing.features.title")}
-          </h2>
-          <p className={`mt-3 max-w-2xl ${BODY}`}>{t("marketing.features.support")}</p>
-          <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => {
-              const Icon = FEATURE_ICONS[n - 1];
-              return (
-                <li
-                  key={n}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-950/40 p-5 md:p-6"
-                >
-                  <Icon size={22} className="text-amber-400" strokeWidth={2} />
-                  <h3 className="mt-3 text-lg font-semibold text-zinc-50">
-                    {t(`marketing.features.${n}.title` as MessageKey)}
-                  </h3>
-                  <p className={`mt-2 ${BODY}`}>
-                    {t(`marketing.features.${n}.desc` as MessageKey)}
-                  </p>
-                  {n === 8 ? (
-                    <p className="mt-3 text-[13px] leading-relaxed text-amber-100/80 md:text-sm">
-                      {td("marketing.features.8.note")}
-                    </p>
-                  ) : null}
+      {/* Board — barbers / front desk */}
+      <section id="board" className="scroll-mt-20 overflow-x-clip">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
+          <div>
+            <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+              {t("marketing.board.title")}
+            </h2>
+            <ul className="mt-6 space-y-4">
+              {([1, 2, 3, 4] as const).map((n) => {
+                const Icon = BOARD_ICONS[n - 1];
+                return (
+                  <li key={n} className="flex gap-3">
+                    <Icon size={20} className="mt-0.5 shrink-0 text-amber-400" strokeWidth={2} />
+                    <div>
+                      <p className="font-semibold text-zinc-50">
+                        {t(`marketing.board.${n}.title` as MessageKey)}
+                      </p>
+                      <p className={`mt-1 ${BODY}`}>
+                        {t(`marketing.board.${n}.desc` as MessageKey)}
+                      </p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center lg:flex-col">
+            <OwnerSurfacePhone surface="queue" />
+            <MarketingPhotoSlot
+              slot="barberQueueBoard"
+              alt={t("marketing.board.photoAlt")}
+              sizes="(min-width: 1024px) 280px, 60vw"
+              className="w-full max-w-[240px] min-h-[280px]"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Owner stats */}
+      <section id="owner" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-2 lg:gap-12">
+          <div>
+            <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+              {t("marketing.owner.title")}
+            </h2>
+            <p className={`mt-4 ${BODY}`}>{t("marketing.owner.body")}</p>
+            <ul className="mt-5 space-y-2">
+              {([1, 2, 3] as const).map((n) => (
+                <li key={n} className={`flex items-center gap-2 ${BODY}`}>
+                  <ChartColumn size={16} className="shrink-0 text-amber-400" />
+                  {t(`marketing.owner.metric${n}` as MessageKey)}
                 </li>
-              );
-            })}
-          </ul>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-            {FEATURE_SURFACES.map((surface) => (
-              <figure key={surface} className="flex flex-col items-center text-center">
-                <figcaption className="mb-4 max-w-xs">
-                  <h3 className="text-base font-semibold text-zinc-50 md:text-lg">
-                    {t(`marketing.features.surface.${surface}.title` as MessageKey)}
-                  </h3>
-                  <p className={`mt-1.5 ${BODY}`}>
-                    {t(`marketing.features.surface.${surface}.desc` as MessageKey)}
-                  </p>
-                </figcaption>
-                <OwnerSurfacePhone surface={surface} />
-              </figure>
-            ))}
+              ))}
+            </ul>
+          </div>
+          <figure className="flex flex-col items-center">
+            <OwnerSurfacePhone surface="stats" />
+            <figcaption className="mt-3 text-center text-sm text-zinc-500">
+              {t("marketing.owner.caption")}
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      {/* Founder */}
+      <section id="founder" className="scroll-mt-20 overflow-x-clip">
+        <div className="mx-auto max-w-[800px] px-4 py-10 md:px-6 md:py-14">
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
+            <MarketingPhotoSlot
+              slot="founderTommy"
+              alt={t("marketing.founder.photoAlt")}
+              shape="circle"
+              sizes="160px"
+              className="h-36 w-36 shrink-0 aspect-square sm:h-40 sm:w-40"
+            />
+            <div className="text-center sm:text-left">
+              <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.founder.title")}
+              </h2>
+              <p className={`mt-3 ${BODY}`}>{td("marketing.founder.body")}</p>
+              <div className="mt-5 flex justify-center sm:justify-start">
+                <LineCta label={t("marketing.founder.cta")} placement="founder" />
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -247,8 +429,8 @@ export function SalesPage() {
         </section>
       ) : null}
 
-      {/* Pricing: 2 tiers + contact row */}
-      <section id="pricing" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+      {/* Pricing */}
+      <section id="pricing" ref={pricingRef} className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
           <p className="text-sm font-medium text-amber-400/90">
             {t("marketing.pricing.eyebrow")}
@@ -259,29 +441,45 @@ export function SalesPage() {
           <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {marketingOffer.tiers.map((tier) => (
-              <div
-                key={tier.id}
-                className="flex flex-col rounded-2xl border border-amber-500/35 bg-zinc-950/60 p-6 md:p-7"
-              >
-                <p className="text-sm font-medium text-amber-400/90">
-                  {tierBarberRangeLabel(tier, locale)}
-                </p>
-                <p className="mt-2 text-3xl font-bold text-amber-400 md:text-4xl">
-                  {tierPricePerMonthLabel(tier, locale)}
-                </p>
-                <p className="mt-2 text-sm text-zinc-400">{t("marketing.pricing.tierSameFeatures")}</p>
-                <ul className="mt-5 space-y-2">
-                  {PRICING_INCLUDES.map((n) => (
-                    <li key={n} className={`flex items-start gap-2 ${BODY}`}>
-                      <Check size={16} className="mt-1 shrink-0 text-amber-400" />
-                      {t(`marketing.pricing.include${n}` as MessageKey)}
-                    </li>
-                  ))}
-                </ul>
-                <TrialCta label={td("marketing.pricing.cta")} className="mt-auto pt-6" fullWidth />
-              </div>
-            ))}
+            {marketingOffer.tiers.map((tier) => {
+              const perDay = tierPerDayHint(tier, locale);
+              return (
+                <div
+                  key={tier.id}
+                  className="flex flex-col rounded-2xl border border-amber-500/35 bg-zinc-950/60 p-6 md:p-7"
+                >
+                  <p className="text-sm font-medium text-amber-400/90">
+                    {tierBarberRangeLabel(tier, locale)}
+                  </p>
+                  <p className="mt-2 text-3xl font-bold text-amber-400 md:text-4xl">
+                    {tierPricePerMonthLabel(tier, locale)}
+                  </p>
+                  {perDay ? (
+                    <p className="mt-1 text-sm text-zinc-400">{perDay}</p>
+                  ) : null}
+                  <p className="mt-2 text-sm text-zinc-400">
+                    {t("marketing.pricing.tierSameFeatures")}
+                  </p>
+                  <ul className="mt-5 space-y-2">
+                    {PRICING_INCLUDES.map((n) => (
+                      <li key={n} className={`flex items-start gap-2 ${BODY}`}>
+                        <Check size={16} className="mt-1 shrink-0 text-amber-400" />
+                        {t(`marketing.pricing.include${n}` as MessageKey)}
+                      </li>
+                    ))}
+                  </ul>
+                  <TrialCta
+                    label={td("marketing.pricing.cta")}
+                    className="mt-auto pt-6"
+                    fullWidth
+                    placement="pricing"
+                  />
+                  <p className="mt-3 text-center text-[13px] text-zinc-500">
+                    {td("marketing.pricing.micro")}
+                  </p>
+                </div>
+              );
+            })}
           </div>
 
           <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
@@ -312,7 +510,19 @@ export function SalesPage() {
             </div>
           </div>
 
-          <p className="mt-6 text-sm text-zinc-400">{td("marketing.pricing.micro")}</p>
+          {/* Trial / risk-reversal box */}
+          <div className="mt-10 rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5 md:p-7">
+            <h3 className="text-xl font-bold text-zinc-50">{td("marketing.trialBox.title")}</h3>
+            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+              {TRIAL_BOX_ITEMS.map((n) => (
+                <li key={n} className={`flex items-start gap-2 ${BODY}`}>
+                  <Check size={16} className="mt-1 shrink-0 text-amber-400" />
+                  {t(`marketing.trialBox.item${n}` as MessageKey)}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-sm text-zinc-400">{td("marketing.trialBox.footer")}</p>
+          </div>
         </div>
       </section>
 
@@ -329,10 +539,15 @@ export function SalesPage() {
                 <details
                   key={n}
                   className="group rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 open:border-amber-500/30 open:pb-4"
+                  onToggle={(e) => {
+                    if ((e.target as HTMLDetailsElement).open) {
+                      trackMarketingEvent("faq_open", { faq_id: String(n) });
+                    }
+                  }}
                 >
                   <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 py-2 text-zinc-50 [&::-webkit-details-marker]:hidden">
                     <span className="min-w-0 flex-1 text-base font-medium leading-snug">
-                      {t(`marketing.faq.${n}.q` as MessageKey)}
+                      {td(`marketing.faq.${n}.q` as MessageKey)}
                     </span>
                     <Plus
                       size={18}
@@ -356,14 +571,18 @@ export function SalesPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="overflow-x-clip border-t border-amber-500/20 bg-zinc-900/60">
+      <section
+        ref={finalCtaRef}
+        className="overflow-x-clip border-t border-amber-500/20 bg-zinc-900/60"
+      >
         <div className="mx-auto max-w-[1280px] px-4 py-12 text-center md:px-6 md:py-16">
           <h2 className="text-2xl font-bold leading-tight text-zinc-50 md:text-4xl">
             {t("marketing.final.title")}
           </h2>
+          <p className={`mx-auto mt-4 max-w-xl ${BODY}`}>{t("marketing.final.sub")}</p>
           <div className="mx-auto mt-8 flex w-full max-w-[480px] flex-col gap-3 sm:flex-row sm:justify-center">
-            <TrialCta label={td("marketing.final.cta")} className="flex-1" fullWidth />
-            <LineCta label={t("marketing.final.lineCta")} className="flex-1" />
+            <TrialCta label={td("marketing.final.cta")} className="flex-1" fullWidth placement="final" />
+            <LineCta label={t("marketing.final.lineCta")} className="flex-1" placement="final" />
           </div>
           <p className="mt-4 text-[13px] text-zinc-400 md:text-sm">
             {td("marketing.final.micro")}
@@ -373,12 +592,18 @@ export function SalesPage() {
 
       <MarketingFooter />
 
-      {/* Sticky mobile CTA — 56px */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-4 backdrop-blur md:hidden">
-        <MarketingTrialLink className="flex h-14 w-full items-center justify-center font-semibold text-amber-400">
-          {td("marketing.sticky.cta")}
-        </MarketingTrialLink>
-      </div>
+      {/* Sticky mobile CTA */}
+      {showSticky ? (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-4 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+          <MarketingTrialLink
+            placement="sticky"
+            eventName="sticky_cta_click"
+            className="flex h-14 w-full items-center justify-center font-semibold text-amber-400"
+          >
+            {td("marketing.sticky.cta")}
+          </MarketingTrialLink>
+        </div>
+      ) : null}
     </div>
   );
 }

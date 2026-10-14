@@ -10,6 +10,16 @@ export const marketingOffer = {
   contactFromBarbers: 11,
 } as const;
 
+/**
+ * Public claim gates — off until the underlying product is accurate/merged.
+ * - reminderShortLeads: 3h/1h/30m need denser cron than Hobby daily.
+ * - customerSelfReschedule: P6 not on main yet.
+ */
+export const marketingClaims = {
+  reminderShortLeads: false,
+  customerSelfReschedule: false,
+} as const;
+
 export type MarketingTier = (typeof marketingOffer.tiers)[number];
 
 export function formatBaht(amount: number): string {
@@ -34,6 +44,12 @@ export function tierPricePerMonthLabel(
   return locale === "th" ? `${price} / เดือน` : `${price} / month`;
 }
 
+/** ≈ daily framing for starter tier (599/30 < 20). */
+export function tierPerDayHint(tier: MarketingTier, locale: "th" | "en"): string | null {
+  if (tier.id !== "tier1") return null;
+  return locale === "th" ? "ตกวันละไม่ถึง 20 บาท" : "Less than ฿20/day";
+}
+
 /**
  * Resolve which marketing tier a shop seat count maps to.
  * Returns null when the shop should use the contact CTA.
@@ -51,11 +67,13 @@ export function resolveMarketingTierForBarberCount(
   return null;
 }
 
-/** Fill `{days}` / `{quota}` / `{price}` placeholders from marketingOffer. */
+/** Fill `{days}` / `{quota}` / `{price}` / `{price2}` placeholders from marketingOffer. */
 export function fillOfferCopy(template: string): string {
   const starter = formatBaht(marketingOffer.tiers[0].monthlyPriceThb);
+  const tier2 = formatBaht(marketingOffer.tiers[1].monthlyPriceThb);
   return template
     .replaceAll("{days}", String(marketingOffer.trialDays))
     .replaceAll("{quota}", String(marketingOffer.lineFreePushQuota))
-    .replaceAll("{price}", starter);
+    .replaceAll("{price}", starter)
+    .replaceAll("{price2}", tier2);
 }

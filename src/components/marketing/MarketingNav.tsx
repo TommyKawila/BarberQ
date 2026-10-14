@@ -43,7 +43,7 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
             <a href="#how-it-works" className="hover:text-amber-400">
               {t("marketing.nav.how")}
             </a>
-            <a href="#features" className="hover:text-amber-400">
+            <a href="#board" className="hover:text-amber-400">
               {t("marketing.nav.features")}
             </a>
             <a href="#pricing" className="hover:text-amber-400">
@@ -58,10 +58,16 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
           <LanguageToggle />
           {isTrial ? null : (
             <>
-              <MarketingTrialLink className="inline-flex min-h-11 max-w-full shrink items-center rounded-xl bg-amber-400 px-3 py-2 text-sm font-semibold text-zinc-950 sm:px-4 md:hidden">
+              <MarketingTrialLink
+                placement="nav"
+                className="inline-flex min-h-11 max-w-full shrink items-center rounded-xl bg-amber-400 px-3 py-2 text-sm font-semibold text-zinc-950 sm:px-4 md:hidden"
+              >
                 {td("marketing.nav.trialShort")}
               </MarketingTrialLink>
-              <MarketingTrialLink className="hidden min-h-11 items-center rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex">
+              <MarketingTrialLink
+                placement="nav"
+                className="hidden min-h-11 items-center rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex"
+              >
                 {td("marketing.nav.trial")}
               </MarketingTrialLink>
             </>

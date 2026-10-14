@@ -1,9 +1,6 @@
 import { PhoneFrame } from "./PhoneFrame";
 
-/**
- * Conceptual mock of a day-before LINE reminder (not live yet).
- * Shown inside Coming Soon with a LINE free-plan quota note.
- */
+/** LINE chat mock for the signature “confirmation + reminder” section. */
 export function LineReminderMockup({
   shopName,
   title,

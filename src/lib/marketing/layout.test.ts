@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { dictionary } from "@/lib/i18n/dictionary";
-import { marketingOffer } from "@/lib/marketing/offer";
+import { marketingClaims, marketingOffer } from "@/lib/marketing/offer";
+import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 
 const root = resolve(import.meta.dirname, "../..");
 
@@ -55,14 +56,12 @@ describe("marketing layout split", () => {
     assert.match(sales, /SalesHero/);
     assert.match(sales, /MarketingTrialLink/);
     assert.match(hero, /MarketingTrialLink/);
-    assert.match(hero, /HeroProductMockups/);
-    assert.match(hero, /handPhoneHero/);
-    assert.match(hero, /handPhoneHero\.composited|composited/);
-    assert.match(hero, /object-cover/);
+    assert.match(hero, /MarketingPhotoSlot/);
+    assert.match(hero, /heroHandPhone/);
     assert.match(hero, /linear-gradient\(to right/);
     assert.match(hero, /right-0/);
     assert.match(hero, /md:hidden/);
-    assert.doesNotMatch(hero, /handPhoneHero\.cutout|hand-phone-cutout/);
+    assert.doesNotMatch(hero, /hand-phone-cutout/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /marketing\.hero\.micro/);
     assert.match(hero, /min-w-0/);
@@ -82,14 +81,11 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    // Desktop 3-col layout
     assert.match(sales, /lg:grid-cols-3/);
     assert.match(sales, /CustomerStepPhone/);
-    // Desktop uses size="md" PhoneFrame (not only mobile fluid)
     const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
     assert.match(stepFn, /hidden lg:block/);
     assert.match(stepFn, /size="md"/);
-    // Step → screen: book UI, LINE ticket, admin board
     assert.match(mockups, /1:\s*"choose"/);
     assert.match(mockups, /2:\s*"ticket"/);
     assert.match(mockups, /3:\s*"adminQueue"/);
@@ -98,56 +94,30 @@ describe("marketing layout split", () => {
     assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|แจ้งเตือน/);
   });
 
-  it("hero uses pre-composited hand-phone as primary visual with overflow guards", () => {
-    const mockups = readFileSync(
-      resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
-      "utf8",
-    );
-    const hand = readFileSync(
-      resolve(root, "components/marketing/mockups/HandPhoneComposite.tsx"),
-      "utf8",
-    );
-    const phone = readFileSync(
-      resolve(root, "components/marketing/mockups/PhoneFrame.tsx"),
-      "utf8",
-    );
-    const heroFn = mockups.slice(mockups.indexOf("export function HeroProductMockups"));
-    assert.match(heroFn, /HandPhoneComposite/);
-    assert.match(heroFn, /overflow-x-clip|overflow-hidden/);
-    assert.match(heroFn, /max-w-full/);
-    // Mobile hero breaks out of section padding to fill screen width
-    assert.match(heroFn, /calc\(100%\+2rem\)|w-\[calc/);
-    assert.match(hand, /handPhoneHero/);
-    assert.match(hand, /handPhoneHero\.mobile/);
-    assert.match(hand, /handPhoneHero\.desktop/);
-    assert.match(hand, /sizes="100vw"/);
-    assert.match(phone, /Dynamic Island|dynamic island/i);
-    assert.match(phone, /390\s*\/\s*844/);
-    const screens = readFileSync(resolve(root, "lib/marketing/screens.ts"), "utf8");
-    assert.match(screens, /hand-phone-mobile\.webp/);
-    assert.match(screens, /hand-phone-desktop\.webp/);
-    assert.match(screens, /hand-phone-cutout\.webp/);
-    assert.match(screens, /admin-stats\.webp/);
-    assert.match(screens, /mobileWidth:\s*1284/);
-    assert.ok(
-      existsSync(resolve(root, "../public/marketing/hand-phone.webp")),
-      "hand-phone.webp missing",
-    );
-    assert.ok(
-      existsSync(resolve(root, "../public/marketing/hero/hand-phone-composited.webp")),
-      "hand-phone-composited.webp missing",
-    );
-    assert.ok(
-      existsSync(resolve(root, "../public/marketing/hero/hand-phone-cutout.webp")),
-      "hand-phone-cutout.webp missing",
-    );
+  it("photo slots and real screens exist for swap", () => {
+    const slots = readFileSync(resolve(root, "lib/marketing/photo-slots.ts"), "utf8");
+    assert.match(slots, /heroHandPhone/);
+    assert.match(slots, /barberQueueBoard/);
+    assert.match(slots, /founderTommy/);
+    assert.match(slots, /\/marketing\/photos\//);
+    assert.equal(marketingPhotoSlots.heroHandPhone.src, null);
+    assert.equal(marketingPhotoSlots.barberQueueBoard.src, null);
+    assert.equal(marketingPhotoSlots.founderTommy.src, null);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
       "choose-slot.webp missing",
     );
     assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue.webp")),
+      "admin-queue.webp missing",
+    );
+    assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/admin-stats.webp")),
       "admin-stats.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/queue-ticket.webp")),
+      "queue-ticket.webp missing",
     );
   });
 
@@ -174,22 +144,27 @@ describe("marketing layout split", () => {
     assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
   });
 
-  it("sales page follows approved section order with sticky CTA and no chips", () => {
+  it("sales page follows blueprint section order with sticky CTA and no coming-soon", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
     const order = [
+      "ClarityMarketingScript",
       "SalesHero",
       "marketing.pain",
+      'id="line-messages"',
       "how-it-works",
       "CustomerStepPhone",
-      'id="features"',
+      'id="board"',
+      'id="owner"',
+      'id="founder"',
       'id="pricing"',
       "marketingOffer.tiers",
+      "marketing.trialBox",
       'id="faq"',
       "marketing.final",
-      "marketing.sticky.cta",
+      "sticky_cta_click",
     ];
     let cursor = 0;
     for (const token of order) {
@@ -199,8 +174,37 @@ describe("marketing layout split", () => {
     }
     assert.match(sales, /SHOW_TESTIMONIALS_PLACEHOLDER = false/);
     assert.match(sales, /h-14/);
+    assert.doesNotMatch(sales, /id="coming-soon"/);
     assert.doesNotMatch(sales, /barber\.chip|BARBER_CHIPS/);
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
+    // At least 5 MarketingTrialLink / TrialCta placements
+    const ctaCount = (sales.match(/placement="/g) ?? []).length;
+    assert.ok(ctaCount >= 5, `expected >=5 CTA placements, got ${ctaCount}`);
+  });
+
+  it("feature claims for short leads and self-reschedule stay gated off", () => {
+    assert.equal(marketingClaims.reminderShortLeads, false);
+    assert.equal(marketingClaims.customerSelfReschedule, false);
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    assert.match(sales, /marketingClaims\.reminderShortLeads/);
+    assert.match(sales, /marketingClaims\.customerSelfReschedule/);
+  });
+
+  it("Clarity loads only via marketing script gated on env", () => {
+    const clarity = readFileSync(
+      resolve(root, "components/marketing/ClarityMarketingScript.tsx"),
+      "utf8",
+    );
+    const events = readFileSync(resolve(root, "lib/marketing/events.ts"), "utf8");
+    assert.match(clarity, /NEXT_PUBLIC_CLARITY_PROJECT_ID/);
+    assert.match(clarity, /clarity\.ms\/tag/);
+    assert.match(events, /clarity\("event"/);
+    assert.match(events, /clarity\("set"/);
+    const rootLayout = readFileSync(resolve(root, "app/layout.tsx"), "utf8");
+    assert.doesNotMatch(rootLayout, /ClarityMarketingScript|clarity\.ms/);
   });
 
   it("trial page uses focused chrome without sales nav CTA", () => {
@@ -216,6 +220,7 @@ describe("marketing layout split", () => {
     assert.match(trial, /noValidate/);
     assert.match(trial, /marketing.trial.backHome/);
     assert.match(trial, /marketing.trial.priceExpect/);
+    assert.match(trial, /ClarityMarketingScript/);
     assert.match(nav, /variant === "trial"/);
   });
 });
@@ -233,11 +238,10 @@ describe("visible marketing claim locks", () => {
     const enKeys = Object.keys(dictionary.en).filter((k) => k.startsWith("marketing."));
     assert.deepEqual(thKeys.sort(), enKeys.sort());
     assert.equal(thKeys.some((k) => k.includes("barber.chip")), false);
-    assert.ok(dictionary.th["marketing.features.6.title"]);
-    assert.ok(dictionary.th["marketing.features.7.title"]);
-    assert.ok(dictionary.th["marketing.features.8.title"]);
-    assert.ok(dictionary.th["marketing.features.surface.stats.title"]);
-    assert.ok(dictionary.th["marketing.faq.7.q"]);
+    assert.ok(dictionary.th["marketing.line.title"]);
+    assert.ok(dictionary.th["marketing.board.title"]);
+    assert.ok(dictionary.th["marketing.founder.title"]);
+    assert.ok(dictionary.th["marketing.faq.8.q"]);
     assert.match(dictionary.th["marketing.hero.cta"], /ทดลองใช้ฟรี \{days\} วัน/);
     assert.match(dictionary.en["marketing.hero.cta"], /free \{days\}-day trial/i);
   });
@@ -260,7 +264,6 @@ describe("visible marketing claim locks", () => {
     assert.match(th, /1–5 ช่าง|1–5/);
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);
-    // Summary/revenue is live (feature 7); configurable reminders are live (feature 8)
     assert.match(dictionary.th["marketing.features.7.title"], /สรุปยอด|รายได้/);
     assert.match(dictionary.th["marketing.features.8.title"], /แจ้งเตือนก่อนถึงคิว/);
     assert.match(dictionary.th["marketing.features.8.note"], /\{quota\}/);
@@ -270,14 +273,19 @@ describe("visible marketing claim locks", () => {
     );
   });
 
-  it("FAQ explains LINE quota, Web Push, and tier pricing", () => {
+  it("FAQ states confirm/ticket/reminders are push quota messages", () => {
     assert.match(dictionary.th["marketing.faq.3.a"], /\{quota\}/);
-    assert.match(dictionary.th["marketing.faq.3.a"], /reply|ตอบกลับ/);
-    assert.doesNotMatch(dictionary.th["marketing.faq.3.a"], /เป็นทางเลือก/);
-    assert.match(dictionary.th["marketing.faq.4.a"], /Web Push/);
-    assert.match(dictionary.en["marketing.faq.4.a"], /Web Push/);
-    assert.match(dictionary.th["marketing.faq.7.a"], /1–5 ช่าง \{price\}/);
-    assert.match(dictionary.en["marketing.faq.7.a"], /1–5 barbers \{price\}/);
+    assert.match(dictionary.th["marketing.faq.3.a"], /push|เซิร์ฟเวอร์/);
+    assert.doesNotMatch(dictionary.th["marketing.faq.3.a"], /reply|ตอบกลับ \(reply\)/);
+    assert.match(dictionary.en["marketing.faq.3.a"], /server push/i);
+    assert.doesNotMatch(dictionary.en["marketing.faq.3.a"], /reply messages/i);
+    assert.match(dictionary.th["marketing.faq.4.a"], /เปิด–ปิด|เปิด\/ปิด|เปิด-ปิด/);
+    assert.match(dictionary.th["marketing.faq.5.a"], /Web Push/);
+    assert.match(dictionary.en["marketing.faq.5.a"], /Web Push/);
+    assert.match(dictionary.th["marketing.faq.8.a"], /1–5 ช่าง \{price\}/);
+    assert.match(dictionary.th["marketing.faq.8.a"], /\{price2\}/);
+    assert.match(dictionary.en["marketing.faq.8.a"], /1–5 barbers \{price\}/);
+    assert.match(dictionary.en["marketing.faq.8.a"], /\{price2\}/);
   });
 
   it("offer.ts is the only hardcoded public price source for tiers", () => {
@@ -285,6 +293,8 @@ describe("visible marketing claim locks", () => {
     const sales = readFileSync(resolve(root, "components/marketing/SalesPage.tsx"), "utf8");
     assert.match(offer, /monthlyPriceThb: 599/);
     assert.match(offer, /monthlyPriceThb: 999/);
+    assert.match(offer, /marketingClaims/);
+    assert.match(offer, /\{price2\}/);
     assert.match(sales, /marketingOffer\.tiers/);
     assert.doesNotMatch(sales, /฿599|฿999|monthlyPriceThb:\s*599/);
     assert.equal(marketingOffer.tiers.length, 2);
