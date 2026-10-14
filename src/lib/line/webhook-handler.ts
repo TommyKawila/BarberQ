@@ -3,14 +3,10 @@ import {
   appointmentMatchesCode,
   parseBookingCodeFromText,
 } from "@/lib/line/booking-code";
-import {
-  buildBookingConfirmFlex,
-  buildQueueTicketFlex,
-} from "@/lib/line/flex-messages";
+import { buildBookingConfirmFlexPair } from "@/lib/line/booking-confirm-notify";
 import { claimWebhookEvent, recordLineMessage } from "@/lib/line/message-log";
 import { replyMessages } from "@/lib/line/messaging-api";
 import { getShopLineChannelSecrets } from "@/lib/line/shop-channel";
-import { buildShopWebUrl } from "@/lib/line/liff-url";
 
 interface LineEvent {
   type: string;
@@ -47,8 +43,7 @@ export async function handleShopLineWebhook(
       if (!code) continue;
       await replyBookingConfirm({
         shopId,
-        shopSlug: shop.slug,
-        shopName: shop.name,
+        shop,
         accessToken: secrets.accessToken,
         replyToken: event.replyToken,
         lineUserId: event.source?.userId ?? "",
@@ -76,8 +71,7 @@ export async function handleShopLineWebhook(
 
 async function replyBookingConfirm(input: {
   shopId: string;
-  shopSlug: string;
-  shopName: string;
+  shop: { id: string; slug: string; name: string };
   accessToken: string;
   replyToken: string;
   lineUserId: string;
@@ -93,47 +87,25 @@ async function replyBookingConfirm(input: {
         a.status === "confirmed" &&
         appointmentMatchesCode(a.id, input.code),
     ) ?? null;
-  if (!appointment) return;
+  if (!appointment) {
+    console.warn(
+      JSON.stringify({
+        event: "line_webhook_booking_code_unmatched",
+        shopId: input.shopId,
+        code: input.code,
+        lineUserId: input.lineUserId ? "present" : "missing",
+      }),
+    );
+    return;
+  }
 
-  const barber = await store.getBarber(appointment.barber_id);
-  const myBookingsUrl = `${buildShopWebUrl(input.shopSlug)}/bookings`;
-  const cancelUrl = appointment.cancel_token
-    ? `${buildShopWebUrl(input.shopSlug)}/c/${appointment.cancel_token}`
-    : myBookingsUrl;
+  const pair = await buildBookingConfirmFlexPair(input.shop, appointment);
+  if (!pair) return;
 
-  const dayStart = new Date(appointment.start_time);
-  dayStart.setHours(0, 0, 0, 0);
-  const dayEnd = new Date(dayStart);
-  dayEnd.setDate(dayEnd.getDate() + 1);
-  const dayAppts = (await store.listDayAppointments(dayStart, dayEnd)).filter(
-    (a) => a.status === "confirmed" && a.barber_id === appointment.barber_id,
-  );
-  dayAppts.sort(
-    (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
-  );
-  const index = dayAppts.findIndex((a) => a.id === appointment.id);
-  const ahead = Math.max(0, index);
-  const queueLabel = `Q-${String(index + 1).padStart(2, "0")}`;
-  const waitMinutes = ahead * (barber?.slot_duration_minutes ?? 30);
-
-  const confirm = buildBookingConfirmFlex({
-    shopName: input.shopName,
-    startTime: appointment.start_time,
-    endTime: appointment.end_time,
-    barberName: barber?.name ?? "—",
-    appointmentId: appointment.id,
-    myBookingsUrl,
-    cancelUrl,
-  });
-  const ticket = buildQueueTicketFlex({
-    shopName: input.shopName,
-    queueLabel,
-    aheadCount: ahead,
-    waitMinutes,
-    liveUrl: myBookingsUrl,
-  });
-
-  const ok = await replyMessages(input.accessToken, input.replyToken, [confirm, ticket]);
+  const ok = await replyMessages(input.accessToken, input.replyToken, [
+    pair.confirm,
+    pair.ticket,
+  ]);
   await recordLineMessage({
     shopId: input.shopId,
     kind: "reply_confirm",

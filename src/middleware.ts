@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  resolveBareShopPath,
+  resolveLiffStateTarget,
+  shopSlugFromPath,
+} from "@/lib/line/liff-deep-link";
 import { isSafeReturnPath, LIFF_RETURN_COOKIE } from "@/lib/line/liff-return";
 
 const DEFAULT_SHOP = "phinxstudio";
+const LAST_SHOP_COOKIE = "barberq_last_shop";
 
 function redirectWithoutLiffParams(request: NextRequest, pathname: string) {
   const url = new URL(pathname, request.url);
@@ -25,6 +31,15 @@ function liffReturnPathFromCookie(request: NextRequest): string | null {
   }
   if (!isSafeReturnPath(path) || path === "/") return null;
   return path;
+}
+
+function withLastShopCookie(res: NextResponse, shop: string): NextResponse {
+  res.cookies.set(LAST_SHOP_COOKIE, shop, {
+    path: "/",
+    maxAge: 60 * 60 * 24 * 30,
+    sameSite: "lax",
+  });
+  return res;
 }
 
 export function middleware(request: NextRequest) {
@@ -50,29 +65,45 @@ export function middleware(request: NextRequest) {
 
   const liffState = url.searchParams.get("liff.state");
   if (liffState) {
-    const targetPath = liffState.startsWith("/") ? liffState : `/${liffState}`;
-    if (targetPath !== path) {
-      return redirectWithoutLiffParams(request, targetPath);
-    }
-    if (url.searchParams.has("liff.state")) {
-      return redirectWithoutLiffParams(request, path);
+    const targetPath = resolveLiffStateTarget(path, liffState);
+    if (targetPath !== path || url.searchParams.has("liff.state")) {
+      const res = redirectWithoutLiffParams(request, targetPath);
+      const shop = shopSlugFromPath(targetPath);
+      if (shop) return withLastShopCookie(res, shop);
+      return res;
     }
   }
 
   const duplicateMatch = path.match(/^\/([^/]+)\/\1(\/.*)?$/);
   if (duplicateMatch) {
-    return NextResponse.redirect(
-      new URL(`/${duplicateMatch[1]}${duplicateMatch[2] ?? ""}`, request.url),
-    );
+    const dest = `/${duplicateMatch[1]}${duplicateMatch[2] ?? ""}`;
+    const res = NextResponse.redirect(new URL(dest, request.url));
+    return withLastShopCookie(res, duplicateMatch[1]);
   }
 
-  if (path === "/bookings") {
-    return NextResponse.redirect(new URL("/", request.url));
+  // Bare customer paths (LIFF secondary /bookings without shop in URL).
+  // Never send these to the marketing home page.
+  if (path === "/bookings" || path.startsWith("/bookings/")) {
+    const lastShop = request.cookies.get(LAST_SHOP_COOKIE)?.value;
+    const dest = resolveBareShopPath(path, lastShop, DEFAULT_SHOP);
+    const res = NextResponse.redirect(new URL(dest, request.url));
+    const shop = shopSlugFromPath(dest);
+    if (shop) return withLastShopCookie(res, shop);
+    return res;
   }
 
   if (path === "/admin" || path.startsWith("/admin/")) {
-    const suffix = path === "/admin" ? "/admin" : path.slice("/admin".length);
-    return NextResponse.redirect(new URL(`/${DEFAULT_SHOP}${suffix}`, request.url));
+    const lastShop = request.cookies.get(LAST_SHOP_COOKIE)?.value;
+    const dest = resolveBareShopPath(path, lastShop, DEFAULT_SHOP);
+    const res = NextResponse.redirect(new URL(dest, request.url));
+    const shop = shopSlugFromPath(dest);
+    if (shop) return withLastShopCookie(res, shop);
+    return res;
+  }
+
+  const shop = shopSlugFromPath(path);
+  if (shop) {
+    return withLastShopCookie(NextResponse.next(), shop);
   }
 
   return NextResponse.next();

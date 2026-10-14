@@ -28,8 +28,12 @@ export async function POST(
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  // Respond quickly; process asynchronously.
-  void handleShopLineWebhook(shopId, body).catch((err) => {
+  // Must await: on Vercel/serverless, fire-and-forget after the response is
+  // returned often never runs — so liff.sendMessages → webhook reply Flex
+  // silently never arrives in the OA chat even when scopes are correct.
+  try {
+    await handleShopLineWebhook(shopId, body);
+  } catch (err) {
     console.warn(
       JSON.stringify({
         event: "line_webhook_handler_error",
@@ -37,7 +41,7 @@ export async function POST(
         message: err instanceof Error ? err.message : "unknown",
       }),
     );
-  });
+  }
 
   return NextResponse.json({ ok: true });
 }

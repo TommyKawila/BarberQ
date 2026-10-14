@@ -5,7 +5,12 @@ import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { canCancelAt, formatSlotTime, SHOP_TIMEZONE } from "@/lib/services/slot-service";
+import {
+  canCancelAt,
+  CANCEL_LEAD_MINUTES,
+  formatSlotTime,
+  SHOP_TIMEZONE,
+} from "@/lib/services/slot-service";
 import { barberLabel, type Appointment, type Barber } from "@/types/booking";
 
 interface ApiError {
@@ -112,7 +117,12 @@ export function CancelClient({
           </button>
         ) : (
           <div className="mt-5 space-y-3">
-            <p className="text-sm text-amber-400">{t("booking.cancelTooLate")}</p>
+            <p className="text-sm text-amber-400">
+              {t("booking.cancelTooLateDetail").replace(
+                "{minutes}",
+                String(CANCEL_LEAD_MINUTES),
+              )}
+            </p>
             <ShopContactLinks lineUrl={lineUrl} phone={phone} />
           </div>
         )}

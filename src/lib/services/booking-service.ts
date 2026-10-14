@@ -13,6 +13,7 @@ import {
 } from "@/lib/services/slot-service";
 import { isBlockingStatus } from "@/lib/appointment-status";
 import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
+import { scheduleBookingReminder } from "@/lib/reminders/schedule-booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
 import type {
@@ -200,7 +201,10 @@ export async function getAvailableSlotsForShop(
   }
 }
 
-export async function createBooking(input: CreateBookingInput): Promise<Appointment> {
+export async function createBooking(
+  input: CreateBookingInput,
+  shopIdHint?: string,
+): Promise<Appointment> {
   const name = input.customerName.trim();
   const phone = input.customerPhone.trim();
   const customerRef = input.customerRef.trim();
@@ -246,7 +250,8 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
     const end = addMinutes(start, barber.slot_duration_minutes);
-    return await store.createAppointment({
+    const source = input.source ?? "line";
+    const appointment = await store.createAppointment({
       barberId: input.barberId,
       customerRef,
       customerName: name,
@@ -254,7 +259,26 @@ export async function createBooking(input: CreateBookingInput): Promise<Appointm
       startTime: start,
       endTime: end,
       customerLineId: input.customerLineId,
-      source: input.source ?? "line",
+      source,
+    });
+
+    const shopId = shopIdHint ?? barber.shop_id ?? null;
+    if (!shopId) return appointment;
+    const settings = await store.getShopSettings(shopId);
+    const preferred =
+      input.reminderLeadMinutes === undefined
+        ? settings.reminderLeadMinutes
+        : input.reminderLeadMinutes;
+    // Prefer request identity fields — RPC payloads may omit source/line id keys.
+    return scheduleBookingReminder({
+      shopId,
+      shopRemindersEnabled: settings.remindersEnabled,
+      appointment: {
+        ...appointment,
+        source: appointment.source ?? source,
+        customer_line_id: appointment.customer_line_id ?? input.customerLineId ?? null,
+      },
+      preferredLeadMinutes: preferred,
     });
   } catch (error) {
     if (error instanceof BookingError) throw error;
@@ -404,7 +428,7 @@ export async function createBookingForShop(
   input: CreateBookingInput,
 ): Promise<Appointment> {
   await assertBarberInShop(input.barberId, shopId);
-  return createBooking(input);
+  return createBooking(input, shopId);
 }
 
 export async function cancelBooking(

@@ -617,6 +617,24 @@ export default function AdminSettingsPage() {
           </Link>
         </section>
 
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsReminders")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsRemindersHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/reminders")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.settingsReminders")}
+          </Link>
+          <Link
+            href={shopPath("/admin/settings/message-cost")}
+            className="mt-2 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700/80 text-sm font-medium text-amber-300"
+          >
+            {t("admin.settingsMessageCost")}
+          </Link>
+          <p className="mt-2 text-xs text-zinc-500">{t("admin.settingsMessageCostHint")}</p>
+        </section>
+
         {profile.role === "owner" ? (
           <section className="rounded-2xl bg-zinc-900 p-4">
             <h2 className="text-sm font-semibold">{t("admin.managersTitle")}</h2>

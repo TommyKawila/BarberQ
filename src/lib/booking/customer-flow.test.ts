@@ -4,10 +4,12 @@ import { memoryStore } from "@/lib/data/memory-store";
 import {
   bookingErrorI18nKey,
   bookingShopTitle,
+  bookingSlotAttemptKey,
   bookingSummaryReady,
   canShowOwnerTools,
   canSubmitBooking,
   defaultBookableBarberId,
+  findOwnBookingForSlot,
   isCustomerDateDisabled,
   isShopClosedOnDate,
   isValidCustomerPhone,
@@ -82,6 +84,36 @@ describe("customer flow helpers", () => {
   it("canSubmitBooking blocks duplicate submit", () => {
     assert.equal(canSubmitBooking(false), true);
     assert.equal(canSubmitBooking(true), false);
+  });
+
+  it("findOwnBookingForSlot recovers confirmed booking on retry", () => {
+    assert.equal(bookingSlotAttemptKey("b1", "2026-01-01T10:00:00.000Z"), "b1|2026-01-01T10:00:00.000Z");
+    const found = findOwnBookingForSlot(
+      [
+        {
+          barber_id: "b1",
+          start_time: "2026-01-01T10:00:00.000Z",
+          status: "confirmed",
+        },
+        {
+          barber_id: "b1",
+          start_time: "2026-01-01T11:00:00.000Z",
+          status: "cancelled",
+        },
+      ],
+      "b1",
+      "2026-01-01T10:00:00.000Z",
+    );
+    assert.ok(found);
+    assert.equal(found?.status, "confirmed");
+    assert.equal(
+      findOwnBookingForSlot(
+        [{ barber_id: "b1", start_time: "2026-01-01T10:00:00.000Z", status: "cancelled" }],
+        "b1",
+        "2026-01-01T10:00:00.000Z",
+      ),
+      null,
+    );
   });
 
   it("bookingShopTitle uses trimmed shop name", () => {

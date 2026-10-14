@@ -91,6 +91,15 @@ export interface ShopSettings {
   lineUrl: string | null;
   phone: string | null;
   hours: ShopHours | null;
+  /** P5: customer appointment reminders via LINE push. OFF by default. */
+  remindersEnabled: boolean;
+  /** Shop default lead time (minutes). Customer may override at booking. */
+  reminderLeadMinutes: number;
+  /**
+   * P5: server-side booking confirmation + queue ticket LINE push after commit.
+   * ON by default; shops may turn OFF to save the 300 free messages/month quota.
+   */
+  bookingConfirmPushEnabled: boolean;
 }
 
 export type StaffRole = "barber" | "super_admin";

@@ -10,6 +10,8 @@ interface ShopBrandContextValue {
   lineUrl: string | null;
   phone: string | null;
   hours: ShopHours;
+  remindersEnabled: boolean;
+  reminderLeadMinutes: number;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
   setCoverImageUrl: (value: string | null) => void;
@@ -34,28 +36,45 @@ export function ShopBrandProvider({
   const [lineUrl, setLineUrl] = useState<string | null>(null);
   const [phone, setPhone] = useState<string | null>(null);
   const [hours, setHours] = useState<ShopHours>(() => normalizeShopHours(null));
+  const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [reminderLeadMinutes, setReminderLeadMinutes] = useState(120);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/${shopSlug}/settings`);
-      if (!res.ok) return;
-      const json = (await res.json()) as {
+    const loadOnce = async () => {
+      const res = await fetch(`/api/${shopSlug}/settings`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`settings_${res.status}`);
+      return (await res.json()) as {
         logoDataUrl?: string | null;
         coverImageUrl?: string | null;
         shopName?: string | null;
         lineUrl?: string | null;
         phone?: string | null;
         hours?: ShopHours | null;
+        remindersEnabled?: boolean;
+        reminderLeadMinutes?: number;
       };
+    };
+    try {
+      let json: Awaited<ReturnType<typeof loadOnce>>;
+      try {
+        json = await loadOnce();
+      } catch {
+        // Cold start / transient failure — one retry so LIFF doesn't stick on defaults.
+        json = await loadOnce();
+      }
       setLogoDataUrl(json.logoDataUrl ?? null);
       setCoverImageUrl(json.coverImageUrl ?? null);
       setShopName(json.shopName ?? null);
       setLineUrl(json.lineUrl ?? null);
       setPhone(json.phone ?? null);
       setHours(normalizeShopHours(json.hours));
+      setRemindersEnabled(Boolean(json.remindersEnabled));
+      setReminderLeadMinutes(
+        typeof json.reminderLeadMinutes === "number" ? json.reminderLeadMinutes : 120,
+      );
     } catch {
-      /* ignore */
+      /* keep prior / defaults */
     } finally {
       setLoading(false);
     }
@@ -81,6 +100,8 @@ export function ShopBrandProvider({
       lineUrl,
       phone,
       hours,
+      remindersEnabled,
+      reminderLeadMinutes,
       loading,
       setLogoDataUrl,
       setCoverImageUrl,
@@ -89,7 +110,18 @@ export function ShopBrandProvider({
       setPhone,
       refresh,
     }),
-    [logoDataUrl, coverImageUrl, shopName, lineUrl, phone, hours, loading, refresh],
+    [
+      logoDataUrl,
+      coverImageUrl,
+      shopName,
+      lineUrl,
+      phone,
+      hours,
+      remindersEnabled,
+      reminderLeadMinutes,
+      loading,
+      refresh,
+    ],
   );
 
   return <ShopBrandContext.Provider value={value}>{children}</ShopBrandContext.Provider>;

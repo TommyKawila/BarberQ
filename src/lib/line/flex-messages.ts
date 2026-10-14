@@ -311,6 +311,67 @@ export function buildShopRescheduleFlex(input: {
   };
 }
 
+export function buildAppointmentReminderFlex(input: {
+  shopName: string;
+  startTime: string;
+  endTime: string;
+  barberName: string;
+  myBookingsUrl: string;
+}) {
+  return {
+    type: "flex",
+    altText: `${input.shopName}: เตือนคิวที่จองไว้`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#2563EB",
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: input.shopName, color: "#DBEAFE", size: "xs" },
+          {
+            type: "text",
+            text: "เตือนคิวที่จองไว้",
+            color: "#FFFFFF",
+            weight: "bold",
+            size: "lg",
+            margin: "sm",
+          },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          row("วัน", whenLabel(input.startTime)),
+          row("เวลา", timeRange(input.startTime, input.endTime), true),
+          row("ช่าง", input.barberName),
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#18181B",
+            action: {
+              type: "uri",
+              label: "ดูคิวของฉัน",
+              uri: input.myBookingsUrl,
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
 function row(label: string, value: string, bold = false) {
   return {
     type: "box",

@@ -569,12 +569,80 @@ export const supabaseStore: BookingStore = {
 
   async getShopSettings(shopId) {
     const supabase = createServiceClient();
-    const { data, error } = await supabase
-      .from("shop_settings")
-      .select("shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours")
-      .eq("shop_id", shopId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+    const fullSelect =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes, booking_confirm_push_enabled";
+    const reminderSelect =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes";
+    const legacySelect =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours";
+    let data: Record<string, unknown> | null = null;
+    {
+      const first = await supabase
+        .from("shop_settings")
+        .select(fullSelect)
+        .eq("shop_id", shopId)
+        .maybeSingle();
+      if (first.error) {
+        const msg = first.error.message ?? "";
+        const missingCol = first.error.code === "42703";
+        const missingConfirmPush =
+          missingCol || msg.includes("booking_confirm_push_enabled");
+        const missingReminderCols =
+          missingCol ||
+          msg.includes("reminders_enabled") ||
+          msg.includes("reminder_lead_minutes");
+        if (!missingConfirmPush && !missingReminderCols) {
+          throw new Error(first.error.message);
+        }
+        if (missingConfirmPush && !msg.includes("reminders_enabled") && !msg.includes("reminder_lead_minutes")) {
+          const mid = await supabase
+            .from("shop_settings")
+            .select(reminderSelect)
+            .eq("shop_id", shopId)
+            .maybeSingle();
+          if (!mid.error) {
+            data = (mid.data as Record<string, unknown> | null) ?? null;
+          } else if (
+            mid.error.code === "42703" ||
+            (mid.error.message ?? "").includes("reminders_enabled") ||
+            (mid.error.message ?? "").includes("reminder_lead_minutes")
+          ) {
+            const legacy = await supabase
+              .from("shop_settings")
+              .select(legacySelect)
+              .eq("shop_id", shopId)
+              .maybeSingle();
+            if (legacy.error) throw new Error(legacy.error.message);
+            data = (legacy.data as Record<string, unknown> | null) ?? null;
+          } else {
+            throw new Error(mid.error.message);
+          }
+        } else {
+          const legacy = await supabase
+            .from("shop_settings")
+            .select(legacySelect)
+            .eq("shop_id", shopId)
+            .maybeSingle();
+          if (legacy.error) throw new Error(legacy.error.message);
+          data = (legacy.data as Record<string, unknown> | null) ?? null;
+        }
+      } else {
+        data = (first.data as Record<string, unknown> | null) ?? null;
+      }
+    }
+    const leadRaw = data?.reminder_lead_minutes;
+    const leadMinutes =
+      typeof leadRaw === "number"
+        ? leadRaw
+        : typeof leadRaw === "string" && leadRaw.trim() !== "" && Number.isFinite(Number(leadRaw))
+          ? Number(leadRaw)
+          : 120;
+    const confirmPushRaw = data?.booking_confirm_push_enabled;
+    // Default ON when column missing (pre-migration) so behavior matches product default.
+    const bookingConfirmPushEnabled =
+      confirmPushRaw === undefined || confirmPushRaw === null
+        ? true
+        : Boolean(confirmPushRaw);
     return {
       shopId,
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
@@ -582,25 +650,44 @@ export const supabaseStore: BookingStore = {
       shopName: (data?.shop_name as string | null) ?? null,
       lineUrl: (data?.shop_line_url as string | null) ?? null,
       phone: (data?.shop_phone as string | null) ?? null,
-      hours: data?.hours ? normalizeShopHours(data.hours as import("@/lib/shop/shop-hours").ShopHours) : null,
+      hours: data?.hours
+        ? normalizeShopHours(data.hours as import("@/lib/shop/shop-hours").ShopHours)
+        : null,
+      remindersEnabled: Boolean(data?.reminders_enabled ?? false),
+      reminderLeadMinutes: leadMinutes,
+      bookingConfirmPushEnabled,
     };
   },
 
   async setShopSettings(shopId, input) {
     const supabase = createServiceClient();
-    const { error } = await supabase
-      .from("shop_settings")
-      .upsert({
-        shop_id: shopId,
-        logo_data_url: input.logoDataUrl,
-        cover_image_url: input.coverImageUrl,
-        shop_name: input.shopName,
-        shop_line_url: input.lineUrl,
-        shop_phone: input.phone,
-        hours: input.hours,
-        updated_at: new Date().toISOString(),
-      });
-    if (error) throw new Error(error.message);
+    const payload: Record<string, unknown> = {
+      shop_id: shopId,
+      logo_data_url: input.logoDataUrl,
+      cover_image_url: input.coverImageUrl,
+      shop_name: input.shopName,
+      shop_line_url: input.lineUrl,
+      shop_phone: input.phone,
+      hours: input.hours,
+      reminders_enabled: input.remindersEnabled,
+      reminder_lead_minutes: input.reminderLeadMinutes,
+      booking_confirm_push_enabled: input.bookingConfirmPushEnabled,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from("shop_settings").upsert(payload);
+    if (error) {
+      const msg = error.message ?? "";
+      if (
+        error.code === "42703" ||
+        msg.includes("booking_confirm_push_enabled")
+      ) {
+        delete payload.booking_confirm_push_enabled;
+        const retry = await supabase.from("shop_settings").upsert(payload);
+        if (retry.error) throw new Error(retry.error.message);
+        return;
+      }
+      throw new Error(error.message);
+    }
   },
 
   async getStaffByToken(token) {

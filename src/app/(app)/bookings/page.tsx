@@ -6,6 +6,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import liff from "@line/liff";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
+import { ReminderLeadChips } from "@/components/customer/ReminderLeadChips";
 import { sortAppointmentsUpcomingFirst } from "@/lib/booking/customer-flow";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useLineAuth } from "@/lib/line/use-line-auth";
@@ -14,9 +15,13 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import {
   canCancelAt,
+  CANCEL_LEAD_MINUTES,
   formatSlotTime,
   SHOP_TIMEZONE,
 } from "@/lib/services/slot-service";
+import { defaultCustomerReminderChip } from "@/lib/reminders/customer-chips";
+import { reminderDisplayMessageKey } from "@/lib/reminders/display";
+import type { ReminderLeadOption } from "@/lib/reminders/labels";
 import { barberLabel, type Appointment, type AppointmentStatus, type Barber } from "@/types/booking";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 
@@ -45,11 +50,17 @@ export default function MyBookingsPage() {
   const { locale, t } = useI18n();
   const { ready, profile, login, mockMode } = useLineAuth();
   const { shopApi, shopPath } = useShopSlug();
-  const { shopName, lineUrl, phone: shopPhone } = useShopBrand();
+  const {
+    shopName,
+    lineUrl,
+    phone: shopPhone,
+    remindersEnabled,
+  } = useShopBrand();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddFriend, setShowAddFriend] = useState(false);
   const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
@@ -123,6 +134,35 @@ export default function MyBookingsPage() {
     }
   }
 
+  async function handleReminderChange(apt: Appointment, lead: ReminderLeadOption) {
+    if (!profile) return;
+    setSubmittingId(apt.id);
+    setMessage(null);
+    try {
+      const res = await fetch(shopApi(`/bookings/${apt.id}/reminder`), {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          ...getLineAuthHeaders(mockMode ? profile.userId : undefined),
+        },
+        body: JSON.stringify({ reminderLeadMinutes: lead === 0 ? null : lead }),
+      });
+      const json = (await res.json()) as { appointment?: Appointment } & ApiError;
+      if (!res.ok || !json.appointment) {
+        setMessage(json.error?.message ?? t("booking.reminderUpdateFailed"));
+        return;
+      }
+      setAppointments((prev) =>
+        prev.map((row) => (row.id === apt.id ? { ...row, ...json.appointment } : row)),
+      );
+      setEditingReminderId(null);
+    } catch {
+      setMessage(t("booking.reminderUpdateFailed"));
+    } finally {
+      setSubmittingId(null);
+    }
+  }
+
   const dateLocale = locale === "th" ? th : enUS;
 
   if (!ready || loading) {
@@ -183,6 +223,54 @@ export default function MyBookingsPage() {
                   {formatSlotTime(apt.start_time)} – {formatSlotTime(apt.end_time)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">{statusLabel(apt.status, t)}</p>
+                {(() => {
+                  const key = reminderDisplayMessageKey(apt.reminder_lead_minutes);
+                  const canEditReminder =
+                    remindersEnabled &&
+                    apt.status === "confirmed" &&
+                    !apt.reminder_sent_at &&
+                    new Date(apt.start_time).getTime() > Date.now();
+                  if (editingReminderId === apt.id && canEditReminder) {
+                    const stored = apt.reminder_lead_minutes;
+                    const current: ReminderLeadOption =
+                      stored == null || stored === 0
+                        ? 0
+                        : defaultCustomerReminderChip(stored, new Date(apt.start_time));
+                    return (
+                      <div className="mt-3" data-testid="my-queue-reminder-edit">
+                        <ReminderLeadChips
+                          startTimeIso={apt.start_time}
+                          value={current}
+                          onChange={(lead) => void handleReminderChange(apt, lead)}
+                          label={t("booking.reminderLead")}
+                          hint={t("booking.reminderLeadHint")}
+                          t={t}
+                        />
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      {key ? (
+                        <p className="text-xs text-amber-200/90">
+                          {t("booking.reminderChosen").replace("{lead}", t(key as MessageKey))}
+                        </p>
+                      ) : remindersEnabled && canEditReminder ? (
+                        <p className="text-xs text-zinc-500">{t("booking.reminderLead.0")}</p>
+                      ) : null}
+                      {canEditReminder ? (
+                        <button
+                          type="button"
+                          disabled={submittingId === apt.id}
+                          onClick={() => setEditingReminderId(apt.id)}
+                          className="text-xs font-medium text-amber-400 underline-offset-2 hover:underline"
+                        >
+                          {t("booking.reminderChange")}
+                        </button>
+                      ) : null}
+                    </div>
+                  );
+                })()}
                 {cancellable && apt.cancel_token ? (
                   <button
                     type="button"
@@ -194,7 +282,12 @@ export default function MyBookingsPage() {
                   </button>
                 ) : apt.status === "confirmed" ? (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-amber-400">{t("booking.cancelTooLate")}</p>
+                    <p className="text-xs text-amber-400">
+                      {t("booking.cancelTooLateDetail").replace(
+                        "{minutes}",
+                        String(CANCEL_LEAD_MINUTES),
+                      )}
+                    </p>
                     <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
                   </div>
                 ) : null}

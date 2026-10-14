@@ -24,7 +24,6 @@ import {
   OwnerSurfacePhone,
   type OwnerSurface,
 } from "@/components/marketing/mockups/OwnerSurfacesMockups";
-import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -46,6 +45,7 @@ const FEATURE_ICONS = [
   CalendarClock,
   Bell,
   ChartColumn,
+  MessageSquare,
 ] as const;
 const FEATURE_SURFACES: OwnerSurface[] = ["queue", "team", "stats"];
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7] as const;
@@ -196,7 +196,7 @@ export function SalesPage() {
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{t("marketing.features.support")}</p>
           <ul className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {([1, 2, 3, 4, 5, 6, 7] as const).map((n) => {
+            {([1, 2, 3, 4, 5, 6, 7, 8] as const).map((n) => {
               const Icon = FEATURE_ICONS[n - 1];
               return (
                 <li
@@ -210,6 +210,11 @@ export function SalesPage() {
                   <p className={`mt-2 ${BODY}`}>
                     {t(`marketing.features.${n}.desc` as MessageKey)}
                   </p>
+                  {n === 8 ? (
+                    <p className="mt-3 text-[13px] leading-relaxed text-amber-100/80 md:text-sm">
+                      {td("marketing.features.8.note")}
+                    </p>
+                  ) : null}
                 </li>
               );
             })}
@@ -228,43 +233,6 @@ export function SalesPage() {
                 <OwnerSurfacePhone surface={surface} />
               </figure>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Coming soon — day-before reminder (not live); mockup + LINE quota note */}
-      <section id="coming-soon" className="scroll-mt-20 overflow-x-clip">
-        <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
-          <p className="text-sm font-medium text-amber-400/90">
-            {t("marketing.coming.eyebrow")}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
-            {t("marketing.coming.title")}
-          </h2>
-          <p className={`mt-3 max-w-2xl ${BODY}`}>{t("marketing.coming.support")}</p>
-          <div className="mt-8 grid items-center gap-8 rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/30 p-5 md:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] md:gap-10 md:p-7">
-            <div>
-              <div className="flex items-center gap-2">
-                <MessageSquare size={20} className="text-zinc-500" strokeWidth={2} />
-                <span className="rounded-md border border-zinc-700 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-                  {t("marketing.coming.badge")}
-                </span>
-              </div>
-              <h3 className="mt-3 text-lg font-semibold text-zinc-200">
-                {t("marketing.coming.1.title")}
-              </h3>
-              <p className={`mt-2 ${BODY}`}>{t("marketing.coming.1.desc")}</p>
-              <p className="mt-4 rounded-xl border border-amber-500/25 bg-amber-400/5 px-3 py-2.5 text-[13px] leading-relaxed text-amber-100/90 md:text-sm">
-                {td("marketing.coming.1.note")}
-              </p>
-            </div>
-            <LineReminderMockup
-              shopName="BarberQx Demo"
-              title={t("marketing.coming.1.mockTitle")}
-              body={t("marketing.coming.1.mockBody")}
-              whenLabel={t("marketing.coming.1.mockWhen")}
-              cta={t("marketing.coming.1.mockCta")}
-            />
           </div>
         </div>
       </section>
