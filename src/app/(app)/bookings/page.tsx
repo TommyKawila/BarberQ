@@ -14,9 +14,11 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import {
   canCancelAt,
+  CANCEL_LEAD_MINUTES,
   formatSlotTime,
   SHOP_TIMEZONE,
 } from "@/lib/services/slot-service";
+import { reminderDisplayMessageKey } from "@/lib/reminders/display";
 import { barberLabel, type Appointment, type AppointmentStatus, type Barber } from "@/types/booking";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 
@@ -183,6 +185,15 @@ export default function MyBookingsPage() {
                   {formatSlotTime(apt.start_time)} – {formatSlotTime(apt.end_time)}
                 </p>
                 <p className="mt-1 text-xs text-zinc-500">{statusLabel(apt.status, t)}</p>
+                {(() => {
+                  const key = reminderDisplayMessageKey(apt.reminder_lead_minutes);
+                  if (!key) return null;
+                  return (
+                    <p className="mt-1 text-xs text-amber-200/90">
+                      {t("booking.reminderChosen").replace("{lead}", t(key as MessageKey))}
+                    </p>
+                  );
+                })()}
                 {cancellable && apt.cancel_token ? (
                   <button
                     type="button"
@@ -194,7 +205,12 @@ export default function MyBookingsPage() {
                   </button>
                 ) : apt.status === "confirmed" ? (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs text-amber-400">{t("booking.cancelTooLate")}</p>
+                    <p className="text-xs text-amber-400">
+                      {t("booking.cancelTooLateDetail").replace(
+                        "{minutes}",
+                        String(CANCEL_LEAD_MINUTES),
+                      )}
+                    </p>
                     <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
                   </div>
                 ) : null}

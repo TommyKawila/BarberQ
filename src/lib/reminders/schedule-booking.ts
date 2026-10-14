@@ -24,9 +24,10 @@ export async function scheduleBookingReminder(input: {
     recompute = false,
   } = input;
 
+  const source = appointment.source ?? "line";
   const canRemind =
     shopRemindersEnabled &&
-    appointment.source === "line" &&
+    source === "line" &&
     Boolean(appointment.customer_line_id?.trim()) &&
     appointment.status === "confirmed";
 

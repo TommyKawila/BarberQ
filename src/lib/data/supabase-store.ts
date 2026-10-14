@@ -569,14 +569,41 @@ export const supabaseStore: BookingStore = {
 
   async getShopSettings(shopId) {
     const supabase = createServiceClient();
-    const { data, error } = await supabase
-      .from("shop_settings")
-      .select(
-        "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes",
-      )
-      .eq("shop_id", shopId)
-      .maybeSingle();
-    if (error) throw new Error(error.message);
+    const fullSelect =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes";
+    const legacySelect =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours";
+    let data: Record<string, unknown> | null = null;
+    {
+      const first = await supabase
+        .from("shop_settings")
+        .select(fullSelect)
+        .eq("shop_id", shopId)
+        .maybeSingle();
+      if (first.error) {
+        const missingReminderCols =
+          first.error.code === "42703" ||
+          (first.error.message ?? "").includes("reminders_enabled") ||
+          (first.error.message ?? "").includes("reminder_lead_minutes");
+        if (!missingReminderCols) throw new Error(first.error.message);
+        const legacy = await supabase
+          .from("shop_settings")
+          .select(legacySelect)
+          .eq("shop_id", shopId)
+          .maybeSingle();
+        if (legacy.error) throw new Error(legacy.error.message);
+        data = (legacy.data as Record<string, unknown> | null) ?? null;
+      } else {
+        data = (first.data as Record<string, unknown> | null) ?? null;
+      }
+    }
+    const leadRaw = data?.reminder_lead_minutes;
+    const leadMinutes =
+      typeof leadRaw === "number"
+        ? leadRaw
+        : typeof leadRaw === "string" && leadRaw.trim() !== "" && Number.isFinite(Number(leadRaw))
+          ? Number(leadRaw)
+          : 120;
     return {
       shopId,
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
@@ -584,10 +611,11 @@ export const supabaseStore: BookingStore = {
       shopName: (data?.shop_name as string | null) ?? null,
       lineUrl: (data?.shop_line_url as string | null) ?? null,
       phone: (data?.shop_phone as string | null) ?? null,
-      hours: data?.hours ? normalizeShopHours(data.hours as import("@/lib/shop/shop-hours").ShopHours) : null,
+      hours: data?.hours
+        ? normalizeShopHours(data.hours as import("@/lib/shop/shop-hours").ShopHours)
+        : null,
       remindersEnabled: Boolean(data?.reminders_enabled ?? false),
-      reminderLeadMinutes:
-        typeof data?.reminder_lead_minutes === "number" ? data.reminder_lead_minutes : 120,
+      reminderLeadMinutes: leadMinutes,
     };
   },
 

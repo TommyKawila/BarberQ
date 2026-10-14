@@ -75,9 +75,17 @@ export function BookingApp() {
     lineUrl,
     phone: shopPhone,
     hours,
-    remindersEnabled,
-    reminderLeadMinutes: shopReminderLead,
+    remindersEnabled: brandRemindersEnabled,
+    reminderLeadMinutes: brandReminderLead,
+    loading: brandLoading,
+    refresh: refreshBrand,
   } = useShopBrand();
+  const [reminderSettings, setReminderSettings] = useState<{
+    enabled: boolean;
+    leadMinutes: number;
+  } | null>(null);
+  const remindersEnabled = reminderSettings?.enabled ?? brandRemindersEnabled;
+  const shopReminderLead = reminderSettings?.leadMinutes ?? brandReminderLead;
   const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -127,6 +135,36 @@ export function BookingApp() {
       setCustomerName(profile.displayName);
     }
   }, [profile, customerName]);
+
+  // Re-fetch reminder flags when the confirm step opens (avoid stale default false).
+  useEffect(() => {
+    if (!selectedStart) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        await refreshBrand();
+        const res = await fetch(shopApi("/settings"), { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as {
+          remindersEnabled?: boolean;
+          reminderLeadMinutes?: number;
+        };
+        if (cancelled) return;
+        setReminderSettings({
+          enabled: Boolean(json.remindersEnabled),
+          leadMinutes:
+            typeof json.reminderLeadMinutes === "number"
+              ? json.reminderLeadMinutes
+              : brandReminderLead,
+        });
+      } catch {
+        /* keep brand values */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStart, shopApi, refreshBrand, brandReminderLead]);
 
   useEffect(() => {
     if (!profile?.userId) {
@@ -693,7 +731,9 @@ export function BookingApp() {
                     className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
                   />
                 </label>
-                {remindersEnabled ? (
+                {brandLoading && reminderSettings == null ? (
+                  <p className="text-xs text-zinc-500">{t("booking.reminderLoading")}</p>
+                ) : remindersEnabled ? (
                   <label className="flex flex-col gap-1 text-sm">
                     {t("booking.reminderLead")}
                     <select

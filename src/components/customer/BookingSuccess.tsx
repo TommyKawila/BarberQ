@@ -8,6 +8,8 @@ import { BarberAvatar } from "@/components/barber/BarberAvatar";
 import { shouldShowLineReminder, type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { customerBarberPhotoUrl } from "@/lib/barber/barber-avatar";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/dictionary";
+import { reminderDisplayMessageKey } from "@/lib/reminders/display";
 import { formatSlotTime, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { Appointment, Barber } from "@/types/booking";
@@ -76,6 +78,15 @@ export function BookingSuccess({
             {barber.slot_duration_minutes} {t("common.minutes")}
           </p>
         ) : null}
+        {(() => {
+          const key = reminderDisplayMessageKey(appointment.reminder_lead_minutes);
+          if (!key) return null;
+          return (
+            <p className="mt-2 text-sm text-amber-200/90">
+              {t("booking.reminderChosen").replace("{lead}", t(key as MessageKey))}
+            </p>
+          );
+        })()}
       </section>
 
       {showLine ? (

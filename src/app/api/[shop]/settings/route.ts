@@ -21,6 +21,7 @@ import {
 } from "@/lib/reminders/presets";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET(
   _req: Request,
@@ -32,7 +33,11 @@ export async function GET(
     const settings = await getStore().getShopSettings(shop.id);
     const { shopId: _, ...publicSettings } = settings;
     void _;
-    return NextResponse.json(publicSettings);
+    return NextResponse.json(publicSettings, {
+      headers: {
+        "Cache-Control": "private, no-store, no-cache, must-revalidate",
+      },
+    });
   } catch (error) {
     return jsonError(error);
   }

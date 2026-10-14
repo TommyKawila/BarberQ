@@ -41,10 +41,10 @@ export function ShopBrandProvider({
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/${shopSlug}/settings`);
-      if (!res.ok) return;
-      const json = (await res.json()) as {
+    const loadOnce = async () => {
+      const res = await fetch(`/api/${shopSlug}/settings`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`settings_${res.status}`);
+      return (await res.json()) as {
         logoDataUrl?: string | null;
         coverImageUrl?: string | null;
         shopName?: string | null;
@@ -54,6 +54,15 @@ export function ShopBrandProvider({
         remindersEnabled?: boolean;
         reminderLeadMinutes?: number;
       };
+    };
+    try {
+      let json: Awaited<ReturnType<typeof loadOnce>>;
+      try {
+        json = await loadOnce();
+      } catch {
+        // Cold start / transient failure — one retry so LIFF doesn't stick on defaults.
+        json = await loadOnce();
+      }
       setLogoDataUrl(json.logoDataUrl ?? null);
       setCoverImageUrl(json.coverImageUrl ?? null);
       setShopName(json.shopName ?? null);
@@ -65,7 +74,7 @@ export function ShopBrandProvider({
         typeof json.reminderLeadMinutes === "number" ? json.reminderLeadMinutes : 120,
       );
     } catch {
-      /* ignore */
+      /* keep prior / defaults */
     } finally {
       setLoading(false);
     }
