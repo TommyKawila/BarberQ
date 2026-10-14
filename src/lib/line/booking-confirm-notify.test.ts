@@ -1,5 +1,6 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { getStore } from "@/lib/data";
 import {
   pushBookingConfirmFallback,
   shouldSendLineBookingConfirmPush,
@@ -18,10 +19,16 @@ import type { Appointment, Shop } from "@/types/booking";
 const KEY = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 const SHOP_ID = "00000000-0000-0000-0000-000000000055";
 
-afterEach(() => {
+afterEach(async () => {
   __resetLineMessageLogForTests();
   __resetShopLineChannelsForTests();
   delete process.env.APP_ENCRYPTION_KEY;
+  const store = getStore();
+  const settings = await store.getShopSettings(SHOP_ID);
+  await store.setShopSettings(SHOP_ID, {
+    ...settings,
+    bookingConfirmPushEnabled: true,
+  });
 });
 
 function shop(): Shop {
@@ -120,5 +127,19 @@ describe("pushBookingConfirmFallback", () => {
     const result = await pushBookingConfirmFallback(shop(), a);
     assert.equal(result.sent, false);
     assert.equal(result.skippedReason, "already_delivered");
+  });
+
+  it("skips entirely when shop bookingConfirmPushEnabled is OFF", async () => {
+    const store = getStore();
+    const settings = await store.getShopSettings(SHOP_ID);
+    await store.setShopSettings(SHOP_ID, {
+      ...settings,
+      bookingConfirmPushEnabled: false,
+    });
+
+    const result = await pushBookingConfirmFallback(shop(), apt());
+    assert.equal(result.sent, false);
+    assert.equal(result.skippedReason, "disabled");
+    assert.equal(await countCountedPushesThisMonth(SHOP_ID), 0);
   });
 });

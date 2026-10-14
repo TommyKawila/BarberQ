@@ -95,6 +95,11 @@ export interface ShopSettings {
   remindersEnabled: boolean;
   /** Shop default lead time (minutes). Customer may override at booking. */
   reminderLeadMinutes: number;
+  /**
+   * P5: server-side booking confirmation + queue ticket LINE push after commit.
+   * ON by default; shops may turn OFF to save the 300 free messages/month quota.
+   */
+  bookingConfirmPushEnabled: boolean;
 }
 
 export type StaffRole = "barber" | "super_admin";

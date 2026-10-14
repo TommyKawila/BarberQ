@@ -60,6 +60,7 @@ export async function PUT(
       hours?: ShopHours;
       remindersEnabled?: boolean;
       reminderLeadMinutes?: number;
+      bookingConfirmPushEnabled?: boolean;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -72,6 +73,7 @@ export async function PUT(
       hours: current.hours,
       remindersEnabled: current.remindersEnabled,
       reminderLeadMinutes: current.reminderLeadMinutes ?? DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
+      bookingConfirmPushEnabled: current.bookingConfirmPushEnabled !== false,
     };
 
     if ("logoDataUrl" in body) {
@@ -124,6 +126,10 @@ export async function PUT(
         throw new BookingError("INVALID_REMINDER_LEAD", "Invalid reminder lead time", 400);
       }
       next.reminderLeadMinutes = body.reminderLeadMinutes;
+    }
+
+    if ("bookingConfirmPushEnabled" in body) {
+      next.bookingConfirmPushEnabled = Boolean(body.bookingConfirmPushEnabled);
     }
 
     await getStore().setShopSettings(shop.id, next);

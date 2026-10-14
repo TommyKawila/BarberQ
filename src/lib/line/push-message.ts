@@ -21,7 +21,8 @@ export interface PushResult {
     | "quota_full"
     | "invalid_input"
     | "api_error"
-    | "already_delivered";
+    | "already_delivered"
+    | "disabled";
   status?: number;
 }
 

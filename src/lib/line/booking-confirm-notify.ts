@@ -77,8 +77,10 @@ export function shouldSendLineBookingConfirmPush(
 
 /**
  * Push confirmation + queue ticket via the same Messaging API path as shop-cancel.
+ * Both Flex messages are sent in ONE push API call (1 quota count).
  * Idempotent: skips if reply_confirm or push_confirm already succeeded.
- * Counts toward the shop's 300 monthly push quota.
+ * Respects shop setting bookingConfirmPushEnabled (default ON).
+ * Counts toward the shop's 300 monthly push quota when sent.
  */
 export async function pushBookingConfirmFallback(
   shop: Shop,
@@ -89,6 +91,11 @@ export async function pushBookingConfirmFallback(
   }
   const lineId = appointment.customer_line_id!.trim();
 
+  const settings = await getStore().getShopSettings(shop.id);
+  if (!settings.bookingConfirmPushEnabled) {
+    return { sent: false, skippedReason: "disabled" };
+  }
+
   if (await hasSuccessfulBookingConfirm(shop.id, appointment.id)) {
     return { sent: false, skippedReason: "already_delivered" };
   }
@@ -98,6 +105,7 @@ export async function pushBookingConfirmFallback(
     return { sent: false, skippedReason: "invalid_input" };
   }
 
+  // One Messaging API push with multiple messages = 1 monthly quota count.
   return pushMessagesForShop(
     shop.id,
     lineId,
