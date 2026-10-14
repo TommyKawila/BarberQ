@@ -7,6 +7,7 @@ import {
   type BookedSlotSheetAction,
 } from "@/components/admin/BookedSlotActionsSheet";
 import { getBookedCardActions } from "@/lib/admin/board-card-actions";
+import { NO_SHOW_WARNING_THRESHOLD } from "@/lib/admin/customer-no-show";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import {
@@ -220,6 +221,21 @@ export function QuickBlockGrid({
                       {slot.source ? (
                         <div className="truncate text-[9px] opacity-90">
                           {sourceBadge(slot.source, t)}
+                        </div>
+                      ) : null}
+                      {(slot.noShowCount ?? 0) > 0 ? (
+                        <div
+                          className={`mt-0.5 truncate text-[9px] font-semibold ${
+                            (slot.noShowCount ?? 0) >= NO_SHOW_WARNING_THRESHOLD
+                              ? "rounded bg-orange-950/50 px-0.5 text-orange-200"
+                              : "opacity-90"
+                          }`}
+                        >
+                          {(slot.noShowCount ?? 0) >= NO_SHOW_WARNING_THRESHOLD ? "⚠ " : ""}
+                          {t("admin.noShowCountShort").replace(
+                            "{n}",
+                            String(slot.noShowCount ?? 0),
+                          )}
                         </div>
                       ) : null}
                       {slot.customerPhone ? (

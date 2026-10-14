@@ -274,7 +274,61 @@ describe("staff booking + source (P3)", () => {
     void dateISO;
   });
 
-  it("stats separate by source and walkIns count appointments not blocks", async () => {
+  it("admin board exposes per-customer noShowCount with warning threshold", async () => {
+    const shop = await memoryStore.createShop({
+      name: "P7 NoShow Board",
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "NoShowBoardBarber",
+      slotDuration: 30,
+    });
+    const phone = "0833333333";
+    for (let i = 0; i < 2; i += 1) {
+      const start = new Date(Date.now() - (i + 2) * 7 * 24 * 60 * 60_000);
+      const past = await memoryStore.createAppointment({
+        barberId: barber.id,
+        customerName: "Repeat",
+        customerPhone: phone,
+        customerRef: `noshow-ref-${i}-${Date.now()}`,
+        startTime: start,
+        endTime: new Date(start.getTime() + 30 * 60_000),
+        source: "phone",
+      });
+      await memoryStore.markAppointmentOutcome(past.id, "no_show");
+    }
+
+    const slot = await firstFutureSlot(barber.id);
+    assert.ok(slot);
+    await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: slot!.startTime,
+      source: "phone",
+      customerName: "Repeat",
+      customerPhone: phone,
+    });
+    const staff: StaffAuth = {
+      ...OWNER,
+      shopId: shop.id,
+      barberId: barber.id,
+      role: "owner",
+    };
+    const dates = getBookableDates();
+    let count: number | undefined;
+    for (const d of dates) {
+      const columns = await getAdminDay(d, shop.id, staff);
+      const col = columns.find((c) => c.barber.id === barber.id);
+      const booked = col?.slots.find((s) => s.customerPhone === phone && s.kind === "booked");
+      if (booked) {
+        count = booked.noShowCount;
+        break;
+      }
+    }
+    assert.equal(count, 2);
+  });
+
+  it("stats separate by source; walkIns match bySource when no legacy blocks", async () => {
     const shop = await memoryStore.createShop({
       name: "P3 Stats Shop",
       subscriptionMonths: 1,

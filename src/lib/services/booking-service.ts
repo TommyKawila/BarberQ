@@ -16,6 +16,7 @@ import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
 import { scheduleBookingReminder } from "@/lib/reminders/schedule-booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
+import { countCustomerNoShows } from "@/lib/admin/customer-no-show";
 import type {
   AdminColumn,
   AdminSlot,
@@ -594,11 +595,15 @@ export async function getAdminDay(
     const shopHours = normalizeShopHours(settings.hours);
     const range = dayRangeUtc(dateISO);
     const barberIds = new Set(barbers.map((b) => b.id));
-    const [allBooked, allBlocked, allBreaks] = await Promise.all([
+    const [allBooked, allBlocked, allBreaks, history] = await Promise.all([
       store.listDayAppointments(range.from, range.to),
       store.listDayBlocks(range.from, range.to),
       Promise.all(barbers.map((barber) => store.listRecurringBreaks(barber.id))),
+      store.listAppointmentsInRange(new Date(0), range.to),
     ]);
+    const shopNoShows = history.filter(
+      (row) => barberIds.has(row.barber_id) && row.status === "no_show",
+    );
     const booked = allBooked.filter((row) => barberIds.has(row.barber_id));
     const bookedBarberIds = new Set(booked.map((row) => row.barber_id));
     const visibleBarbers = selectAdminBoardBarbers(
@@ -645,6 +650,10 @@ export async function getAdminDay(
           intervalsOverlap(slotStart, slotEnd, new Date(row.start_time), new Date(row.end_time)),
         );
         if (appointment) {
+          const noShowCount = countCustomerNoShows(shopNoShows, {
+            customerLineId: appointment.customer_line_id,
+            customerPhone: appointment.customer_phone,
+          });
           return {
             ...slot,
             kind: "booked",
@@ -656,6 +665,7 @@ export async function getAdminDay(
             source: appointment.source ?? "line",
             isLate: appointment.status === "confirmed" && isLate(appointment.start_time, now),
             lateCalledAt: appointment.late_called_at ?? null,
+            noShowCount,
           };
         }
         const onBreak = breakRanges.some((item) =>

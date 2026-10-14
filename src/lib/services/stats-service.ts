@@ -34,6 +34,8 @@ export interface StatsTotals {
   returningCustomers: number;
   returningRatePct: number | null;
   cancelNoShowRatePct: number | null;
+  /** No-shows / non-walk-in bookings in range (excludes walk-ins which cannot be no-show). */
+  noShowRatePct: number | null;
   utilizationPct: number;
   revenueBaht: number;
   waitMinutesAvg: number | null;
@@ -288,6 +290,11 @@ function computeWaitAvg(completed: Appointment[]): number | null {
   return Math.round(waits.reduce((a, b) => a + b, 0) / waits.length);
 }
 
+/** Legacy pre-P3 walk-ins were blocked_slots with reason 'walk-in'. */
+export function isLegacyWalkInBlock(reason: string | null | undefined): boolean {
+  return (reason ?? "").trim().toLowerCase() === "walk-in";
+}
+
 interface TotalsInput {
   appointments: Appointment[];
   blocks: TimeBlock[];
@@ -317,6 +324,7 @@ function computeTotals(input: TotalsInput): StatsTotals {
     if (src in bySource) bySource[src as keyof StatsBySource] += 1;
   }
   const walkInAppointments = appointments.filter((a) => a.source === "walk_in");
+  const legacyWalkInBlocks = blocks.filter((b) => isLegacyWalkInBlock(b.reason));
   const noShowEligible = appointments.filter((a) => a.source !== "walk_in");
   const cancelled = appointments.filter((a) => a.status === "cancelled").length;
   const completedRows = appointments.filter((a) => a.status === "completed");
@@ -325,6 +333,10 @@ function computeTotals(input: TotalsInput): StatsTotals {
   const booked = appointments.length;
   const cancelNoShowRatePct =
     booked > 0 ? Math.round(((cancelled + noShow) / booked) * 100) : null;
+  const noShowRatePct =
+    noShowEligible.length > 0
+      ? Math.round((noShow / noShowEligible.length) * 100)
+      : null;
 
   let availableMinutes = 0;
   let occupiedMinutes = 0;
@@ -346,11 +358,13 @@ function computeTotals(input: TotalsInput): StatsTotals {
     completed,
     noShow,
     left: appointments.filter((a) => a.status === "left").length,
-    walkIns: walkInAppointments.length,
+    // Real walk-in bookings (P3+) plus legacy blocked_slots reason 'walk-in' only.
+    walkIns: walkInAppointments.length + legacyWalkInBlocks.length,
     newCustomers,
     returningCustomers,
     returningRatePct,
     cancelNoShowRatePct,
+    noShowRatePct,
     utilizationPct: availableMinutes > 0 ? Math.round((occupiedMinutes / availableMinutes) * 100) : 0,
     revenueBaht,
     waitMinutesAvg: computeWaitAvg(completedRows),
@@ -577,7 +591,9 @@ export async function getStatsReport(
       }
       for (const row of scopedBlocks) {
         if (formatInTimeZone(parseISO(row.start_time), SHOP_TIMEZONE, "yyyy-MM-dd") !== dayISO) continue;
-        blocked += overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        const mins = overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        if (isLegacyWalkInBlock(row.reason)) walkIn += mins;
+        else blocked += mins;
       }
     }
     const capacity = Math.max(1, barbers.length * 60 * dayList.length);
