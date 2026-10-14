@@ -53,7 +53,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   barberDesktop: {
     id: "barberDesktop",
-    src: null,
+    src: "/marketing/photos/barber-desktop.webp",
     swapPath: "/marketing/photos/barber-desktop.webp",
     width: 960,
     height: 1200,
@@ -62,7 +62,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   barberMobile: {
     id: "barberMobile",
-    src: null,
+    src: "/marketing/photos/barber-mobile.webp",
     swapPath: "/marketing/photos/barber-mobile.webp",
     width: 1080,
     height: 1350,

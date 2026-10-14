@@ -121,8 +121,22 @@ describe("marketing layout split", () => {
       "hero-desktop.webp missing",
     );
     assert.equal(marketingPhotoSlots.heroMobile.src, null);
-    assert.equal(marketingPhotoSlots.barberDesktop.src, null);
-    assert.equal(marketingPhotoSlots.barberMobile.src, null);
+    assert.equal(
+      marketingPhotoSlots.barberDesktop.src,
+      "/marketing/photos/barber-desktop.webp",
+    );
+    assert.equal(
+      marketingPhotoSlots.barberMobile.src,
+      "/marketing/photos/barber-mobile.webp",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-desktop.webp")),
+      "barber-desktop.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-mobile.webp")),
+      "barber-mobile.webp missing",
+    );
     assert.equal(marketingPhotoSlots.founder.src, null);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
