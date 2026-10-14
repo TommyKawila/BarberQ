@@ -7,6 +7,7 @@ export type LineMessageKind =
   | "push_cancel"
   | "push_reschedule"
   | "push_reminder"
+  | "push_confirm"
   | "push_test"
   | "push_other";
 

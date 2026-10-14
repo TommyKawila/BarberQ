@@ -52,7 +52,8 @@ export async function POST(
       reminderLeadMinutes:
         "reminderLeadMinutes" in body ? body.reminderLeadMinutes : undefined,
     });
-    // LINE confirmation is reply/non-quota via client liff.sendMessages → webhook.
+    // LINE confirmation: client tries liff.sendMessages → webhook reply (free).
+    // If that fails, client POSTs .../confirm-notify for quota-guarded push fallback.
     // Staff alerts use Web Push (not LINE).
     void notifyStaffWebPush({
       shopId: shop.id,
@@ -66,7 +67,7 @@ export async function POST(
         appointment,
         lineReplyHint: {
           triggerText: bookingConfirmTriggerText(appointment.id),
-          mode: "liff_send_messages_then_reply",
+          mode: "liff_send_messages_then_reply_or_push_fallback",
         },
       },
       { status: 201 },

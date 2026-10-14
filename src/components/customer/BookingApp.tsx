@@ -48,6 +48,7 @@ import {
 import { type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { barberLabel, type Appointment, type Barber, type Slot } from "@/types/booking";
 import { ReminderLeadChips } from "@/components/customer/ReminderLeadChips";
+import { deliverBookingLineConfirm } from "@/lib/line/deliver-booking-confirm";
 import {
   defaultCustomerReminderChip,
   isCustomerReminderLeadFuture,
@@ -488,17 +489,17 @@ export function BookingApp() {
         }
         return;
       }
-      // Reply/non-quota path: send short trigger in chat so webhook can reply Flex.
-      // Graceful degrade: booking already saved; in-app success still shows if this fails.
+      // Prefer free reply via liff.sendMessages → webhook Flex.
+      // If unavailable (rich menu / missing chat_message.write / outside OA chat),
+      // fall back to quota-guarded push confirm so the OA chat still gets a ticket.
       const trigger = json.lineReplyHint?.triggerText?.trim();
-      if (trigger && !mockMode && liff.isLoggedIn?.()) {
-        try {
-          if (liff.isApiAvailable?.("sendMessages")) {
-            await liff.sendMessages([{ type: "text", text: trigger }]);
-          }
-        } catch {
-          /* outside LINE chat / missing chat_message.write — OK */
-        }
+      if (trigger && !mockMode) {
+        await deliverBookingLineConfirm({
+          liff,
+          triggerText: trigger,
+          confirmNotifyUrl: shopApi(`/bookings/${json.appointment.id}/confirm-notify`),
+          authHeaders: getLineAuthHeaders(),
+        });
       }
       setPhone(normalizeCustomerPhone(phone ?? ""));
       const barberName = selectedBarber

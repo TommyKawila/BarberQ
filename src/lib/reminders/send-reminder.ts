@@ -1,6 +1,6 @@
 import { getStore } from "@/lib/data";
 import { buildAppointmentReminderFlex } from "@/lib/line/flex-messages";
-import { buildShopWebUrl } from "@/lib/line/liff-url";
+import { buildShopCustomerUrl } from "@/lib/line/liff-url";
 import { pushMessagesForShop, type PushResult } from "@/lib/line/push-message";
 import type { DueReminderRow } from "@/lib/reminders/reminder-store";
 import type { Shop } from "@/types/booking";
@@ -23,7 +23,7 @@ export async function sendAppointmentReminderPush(
 
   const store = getStore();
   const barber = await store.getBarber(row.barber_id);
-  const myBookingsUrl = `${buildShopWebUrl(shop.slug)}/bookings`;
+  const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
 
   const flex = buildAppointmentReminderFlex({
     shopName: shop.name,
