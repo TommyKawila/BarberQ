@@ -52,24 +52,25 @@ export async function tryLiffSendMessages(
   liff: LiffSendMessagesApi,
   text: string,
 ): Promise<{ ok: true } | { ok: false; reason: LiffSendMessagesReason; errorMessage?: string }> {
-  const trigger = text.trim();
-  if (!trigger) {
-    return { ok: false, reason: "send_failed", errorMessage: "empty_trigger" };
-  }
-
-  const gate = resolveLiffSendMessagesGate(liff);
-  if (!gate.canSend) {
-    return { ok: false, reason: gate.reason };
-  }
-
   try {
+    const trigger = text.trim();
+    if (!trigger) {
+      return { ok: false, reason: "send_failed", errorMessage: "empty_trigger" };
+    }
+
+    const gate = resolveLiffSendMessagesGate(liff);
+    if (!gate.canSend) {
+      return { ok: false, reason: gate.reason };
+    }
+
     await liff.sendMessages?.([{ type: "text", text: trigger }]);
     return { ok: true };
   } catch (err) {
+    // LIFF bridge methods can throw unexpectedly on iOS — never bubble.
     return {
       ok: false,
       reason: "send_failed",
-      errorMessage: err instanceof Error ? err.message : "unknown",
+      errorMessage: err instanceof Error ? err.message : String(err),
     };
   }
 }

@@ -98,4 +98,22 @@ describe("deliverBookingLineConfirm", () => {
     assert.equal(result.mode, "push_fallback");
     assert.equal(result.ok, true);
   });
+
+  it("never throws when LIFF bridge methods throw", async () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ sent: true }), { status: 200 })) as typeof fetch;
+
+    const result = await deliverBookingLineConfirm({
+      liff: mockLiff({
+        isInClient: () => {
+          throw new Error("liff bridge dead");
+        },
+      }),
+      triggerText: "จอง #ABCDEF",
+      confirmNotifyUrl: "/api/demo/bookings/1/confirm-notify",
+      authHeaders: {},
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.mode, "push_fallback");
+  });
 });

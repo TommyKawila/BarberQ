@@ -480,7 +480,36 @@ export function BookingApp() {
       } & ApiError;
       if (!res.ok || !json.appointment) {
         const code = json.error?.code;
-        if (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") {
+        // Retry after a "false failure": booking may already exist for this slot.
+        if (
+          (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") &&
+          barberId &&
+          selectedStart
+        ) {
+          try {
+            const mineRes = await fetch(shopApi("/bookings"), {
+              headers: getLineAuthHeaders(mockMode ? profile.userId : undefined),
+            });
+            const mineJson = (await mineRes.json()) as { appointments?: Appointment[] };
+            const existing = (mineJson.appointments ?? []).find(
+              (a) =>
+                a.status === "confirmed" &&
+                a.barber_id === barberId &&
+                a.start_time === selectedStart,
+            );
+            if (existing) {
+              setPhone(normalizeCustomerPhone(phone ?? ""));
+              setSuccess({
+                appointment: existing,
+                barberName: selectedBarber
+                  ? barberLabel(selectedBarber.name, locale)
+                  : "—",
+              });
+              return;
+            }
+          } catch {
+            /* fall through to slot-taken UI */
+          }
           setMessage(t("booking.slotTaken"));
           setSelectedStart(null);
           void silentRefresh();
@@ -489,23 +518,33 @@ export function BookingApp() {
         }
         return;
       }
-      // Prefer free reply via liff.sendMessages → webhook Flex, then always
-      // request push insurance (server skips if reply already landed) so OA
-      // chat still gets confirm/ticket when sendMessages/webhook miss.
-      const trigger = json.lineReplyHint?.triggerText?.trim();
-      if (trigger && !mockMode) {
-        await deliverBookingLineConfirm({
-          liff,
-          triggerText: trigger,
-          confirmNotifyUrl: shopApi(`/bookings/${json.appointment.id}/confirm-notify`),
-          authHeaders: getLineAuthHeaders(),
-        });
-      }
+
+      // Booking row is committed — always show success before LINE confirm side-work.
       setPhone(normalizeCustomerPhone(phone ?? ""));
       const barberName = selectedBarber
         ? barberLabel(selectedBarber.name, locale)
         : "—";
       setSuccess({ appointment: json.appointment, barberName });
+
+      // Best-effort OA confirm/ticket — never fail the booking UI if this throws/hangs.
+      const trigger = json.lineReplyHint?.triggerText?.trim();
+      const appointmentId = json.appointment.id;
+      if (trigger && !mockMode) {
+        void deliverBookingLineConfirm({
+          liff,
+          triggerText: trigger,
+          confirmNotifyUrl: shopApi(`/bookings/${appointmentId}/confirm-notify`),
+          authHeaders: getLineAuthHeaders(),
+        }).catch((err) => {
+          console.warn(
+            JSON.stringify({
+              event: "booking_confirm_side_effect_error",
+              appointmentId,
+              message: err instanceof Error ? err.message : String(err),
+            }),
+          );
+        });
+      }
     } catch {
       setMessage(t("booking.failed"));
     } finally {

@@ -92,43 +92,55 @@ async function requestPushFallback(input: {
 }
 
 /**
- * Prefer free reply via liff.sendMessages → webhook.
- * Always follow with quota-guarded push fallback (server skips if reply already
- * landed) so OA chat still gets confirm/ticket when webhook/reply misses —
- * including serverless fire-and-forget kills and chat-context quirks.
+ * Prefer free reply via liff.sendMessages → webhook, then push insurance.
+ * Never throws — booking UI must treat this as best-effort side work.
  */
 export async function deliverBookingLineConfirm(input: {
   liff: LiffSendMessagesApi;
   triggerText: string;
   confirmNotifyUrl: string;
   authHeaders: HeadersInit;
-  /** @internal tests */
+  /** @internal tests — default 0 so UI is never blocked on grace */
   replyGraceMs?: number;
 }): Promise<BookingConfirmDelivery> {
-  const liffResult = await tryLiffSendMessages(input.liff, input.triggerText);
-  if (!liffResult.ok) {
-    console.warn(
-      JSON.stringify({
-        event: "liff_send_messages_unavailable",
-        reason: liffResult.reason,
-        errorMessage: "errorMessage" in liffResult ? liffResult.errorMessage : undefined,
-      }),
-    );
+  try {
+    const liffResult = await tryLiffSendMessages(input.liff, input.triggerText);
+    if (!liffResult.ok) {
+      console.warn(
+        JSON.stringify({
+          event: "liff_send_messages_unavailable",
+          reason: liffResult.reason,
+          errorMessage: "errorMessage" in liffResult ? liffResult.errorMessage : undefined,
+        }),
+      );
+      return requestPushFallback({
+        confirmNotifyUrl: input.confirmNotifyUrl,
+        authHeaders: input.authHeaders,
+        liffReason: liffResult.reason,
+      });
+    }
+
+    // Optional grace for webhook reply before push insurance (tests may set >0).
+    const graceMs = input.replyGraceMs ?? 0;
+    if (graceMs > 0) {
+      await new Promise((r) => setTimeout(r, graceMs));
+    }
     return requestPushFallback({
       confirmNotifyUrl: input.confirmNotifyUrl,
       authHeaders: input.authHeaders,
-      liffReason: liffResult.reason,
+      liffReason: "ok",
     });
+  } catch (err) {
+    console.warn(
+      JSON.stringify({
+        event: "booking_confirm_delivery_error",
+        message: err instanceof Error ? err.message : String(err),
+      }),
+    );
+    return {
+      mode: "none",
+      ok: false,
+      errorMessage: err instanceof Error ? err.message : String(err),
+    };
   }
-
-  // Give webhook a brief window to reply before push insurance fires.
-  const graceMs = input.replyGraceMs ?? 1500;
-  if (graceMs > 0) {
-    await new Promise((r) => setTimeout(r, graceMs));
-  }
-  return requestPushFallback({
-    confirmNotifyUrl: input.confirmNotifyUrl,
-    authHeaders: input.authHeaders,
-    liffReason: "ok",
-  });
 }

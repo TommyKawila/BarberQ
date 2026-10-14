@@ -78,6 +78,31 @@ export function canSubmitBooking(submitting: boolean): boolean {
   return !submitting;
 }
 
+/** Slot key for client-side booking idempotency / retry recovery. */
+export function bookingSlotAttemptKey(
+  barberId: string,
+  startTimeIso: string,
+): string {
+  return `${barberId}|${startTimeIso}`;
+}
+
+/**
+ * If createBooking returned SLOT_TAKEN on retry, recover the appointment we
+ * already own for that slot (first request succeeded; UI never showed success).
+ */
+export function findOwnBookingForSlot<
+  T extends { barber_id: string; start_time: string; status: string },
+>(appointments: T[], barberId: string, startTimeIso: string): T | null {
+  return (
+    appointments.find(
+      (a) =>
+        a.status === "confirmed" &&
+        a.barber_id === barberId &&
+        a.start_time === startTimeIso,
+    ) ?? null
+  );
+}
+
 export function normalizeCustomerPhone(value: string): string {
   return value.replace(/[\s-]/g, "").trim();
 }
