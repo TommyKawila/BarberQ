@@ -384,9 +384,10 @@ export function SalesPage() {
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center lg:flex-col">
             <OwnerSurfacePhone surface="queue" />
             <MarketingPhotoSlot
-              slot="barberQueueBoard"
+              pair="barber"
               alt={t("marketing.board.photoAlt")}
-              sizes="(min-width: 1024px) 280px, 60vw"
+              desktopSizes="280px"
+              mobileSizes="60vw"
               className="w-full max-w-[240px] min-h-[280px]"
             />
           </div>
@@ -424,7 +425,7 @@ export function SalesPage() {
         <div className="mx-auto max-w-[800px] px-4 py-10 md:px-6 md:py-14">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
             <MarketingPhotoSlot
-              slot="founderTommy"
+              slot="founder"
               alt={t("marketing.founder.photoAlt")}
               shape="circle"
               sizes="160px"

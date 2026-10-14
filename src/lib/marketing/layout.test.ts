@@ -57,10 +57,12 @@ describe("marketing layout split", () => {
     assert.match(sales, /PrimaryTrialCta/);
     assert.match(hero, /PrimaryTrialCta/);
     assert.match(hero, /MarketingPhotoSlot/);
-    assert.match(hero, /heroHandPhone/);
+    assert.match(hero, /heroDesktop/);
+    assert.match(hero, /heroMobile/);
     assert.match(hero, /linear-gradient\(to right/);
-    assert.match(hero, /right-0/);
-    assert.match(hero, /md:hidden/);
+    assert.match(hero, /right center/);
+    assert.match(hero, /hidden lg:block/);
+    assert.match(hero, /lg:hidden/);
     assert.doesNotMatch(hero, /hand-phone-cutout/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /marketing\.hero\.micro/);
@@ -94,15 +96,27 @@ describe("marketing layout split", () => {
     assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|แจ้งเตือน/);
   });
 
-  it("photo slots and real screens exist for swap", () => {
+  it("photo slots define desktop/mobile art direction and stay null until swapped", () => {
     const slots = readFileSync(resolve(root, "lib/marketing/photo-slots.ts"), "utf8");
-    assert.match(slots, /heroHandPhone/);
-    assert.match(slots, /barberQueueBoard/);
-    assert.match(slots, /founderTommy/);
-    assert.match(slots, /\/marketing\/photos\//);
-    assert.equal(marketingPhotoSlots.heroHandPhone.src, null);
-    assert.equal(marketingPhotoSlots.barberQueueBoard.src, null);
-    assert.equal(marketingPhotoSlots.founderTommy.src, null);
+    const photoUi = readFileSync(
+      resolve(root, "components/marketing/MarketingPhotoSlot.tsx"),
+      "utf8",
+    );
+    assert.match(slots, /hero-desktop\.webp/);
+    assert.match(slots, /hero-mobile\.webp/);
+    assert.match(slots, /barber-desktop\.webp/);
+    assert.match(slots, /barber-mobile\.webp/);
+    assert.match(slots, /founder\.webp/);
+    assert.match(slots, /2400/);
+    assert.match(slots, /1080/);
+    assert.match(slots, /1024/);
+    assert.match(photoUi, /hidden lg:block/);
+    assert.match(photoUi, /lg:hidden/);
+    assert.equal(marketingPhotoSlots.heroDesktop.src, null);
+    assert.equal(marketingPhotoSlots.heroMobile.src, null);
+    assert.equal(marketingPhotoSlots.barberDesktop.src, null);
+    assert.equal(marketingPhotoSlots.barberMobile.src, null);
+    assert.equal(marketingPhotoSlots.founder.src, null);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
       "choose-slot.webp missing",

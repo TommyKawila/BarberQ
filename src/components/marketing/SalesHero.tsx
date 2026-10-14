@@ -19,7 +19,8 @@ export function SalesHero({
 
   return (
     <div className="relative max-w-full overflow-x-clip">
-      <div className="absolute inset-0 overflow-hidden" aria-hidden>
+      {/* Mobile/tablet atmosphere (desktop uses full-bleed photo) */}
+      <div className="absolute inset-0 overflow-hidden lg:hidden" aria-hidden>
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(244,183,64,0.14),transparent_50%),radial-gradient(ellipse_at_90%_20%,rgba(39,39,42,0.85),transparent_45%),linear-gradient(180deg,#0B0B0B_0%,#18181B_55%,#0B0B0B_100%)]" />
         <div
           className="absolute inset-0 opacity-[0.06]"
@@ -30,30 +31,33 @@ export function SalesHero({
         />
       </div>
 
-      {/* Desktop: placeholder photo plane on the right + soft left fade */}
-      <div className="pointer-events-none absolute inset-0 hidden md:block" aria-hidden>
-        <div className="absolute inset-y-0 right-0 w-[72%] lg:w-[68%]">
-          <MarketingPhotoSlot
-            slot="heroHandPhone"
-            alt=""
-            priority
-            sizes="(min-width: 1024px) 68vw, 72vw"
-            className="h-full min-h-[640px] rounded-none border-0 border-l border-dashed border-amber-500/25"
-          />
-        </div>
+      {/*
+        Desktop (lg+): full-bleed 16:9 hero — subject on right,
+        soft left gradient for headline + CTAs.
+      */}
+      <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
+        <MarketingPhotoSlot
+          slot="heroDesktop"
+          alt=""
+          priority
+          fill
+          sizes="100vw"
+          objectPosition="right center"
+          className="absolute inset-0 h-full w-full rounded-none border-0"
+        />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, #09090b 0%, #09090b 38%, rgba(9,9,11,0.94) 48%, rgba(9,9,11,0.7) 56%, rgba(9,9,11,0.28) 64%, transparent 76%)",
+              "linear-gradient(to right, #09090b 0%, #09090b 34%, rgba(9,9,11,0.92) 44%, rgba(9,9,11,0.55) 58%, rgba(9,9,11,0.15) 72%, transparent 84%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-transparent to-zinc-950/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-zinc-950/30" />
       </div>
 
       <MarketingNav />
-      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[720px] lg:pt-10">
-        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:items-center lg:gap-10 lg:px-6">
+      <section className="relative flex max-w-full flex-col pb-10 pt-6 lg:min-h-[min(720px,100svh)] lg:justify-center lg:pb-16 lg:pt-12">
+        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:gap-10 lg:px-6">
           <div className="relative z-10 min-w-0 max-w-full text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 break-words text-[1.75rem] font-bold leading-[1.3] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.2] lg:text-[3.5rem]">
@@ -100,20 +104,20 @@ export function SalesHero({
             </p>
           </div>
 
-          <div className="hidden md:block" aria-hidden />
+          <div className="hidden lg:block" aria-hidden />
 
-          {/* Mobile: placeholder product visual (swap via photo-slots.ts) */}
+          {/* Mobile / tablet: 4:5 hero art */}
           <div
-            className="hero-phones-enter relative w-full min-w-0 max-w-full md:hidden"
+            className="hero-phones-enter relative w-full min-w-0 max-w-full lg:hidden"
             aria-label={t("marketing.hero.productAlt")}
           >
             <div className="relative -mx-4 w-[calc(100%+2rem)] max-w-none">
               <MarketingPhotoSlot
-                slot="heroHandPhone"
+                slot="heroMobile"
                 alt={t("marketing.hero.productAlt")}
                 priority
                 sizes="100vw"
-                className="mx-auto min-h-[420px] max-w-md"
+                className="mx-auto max-w-md"
               />
             </div>
           </div>
