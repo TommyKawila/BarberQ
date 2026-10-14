@@ -71,7 +71,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   founder: {
     id: "founder",
-    src: null,
+    src: "/marketing/photos/founder.webp",
     swapPath: "/marketing/photos/founder.webp",
     width: 1024,
     height: 1024,

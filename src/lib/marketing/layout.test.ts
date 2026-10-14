@@ -145,7 +145,11 @@ describe("marketing layout split", () => {
       existsSync(resolve(root, "../public/marketing/photos/barber-mobile.webp")),
       "barber-mobile.webp missing",
     );
-    assert.equal(marketingPhotoSlots.founder.src, null);
+    assert.equal(marketingPhotoSlots.founder.src, "/marketing/photos/founder.webp");
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/founder.webp")),
+      "founder.webp missing",
+    );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
       "choose-slot.webp missing",
