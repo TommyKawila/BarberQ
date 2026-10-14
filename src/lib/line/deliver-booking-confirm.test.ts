@@ -14,30 +14,13 @@ function mockLiff(partial: LiffSendMessagesApi = {}): LiffSendMessagesApi {
     isLoggedIn: () => true,
     isInClient: () => true,
     isApiAvailable: () => true,
+    getContext: () => ({ type: "utou" }),
     sendMessages: async () => {},
     ...partial,
   };
 }
 
 describe("deliverBookingLineConfirm", () => {
-  it("uses liff reply trigger when sendMessages works", async () => {
-    let pushed = false;
-    globalThis.fetch = (async () => {
-      pushed = true;
-      return new Response("{}");
-    }) as typeof fetch;
-
-    const result = await deliverBookingLineConfirm({
-      liff: mockLiff({}),
-      triggerText: "จอง #ABCDEF",
-      confirmNotifyUrl: "/api/demo/bookings/1/confirm-notify",
-      authHeaders: {},
-    });
-    assert.equal(result.mode, "liff_reply_trigger");
-    assert.equal(result.ok, true);
-    assert.equal(pushed, false);
-  });
-
   it("falls back to push when sendMessages API unavailable", async () => {
     globalThis.fetch = (async () =>
       new Response(JSON.stringify({ sent: true, skippedReason: null }), {
@@ -49,6 +32,7 @@ describe("deliverBookingLineConfirm", () => {
       triggerText: "จอง #ABCDEF",
       confirmNotifyUrl: "/api/demo/bookings/1/confirm-notify",
       authHeaders: { Authorization: "Bearer U1" },
+      replyGraceMs: 0,
     });
     assert.equal(result.mode, "push_fallback");
     assert.equal(result.ok, true);
@@ -67,11 +51,51 @@ describe("deliverBookingLineConfirm", () => {
       triggerText: "จอง #ABCDEF",
       confirmNotifyUrl: "/api/demo/bookings/1/confirm-notify",
       authHeaders: {},
+      replyGraceMs: 0,
     });
     assert.equal(result.mode, "push_fallback");
     assert.equal(
       result.mode === "push_fallback" ? result.liffReason : null,
       "not_in_client",
     );
+  });
+
+  it("still requests push insurance after successful sendMessages", async () => {
+    let pushCalls = 0;
+    globalThis.fetch = (async () => {
+      pushCalls += 1;
+      return new Response(
+        JSON.stringify({ sent: false, skippedReason: "already_delivered" }),
+        { status: 200 },
+      );
+    }) as typeof fetch;
+
+    const result = await deliverBookingLineConfirm({
+      liff: mockLiff({}),
+      triggerText: "จอง #ABCDEF",
+      confirmNotifyUrl: "/api/demo/bookings/1/confirm-notify",
+      authHeaders: {},
+      replyGraceMs: 0,
+    });
+    assert.equal(pushCalls, 1);
+    assert.equal(result.mode, "liff_reply_trigger");
+    assert.equal(result.ok, true);
+  });
+
+  it("uses push when sendMessages ok but reply never landed", async () => {
+    globalThis.fetch = (async () =>
+      new Response(JSON.stringify({ sent: true, skippedReason: null }), {
+        status: 200,
+      })) as typeof fetch;
+
+    const result = await deliverBookingLineConfirm({
+      liff: mockLiff({}),
+      triggerText: "จอง #ABCDEF",
+      confirmNotifyUrl: "/api/demo/bookings/1/confirm-notify",
+      authHeaders: {},
+      replyGraceMs: 0,
+    });
+    assert.equal(result.mode, "push_fallback");
+    assert.equal(result.ok, true);
   });
 });

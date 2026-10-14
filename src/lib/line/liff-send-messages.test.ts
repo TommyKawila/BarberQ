@@ -35,6 +35,22 @@ describe("liff sendMessages gate", () => {
     );
   });
 
+  it("blocks when LIFF context is not an OA chat", () => {
+    assert.deepEqual(
+      resolveLiffSendMessagesGate(
+        mockLiff({ getContext: () => ({ type: "externalBrowser" }) }),
+      ),
+      { canSend: false, reason: "bad_context" },
+    );
+  });
+
+  it("allows utou context (1:1 OA chat / rich menu)", () => {
+    assert.deepEqual(
+      resolveLiffSendMessagesGate(mockLiff({ getContext: () => ({ type: "utou" }) })),
+      { canSend: true },
+    );
+  });
+
   it("tryLiffSendMessages returns send_failed with message on throw", async () => {
     const result = await tryLiffSendMessages(
       mockLiff({

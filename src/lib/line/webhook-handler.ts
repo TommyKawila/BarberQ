@@ -87,7 +87,17 @@ async function replyBookingConfirm(input: {
         a.status === "confirmed" &&
         appointmentMatchesCode(a.id, input.code),
     ) ?? null;
-  if (!appointment) return;
+  if (!appointment) {
+    console.warn(
+      JSON.stringify({
+        event: "line_webhook_booking_code_unmatched",
+        shopId: input.shopId,
+        code: input.code,
+        lineUserId: input.lineUserId ? "present" : "missing",
+      }),
+    );
+    return;
+  }
 
   const pair = await buildBookingConfirmFlexPair(input.shop, appointment);
   if (!pair) return;

@@ -77,4 +77,18 @@ describe("pushBookingConfirmFallback", () => {
     assert.equal(result.sent, false);
     assert.equal(result.skippedReason, "quota_full");
   });
+
+  it("skips push when reply_confirm already succeeded", async () => {
+    const a = apt();
+    await recordLineMessage({
+      shopId: SHOP_ID,
+      kind: "reply_confirm",
+      counted: false,
+      appointmentId: a.id,
+      success: true,
+    });
+    const result = await pushBookingConfirmFallback(shop(), a);
+    assert.equal(result.sent, false);
+    assert.equal(result.skippedReason, "already_delivered");
+  });
 });

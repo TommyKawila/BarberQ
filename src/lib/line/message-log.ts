@@ -27,6 +27,8 @@ interface LogRow {
   kind: LineMessageKind;
   counted: boolean;
   sentAt: string;
+  appointmentId: string | null;
+  success: boolean;
 }
 
 const memoryLogs: LogRow[] = [];
@@ -44,6 +46,8 @@ export async function recordLineMessage(input: LineMessageLogInput): Promise<voi
       kind: input.kind,
       counted: input.counted,
       sentAt: new Date().toISOString(),
+      appointmentId: input.appointmentId ?? null,
+      success: input.success ?? true,
     });
     return;
   }
@@ -102,6 +106,42 @@ export async function claimWebhookEvent(
     return true;
   }
   return true;
+}
+
+/** True if reply_confirm or push_confirm already succeeded for this booking. */
+export async function hasSuccessfulBookingConfirm(
+  shopId: string,
+  appointmentId: string,
+): Promise<boolean> {
+  if (!appointmentId) return false;
+  if (isPrototypeMode()) {
+    return memoryLogs.some(
+      (row) =>
+        row.shopId === shopId &&
+        row.appointmentId === appointmentId &&
+        row.success &&
+        (row.kind === "reply_confirm" || row.kind === "push_confirm"),
+    );
+  }
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("line_message_log")
+    .select("id")
+    .eq("shop_id", shopId)
+    .eq("appointment_id", appointmentId)
+    .eq("success", true)
+    .in("kind", ["reply_confirm", "push_confirm"])
+    .limit(1);
+  if (error) {
+    console.warn(
+      JSON.stringify({
+        event: "line_message_log_lookup_failed",
+        message: error.message,
+      }),
+    );
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
 }
 
 export function __resetLineMessageLogForTests() {

@@ -20,7 +20,8 @@ export interface PushResult {
     | "missing_token"
     | "quota_full"
     | "invalid_input"
-    | "api_error";
+    | "api_error"
+    | "already_delivered";
   status?: number;
 }
 

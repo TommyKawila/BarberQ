@@ -4,6 +4,7 @@ import {
   buildQueueTicketFlex,
 } from "@/lib/line/flex-messages";
 import { buildShopCustomerUrl } from "@/lib/line/liff-url";
+import { hasSuccessfulBookingConfirm } from "@/lib/line/message-log";
 import { pushMessagesForShop, type PushResult } from "@/lib/line/push-message";
 import type { Appointment, Shop } from "@/types/booking";
 
@@ -76,6 +77,10 @@ export async function pushBookingConfirmFallback(
   const lineId = appointment.customer_line_id?.trim();
   if (!lineId || appointment.source !== "line") {
     return { sent: false, skippedReason: "invalid_input" };
+  }
+
+  if (await hasSuccessfulBookingConfirm(shop.id, appointment.id)) {
+    return { sent: false, skippedReason: "already_delivered" };
   }
 
   const pair = await buildBookingConfirmFlexPair(shop, appointment);

@@ -8,16 +8,22 @@ export type LiffSendMessagesReason =
   | "not_logged_in"
   | "not_in_client"
   | "api_unavailable"
+  | "bad_context"
   | "send_failed";
+
+export type LiffChatContextType = "utou" | "room" | "group" | "none" | "externalBrowser" | string;
 
 export interface LiffSendMessagesApi {
   isLoggedIn?: () => boolean;
   isInClient?: () => boolean;
   isApiAvailable?: (name: string) => boolean;
+  getContext?: () => { type?: LiffChatContextType } | null;
   sendMessages?: (
     messages: Array<{ type: "text"; text: string }>,
   ) => Promise<void>;
 }
+
+const CHAT_CONTEXT_TYPES = new Set(["utou", "room", "group"]);
 
 export function resolveLiffSendMessagesGate(
   liff: LiffSendMessagesApi,
@@ -31,6 +37,13 @@ export function resolveLiffSendMessagesGate(
   if (!liff.isApiAvailable?.("sendMessages")) {
     // Common when LIFF was not opened from an OA chat context, or scope missing.
     return { canSend: false, reason: "api_unavailable" };
+  }
+  // sendMessages only works in a chat with the bot (rich menu inside OA chat = utou).
+  if (typeof liff.getContext === "function") {
+    const type = liff.getContext()?.type;
+    if (type && !CHAT_CONTEXT_TYPES.has(type)) {
+      return { canSend: false, reason: "bad_context" };
+    }
   }
   return { canSend: true };
 }

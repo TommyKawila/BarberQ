@@ -489,9 +489,9 @@ export function BookingApp() {
         }
         return;
       }
-      // Prefer free reply via liff.sendMessages → webhook Flex.
-      // If unavailable (rich menu / missing chat_message.write / outside OA chat),
-      // fall back to quota-guarded push confirm so the OA chat still gets a ticket.
+      // Prefer free reply via liff.sendMessages → webhook Flex, then always
+      // request push insurance (server skips if reply already landed) so OA
+      // chat still gets confirm/ticket when sendMessages/webhook miss.
       const trigger = json.lineReplyHint?.triggerText?.trim();
       if (trigger && !mockMode) {
         await deliverBookingLineConfirm({
