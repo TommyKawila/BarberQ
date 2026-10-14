@@ -54,8 +54,8 @@ describe("marketing layout split", () => {
       "utf8",
     );
     assert.match(sales, /SalesHero/);
-    assert.match(sales, /MarketingTrialLink/);
-    assert.match(hero, /MarketingTrialLink/);
+    assert.match(sales, /PrimaryTrialCta/);
+    assert.match(hero, /PrimaryTrialCta/);
     assert.match(hero, /MarketingPhotoSlot/);
     assert.match(hero, /heroHandPhone/);
     assert.match(hero, /linear-gradient\(to right/);
@@ -173,24 +173,45 @@ describe("marketing layout split", () => {
       cursor = idx + token.length;
     }
     assert.match(sales, /SHOW_TESTIMONIALS_PLACEHOLDER = false/);
-    assert.match(sales, /h-14/);
     assert.doesNotMatch(sales, /id="coming-soon"/);
     assert.doesNotMatch(sales, /barber\.chip|BARBER_CHIPS/);
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
-    // At least 5 MarketingTrialLink / TrialCta placements
-    const ctaCount = (sales.match(/placement="/g) ?? []).length;
-    assert.ok(ctaCount >= 5, `expected >=5 CTA placements, got ${ctaCount}`);
+    const ctaCount = (sales.match(/PrimaryTrialCta/g) ?? []).length;
+    assert.ok(ctaCount >= 4, `expected >=4 PrimaryTrialCta uses, got ${ctaCount}`);
   });
 
-  it("feature claims for short leads and self-reschedule stay gated off", () => {
-    assert.equal(marketingClaims.reminderShortLeads, false);
-    assert.equal(marketingClaims.customerSelfReschedule, false);
+  it("primary CTAs use strong amber style and verified risk-reversal only", () => {
+    const cta = readFileSync(
+      resolve(root, "components/marketing/PrimaryTrialCta.tsx"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    assert.match(cta, /PRIMARY_TRIAL_CTA_CLASS/);
+    assert.match(cta, /min-h-14/);
+    assert.match(cta, /cta-pulse/);
+    assert.match(cta, /marketing\.risk\.noCard/);
+    assert.match(cta, /marketing\.risk\.cancelAnytime/);
+    assert.doesNotMatch(cta, /ตั้งค่าเสร็จใน 10|setup in 10/i);
+    assert.match(css, /@keyframes cta-pulse/);
+    assert.match(dictionary.th["marketing.hero.cta"], /เริ่มใช้ฟรี \{days\} วัน →/);
+    assert.match(dictionary.en["marketing.hero.cta"], /Start free for \{days\} days →/);
+    assert.match(dictionary.th["marketing.risk.noCard"], /ไม่ต้องผูกบัตร/);
+    assert.match(dictionary.th["marketing.risk.cancelAnytime"], /ยกเลิกได้ทุกเมื่อ/);
+  });
+
+  it("feature claims for short leads and self-reschedule default on (toggleable)", () => {
+    assert.equal(marketingClaims.reminderShortLeads, true);
+    assert.equal(marketingClaims.customerSelfReschedule, true);
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
     assert.match(sales, /marketingClaims\.reminderShortLeads/);
     assert.match(sales, /marketingClaims\.customerSelfReschedule/);
+    assert.match(sales, /marketing\.line\.lead3h/);
+    assert.match(sales, /marketing\.line\.rescheduleTitle/);
+    assert.match(dictionary.th["marketing.line.bullet2ShortLeads"], /3 ชม/);
+    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนคิวเอง/);
   });
 
   it("Clarity loads only via marketing script gated on env", () => {
@@ -242,8 +263,8 @@ describe("visible marketing claim locks", () => {
     assert.ok(dictionary.th["marketing.board.title"]);
     assert.ok(dictionary.th["marketing.founder.title"]);
     assert.ok(dictionary.th["marketing.faq.8.q"]);
-    assert.match(dictionary.th["marketing.hero.cta"], /ทดลองใช้ฟรี \{days\} วัน/);
-    assert.match(dictionary.en["marketing.hero.cta"], /free \{days\}-day trial/i);
+    assert.match(dictionary.th["marketing.hero.cta"], /เริ่มใช้ฟรี \{days\} วัน →/);
+    assert.match(dictionary.en["marketing.hero.cta"], /Start free for \{days\} days →/);
   });
 
   it("rejects unverifiable and outdated pricing claims", () => {

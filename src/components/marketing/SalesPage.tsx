@@ -17,8 +17,8 @@ import {
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
 import { ClarityMarketingScript } from "@/components/marketing/ClarityMarketingScript";
-import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
+import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { SalesHero } from "@/components/marketing/SalesHero";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
@@ -48,29 +48,6 @@ const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 /** Never render testimonials in production until real reviews exist. */
 const SHOW_TESTIMONIALS_PLACEHOLDER = false;
 
-function TrialCta({
-  label,
-  className,
-  fullWidth,
-  placement,
-}: {
-  label: string;
-  className?: string;
-  fullWidth?: boolean;
-  placement: string;
-}) {
-  return (
-    <MarketingTrialLink
-      placement={placement}
-      className={`inline-flex min-h-12 items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 ${
-        fullWidth ? "w-full" : ""
-      } ${className ?? ""}`}
-    >
-      {label}
-    </MarketingTrialLink>
-  );
-}
-
 function LineCta({
   label,
   className,
@@ -98,7 +75,14 @@ function LineCta({
 function ContactCta({ label, className }: { label: string; className?: string }) {
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   if (!supportUrl) {
-    return <TrialCta label={label} className={className} fullWidth placement="pricing" />;
+    return (
+      <PrimaryTrialCta
+        labelKey="marketing.pricing.cta"
+        placement="pricing"
+        fullWidth
+        className={className}
+      />
+    );
   }
   return (
     <a
@@ -218,7 +202,9 @@ export function SalesPage() {
   return (
     <div
       className={`min-h-full max-w-full overflow-x-clip bg-zinc-950 text-zinc-50 ${
-        showSticky ? "pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pb-0" : "md:pb-0"
+        showSticky
+          ? "pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-0"
+          : "md:pb-0"
       }`}
     >
       <ClarityMarketingScript />
@@ -279,6 +265,44 @@ export function SalesPage() {
                 </li>
               ))}
             </ul>
+            {marketingClaims.reminderShortLeads ? (
+              <div className="mt-5">
+                <p className="text-sm font-semibold text-zinc-200">
+                  {t("marketing.line.leadsLabel")}
+                </p>
+                <ul className="mt-2.5 flex flex-wrap gap-2">
+                  {(
+                    [
+                      "marketing.line.lead1d",
+                      "marketing.line.lead3h",
+                      "marketing.line.lead1h",
+                      "marketing.line.lead30m",
+                      "marketing.line.leadNone",
+                    ] as const
+                  ).map((key) => (
+                    <li
+                      key={key}
+                      className="rounded-lg border border-amber-500/35 bg-zinc-950/70 px-3 py-1.5 text-sm font-medium text-amber-100"
+                    >
+                      {t(key)}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {marketingClaims.customerSelfReschedule ? (
+              <div className="mt-5 rounded-2xl border border-zinc-700 bg-zinc-900/60 p-4 md:p-5">
+                <div className="flex items-start gap-3">
+                  <CalendarClock size={20} className="mt-0.5 shrink-0 text-amber-400" />
+                  <div>
+                    <h3 className="text-base font-semibold text-zinc-50">
+                      {t("marketing.line.rescheduleTitle")}
+                    </h3>
+                    <p className={`mt-1.5 ${BODY}`}>{t("marketing.line.rescheduleBody")}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <p className="mt-5 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2.5 text-[13px] leading-relaxed text-zinc-400 md:text-sm">
               {t("marketing.line.evidence")}
             </p>
@@ -291,9 +315,9 @@ export function SalesPage() {
                 {td("marketing.line.costClose")}
               </p>
             </div>
-            <div className="mt-6 flex w-full max-w-[480px] flex-col gap-3 sm:flex-row">
-              <TrialCta label={td("marketing.line.cta")} fullWidth placement="line" />
-              <LineCta label={t("marketing.line.lineCta")} className="flex-1" placement="line" />
+            <div className="mt-6 flex w-full max-w-[480px] flex-col gap-3">
+              <PrimaryTrialCta labelKey="marketing.line.cta" placement="line" fullWidth />
+              <LineCta label={t("marketing.line.lineCta")} className="w-full" placement="line" />
             </div>
           </div>
         </div>
@@ -468,15 +492,16 @@ export function SalesPage() {
                       </li>
                     ))}
                   </ul>
-                  <TrialCta
-                    label={td("marketing.pricing.cta")}
-                    className="mt-auto pt-6"
-                    fullWidth
-                    placement="pricing"
-                  />
-                  <p className="mt-3 text-center text-[13px] text-zinc-500">
-                    {td("marketing.pricing.micro")}
-                  </p>
+                  <div className="mt-auto pt-6">
+                    <PrimaryTrialCta
+                      labelKey="marketing.pricing.cta"
+                      placement="pricing"
+                      fullWidth
+                    />
+                    <p className="mt-2 text-center text-[13px] text-zinc-500">
+                      {td("marketing.pricing.micro")}
+                    </p>
+                  </div>
                 </div>
               );
             })}
@@ -580,9 +605,9 @@ export function SalesPage() {
             {t("marketing.final.title")}
           </h2>
           <p className={`mx-auto mt-4 max-w-xl ${BODY}`}>{t("marketing.final.sub")}</p>
-          <div className="mx-auto mt-8 flex w-full max-w-[480px] flex-col gap-3 sm:flex-row sm:justify-center">
-            <TrialCta label={td("marketing.final.cta")} className="flex-1" fullWidth placement="final" />
-            <LineCta label={t("marketing.final.lineCta")} className="flex-1" placement="final" />
+          <div className="mx-auto mt-8 flex w-full max-w-[480px] flex-col gap-3">
+            <PrimaryTrialCta labelKey="marketing.final.cta" placement="final" fullWidth />
+            <LineCta label={t("marketing.final.lineCta")} className="w-full" placement="final" />
           </div>
           <p className="mt-4 text-[13px] text-zinc-400 md:text-sm">
             {td("marketing.final.micro")}
@@ -594,14 +619,14 @@ export function SalesPage() {
 
       {/* Sticky mobile CTA */}
       {showSticky ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-4 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-          <MarketingTrialLink
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-3 pt-2 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
+          <PrimaryTrialCta
+            labelKey="marketing.sticky.cta"
             placement="sticky"
             eventName="sticky_cta_click"
-            className="flex h-14 w-full items-center justify-center font-semibold text-amber-400"
-          >
-            {td("marketing.sticky.cta")}
-          </MarketingTrialLink>
+            fullWidth
+            riskClassName="mt-2 justify-center text-[13px] sm:text-sm"
+          />
         </div>
       ) : null}
     </div>

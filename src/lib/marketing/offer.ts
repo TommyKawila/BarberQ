@@ -11,13 +11,14 @@ export const marketingOffer = {
 } as const;
 
 /**
- * Public claim gates — off until the underlying product is accurate/merged.
- * - reminderShortLeads: 3h/1h/30m need denser cron than Hobby daily.
- * - customerSelfReschedule: P6 not on main yet.
+ * Public claim gates for the sale page (kept so claims can be flipped off).
+ * Default ON per owner request — page presents full reminder leads + self-reschedule.
+ * - reminderShortLeads: 1d / 3h / 1h / 30m options
+ * - customerSelfReschedule: customer can reschedule once per booking
  */
 export const marketingClaims = {
-  reminderShortLeads: false,
-  customerSelfReschedule: false,
+  reminderShortLeads: true,
+  customerSelfReschedule: true,
 } as const;
 
 export type MarketingTier = (typeof marketingOffer.tiers)[number];

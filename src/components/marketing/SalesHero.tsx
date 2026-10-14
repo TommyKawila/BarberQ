@@ -1,12 +1,12 @@
 "use client";
 
 import { MarketingNav } from "@/components/marketing/MarketingNav";
-import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
+import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import type { MessageKey } from "@/lib/i18n/dictionary";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 
 export function SalesHero({
   heroCtaRef,
@@ -64,13 +64,13 @@ export function SalesHero({
             </p>
 
             <div ref={heroCtaRef} className="relative mt-8 max-w-full md:max-w-xl">
-              <div className="relative flex w-full max-w-full flex-col gap-3 md:flex-row md:items-center">
-                <MarketingTrialLink
+              <div className="relative flex w-full max-w-full flex-col gap-3">
+                <PrimaryTrialCta
+                  labelKey="marketing.hero.cta"
                   placement="hero"
-                  className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl bg-amber-400 px-4 py-3 text-center font-semibold text-zinc-950 sm:px-6 md:w-auto"
-                >
-                  {td("marketing.hero.cta")}
-                </MarketingTrialLink>
+                  fullWidth
+                  className="sm:w-auto sm:min-w-[280px]"
+                />
                 {supportUrl ? (
                   <a
                     href={supportUrl}
@@ -79,7 +79,7 @@ export function SalesHero({
                     onClick={() =>
                       trackMarketingEvent("support_line_click", { cta_location: "hero" })
                     }
-                    className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl border border-amber-500/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-amber-300 sm:px-6 md:w-auto"
+                    className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl border border-amber-500/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-amber-300 sm:w-auto sm:px-6"
                   >
                     {t("marketing.hero.secondary")}
                   </a>
@@ -87,7 +87,7 @@ export function SalesHero({
                   <a
                     href="#how-it-works"
                     onClick={() => trackMarketingEvent("how_it_works_click")}
-                    className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-zinc-100 sm:px-6 md:w-auto"
+                    className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-zinc-100 sm:w-auto sm:px-6"
                   >
                     {t("marketing.hero.secondaryFallback")}
                   </a>

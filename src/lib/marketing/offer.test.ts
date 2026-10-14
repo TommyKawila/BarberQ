@@ -21,9 +21,9 @@ describe("marketingOffer single source of truth", () => {
     assert.equal(marketingOffer.lineFreePushQuota, 300);
   });
 
-  it("keeps short-lead and self-reschedule claims off by default", () => {
-    assert.equal(marketingClaims.reminderShortLeads, false);
-    assert.equal(marketingClaims.customerSelfReschedule, false);
+  it("defaults short-lead and self-reschedule claims on (flags remain toggleable)", () => {
+    assert.equal(marketingClaims.reminderShortLeads, true);
+    assert.equal(marketingClaims.customerSelfReschedule, true);
   });
 
   it("resolves seat counts to tiers or contact", () => {
