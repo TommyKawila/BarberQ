@@ -66,18 +66,28 @@ export async function buildBookingConfirmFlexPair(
   };
 }
 
+/** LINE confirm push only for LINE-linked customers (same gate as shop-cancel). */
+export function shouldSendLineBookingConfirmPush(
+  appointment: Pick<Appointment, "customer_line_id" | "source" | "status">,
+): boolean {
+  if (appointment.status !== "confirmed") return false;
+  if (appointment.source && appointment.source !== "line") return false;
+  return Boolean(appointment.customer_line_id?.trim());
+}
+
 /**
- * Push confirmation + queue ticket when liff.sendMessages is unavailable/fails.
+ * Push confirmation + queue ticket via the same Messaging API path as shop-cancel.
+ * Idempotent: skips if reply_confirm or push_confirm already succeeded.
  * Counts toward the shop's 300 monthly push quota.
  */
 export async function pushBookingConfirmFallback(
   shop: Shop,
   appointment: Appointment,
 ): Promise<PushResult> {
-  const lineId = appointment.customer_line_id?.trim();
-  if (!lineId || appointment.source !== "line") {
+  if (!shouldSendLineBookingConfirmPush(appointment)) {
     return { sent: false, skippedReason: "invalid_input" };
   }
+  const lineId = appointment.customer_line_id!.trim();
 
   if (await hasSuccessfulBookingConfirm(shop.id, appointment.id)) {
     return { sent: false, skippedReason: "already_delivered" };
@@ -95,4 +105,12 @@ export async function pushBookingConfirmFallback(
     "push_confirm",
     appointment.id,
   );
+}
+
+/** Server-side notify after booking commit (mirrors notifyCustomerShopCancel). */
+export async function notifyCustomerBookingConfirm(
+  shop: Shop,
+  appointment: Appointment,
+): Promise<PushResult> {
+  return pushBookingConfirmFallback(shop, appointment);
 }

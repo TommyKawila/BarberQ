@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertVerifiedCustomer } from "@/lib/auth/customer-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { bookingConfirmTriggerText } from "@/lib/line/booking-code";
+import { notifyCustomerBookingConfirm } from "@/lib/line/booking-confirm-notify";
 import { resolveShopParam } from "@/lib/shop/api-route";
 import {
   createBookingForShop,
@@ -52,8 +53,7 @@ export async function POST(
       reminderLeadMinutes:
         "reminderLeadMinutes" in body ? body.reminderLeadMinutes : undefined,
     });
-    // LINE confirmation: client tries liff.sendMessages → webhook reply (free).
-    // If that fails, client POSTs .../confirm-notify for quota-guarded push fallback.
+
     // Staff alerts use Web Push (not LINE).
     void notifyStaffWebPush({
       shopId: shop.id,
@@ -62,12 +62,44 @@ export async function POST(
       appointment,
       event: "new_booking",
     }).catch(() => {});
+
+    // LINE confirm/ticket: server push after commit (same Messaging API path as
+    // shop-cancel). Must not depend on liff.sendMessages / client confirm-notify —
+    // those never reliably fire in LIFF rich-menu. Await so Vercel does not kill
+    // the work; errors are logged and never fail the booking response.
+    const forPush: Appointment = {
+      ...appointment,
+      customer_line_id: appointment.customer_line_id ?? customer.userId,
+      source: appointment.source ?? "line",
+    };
+    try {
+      const push = await notifyCustomerBookingConfirm(shop, forPush);
+      console.warn(
+        JSON.stringify({
+          event: "booking_confirm_server_push",
+          shopId: shop.id,
+          appointmentId: appointment.id,
+          sent: push.sent,
+          skippedReason: push.skippedReason ?? null,
+        }),
+      );
+    } catch (err) {
+      console.warn(
+        JSON.stringify({
+          event: "booking_confirm_server_push_error",
+          shopId: shop.id,
+          appointmentId: appointment.id,
+          message: err instanceof Error ? err.message : String(err),
+        }),
+      );
+    }
+
     return NextResponse.json(
       {
         appointment,
         lineReplyHint: {
           triggerText: bookingConfirmTriggerText(appointment.id),
-          mode: "liff_send_messages_then_reply_or_push_fallback",
+          mode: "server_push_confirm",
         },
       },
       { status: 201 },

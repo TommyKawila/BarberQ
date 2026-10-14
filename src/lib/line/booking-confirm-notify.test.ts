@@ -1,6 +1,9 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { pushBookingConfirmFallback } from "@/lib/line/booking-confirm-notify";
+import {
+  pushBookingConfirmFallback,
+  shouldSendLineBookingConfirmPush,
+} from "@/lib/line/booking-confirm-notify";
 import {
   __resetLineMessageLogForTests,
   countCountedPushesThisMonth,
@@ -52,6 +55,33 @@ function apt(overrides: Partial<Appointment> = {}): Appointment {
 }
 
 describe("pushBookingConfirmFallback", () => {
+  it("gates like shop-cancel: needs LINE id + confirmed", () => {
+    assert.equal(
+      shouldSendLineBookingConfirmPush({
+        status: "confirmed",
+        source: "line",
+        customer_line_id: "U1",
+      }),
+      true,
+    );
+    assert.equal(
+      shouldSendLineBookingConfirmPush({
+        status: "confirmed",
+        source: "phone",
+        customer_line_id: "U1",
+      }),
+      false,
+    );
+    assert.equal(
+      shouldSendLineBookingConfirmPush({
+        status: "confirmed",
+        source: "line",
+        customer_line_id: null,
+      }),
+      false,
+    );
+  });
+
   it("skips non-LINE bookings without consuming quota", async () => {
     const result = await pushBookingConfirmFallback(
       shop(),
