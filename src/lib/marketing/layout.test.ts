@@ -60,6 +60,7 @@ describe("marketing layout split", () => {
     assert.match(hero, /heroDesktop/);
     assert.match(hero, /heroMobile/);
     assert.match(hero, /linear-gradient\(to right/);
+    assert.match(hero, /linear-gradient\(to bottom/);
     assert.match(hero, /right center/);
     assert.match(hero, /hidden lg:block/);
     assert.match(hero, /lg:hidden/);
@@ -120,7 +121,14 @@ describe("marketing layout split", () => {
       existsSync(resolve(root, "../public/marketing/photos/hero-desktop.webp")),
       "hero-desktop.webp missing",
     );
-    assert.equal(marketingPhotoSlots.heroMobile.src, null);
+    assert.equal(
+      marketingPhotoSlots.heroMobile.src,
+      "/marketing/photos/hero-mobile.webp",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-mobile.webp")),
+      "hero-mobile.webp missing",
+    );
     assert.equal(
       marketingPhotoSlots.barberDesktop.src,
       "/marketing/photos/barber-desktop.webp",

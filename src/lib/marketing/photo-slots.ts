@@ -44,12 +44,12 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   heroMobile: {
     id: "heroMobile",
-    src: null,
+    src: "/marketing/photos/hero-mobile.webp",
     swapPath: "/marketing/photos/hero-mobile.webp",
     width: 1080,
     height: 1350,
     label: "PHOTO SLOT · hero mobile 4:5",
-    artNote: "1080×1350 · vertical product/scene crop",
+    artNote: "1080×1350 · dark top for headline overlay",
   },
   barberDesktop: {
     id: "barberDesktop",

@@ -19,21 +19,8 @@ export function SalesHero({
 
   return (
     <div className="relative max-w-full overflow-x-clip">
-      {/* Mobile/tablet atmosphere (desktop uses full-bleed photo) */}
-      <div className="absolute inset-0 overflow-hidden lg:hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,rgba(244,183,64,0.14),transparent_50%),radial-gradient(ellipse_at_90%_20%,rgba(39,39,42,0.85),transparent_45%),linear-gradient(180deg,#0B0B0B_0%,#18181B_55%,#0B0B0B_100%)]" />
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4B740' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-          }}
-        />
-      </div>
-
       {/*
-        Desktop (lg+): full-bleed 16:9 hero — subject on right,
-        soft left gradient for headline + CTAs.
+        Desktop (lg+): full-bleed 16:9 — subject on right, left fade for copy.
       */}
       <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
         <MarketingPhotoSlot
@@ -45,7 +32,6 @@ export function SalesHero({
           objectPosition="right center"
           className="absolute inset-0 h-full w-full rounded-none border-0"
         />
-        {/* Left fade keeps headline/CTAs legible over the photo */}
         <div
           className="absolute inset-0"
           style={{
@@ -57,8 +43,32 @@ export function SalesHero({
       </div>
 
       <MarketingNav />
-      <section className="relative flex max-w-full flex-col pb-10 pt-6 lg:min-h-[min(720px,100svh)] lg:justify-center lg:pb-16 lg:pt-12">
-        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:gap-10 lg:px-6">
+      <section className="relative flex min-h-[min(100svh,820px)] max-w-full flex-col pb-10 pt-6 lg:min-h-[min(720px,100svh)] lg:justify-center lg:pb-16 lg:pt-12">
+        {/*
+          Mobile / tablet: 4:5 hero under copy — headline sits on the dark top.
+          Top gradient keeps type legible.
+        */}
+        <div className="pointer-events-none absolute inset-0 lg:hidden" aria-hidden>
+          <MarketingPhotoSlot
+            slot="heroMobile"
+            alt=""
+            priority
+            fill
+            sizes="100vw"
+            objectPosition="center top"
+            className="absolute inset-0 h-full w-full rounded-none border-0"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to bottom, rgba(9,9,11,0.94) 0%, rgba(9,9,11,0.82) 18%, rgba(9,9,11,0.55) 36%, rgba(9,9,11,0.2) 52%, transparent 68%)",
+            }}
+          />
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
+        </div>
+
+        <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:gap-10 lg:px-6">
           <div className="relative z-10 min-w-0 max-w-full text-left">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 break-words text-[1.75rem] font-bold leading-[1.3] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.2] lg:text-[3.5rem]">
@@ -106,22 +116,6 @@ export function SalesHero({
           </div>
 
           <div className="hidden lg:block" aria-hidden />
-
-          {/* Mobile / tablet: 4:5 hero art */}
-          <div
-            className="hero-phones-enter relative w-full min-w-0 max-w-full lg:hidden"
-            aria-label={t("marketing.hero.productAlt")}
-          >
-            <div className="relative -mx-4 w-[calc(100%+2rem)] max-w-none">
-              <MarketingPhotoSlot
-                slot="heroMobile"
-                alt={t("marketing.hero.productAlt")}
-                priority
-                sizes="100vw"
-                className="mx-auto max-w-md"
-              />
-            </div>
-          </div>
         </div>
       </section>
     </div>
