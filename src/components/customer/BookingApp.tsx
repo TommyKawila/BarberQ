@@ -47,12 +47,12 @@ import {
 } from "@/lib/services/slot-service";
 import { type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { barberLabel, type Appointment, type Barber, type Slot } from "@/types/booking";
+import { ReminderLeadChips } from "@/components/customer/ReminderLeadChips";
 import {
-  REMINDER_LEAD_OPTIONS,
-  reminderLeadMessageKey,
-  type ReminderLeadOption,
-} from "@/lib/reminders/labels";
-import type { MessageKey } from "@/lib/i18n/dictionary";
+  defaultCustomerReminderChip,
+  isCustomerReminderLeadFuture,
+} from "@/lib/reminders/customer-chips";
+import type { ReminderLeadOption } from "@/lib/reminders/labels";
 
 const PHONE_KEY = "barberq_phone";
 const POLL_MS = 10_000;
@@ -77,7 +77,6 @@ export function BookingApp() {
     hours,
     remindersEnabled: brandRemindersEnabled,
     reminderLeadMinutes: brandReminderLead,
-    loading: brandLoading,
     refresh: refreshBrand,
   } = useShopBrand();
   const [reminderSettings, setReminderSettings] = useState<{
@@ -101,10 +100,9 @@ export function BookingApp() {
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useBrowserStorage(PHONE_KEY);
-  const [reminderLeadOverride, setReminderLeadOverride] = useState<number | null>(null);
-  const reminderLead = remindersEnabled
-    ? (reminderLeadOverride ?? shopReminderLead)
-    : null;
+  const [reminderLeadOverride, setReminderLeadOverride] = useState<ReminderLeadOption | null>(
+    null,
+  );
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -136,7 +134,7 @@ export function BookingApp() {
     }
   }, [profile, customerName]);
 
-  // Re-fetch reminder flags when the confirm step opens (avoid stale default false).
+  // Re-fetch reminder flags when a slot is chosen (avoid stale default false).
   useEffect(() => {
     if (!selectedStart) return;
     let cancelled = false;
@@ -150,13 +148,17 @@ export function BookingApp() {
           reminderLeadMinutes?: number;
         };
         if (cancelled) return;
+        const leadMinutes =
+          typeof json.reminderLeadMinutes === "number"
+            ? json.reminderLeadMinutes
+            : brandReminderLead;
         setReminderSettings({
           enabled: Boolean(json.remindersEnabled),
-          leadMinutes:
-            typeof json.reminderLeadMinutes === "number"
-              ? json.reminderLeadMinutes
-              : brandReminderLead,
+          leadMinutes,
         });
+        setReminderLeadOverride(
+          defaultCustomerReminderChip(leadMinutes, new Date(selectedStart)),
+        );
       } catch {
         /* keep brand values */
       }
@@ -165,6 +167,19 @@ export function BookingApp() {
       cancelled = true;
     };
   }, [selectedStart, shopApi, refreshBrand, brandReminderLead]);
+
+  const reminderLead: ReminderLeadOption | null = (() => {
+    if (!remindersEnabled || !selectedStart) return null;
+    if (reminderLeadOverride != null) {
+      if (
+        reminderLeadOverride === 0 ||
+        isCustomerReminderLeadFuture(reminderLeadOverride, new Date(selectedStart))
+      ) {
+        return reminderLeadOverride;
+      }
+    }
+    return defaultCustomerReminderChip(shopReminderLead, new Date(selectedStart));
+  })();
 
   useEffect(() => {
     if (!profile?.userId) {
@@ -568,7 +583,7 @@ export function BookingApp() {
   const showSummary = bookingSummaryReady(barberId, activeDate, selectedStart) && selectedSlot;
 
   return (
-    <div className="flex flex-col gap-8 px-4 pb-36 pt-5">
+    <div className="flex flex-col gap-8 px-4 pb-[min(52vh,28rem)] pt-5">
       <BookingHero
         shopName={shopName}
         coverImageUrl={coverImageUrl}
@@ -731,44 +746,35 @@ export function BookingApp() {
                     className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
                   />
                 </label>
-                {brandLoading && reminderSettings == null ? (
-                  <p className="text-xs text-zinc-500">{t("booking.reminderLoading")}</p>
-                ) : remindersEnabled ? (
-                  <label className="flex flex-col gap-1 text-sm">
-                    {t("booking.reminderLead")}
-                    <select
-                      value={reminderLead ?? shopReminderLead}
-                      onChange={(event) =>
-                        setReminderLeadOverride(
-                          Number(event.target.value) as ReminderLeadOption,
-                        )
-                      }
-                      className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-                    >
-                      {REMINDER_LEAD_OPTIONS.map((mins) => (
-                        <option key={mins} value={mins}>
-                          {t(reminderLeadMessageKey(mins) as MessageKey)}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="text-xs text-zinc-500">{t("booking.reminderLeadHint")}</span>
-                  </label>
-                ) : null}
               </div>
             </div>
-          </section>
-
-          <section className="flex flex-col gap-2">
-            <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepConfirm")}</h2>
-            {message ? <p className="text-sm text-red-400">{message}</p> : null}
           </section>
 
           <section className="flex flex-col gap-2 pb-4">
             <h2 className="text-sm font-semibold text-zinc-300">{t("booking.notesHeading")}</h2>
             <p className="text-xs text-zinc-500">{t("booking.cancelPolicy")}</p>
+            {message ? <p className="text-sm text-red-400">{message}</p> : null}
           </section>
 
-          <div className="fixed inset-x-0 bottom-0 z-10 border-t border-zinc-800 bg-zinc-950/95 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur">
+          {/* Sticky: chips immediately above confirm — <select> is often invisible in LINE LIFF iOS. */}
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-950 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]">
+            {selectedStart && reminderSettings == null && !remindersEnabled ? (
+              <p className="mb-2 text-xs text-zinc-500" data-testid="reminder-lead-loading">
+                {t("booking.reminderLoading")}
+              </p>
+            ) : null}
+            {remindersEnabled && selectedStart && reminderLead != null ? (
+              <div className="mb-3">
+                <ReminderLeadChips
+                  startTimeIso={selectedStart}
+                  value={reminderLead}
+                  onChange={setReminderLeadOverride}
+                  label={t("booking.reminderLead")}
+                  hint={t("booking.reminderLeadHint")}
+                  t={t}
+                />
+              </div>
+            ) : null}
             <div className="mb-2 text-center text-xs text-zinc-500">
               {customerName.trim() ? customerName.trim() : "—"} ·{" "}
               {phone?.trim() ? maskPhone(phone) : "—"}
