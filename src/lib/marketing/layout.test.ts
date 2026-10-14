@@ -282,9 +282,11 @@ describe("visible marketing claim locks", () => {
     for (const [key, value] of claimKeys) {
       assert.doesNotMatch(value, /\*/, `claim asterisk left on ${key}`);
     }
-    assert.match(th, /1–5 ช่าง|1–5/);
+    assert.match(th, /1–2/);
+    assert.match(th, /3–5/);
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);
+    assert.match(th, /ไม่ขึ้นราคา/);
     assert.match(dictionary.th["marketing.features.7.title"], /สรุปยอด|รายได้/);
     assert.match(dictionary.th["marketing.features.8.title"], /แจ้งเตือนก่อนถึงคิว/);
     assert.match(dictionary.th["marketing.features.8.note"], /\{quota\}/);
@@ -303,21 +305,25 @@ describe("visible marketing claim locks", () => {
     assert.match(dictionary.th["marketing.faq.4.a"], /เปิด–ปิด|เปิด\/ปิด|เปิด-ปิด/);
     assert.match(dictionary.th["marketing.faq.5.a"], /Web Push/);
     assert.match(dictionary.en["marketing.faq.5.a"], /Web Push/);
-    assert.match(dictionary.th["marketing.faq.8.a"], /1–5 ช่าง \{price\}/);
-    assert.match(dictionary.th["marketing.faq.8.a"], /\{price2\}/);
-    assert.match(dictionary.en["marketing.faq.8.a"], /1–5 barbers \{price\}/);
+    assert.match(dictionary.th["marketing.faq.8.a"], /1–2 ช่าง \{price\}/);
+    assert.match(dictionary.th["marketing.faq.8.a"], /3–5 ช่าง \{price2\}/);
+    assert.match(dictionary.th["marketing.faq.8.a"], /6–10 ช่าง \{price3\}/);
+    assert.match(dictionary.en["marketing.faq.8.a"], /1–2 barbers \{price\}/);
     assert.match(dictionary.en["marketing.faq.8.a"], /\{price2\}/);
+    assert.match(dictionary.en["marketing.faq.8.a"], /\{price3\}/);
   });
 
   it("offer.ts is the only hardcoded public price source for tiers", () => {
     const offer = readFileSync(resolve(root, "lib/marketing/offer.ts"), "utf8");
     const sales = readFileSync(resolve(root, "components/marketing/SalesPage.tsx"), "utf8");
+    assert.match(offer, /monthlyPriceThb: 399/);
     assert.match(offer, /monthlyPriceThb: 599/);
     assert.match(offer, /monthlyPriceThb: 999/);
     assert.match(offer, /marketingClaims/);
-    assert.match(offer, /\{price2\}/);
+    assert.match(offer, /\{price3\}/);
     assert.match(sales, /marketingOffer\.tiers/);
-    assert.doesNotMatch(sales, /฿599|฿999|monthlyPriceThb:\s*599/);
-    assert.equal(marketingOffer.tiers.length, 2);
+    assert.match(sales, /lg:grid-cols-3/);
+    assert.doesNotMatch(sales, /฿399|฿599|฿999|monthlyPriceThb:\s*399/);
+    assert.equal(marketingOffer.tiers.length, 3);
   });
 });

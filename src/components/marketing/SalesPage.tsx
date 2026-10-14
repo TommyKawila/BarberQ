@@ -464,7 +464,7 @@ export function SalesPage() {
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {marketingOffer.tiers.map((tier) => {
               const perDay = tierPerDayHint(tier, locale);
               return (

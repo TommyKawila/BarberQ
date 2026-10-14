@@ -3,8 +3,9 @@ export const marketingOffer = {
   trialDays: 30,
   lineFreePushQuota: 300,
   tiers: [
-    { id: "tier1", minBarbers: 1, maxBarbers: 5, monthlyPriceThb: 599 },
-    { id: "tier2", minBarbers: 6, maxBarbers: 10, monthlyPriceThb: 999 },
+    { id: "tier1", minBarbers: 1, maxBarbers: 2, monthlyPriceThb: 399 },
+    { id: "tier2", minBarbers: 3, maxBarbers: 5, monthlyPriceThb: 599 },
+    { id: "tier3", minBarbers: 6, maxBarbers: 10, monthlyPriceThb: 999 },
   ],
   /** Shops with this many barbers or more use contact CTA. */
   contactFromBarbers: 11,
@@ -45,10 +46,10 @@ export function tierPricePerMonthLabel(
   return locale === "th" ? `${price} / เดือน` : `${price} / month`;
 }
 
-/** ≈ daily framing for starter tier (599/30 < 20). */
+/** Daily framing for starter tier (399/30 ≈ ฿13). */
 export function tierPerDayHint(tier: MarketingTier, locale: "th" | "en"): string | null {
   if (tier.id !== "tier1") return null;
-  return locale === "th" ? "ตกวันละไม่ถึง 20 บาท" : "Less than ฿20/day";
+  return locale === "th" ? "ตกวันละประมาณ 13 บาท" : "About ฿13/day";
 }
 
 /**
@@ -68,13 +69,18 @@ export function resolveMarketingTierForBarberCount(
   return null;
 }
 
-/** Fill `{days}` / `{quota}` / `{price}` / `{price2}` placeholders from marketingOffer. */
+/**
+ * Fill offer placeholders from marketingOffer:
+ * `{days}` `{quota}` `{price}`=399 `{price2}`=599 `{price3}`=999
+ */
 export function fillOfferCopy(template: string): string {
-  const starter = formatBaht(marketingOffer.tiers[0].monthlyPriceThb);
-  const tier2 = formatBaht(marketingOffer.tiers[1].monthlyPriceThb);
+  const p1 = formatBaht(marketingOffer.tiers[0].monthlyPriceThb);
+  const p2 = formatBaht(marketingOffer.tiers[1].monthlyPriceThb);
+  const p3 = formatBaht(marketingOffer.tiers[2].monthlyPriceThb);
   return template
     .replaceAll("{days}", String(marketingOffer.trialDays))
     .replaceAll("{quota}", String(marketingOffer.lineFreePushQuota))
-    .replaceAll("{price}", starter)
-    .replaceAll("{price2}", tier2);
+    .replaceAll("{price}", p1)
+    .replaceAll("{price2}", p2)
+    .replaceAll("{price3}", p3);
 }
