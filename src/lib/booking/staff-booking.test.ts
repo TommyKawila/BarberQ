@@ -27,11 +27,14 @@ const OWNER: StaffAuth = {
   lineId: "owner-line",
 };
 
-async function firstFutureSlot(barberId: string) {
+async function firstFutureSlot(barberId: string, minAheadMs = 0) {
   const dates = getBookableDates();
+  const earliest = Date.now() + minAheadMs;
   for (const dateISO of dates) {
     const slots = await getAvailableSlots(barberId, dateISO);
-    const available = slots.find((s) => s.available);
+    const available = slots.find(
+      (s) => s.available && new Date(s.startTime).getTime() > earliest,
+    );
     if (available) return available;
   }
   return null;
@@ -175,9 +178,12 @@ describe("staff booking + source (P3)", () => {
       name: "FutureLeftBarber",
       slotDuration: 30,
     });
-    const slot = await firstFutureSlot(barber.id);
+    // createStaffBooking snaps walk-ins within 2 minutes of "now" down to the
+    // current 5-minute bucket — pick a slot far enough ahead to keep the
+    // requested start_time (otherwise this flakes near slot boundaries).
+    const slot = await firstFutureSlot(barber.id, 3 * 60_000);
     assert.ok(slot);
-    assert.ok(new Date(slot!.startTime).getTime() > Date.now() + 60_000);
+    assert.ok(new Date(slot!.startTime).getTime() > Date.now() + 3 * 60_000);
 
     const walkIn = await createStaffBooking(shop.id, {
       barberId: barber.id,
@@ -185,6 +191,7 @@ describe("staff booking + source (P3)", () => {
       source: "walk_in",
     });
     const originalEnd = walkIn.end_time;
+    assert.equal(walkIn.start_time, slot!.startTime);
     assert.ok(new Date(walkIn.start_time).getTime() > Date.now());
 
     const left = await markAppointmentOutcome(walkIn.id, "left");
