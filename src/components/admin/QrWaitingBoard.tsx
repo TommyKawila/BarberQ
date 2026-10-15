@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { thaiQrQueueError } from "@/lib/queue/qr-queue-errors";
 import type { QrQueuePublicView } from "@/lib/queue/qr-queue-types";
 
 interface Props {
@@ -55,7 +56,7 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
         return;
       }
       if (!res.ok) {
-        setError(json.error?.message ?? "ทำรายการไม่สำเร็จ");
+        setError(thaiQrQueueError(json.error?.code, json.error?.message ?? "ทำรายการไม่สำเร็จ"));
         return;
       }
       setShorten(null);

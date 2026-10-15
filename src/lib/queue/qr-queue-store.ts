@@ -110,7 +110,8 @@ export async function listWaitingQrQueue(shopId: string): Promise<QrQueueEntry[]
     .select("*")
     .eq("shop_id", shopId)
     .eq("status", "waiting")
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
   if (error) throw new Error(error.message);
   return (data ?? []).map((row) => mapRow(row as Record<string, unknown>));
 }

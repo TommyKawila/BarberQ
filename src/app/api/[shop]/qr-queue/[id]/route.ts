@@ -3,6 +3,7 @@ import { assertStaffForShop, isShopOperatorRole } from "@/lib/admin-auth";
 import { assertVerifiedCustomer } from "@/lib/auth/customer-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { resolveShopParam } from "@/lib/shop/api-route";
+import { thaiQrQueueError } from "@/lib/queue/qr-queue-errors";
 import {
   cancelQrQueueEntry,
   markQrQueueLeft,
@@ -29,7 +30,7 @@ export async function PATCH(
     }>(req);
     const action = body.action;
     if (action !== "cancel" && action !== "start" && action !== "left") {
-      throw new BookingError("INVALID_ACTION", "Invalid action", 400);
+      throw new BookingError("INVALID_ACTION", thaiQrQueueError("INVALID_ACTION"), 400);
     }
 
     if (action === "cancel") {
@@ -52,7 +53,7 @@ export async function PATCH(
 
     const staff = await assertStaffForShop(req, shop.id);
     if (!isShopOperatorRole(staff.role) && staff.role !== "barber") {
-      throw new BookingError("FORBIDDEN", "Forbidden", 403);
+      throw new BookingError("FORBIDDEN", thaiQrQueueError("FORBIDDEN"), 403);
     }
 
     if (action === "left") {
@@ -78,7 +79,7 @@ export async function PATCH(
           {
             error: {
               code: "SLOT_TAKEN",
-              message: error.message,
+              message: thaiQrQueueError("SLOT_TAKEN"),
               canShortenUntil: until,
               nextConflictAt: until,
             },

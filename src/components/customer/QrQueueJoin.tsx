@@ -121,7 +121,7 @@ export function QrQueueJoin() {
       <div>
         <p className="text-xs uppercase tracking-wide text-amber-400/90">คิว walk-in</p>
         <h1 className="mt-1 text-2xl font-semibold text-white">
-          {shopName ?? "ร้านตัดผม"}
+          {(shopName ?? "").trim() || "ร้านตัดผม"}
         </h1>
         <p className="mt-2 text-sm text-zinc-400">เลือกช่างแล้วกดต่อคิว — ไม่ต้องจองล่วงหน้า</p>
       </div>

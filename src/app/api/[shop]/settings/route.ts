@@ -33,11 +33,17 @@ export async function GET(
     const settings = await getStore().getShopSettings(shop.id);
     const { shopId: _, ...publicSettings } = settings;
     void _;
-    return NextResponse.json(publicSettings, {
-      headers: {
-        "Cache-Control": "private, no-store, no-cache, must-revalidate",
+    // Brand display: settings override, else shops.name (never leave blank for customers).
+    const shopName =
+      (publicSettings.shopName ?? "").trim() || shop.name || null;
+    return NextResponse.json(
+      { ...publicSettings, shopName },
+      {
+        headers: {
+          "Cache-Control": "private, no-store, no-cache, must-revalidate",
+        },
       },
-    });
+    );
   } catch (error) {
     return jsonError(error);
   }

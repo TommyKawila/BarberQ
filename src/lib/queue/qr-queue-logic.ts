@@ -45,13 +45,22 @@ export interface FirstAvailableCandidate {
   nextFreeAt: string | null;
 }
 
+export type PickFirstAvailableOptions = {
+  /**
+   * When starting a cut "now", only barbers free right now are valid.
+   * Falling back to nextFreeAt would book into an occupied chair.
+   */
+  freeNowOnly?: boolean;
+};
+
 /**
  * Prefer barber free now with the longest free stretch;
- * else soonest nextFreeAt. Returns null if none usable.
+ * else (unless freeNowOnly) soonest nextFreeAt. Returns null if none usable.
  */
 export function pickFirstAvailableBarber(
   candidates: FirstAvailableCandidate[],
   now: Date = new Date(),
+  opts: PickFirstAvailableOptions = {},
 ): string | null {
   const nowMs = now.getTime();
   const freeNow = candidates
@@ -62,6 +71,7 @@ export function pickFirstAvailableBarber(
       return bUntil - aUntil;
     });
   if (freeNow.length) return freeNow[0].barberId;
+  if (opts.freeNowOnly) return null;
 
   const upcoming = candidates
     .filter((c) => c.nextFreeAt && new Date(c.nextFreeAt).getTime() >= nowMs)
@@ -70,6 +80,22 @@ export function pickFirstAvailableBarber(
         new Date(a.nextFreeAt!).getTime() - new Date(b.nextFreeAt!).getTime(),
     );
   return upcoming[0]?.barberId ?? null;
+}
+
+/** Ordered free-now barber ids (longest free stretch first). */
+export function listFreeNowBarberIds(
+  candidates: FirstAvailableCandidate[],
+  now: Date = new Date(),
+): string[] {
+  const nowMs = now.getTime();
+  return candidates
+    .filter((c) => c.freeUntil && new Date(c.freeUntil).getTime() > nowMs)
+    .sort((a, b) => {
+      const aUntil = new Date(a.freeUntil!).getTime();
+      const bUntil = new Date(b.freeUntil!).getTime();
+      return bUntil - aUntil;
+    })
+    .map((c) => c.barberId);
 }
 
 /** Rough wait estimate from ahead count × slot minutes. */

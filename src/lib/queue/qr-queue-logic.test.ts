@@ -109,6 +109,56 @@ describe("first-available assignment", () => {
     assert.equal(id, "sooner");
   });
 
+  it("freeNowOnly never picks a busy barber via nextFreeAt", () => {
+    const now = new Date("2026-10-15T10:00:00.000Z");
+    assert.equal(
+      pickFirstAvailableBarber(
+        [
+          {
+            barberId: "busy",
+            freeUntil: null,
+            nextFreeAt: "2026-10-15T10:30:00.000Z",
+          },
+        ],
+        now,
+        { freeNowOnly: true },
+      ),
+      null,
+    );
+    assert.equal(
+      pickFirstAvailableBarber(
+        [
+          {
+            barberId: "busy",
+            freeUntil: null,
+            nextFreeAt: "2026-10-15T10:30:00.000Z",
+          },
+          {
+            barberId: "free",
+            freeUntil: "2026-10-15T10:40:00.000Z",
+            nextFreeAt: null,
+          },
+        ],
+        now,
+        { freeNowOnly: true },
+      ),
+      "free",
+    );
+  });
+
+  it("tie-breaks equal created_at by id", () => {
+    const same = "2026-10-15T10:00:00.000Z";
+    const ordered = sortWaitingByJoinOrder([
+      entry("b", same),
+      entry("a", same),
+      entry("c", same),
+    ]);
+    assert.deepEqual(
+      ordered.map((e) => e.id),
+      ["a", "b", "c"],
+    );
+  });
+
   it("returns null when no candidates are usable", () => {
     assert.equal(pickFirstAvailableBarber([]), null);
     assert.equal(
