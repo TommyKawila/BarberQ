@@ -61,6 +61,7 @@ export async function PUT(
       remindersEnabled?: boolean;
       reminderLeadMinutes?: number;
       bookingConfirmPushEnabled?: boolean;
+      queueAheadPushEnabled?: boolean;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -74,6 +75,7 @@ export async function PUT(
       remindersEnabled: current.remindersEnabled,
       reminderLeadMinutes: current.reminderLeadMinutes ?? DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
       bookingConfirmPushEnabled: current.bookingConfirmPushEnabled !== false,
+      queueAheadPushEnabled: current.queueAheadPushEnabled !== false,
     };
 
     if ("logoDataUrl" in body) {
@@ -130,6 +132,10 @@ export async function PUT(
 
     if ("bookingConfirmPushEnabled" in body) {
       next.bookingConfirmPushEnabled = Boolean(body.bookingConfirmPushEnabled);
+    }
+
+    if ("queueAheadPushEnabled" in body) {
+      next.queueAheadPushEnabled = Boolean(body.queueAheadPushEnabled);
     }
 
     await getStore().setShopSettings(shop.id, next);

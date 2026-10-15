@@ -307,7 +307,16 @@ export default function AdminStatsPage() {
                   <StatCard label={t("admin.sourceLine")} value={totals.bySource.line} accent="sky" />
                   <StatCard label={t("admin.sourcePhone")} value={totals.bySource.phone} accent="emerald" />
                   <StatCard label={t("admin.sourceChat")} value={totals.bySource.chat} accent="amber" />
-                  <StatCard label={t("admin.sourceWalkIn")} value={totals.bySource.walk_in} accent="red" />
+                  <StatCard
+                    label={t("admin.sourceWalkIn")}
+                    value={totals.bySource.walk_in}
+                    hint={
+                      (totals.qrWalkIns ?? 0) > 0
+                        ? `QR ${totals.qrWalkIns}`
+                        : undefined
+                    }
+                    accent="red"
+                  />
                 </div>
               </section>
             ) : null}

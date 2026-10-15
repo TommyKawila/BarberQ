@@ -28,6 +28,7 @@ export default async function CancelPage({
           remindersEnabled: false,
           reminderLeadMinutes: 120,
           bookingConfirmPushEnabled: true,
+          queueAheadPushEnabled: true,
         }),
     shopId ? store.listBarbersByShop(shopId) : store.listBarbers(),
   ]);

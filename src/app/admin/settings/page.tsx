@@ -618,6 +618,17 @@ export default function AdminSettingsPage() {
         </section>
 
         <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">QR รับคิว walk-in</h2>
+          <p className="mt-1 text-sm text-zinc-400">ดาวน์โหลด QR · เปิด/ปิดแจ้ง LINE เมื่อเหลืออีก 2 คิว</p>
+          <Link
+            href={shopPath("/admin/settings/qr-queue")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-rose-500/50 bg-rose-950/40 font-semibold text-rose-100"
+          >
+            QR รับคิว walk-in
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
           <h2 className="text-sm font-semibold">{t("admin.settingsReminders")}</h2>
           <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsRemindersHint")}</p>
           <Link

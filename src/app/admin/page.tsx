@@ -10,6 +10,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
+import { QrWaitingBoard } from "@/components/admin/QrWaitingBoard";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
 import { isShopOperatorRole } from "@/lib/admin-auth";
@@ -549,6 +550,15 @@ export default function AdminPage() {
             </p>
           </div>
         </div>
+
+        {isToday ? (
+          <QrWaitingBoard
+            shopApi={shopApi}
+            authHeaders={authHeaders}
+            enabled={Boolean(profile)}
+            onStarted={() => void loadDay()}
+          />
+        ) : null}
 
         <div className="flex flex-wrap gap-1.5 text-[11px] text-zinc-400">
           <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>

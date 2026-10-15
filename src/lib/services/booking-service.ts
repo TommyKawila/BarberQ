@@ -378,13 +378,14 @@ export async function createStaffBooking(
   try {
     return await getStore().createAppointment({
       barberId: input.barberId,
-      customerRef: null,
+      customerRef: input.customerLineId?.trim() || null,
       customerName: name,
       customerPhone: phoneRaw || null,
       startTime: start,
       endTime: end,
-      customerLineId: null,
+      customerLineId: input.customerLineId?.trim() || null,
       source,
+      viaQr: Boolean(input.viaQr),
     });
   } catch (error) {
     if (error instanceof BookingError) throw error;
@@ -847,6 +848,7 @@ export async function getAdminDay(
             appointmentId: appointment.id,
             status: appointment.status,
             source: appointment.source ?? "line",
+            viaQr: Boolean(appointment.via_qr),
             isLate: appointment.status === "confirmed" && isLate(appointment.start_time, now),
             lateCalledAt: appointment.late_called_at ?? null,
             noShowCount,
