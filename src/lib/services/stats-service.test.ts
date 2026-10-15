@@ -183,6 +183,72 @@ describe("stats-service D5 KPIs", () => {
     assert.equal(report.totals.cancelled >= 1, true);
     assert.ok(report.totals.cancelNoShowRatePct != null);
     assert.ok(report.totals.cancelNoShowRatePct! > 0);
-    assert.ok(report.totals.noShowRatePct != null);
+    // No finished visits yet → no-show rate is null (not diluted by cancelled).
+    assert.equal(report.totals.noShowRatePct, null);
+    // Cancelled chat booking must not remain in channel totals.
+    assert.equal(report.totals.bySource.chat, 0);
+  });
+
+  it("cancelled walk-in drops from walkIns/bySource; no-show stays in channel", async () => {
+    const shop = await memoryStore.createShop({
+      name: `P7 CancelWalk ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: `CWBarber${Date.now()}`,
+      slotDuration: 30,
+    });
+    const staff: StaffAuth = {
+      staffId: "owner-p7cw",
+      name: "Owner",
+      role: "owner",
+      barberId: barber.id,
+      shopId: shop.id,
+    };
+    const walkSlot = await firstFutureSlot(barber.id);
+    assert.ok(walkSlot);
+    const walkIn = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: walkSlot!.startTime,
+      source: "walk_in",
+    });
+    const phoneSlot = await firstFutureSlot(barber.id);
+    assert.ok(phoneSlot);
+    const phone = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: phoneSlot!.startTime,
+      source: "phone",
+      customerName: "Will NoShow",
+      customerPhone: "0888888888",
+    });
+    await memoryStore.staffCancelAppointment(walkIn.id);
+    // Past-end no_show (same shop barber)
+    const start = new Date(Date.now() - 2 * 60 * 60_000);
+    const past = await memoryStore.createAppointment({
+      barberId: barber.id,
+      customerName: "Past NoShow",
+      customerPhone: "0877777777",
+      customerRef: `ns-${Date.now()}`,
+      startTime: start,
+      endTime: new Date(start.getTime() + 30 * 60_000),
+      source: "phone",
+    });
+    await memoryStore.markAppointmentOutcome(past.id, "no_show");
+
+    // Month range covers past no-show + future slots on this barber
+    const report = await getStatsReport("month", dateISOFromInstant(new Date()), staff);
+    assert.equal(report.totals.bySource.walk_in, 0);
+    assert.equal(report.totals.walkIns, 0);
+    assert.ok(report.totals.bySource.phone >= 2); // confirmed phone + no_show phone
+    assert.ok(report.totals.noShow >= 1);
+    // Finished visits: only the no_show → 100%
+    assert.equal(report.totals.noShowRatePct, 100);
+
+    const ken = report.byBarber.find((b) => b.barberId === barber.id);
+    assert.ok(ken);
+    assert.equal(ken!.minutes, 0); // served minutes = completed only
+    assert.equal(ken!.completed, 0);
+    void phone;
   });
 });

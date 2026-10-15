@@ -34,7 +34,10 @@ export interface StatsTotals {
   returningCustomers: number;
   returningRatePct: number | null;
   cancelNoShowRatePct: number | null;
-  /** No-shows / non-walk-in bookings in range (excludes walk-ins which cannot be no-show). */
+  /**
+   * No-show rate among finished non-walk-in visits:
+   * no_show / (completed + no_show). Cancelled and still-confirmed are excluded.
+   */
   noShowRatePct: number | null;
   utilizationPct: number;
   revenueBaht: number;
@@ -318,24 +321,35 @@ function computeTotals(input: TotalsInput): StatsTotals {
   const returningRatePct =
     phones.size > 0 ? Math.round((returningCustomers / phones.size) * 100) : null;
 
+  // Channel / walk-in cards: exclude cancelled (voided). No-shows still count —
+  // they were real bookings that did not arrive.
+  const channelRows = appointments.filter((a) => a.status !== "cancelled");
   const bySource: StatsBySource = { line: 0, phone: 0, chat: 0, walk_in: 0 };
-  for (const row of appointments) {
+  for (const row of channelRows) {
     const src = row.source ?? "line";
     if (src in bySource) bySource[src as keyof StatsBySource] += 1;
   }
-  const walkInAppointments = appointments.filter((a) => a.source === "walk_in");
+  const walkInAppointments = channelRows.filter((a) => a.source === "walk_in");
   const legacyWalkInBlocks = blocks.filter((b) => isLegacyWalkInBlock(b.reason));
-  const noShowEligible = appointments.filter((a) => a.source !== "walk_in");
   const cancelled = appointments.filter((a) => a.status === "cancelled").length;
   const completedRows = appointments.filter((a) => a.status === "completed");
   const completed = completedRows.length;
-  const noShow = noShowEligible.filter((a) => a.status === "no_show").length;
+  const noShow = appointments.filter(
+    (a) => a.source !== "walk_in" && a.status === "no_show",
+  ).length;
   const booked = appointments.length;
+  // Loss rate over every booking in range (incl. cancelled + still-confirmed).
   const cancelNoShowRatePct =
     booked > 0 ? Math.round(((cancelled + noShow) / booked) * 100) : null;
+  // Among finished non-walk-in visits (came vs no-show) — cancelled/confirmed excluded.
+  const finishedNonWalkIn = appointments.filter(
+    (a) =>
+      a.source !== "walk_in" &&
+      (a.status === "completed" || a.status === "no_show"),
+  );
   const noShowRatePct =
-    noShowEligible.length > 0
-      ? Math.round((noShow / noShowEligible.length) * 100)
+    finishedNonWalkIn.length > 0
+      ? Math.round((noShow / finishedNonWalkIn.length) * 100)
       : null;
 
   let availableMinutes = 0;
