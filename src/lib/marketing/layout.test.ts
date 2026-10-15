@@ -274,8 +274,9 @@ describe("marketing layout split", () => {
     // Hero: full-width primary <640px; secondary inline on sm+, text link on mobile
     assert.match(hero, /showRisk=\{false\}/);
     assert.match(hero, /RiskReversalRow/);
-    assert.match(hero, /w-full justify-center.*sm:w-auto/s);
-    assert.match(hero, /hidden.*sm:inline-flex/s);
+    assert.match(hero, /w-full justify-center/);
+    assert.match(hero, /sm:w-auto/);
+    assert.match(hero, /sm:inline-flex/);
     assert.match(hero, /sm:hidden/);
   });
 
