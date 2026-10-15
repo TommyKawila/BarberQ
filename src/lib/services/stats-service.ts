@@ -611,17 +611,15 @@ export async function getStatsReport(
 
   const byBarber: StatsBarberRow[] = barbers.map((barber) => {
     const rows = scopedAppointments.filter((a) => a.barber_id === barber.id);
-    const mins = rows
-      .filter((a) => isOccupyingStatus(a.status))
-      .reduce((sum, a) => sum + appointmentMinutes(a), 0);
-    const revenueBaht = rows
-      .filter((a) => a.status === "completed")
-      .reduce((sum, a) => sum + (a.price_baht ?? 0), 0);
+    const completedRows = rows.filter((a) => a.status === "completed");
+    // Served minutes only — same rule as "เสร็จ" (exclude no_show / left / cancelled).
+    const mins = completedRows.reduce((sum, a) => sum + appointmentMinutes(a), 0);
+    const revenueBaht = completedRows.reduce((sum, a) => sum + (a.price_baht ?? 0), 0);
     return {
       barberId: barber.id,
       name: barber.name,
       booked: rows.length,
-      completed: rows.filter((a) => a.status === "completed").length,
+      completed: completedRows.length,
       cancelled: rows.filter((a) => a.status === "cancelled").length,
       minutes: mins,
       revenueBaht,

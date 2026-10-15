@@ -73,11 +73,13 @@ export function computeBoardMiniStats(
   for (const column of columns ?? []) {
     for (const slot of safeSlots(column)) {
       if (slot.kind === "booked") {
-        if (slot.status === "completed" || slot.status === "left" || slot.status === "no_show") {
+        // "เสร็จ" = actually served only — never no_show / left / cancelled.
+        if (slot.status === "completed") {
           done += 1;
         } else if (slot.status === "confirmed" || !slot.status) {
           remaining += 1;
         }
+        // no_show / left / cancelled: drop from remaining, do not count as done
       } else if (
         slot.kind === "free" &&
         slot.available &&
