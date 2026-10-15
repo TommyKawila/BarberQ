@@ -11,6 +11,7 @@ import {
   Minus,
   Phone,
   Plus,
+  QrCode,
   Smartphone,
   Users,
 } from "lucide-react";
@@ -39,7 +40,7 @@ import {
 } from "@/lib/marketing/offer";
 
 const HOW_ICONS = [MessageCircle, CircleCheck, Smartphone] as const;
-const BOARD_ICONS = [Phone, CalendarClock, Users, Bell] as const;
+const BOARD_ICONS = [Phone, CalendarClock, Users, Bell, QrCode] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
@@ -363,7 +364,7 @@ export function SalesPage() {
               {t("marketing.board.title")}
             </h2>
             <ul className="mt-6 space-y-4">
-              {([1, 2, 3, 4] as const).map((n) => {
+              {([1, 2, 3, 4, 5] as const).map((n) => {
                 const Icon = BOARD_ICONS[n - 1];
                 return (
                   <li key={n} className="flex gap-3">

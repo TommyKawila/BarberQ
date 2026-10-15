@@ -349,9 +349,15 @@ describe("visible marketing claim locks", () => {
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);
     assert.match(th, /ไม่ขึ้นราคา/);
-    assert.match(dictionary.th["marketing.features.7.title"], /สรุปยอด|รายได้/);
+    assert.match(dictionary.th["marketing.features.7.title"], /รายได้|ไม่มา|ช่วงเวลายุ่ง/);
     assert.match(dictionary.th["marketing.features.8.title"], /แจ้งเตือนก่อนถึงคิว/);
     assert.match(dictionary.th["marketing.features.8.note"], /\{quota\}/);
+    assert.match(dictionary.th["marketing.features.9.title"], /QR/);
+    assert.match(dictionary.th["marketing.board.5.desc"], /สแกน QR|ลำดับคิวสด|ใกล้ถึงคิว/);
+    assert.match(dictionary.th["marketing.owner.metric2"], /ไม่มา/);
+    assert.match(dictionary.th["marketing.owner.metric3"], /ช่วงเวลายุ่ง|ยุ่ง/);
+    assert.doesNotMatch(th, /จอทีวี|TV screen|waiting.?room display/i);
+    assert.doesNotMatch(en, /in-shop TV|waiting.?room (TV|display)/i);
     assert.equal(
       Object.keys(dictionary.th).some((k) => k === "marketing.coming.1.title"),
       false,
