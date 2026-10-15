@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=390, initial-scale=1" />
+  <title>Mockup C — Ticket / boarding pass</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 390px; height: 844px; overflow: hidden;
+      font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+      background: #111827; color: #f9fafb;
+      -webkit-font-smoothing: antialiased;
+    }
+    .screen {
+      width: 390px; height: 844px;
+      padding: 36px 18px 24px;
+      display: flex; flex-direction: column; gap: 16px;
+      position: relative;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(250,204,21,0.18), transparent 22%),
+        radial-gradient(circle at 88% 12%, rgba(52,211,153,0.16), transparent 20%),
+        radial-gradient(circle at 70% 30%, rgba(251,113,133,0.12), transparent 18%),
+        #111827;
+    }
+    .confetti {
+      position: absolute; inset: 0; pointer-events: none; overflow: hidden;
+    }
+    .confetti i {
+      position: absolute; width: 8px; height: 8px; border-radius: 2px;
+      opacity: 0.85;
+    }
+    .confetti i:nth-child(1) { left: 8%; top: 7%; background: #fbbf24; transform: rotate(18deg); }
+    .confetti i:nth-child(2) { left: 22%; top: 4%; width: 6px; height: 10px; background: #34d399; }
+    .confetti i:nth-child(3) { right: 14%; top: 6%; background: #fb7185; transform: rotate(-22deg); }
+    .confetti i:nth-child(4) { right: 28%; top: 11%; width: 10px; height: 4px; background: #60a5fa; }
+    .confetti i:nth-child(5) { left: 40%; top: 3%; width: 5px; height: 5px; border-radius: 999px; background: #fde68a; }
+    .confetti i:nth-child(6) { left: 70%; top: 8%; width: 7px; height: 7px; background: #a78bfa; transform: rotate(40deg); }
+    .confetti i:nth-child(7) { left: 12%; top: 14%; width: 4px; height: 12px; background: #f472b6; }
+    .confetti i:nth-child(8) { right: 8%; top: 16%; width: 9px; height: 5px; background: #facc15; }
+
+    .top {
+      text-align: center; position: relative; z-index: 1;
+      padding-top: 8px;
+    }
+    .check {
+      width: 52px; height: 52px; margin: 0 auto 12px;
+      border-radius: 999px; background: #10b981;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 0 6px rgba(16,185,129,0.2);
+      font-size: 26px; color: white; font-weight: 700;
+    }
+    h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+    .sub { margin-top: 8px; font-size: 13px; color: #d1d5db; line-height: 1.45; }
+
+    .ticket {
+      position: relative; z-index: 1;
+      margin-top: 4px;
+      background: #f8fafc; color: #0f172a;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+    }
+    .ticket-top {
+      padding: 16px 16px 14px;
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #f8fafc;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .ticket-brand { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #94a3b8; }
+    .ticket-shop { margin-top: 4px; font-size: 16px; font-weight: 700; }
+    .chair-accent {
+      width: 64px; height: 64px; border-radius: 12px; object-fit: cover;
+      background: #020617; border: 1px solid rgba(255,255,255,0.12);
+    }
+    .perforation {
+      position: relative; height: 22px; background: #f8fafc;
+    }
+    .perforation::before, .perforation::after {
+      content: ""; position: absolute; top: 50%; width: 22px; height: 22px;
+      background: #111827; border-radius: 999px; transform: translateY(-50%);
+    }
+    .perforation::before { left: -11px; }
+    .perforation::after { right: -11px; }
+    .dash {
+      position: absolute; left: 18px; right: 18px; top: 50%;
+      border-top: 2px dashed #cbd5e1; transform: translateY(-50%);
+    }
+    .ticket-body { padding: 4px 16px 16px; }
+    .who {
+      display: flex; align-items: center; gap: 12px;
+      padding-bottom: 12px;
+    }
+    .who img {
+      width: 48px; height: 48px; border-radius: 999px; object-fit: cover;
+    }
+    .who-label { font-size: 11px; color: #64748b; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .who-name { font-size: 16px; font-weight: 700; color: #0f172a; }
+    .meta {
+      display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px;
+      padding-top: 12px; border-top: 1px solid #e2e8f0;
+    }
+    .meta-label { font-size: 11px; color: #64748b; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+    .meta-value { margin-top: 4px; font-size: 14px; font-weight: 600; color: #0f172a; line-height: 1.35; }
+    .meta .time .meta-value {
+      font-size: 28px; color: #b45309; letter-spacing: -0.03em;
+    }
+    .code {
+      margin-top: 14px; padding-top: 12px; border-top: 1px dashed #cbd5e1;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: #64748b;
+    }
+    .code strong { color: #0f172a; font-size: 14px; letter-spacing: 0.12em; }
+
+    .hint {
+      position: relative; z-index: 1;
+      text-align: center; font-size: 12px; color: #9ca3af; line-height: 1.45;
+    }
+    .cta {
+      position: relative; z-index: 1;
+      margin-top: auto;
+      display: flex; align-items: center; justify-content: center;
+      height: 48px; border-radius: 12px;
+      background: #fbbf24; color: #111827;
+      font-size: 16px; font-weight: 700; text-decoration: none;
+    }
+    .sec {
+      position: relative; z-index: 1;
+      text-align: center; font-size: 13px; color: #9ca3af;
+      text-decoration: underline; text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="confetti" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+
+    <div class="top">
+      <div class="check">✓</div>
+      <h1>จองคิวสำเร็จแล้ว!</h1>
+      <p class="sub">บัตรคิวของคุณพร้อมแล้ว — ไม่ต้องทำอะไรเพิ่ม<br/>แล้วเจอกันที่ร้านนะครับ</p>
+    </div>
+
+    <article class="ticket">
+      <div class="ticket-top">
+        <div>
+          <div class="ticket-brand">Queue ticket</div>
+          <div class="ticket-shop">BarberQx Demo</div>
+        </div>
+        <img class="chair-accent" src="./assets/chair-accent.png" alt="" />
+      </div>
+      <div class="perforation"><div class="dash"></div></div>
+      <div class="ticket-body">
+        <div class="who">
+          <img src="./assets/barber-nat.png" alt="ช่างนัท" />
+          <div>
+            <div class="who-label">ช่าง</div>
+            <div class="who-name">ช่างนัท</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div>
+            <div class="meta-label">วัน</div>
+            <div class="meta-value">ศุกร์ 16 ตุลาคม 2026</div>
+          </div>
+          <div class="time">
+            <div class="meta-label">เวลา</div>
+            <div class="meta-value">11:30</div>
+          </div>
+        </div>
+        <div class="code">
+          <span>ระยะเวลา · 60 นาที</span>
+          <strong>Q-1130</strong>
+        </div>
+      </div>
+    </article>
+
+    <p class="hint">ระบบจะส่งข้อความยืนยันและเตือนคิวใน LINE ให้คุณ</p>
+    <a class="cta" href="#">ดูคิวของฉัน</a>
+    <p class="sec">กลับหน้าร้าน</p>
+  </div>
+</body>
+</html>

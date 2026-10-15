@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=390, initial-scale=1" />
+  <title>Mockup B — Cartoon welcome</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 390px; height: 844px; overflow: hidden;
+      font-family: "Noto Sans Thai", "Sarabun", system-ui, sans-serif;
+      background: #0c0a09; color: #fafaf9;
+      -webkit-font-smoothing: antialiased;
+    }
+    .screen {
+      width: 390px; height: 844px;
+      padding: 24px 20px 24px;
+      display: flex; flex-direction: column; gap: 14px;
+      background:
+        linear-gradient(180deg, #1c1917 0%, #0c0a09 38%, #0c0a09 100%);
+    }
+    .badge {
+      align-self: center;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px; border-radius: 999px;
+      background: rgba(34,197,94,0.15); color: #86efac;
+      font-size: 12px; font-weight: 600;
+    }
+    .badge-dot {
+      width: 8px; height: 8px; border-radius: 999px; background: #22c55e;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+    }
+    .hero {
+      height: 236px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 50% 70%, rgba(251,146,60,0.18), transparent 55%),
+        #18181b;
+      overflow: hidden;
+    }
+    .hero img {
+      width: 100%; height: 100%; object-fit: cover; object-position: center 30%;
+    }
+    h1 {
+      text-align: center; font-size: 25px; font-weight: 700;
+      letter-spacing: -0.02em; line-height: 1.3; margin-top: 2px;
+    }
+    .sub {
+      text-align: center; font-size: 13px; line-height: 1.5; color: #a8a29e; margin-top: -4px;
+    }
+    .card {
+      border-radius: 18px; padding: 14px 14px 12px;
+      background: #1c1917; border: 1px solid #292524;
+    }
+    .who {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .who img {
+      width: 52px; height: 52px; border-radius: 999px; object-fit: cover;
+      border: 2px solid #fbbf24;
+    }
+    .who-name { font-size: 16px; font-weight: 700; }
+    .who-meta { font-size: 12px; color: #a8a29e; margin-top: 2px; }
+    .grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+      margin-top: 12px;
+    }
+    .tile {
+      background: #0c0a09; border-radius: 12px; padding: 10px 12px;
+    }
+    .tile-label { font-size: 11px; color: #78716c; font-weight: 600; }
+    .tile-value { margin-top: 4px; font-size: 14px; font-weight: 600; line-height: 1.3; }
+    .tile.time .tile-value {
+      font-size: 26px; color: #fdba74; letter-spacing: -0.03em;
+    }
+    .hint {
+      margin-top: 10px; font-size: 12px; line-height: 1.45; color: #a8a29e;
+      text-align: center;
+    }
+    .cta {
+      margin-top: auto;
+      display: flex; align-items: center; justify-content: center;
+      height: 50px; border-radius: 14px;
+      background: linear-gradient(180deg, #fbbf24, #f59e0b);
+      color: #1c1917; font-size: 16px; font-weight: 700;
+      box-shadow: 0 8px 20px rgba(245,158,11,0.28);
+      text-decoration: none;
+    }
+    .sec {
+      text-align: center; font-size: 13px; color: #78716c;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <div class="badge"><span class="badge-dot"></span>ยืนยันแล้ว</div>
+    <div class="hero">
+      <img src="./assets/cartoon-barber-chair.png" alt="" />
+    </div>
+    <h1>จองคิวสำเร็จแล้ว!</h1>
+    <p class="sub">ช่างนัทรอต้อนรับคุณที่เก้าอี้ว่างนี้<br/>ไม่ต้องทำอะไรเพิ่ม — เจอกันที่ร้านนะครับ</p>
+
+    <section class="card">
+      <div class="who">
+        <img src="./assets/barber-nat.png" alt="ช่างนัท" />
+        <div>
+          <div class="who-name">ช่างนัท</div>
+          <div class="who-meta">BarberQx Demo · 60 นาที</div>
+        </div>
+      </div>
+      <div class="grid">
+        <div class="tile">
+          <div class="tile-label">วัน</div>
+          <div class="tile-value">ศุกร์<br/>16 ต.ค. 2026</div>
+        </div>
+        <div class="tile time">
+          <div class="tile-label">เวลา</div>
+          <div class="tile-value">11:30</div>
+        </div>
+      </div>
+      <p class="hint">ส่งยืนยันและเตือนคิวให้คุณทาง LINE</p>
+    </section>
+
+    <a class="cta" href="#">ดูคิวของฉัน</a>
+    <p class="sec">กลับหน้าร้าน</p>
+  </div>
+</body>
+</html>
