@@ -29,11 +29,20 @@ describe("QrWaitingBoard start/error UX", () => {
     assert.match(src, /text-sm font-semibold/);
   });
 
-  it("shows loading spinner and disables เริ่มตัด while the request runs", () => {
+  it("only the pressed button shows busy spinner; sibling stays slight-dim", () => {
     assert.match(src, /Loader2/);
     assert.match(src, /animate-spin/);
     assert.match(src, /กำลังเริ่ม/);
-    assert.match(src, /aria-busy=\{rowBusy\}/);
-    assert.match(src, /disabled=\{busyId !== null\}/);
+    assert.match(src, /กำลังบันทึก/);
+    assert.match(src, /busy\.action === "start"/);
+    assert.match(src, /busy\.action === "left"/);
+    assert.match(src, /actionButtonClass/);
+    assert.match(src, /opacity-80/);
+    assert.match(src, /opacity-100/);
+    // Must not apply heavy disabled:opacity-50 to both buttons equally.
+    assert.ok(
+      !src.includes("disabled:opacity-50"),
+      "disabled:opacity-50 dims both buttons the same — use pressed vs sibling opacity instead",
+    );
   });
 });

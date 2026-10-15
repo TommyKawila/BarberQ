@@ -16,9 +16,23 @@ type RowAlert =
   | { kind: "error"; message: string }
   | { kind: "shorten"; message: string; until: string };
 
+type BusyAction = "start" | "left" | "cancel";
+
+type BusyState = { id: string; action: BusyAction };
+
+/** Pressed = full color; sibling = slight dim only (not the same heavy fade). */
+function actionButtonClass(opts: {
+  base: string;
+  pressed: boolean;
+  panelBusy: boolean;
+}): string {
+  const dim = opts.panelBusy && !opts.pressed ? "opacity-80" : "opacity-100";
+  return `${opts.base} ${dim}`;
+}
+
 export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Props) {
   const [entries, setEntries] = useState<QrQueuePublicView[]>([]);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busy, setBusy] = useState<BusyState | null>(null);
   /** Feedback for the row that was just acted on (error or shorten offer). */
   const [alertById, setAlertById] = useState<Record<string, RowAlert>>({});
 
@@ -54,8 +68,8 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
     setAlertById((prev) => ({ ...prev, [id]: alert }));
   }
 
-  async function act(id: string, action: "start" | "left" | "cancel", endTime?: string) {
-    setBusyId(id);
+  async function act(id: string, action: BusyAction, endTime?: string) {
+    setBusy({ id, action });
     clearAlert(id);
     try {
       const res = await fetch(shopApi(`/qr-queue/${id}`), {
@@ -90,11 +104,13 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
     } catch {
       setRowAlert(id, { kind: "error", message: "ทำรายการไม่สำเร็จ" });
     } finally {
-      setBusyId(null);
+      setBusy(null);
     }
   }
 
   if (!enabled) return null;
+
+  const panelBusy = busy !== null;
 
   return (
     <section className="rounded-xl border border-rose-500/40 bg-rose-950/30 p-3">
@@ -110,7 +126,8 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
             const barber =
               row.preferredBarberName ??
               (row.entry.preferred_barber_id ? "ช่างที่เลือก" : "ช่างที่ว่างก่อน");
-            const rowBusy = busyId === row.entry.id;
+            const startBusy = busy?.id === row.entry.id && busy.action === "start";
+            const leftBusy = busy?.id === row.entry.id && busy.action === "left";
             const alert = alertById[row.entry.id];
             return (
               <li
@@ -128,12 +145,17 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
                   <div className="flex flex-col gap-1.5">
                     <button
                       type="button"
-                      disabled={busyId !== null}
+                      disabled={panelBusy}
                       onClick={() => void act(row.entry.id, "start")}
-                      aria-busy={rowBusy}
-                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3 text-xs font-semibold text-zinc-950 disabled:opacity-50"
+                      aria-busy={startBusy}
+                      data-qr-busy={startBusy ? "start" : undefined}
+                      className={actionButtonClass({
+                        base: "inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3 text-xs font-semibold text-zinc-950 disabled:cursor-not-allowed",
+                        pressed: startBusy,
+                        panelBusy,
+                      })}
                     >
-                      {rowBusy ? (
+                      {startBusy ? (
                         <>
                           <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
                           กำลังเริ่ม…
@@ -144,11 +166,24 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
                     </button>
                     <button
                       type="button"
-                      disabled={busyId !== null}
+                      disabled={panelBusy}
                       onClick={() => void act(row.entry.id, "left")}
-                      className="min-h-9 rounded-lg border border-zinc-600 px-3 text-xs text-zinc-200 disabled:opacity-50"
+                      aria-busy={leftBusy}
+                      data-qr-busy={leftBusy ? "left" : undefined}
+                      className={actionButtonClass({
+                        base: "inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-zinc-600 px-3 text-xs text-zinc-200 disabled:cursor-not-allowed",
+                        pressed: leftBusy,
+                        panelBusy,
+                      })}
                     >
-                      ลูกค้ากลับไปแล้ว
+                      {leftBusy ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                          กำลังบันทึก…
+                        </>
+                      ) : (
+                        "ลูกค้ากลับไปแล้ว"
+                      )}
                     </button>
                   </div>
                 </div>
@@ -189,12 +224,17 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
                     </div>
                     <button
                       type="button"
-                      disabled={busyId !== null}
+                      disabled={panelBusy}
                       onClick={() => void act(row.entry.id, "start", alert.until)}
-                      aria-busy={rowBusy}
-                      className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950 disabled:opacity-50"
+                      aria-busy={startBusy}
+                      data-qr-busy={startBusy ? "start" : undefined}
+                      className={actionButtonClass({
+                        base: "mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950 disabled:cursor-not-allowed",
+                        pressed: startBusy,
+                        panelBusy,
+                      })}
                     >
-                      {rowBusy ? (
+                      {startBusy ? (
                         <>
                           <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
                           กำลังเริ่ม…
