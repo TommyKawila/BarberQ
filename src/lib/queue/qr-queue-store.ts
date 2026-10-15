@@ -3,13 +3,16 @@ import { createServiceClient } from "@/lib/supabase/server";
 import type { JoinQrQueueInput, QrQueueEntry, QrQueueStatus } from "@/lib/queue/qr-queue-types";
 
 const memoryEntries: QrQueueEntry[] = [];
+/** Monotonic ms bump so same-ms joins keep FIFO order in prototype/tests. */
+let memorySeq = 0;
 
 function uuid(): string {
   return crypto.randomUUID();
 }
 
 function nowIso(): string {
-  return new Date().toISOString();
+  memorySeq += 1;
+  return new Date(Date.now() + memorySeq).toISOString();
 }
 
 function mapRow(row: Record<string, unknown>): QrQueueEntry {
@@ -96,7 +99,10 @@ export async function listWaitingQrQueue(shopId: string): Promise<QrQueueEntry[]
   if (isPrototypeMode()) {
     return memoryEntries
       .filter((e) => e.shop_id === shopId && e.status === "waiting")
-      .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      .sort((a, b) => {
+        const cmp = a.created_at.localeCompare(b.created_at);
+        return cmp !== 0 ? cmp : a.id.localeCompare(b.id);
+      });
   }
   const supabase = createServiceClient();
   const { data, error } = await supabase

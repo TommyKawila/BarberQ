@@ -38,34 +38,46 @@ describe("qr-queue service ordering", () => {
     const { shop } = await freshShop("order");
     const a = await joinQrQueue({
       shopId: shop.id,
-      customerLineId: "u1",
+      customerLineId: `u1-${shop.id}`,
       customerName: "A",
     });
     const b = await joinQrQueue({
       shopId: shop.id,
-      customerLineId: "u2",
+      customerLineId: `u2-${shop.id}`,
       customerName: "B",
     });
     const c = await joinQrQueue({
       shopId: shop.id,
-      customerLineId: "u3",
+      customerLineId: `u3-${shop.id}`,
       customerName: "C",
     });
-    assert.equal(a.position, 1);
-    assert.equal(b.position, 2);
-    assert.equal(c.position, 3);
+    // Re-list after all joins so positions are computed on the full waiting set.
+    const joined = await listShopWaitingQueue(shop.id);
+    assert.deepEqual(
+      joined.map((row) => row.entry.customer_name),
+      ["A", "B", "C"],
+    );
+    assert.deepEqual(
+      joined.map((row) => row.position),
+      [1, 2, 3],
+    );
+    assert.equal(a.entry.id, joined[0].entry.id);
+    assert.equal(b.entry.id, joined[1].entry.id);
+    assert.equal(c.entry.id, joined[2].entry.id);
 
-    await cancelQrQueueEntry(shop.id, a.entry.id, { byCustomerLineId: "u1" });
+    await cancelQrQueueEntry(shop.id, a.entry.id, {
+      byCustomerLineId: a.entry.customer_line_id,
+    });
     const waiting = await listShopWaitingQueue(shop.id);
     assert.equal(waiting.length, 2);
-    assert.equal(waiting[0].entry.customer_line_id, "u2");
+    assert.equal(waiting[0].entry.customer_line_id, b.entry.customer_line_id);
     assert.equal(waiting[0].position, 1);
     assert.equal(waiting[1].position, 2);
 
     await markQrQueueLeft(shop.id, waiting[0].entry.id);
     const afterLeft = await listShopWaitingQueue(shop.id);
     assert.equal(afterLeft.length, 1);
-    assert.equal(afterLeft[0].entry.customer_line_id, "u3");
+    assert.equal(afterLeft[0].entry.customer_line_id, c.entry.customer_line_id);
     assert.equal(afterLeft[0].position, 1);
   });
 });
