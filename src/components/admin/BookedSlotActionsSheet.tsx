@@ -15,7 +15,8 @@ export type BookedSlotSheetAction =
   | "left"
   | "no_show"
   | "late_called"
-  | "cancel";
+  | "cancel"
+  | "reschedule";
 
 interface BookedSlotActionsSheetProps {
   open: boolean;
@@ -141,6 +142,11 @@ export function BookedSlotActionsSheet({
               >
                 📞 {t("admin.callCustomer")} {slot.customerPhone}
               </a>
+            ) : null}
+            {flags.canReschedule ? (
+              <ActionButton disabled={pending} onClick={() => onAction("reschedule")}>
+                {t("admin.rescheduleBooking")}
+              </ActionButton>
             ) : null}
             {flags.canCancel ? (
               <ActionButton

@@ -33,6 +33,7 @@ interface QuickBlockGridProps {
   ) => void;
   onLateCalled?: (barberId: string, slot: AdminSlot) => void;
   onCancel?: (barberId: string, slot: AdminSlot) => void;
+  onRescheduleStart?: (barberId: string, slot: AdminSlot) => void;
   onUnblock?: (barberId: string, slot: AdminSlot) => void;
   bookingHref?: string;
   onCopyBookingLink?: () => void;
@@ -78,6 +79,7 @@ export function QuickBlockGrid({
   onOutcome,
   onLateCalled,
   onCancel,
+  onRescheduleStart,
   onUnblock,
   bookingHref,
   onCopyBookingLink,
@@ -98,6 +100,11 @@ export function QuickBlockGrid({
     const { barberId, slot } = sheet;
     if (action === "cancel") {
       onCancel?.(barberId, slot);
+      setSheet(null);
+      return;
+    }
+    if (action === "reschedule") {
+      onRescheduleStart?.(barberId, slot);
       setSheet(null);
       return;
     }

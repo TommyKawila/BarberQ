@@ -1,4 +1,8 @@
-import { CANCEL_LEAD_MINUTES, intervalsOverlap } from "@/lib/services/slot-service";
+import {
+  CANCEL_LEAD_MINUTES,
+  intervalsOverlap,
+  MAX_RESCHEDULE_COUNT,
+} from "@/lib/services/slot-service";
 import { isBlockingStatus, isOccupyingStatus, type AppointmentOutcome } from "@/lib/appointment-status";
 import { BARBER_SEED } from "@/lib/data/seed";
 import { generateStaffToken, STAFF_SEED } from "@/lib/data/staff-seed";
@@ -313,6 +317,7 @@ export const memoryStore: BookingStore = {
         cancel_token: uuid().replace(/-/g, ""),
         customer_line_id: input.customerLineId ?? null,
         source: input.source ?? "line",
+        reschedule_count: 0,
       };
       getState().appointments.push(row);
       return row;
@@ -380,6 +385,74 @@ export const memoryStore: BookingStore = {
     };
     state.appointments[idx] = updated;
     return updated;
+  },
+
+  async rescheduleAppointmentByToken(token, newBarberId, newStartTime, newEndTime) {
+    const trimmed = token.trim();
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.cancel_token === trimmed);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "confirmed") throw new StoreConflict("NOT_RESCHEDULABLE");
+    if ((row.reschedule_count ?? 0) >= MAX_RESCHEDULE_COUNT) {
+      throw new StoreConflict("RESCHEDULE_LIMIT");
+    }
+    if (new Date(row.start_time).getTime() - Date.now() < CANCEL_LEAD_MINUTES * 60_000) {
+      throw new StoreConflict("TOO_LATE");
+    }
+    if (newEndTime <= newStartTime) throw new StoreConflict("INVALID_RANGE");
+
+    const apply = async () => {
+      if (!getBarberSync(newBarberId)) throw new StoreConflict("BARBER_NOT_FOUND");
+      const conflict = overlapsBusy(newBarberId, newStartTime, newEndTime, row.id);
+      if (conflict) throw new StoreConflict(conflict);
+      const before = { ...row };
+      const after: Appointment = {
+        ...row,
+        barber_id: newBarberId,
+        start_time: newStartTime.toISOString(),
+        end_time: newEndTime.toISOString(),
+        reschedule_count: (row.reschedule_count ?? 0) + 1,
+      };
+      state.appointments[idx] = after;
+      return { before, after };
+    };
+
+    if (row.barber_id === newBarberId) {
+      return withBarberLock(newBarberId, apply);
+    }
+    const [first, second] = [row.barber_id, newBarberId].sort();
+    return withBarberLock(first, () => withBarberLock(second, apply));
+  },
+
+  async staffRescheduleAppointment(appointmentId, newBarberId, newStartTime, newEndTime) {
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.id === appointmentId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "confirmed") throw new StoreConflict("NOT_RESCHEDULABLE");
+    if (newEndTime <= newStartTime) throw new StoreConflict("INVALID_RANGE");
+
+    const apply = async () => {
+      if (!getBarberSync(newBarberId)) throw new StoreConflict("BARBER_NOT_FOUND");
+      const conflict = overlapsBusy(newBarberId, newStartTime, newEndTime, row.id);
+      if (conflict) throw new StoreConflict(conflict);
+      const before = { ...row };
+      const after: Appointment = {
+        ...row,
+        barber_id: newBarberId,
+        start_time: newStartTime.toISOString(),
+        end_time: newEndTime.toISOString(),
+      };
+      state.appointments[idx] = after;
+      return { before, after };
+    };
+
+    if (row.barber_id === newBarberId) {
+      return withBarberLock(newBarberId, apply);
+    }
+    const [first, second] = [row.barber_id, newBarberId].sort();
+    return withBarberLock(first, () => withBarberLock(second, apply));
   },
 
   async markLateCalled(appointmentId) {

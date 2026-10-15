@@ -372,7 +372,7 @@ export function buildAppointmentReminderFlex(input: {
   };
 }
 
-function row(label: string, value: string, bold = false) {
+function row(label: string, value: string, bold = false, struck = false) {
   return {
     type: "box",
     layout: "baseline",
@@ -382,11 +382,89 @@ function row(label: string, value: string, bold = false) {
         type: "text",
         text: value,
         size: "sm",
-        color: "#18181B",
+        color: struck ? "#A1A1AA" : "#18181B",
         flex: 5,
         wrap: true,
         weight: bold ? "bold" : "regular",
+        ...(struck ? { decoration: "line-through" } : {}),
       },
     ],
+  };
+}
+
+/** Customer self-reschedule queue ticket (new slot + old time struck through). */
+export function buildCustomerRescheduleTicketFlex(input: {
+  shopName: string;
+  oldStartTime: string;
+  oldEndTime: string;
+  newStartTime: string;
+  newEndTime: string;
+  barberName: string;
+  myBookingsUrl: string;
+  cancelUrl: string;
+}) {
+  const oldLabel = `${whenLabel(input.oldStartTime)} ${timeRange(input.oldStartTime, input.oldEndTime)}`;
+  return {
+    type: "flex",
+    altText: `${input.shopName}: เลื่อนคิวสำเร็จแล้ว`,
+    contents: {
+      type: "bubble",
+      size: "mega",
+      header: {
+        type: "box",
+        layout: "vertical",
+        backgroundColor: "#EA580C",
+        paddingAll: "16px",
+        contents: [
+          { type: "text", text: input.shopName, color: "#FFEDD5", size: "xs" },
+          {
+            type: "text",
+            text: "✓ เลื่อนคิวสำเร็จแล้ว",
+            color: "#FFFFFF",
+            weight: "bold",
+            size: "lg",
+            margin: "sm",
+            wrap: true,
+          },
+        ],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        spacing: "md",
+        contents: [
+          row("วัน", whenLabel(input.newStartTime)),
+          row("เวลา", timeRange(input.newStartTime, input.newEndTime), true),
+          row("ช่าง", input.barberName),
+          row("เลื่อนจาก", oldLabel, false, true),
+        ],
+      },
+      footer: {
+        type: "box",
+        layout: "vertical",
+        spacing: "sm",
+        contents: [
+          {
+            type: "button",
+            style: "primary",
+            color: "#18181B",
+            action: {
+              type: "uri",
+              label: "ดูคิวของฉัน",
+              uri: input.myBookingsUrl,
+            },
+          },
+          {
+            type: "button",
+            style: "secondary",
+            action: {
+              type: "uri",
+              label: "เลื่อน/ยกเลิก",
+              uri: input.cancelUrl,
+            },
+          },
+        ],
+      },
+    },
   };
 }
