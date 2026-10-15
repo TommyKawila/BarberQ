@@ -74,6 +74,8 @@ export interface CreateAppointmentInput {
   endTime: Date;
   customerLineId?: string | null;
   source?: AppointmentSource;
+  /** P8: QR walk-in marker */
+  viaQr?: boolean;
 }
 
 export interface CreateBlockInput {
@@ -102,6 +104,11 @@ export interface ShopSettings {
    * ON by default; shops may turn OFF to save the 300 free messages/month quota.
    */
   bookingConfirmPushEnabled: boolean;
+  /**
+   * P8: LINE push when a waiting QR customer has exactly 2 ahead.
+   * ON by default; shops may turn OFF to save quota.
+   */
+  queueAheadPushEnabled: boolean;
 }
 
 export type StaffRole = "barber" | "super_admin";

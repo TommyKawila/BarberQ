@@ -7,6 +7,8 @@ interface StatCardProps {
   delta?: number | null;
   deltaLabel?: string;
   highlight?: boolean;
+  /** Optional secondary line (e.g. QR subset of walk-in) */
+  hint?: string;
 }
 
 const accentClass: Record<NonNullable<StatCardProps["accent"]>, string> = {
@@ -24,6 +26,7 @@ export function StatCard({
   delta,
   deltaLabel,
   highlight = false,
+  hint,
 }: StatCardProps) {
   const deltaUp = delta != null && delta > 0;
   const deltaDown = delta != null && delta < 0;
@@ -37,6 +40,7 @@ export function StatCard({
         {value}
       </p>
       <p className="mt-1 text-[11px] text-zinc-400">{label}</p>
+      {hint ? <p className="mt-0.5 text-[10px] text-amber-400/90">{hint}</p> : null}
       {delta != null ? (
         <p
           className={`mt-1 text-[11px] tabular-nums ${

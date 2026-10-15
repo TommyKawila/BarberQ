@@ -114,6 +114,7 @@ function getState(): MemoryState {
       remindersEnabled: false,
       reminderLeadMinutes: 120,
       bookingConfirmPushEnabled: true,
+      queueAheadPushEnabled: true,
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
@@ -157,12 +158,16 @@ function getState(): MemoryState {
         remindersEnabled: false,
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
+      queueAheadPushEnabled: true,
       },
     };
   }
   for (const settings of Object.values(g[GLOBAL_KEY].shopSettings)) {
     if (typeof settings.bookingConfirmPushEnabled !== "boolean") {
       settings.bookingConfirmPushEnabled = true;
+    }
+    if (typeof settings.queueAheadPushEnabled !== "boolean") {
+      settings.queueAheadPushEnabled = true;
     }
   }
   const legacy = g[GLOBAL_KEY] as MemoryState & {
@@ -317,6 +322,7 @@ export const memoryStore: BookingStore = {
         cancel_token: uuid().replace(/-/g, ""),
         customer_line_id: input.customerLineId ?? null,
         source: input.source ?? "line",
+        via_qr: Boolean(input.viaQr),
         reschedule_count: 0,
       };
       getState().appointments.push(row);
@@ -676,6 +682,7 @@ export const memoryStore: BookingStore = {
         remindersEnabled: false,
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
+      queueAheadPushEnabled: true,
       }
     );
   },
@@ -693,6 +700,7 @@ export const memoryStore: BookingStore = {
       remindersEnabled: input.remindersEnabled,
       reminderLeadMinutes: input.reminderLeadMinutes,
       bookingConfirmPushEnabled: input.bookingConfirmPushEnabled,
+      queueAheadPushEnabled: input.queueAheadPushEnabled !== false,
     };
   },
 
@@ -909,6 +917,7 @@ export const memoryStore: BookingStore = {
         remindersEnabled: false,
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
+      queueAheadPushEnabled: true,
       };
       return shop;
     }
@@ -942,6 +951,7 @@ export const memoryStore: BookingStore = {
       remindersEnabled: false,
       reminderLeadMinutes: 120,
       bookingConfirmPushEnabled: true,
+      queueAheadPushEnabled: true,
     };
 
     barbers.push({

@@ -65,6 +65,8 @@ export interface Appointment {
   reminder_sent_at?: string | null;
   /** Customer self-reschedule count (max 1). Shop moves do not increment. */
   reschedule_count?: number;
+  /** P8: walk-in created from QR queue (still source = walk_in). */
+  via_qr?: boolean;
 }
 
 export interface ShopService {
@@ -109,6 +111,8 @@ export interface AdminSlot extends Slot {
   appointmentId?: string;
   status?: AppointmentStatus;
   source?: AppointmentSource;
+  /** P8: walk-in from QR queue */
+  viaQr?: boolean;
   isLate?: boolean;
   lateCalledAt?: string | null;
   blockId?: string;
@@ -142,6 +146,10 @@ export interface CreateStaffBookingInput {
   customerPhone?: string;
   /** Optional shortened end when walk-in would collide with the next booking */
   endTime?: string;
+  /** P8 QR: LINE user id for queue-ahead push */
+  customerLineId?: string | null;
+  /** P8: mark appointment as from QR queue */
+  viaQr?: boolean;
 }
 
 export interface ApiErrorBody {

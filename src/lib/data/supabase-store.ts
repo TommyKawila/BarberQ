@@ -218,6 +218,19 @@ export const supabaseStore: BookingStore = {
   async createAppointment(input) {
     const supabase = createServiceClient();
     const source = input.source ?? "line";
+
+    async function withViaQr(appointment: Appointment): Promise<Appointment> {
+      if (!input.viaQr) return appointment;
+      const { data: qrPatched, error: qrError } = await supabase
+        .from("appointments")
+        .update({ via_qr: true })
+        .eq("id", appointment.id)
+        .select("*")
+        .maybeSingle();
+      if (!qrError && qrPatched) return qrPatched as Appointment;
+      return { ...appointment, via_qr: true };
+    }
+
     const { data, error } = await supabase.rpc("create_appointment", {
       p_barber_id: input.barberId,
       p_customer_ref: input.customerRef ?? null,
@@ -228,7 +241,7 @@ export const supabaseStore: BookingStore = {
       p_source: source,
       p_end_time: input.endTime.toISOString(),
     });
-    if (!error) return data as Appointment;
+    if (!error) return withViaQr(data as Appointment);
 
     const missingP3Params =
       error.code === "PGRST202" ||
@@ -249,7 +262,7 @@ export const supabaseStore: BookingStore = {
       });
       if (legacyError) mapRpcError(legacyError);
       const appointment = legacy as Appointment;
-      if (!input.customerLineId && source === "line") return appointment;
+      if (!input.customerLineId && source === "line") return withViaQr(appointment);
 
       const { data: patched, error: patchError } = await supabase
         .from("appointments")
@@ -264,7 +277,7 @@ export const supabaseStore: BookingStore = {
         .select("*")
         .maybeSingle();
       if (patchError) throw new Error(patchError.message);
-      return (patched as Appointment | null) ?? appointment;
+      return withViaQr((patched as Appointment | null) ?? appointment);
     }
 
     // Migration 0026 not applied yet: fall back to 0013 signature + patch
@@ -290,7 +303,7 @@ export const supabaseStore: BookingStore = {
       .select("*")
       .maybeSingle();
     if (patchError) throw new Error(patchError.message);
-    return (patched as Appointment | null) ?? appointment;
+    return withViaQr((patched as Appointment | null) ?? appointment);
   },
 
   async cancelAppointment(appointmentId, customerRef) {
@@ -601,6 +614,8 @@ export const supabaseStore: BookingStore = {
 
   async getShopSettings(shopId) {
     const supabase = createServiceClient();
+    const p8Select =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes, booking_confirm_push_enabled, queue_ahead_push_enabled";
     const fullSelect =
       "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes, booking_confirm_push_enabled";
     const reminderSelect =
@@ -611,34 +626,56 @@ export const supabaseStore: BookingStore = {
     {
       const first = await supabase
         .from("shop_settings")
-        .select(fullSelect)
+        .select(p8Select)
         .eq("shop_id", shopId)
         .maybeSingle();
       if (first.error) {
         const msg = first.error.message ?? "";
         const missingCol = first.error.code === "42703";
-        const missingConfirmPush =
-          missingCol || msg.includes("booking_confirm_push_enabled");
-        const missingReminderCols =
-          missingCol ||
-          msg.includes("reminders_enabled") ||
-          msg.includes("reminder_lead_minutes");
-        if (!missingConfirmPush && !missingReminderCols) {
-          throw new Error(first.error.message);
-        }
-        if (missingConfirmPush && !msg.includes("reminders_enabled") && !msg.includes("reminder_lead_minutes")) {
-          const mid = await supabase
-            .from("shop_settings")
-            .select(reminderSelect)
-            .eq("shop_id", shopId)
-            .maybeSingle();
-          if (!mid.error) {
-            data = (mid.data as Record<string, unknown> | null) ?? null;
-          } else if (
+        const missingQueueAhead =
+          missingCol || msg.includes("queue_ahead_push_enabled");
+        if (!missingQueueAhead) throw new Error(first.error.message);
+
+        const mid = await supabase
+          .from("shop_settings")
+          .select(fullSelect)
+          .eq("shop_id", shopId)
+          .maybeSingle();
+        if (mid.error) {
+          const midMsg = mid.error.message ?? "";
+          const missingConfirmPush =
+            mid.error.code === "42703" || midMsg.includes("booking_confirm_push_enabled");
+          const missingReminderCols =
             mid.error.code === "42703" ||
-            (mid.error.message ?? "").includes("reminders_enabled") ||
-            (mid.error.message ?? "").includes("reminder_lead_minutes")
-          ) {
+            midMsg.includes("reminders_enabled") ||
+            midMsg.includes("reminder_lead_minutes");
+          if (!missingConfirmPush && !missingReminderCols) {
+            throw new Error(mid.error.message);
+          }
+          if (missingConfirmPush && !midMsg.includes("reminders_enabled") && !midMsg.includes("reminder_lead_minutes")) {
+            const rem = await supabase
+              .from("shop_settings")
+              .select(reminderSelect)
+              .eq("shop_id", shopId)
+              .maybeSingle();
+            if (!rem.error) {
+              data = (rem.data as Record<string, unknown> | null) ?? null;
+            } else if (
+              rem.error.code === "42703" ||
+              (rem.error.message ?? "").includes("reminders_enabled") ||
+              (rem.error.message ?? "").includes("reminder_lead_minutes")
+            ) {
+              const legacy = await supabase
+                .from("shop_settings")
+                .select(legacySelect)
+                .eq("shop_id", shopId)
+                .maybeSingle();
+              if (legacy.error) throw new Error(legacy.error.message);
+              data = (legacy.data as Record<string, unknown> | null) ?? null;
+            } else {
+              throw new Error(rem.error.message);
+            }
+          } else {
             const legacy = await supabase
               .from("shop_settings")
               .select(legacySelect)
@@ -646,17 +683,9 @@ export const supabaseStore: BookingStore = {
               .maybeSingle();
             if (legacy.error) throw new Error(legacy.error.message);
             data = (legacy.data as Record<string, unknown> | null) ?? null;
-          } else {
-            throw new Error(mid.error.message);
           }
         } else {
-          const legacy = await supabase
-            .from("shop_settings")
-            .select(legacySelect)
-            .eq("shop_id", shopId)
-            .maybeSingle();
-          if (legacy.error) throw new Error(legacy.error.message);
-          data = (legacy.data as Record<string, unknown> | null) ?? null;
+          data = (mid.data as Record<string, unknown> | null) ?? null;
         }
       } else {
         data = (first.data as Record<string, unknown> | null) ?? null;
@@ -675,6 +704,11 @@ export const supabaseStore: BookingStore = {
       confirmPushRaw === undefined || confirmPushRaw === null
         ? true
         : Boolean(confirmPushRaw);
+    const queueAheadRaw = data?.queue_ahead_push_enabled;
+    const queueAheadPushEnabled =
+      queueAheadRaw === undefined || queueAheadRaw === null
+        ? true
+        : Boolean(queueAheadRaw);
     return {
       shopId,
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
@@ -688,6 +722,7 @@ export const supabaseStore: BookingStore = {
       remindersEnabled: Boolean(data?.reminders_enabled ?? false),
       reminderLeadMinutes: leadMinutes,
       bookingConfirmPushEnabled,
+      queueAheadPushEnabled,
     };
   },
 
@@ -704,6 +739,7 @@ export const supabaseStore: BookingStore = {
       reminders_enabled: input.remindersEnabled,
       reminder_lead_minutes: input.reminderLeadMinutes,
       booking_confirm_push_enabled: input.bookingConfirmPushEnabled,
+      queue_ahead_push_enabled: input.queueAheadPushEnabled !== false,
       updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from("shop_settings").upsert(payload);
@@ -711,11 +747,30 @@ export const supabaseStore: BookingStore = {
       const msg = error.message ?? "";
       if (
         error.code === "42703" ||
+        msg.includes("queue_ahead_push_enabled") ||
         msg.includes("booking_confirm_push_enabled")
       ) {
-        delete payload.booking_confirm_push_enabled;
+        if (msg.includes("queue_ahead_push_enabled") || error.code === "42703") {
+          delete payload.queue_ahead_push_enabled;
+        }
+        if (msg.includes("booking_confirm_push_enabled")) {
+          delete payload.booking_confirm_push_enabled;
+        }
         const retry = await supabase.from("shop_settings").upsert(payload);
-        if (retry.error) throw new Error(retry.error.message);
+        if (retry.error) {
+          const retryMsg = retry.error.message ?? "";
+          if (
+            retry.error.code === "42703" ||
+            retryMsg.includes("booking_confirm_push_enabled")
+          ) {
+            delete payload.booking_confirm_push_enabled;
+            delete payload.queue_ahead_push_enabled;
+            const retry2 = await supabase.from("shop_settings").upsert(payload);
+            if (retry2.error) throw new Error(retry2.error.message);
+            return;
+          }
+          throw new Error(retry.error.message);
+        }
         return;
       }
       throw new Error(error.message);

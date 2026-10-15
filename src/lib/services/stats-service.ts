@@ -30,6 +30,8 @@ export interface StatsTotals {
   noShow: number;
   left: number;
   walkIns: number;
+  /** P8: subset of walkIns that came from QR queue (via_qr). */
+  qrWalkIns: number;
   newCustomers: number;
   returningCustomers: number;
   returningRatePct: number | null;
@@ -374,6 +376,7 @@ function computeTotals(input: TotalsInput): StatsTotals {
     left: appointments.filter((a) => a.status === "left").length,
     // Real walk-in bookings (P3+) plus legacy blocked_slots reason 'walk-in' only.
     walkIns: walkInAppointments.length + legacyWalkInBlocks.length,
+    qrWalkIns: walkInAppointments.filter((a) => a.via_qr).length,
     newCustomers,
     returningCustomers,
     returningRatePct,

@@ -40,8 +40,14 @@ interface QuickBlockGridProps {
   bookingLinkCopied?: boolean;
 }
 
-function sourceBadge(source: AppointmentSource | undefined, t: (k: "admin.sourceLine" | "admin.sourcePhone" | "admin.sourceChat" | "admin.sourceWalkIn") => string): string {
-  if (source === "walk_in") return `🚶 ${t("admin.sourceWalkIn")}`;
+function sourceBadge(
+  source: AppointmentSource | undefined,
+  t: (k: "admin.sourceLine" | "admin.sourcePhone" | "admin.sourceChat" | "admin.sourceWalkIn") => string,
+  viaQr?: boolean,
+): string {
+  if (source === "walk_in") {
+    return viaQr ? `🚶 ${t("admin.sourceWalkIn")} · QR` : `🚶 ${t("admin.sourceWalkIn")}`;
+  }
   if (source === "phone") return `📞 ${t("admin.sourcePhone")}`;
   if (source === "chat") return `💬 ${t("admin.sourceChat")}`;
   return t("admin.sourceLine");
@@ -227,7 +233,7 @@ export function QuickBlockGrid({
                       </div>
                       {slot.source ? (
                         <div className="truncate text-[9px] opacity-90">
-                          {sourceBadge(slot.source, t)}
+                          {sourceBadge(slot.source, t, slot.viaQr)}
                         </div>
                       ) : null}
                       {(slot.noShowCount ?? 0) > 0 ? (

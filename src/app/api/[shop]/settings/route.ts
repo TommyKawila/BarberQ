@@ -33,11 +33,17 @@ export async function GET(
     const settings = await getStore().getShopSettings(shop.id);
     const { shopId: _, ...publicSettings } = settings;
     void _;
-    return NextResponse.json(publicSettings, {
-      headers: {
-        "Cache-Control": "private, no-store, no-cache, must-revalidate",
+    // Brand display: settings override, else shops.name (never leave blank for customers).
+    const shopName =
+      (publicSettings.shopName ?? "").trim() || shop.name || null;
+    return NextResponse.json(
+      { ...publicSettings, shopName },
+      {
+        headers: {
+          "Cache-Control": "private, no-store, no-cache, must-revalidate",
+        },
       },
-    });
+    );
   } catch (error) {
     return jsonError(error);
   }
@@ -61,6 +67,7 @@ export async function PUT(
       remindersEnabled?: boolean;
       reminderLeadMinutes?: number;
       bookingConfirmPushEnabled?: boolean;
+      queueAheadPushEnabled?: boolean;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -74,6 +81,7 @@ export async function PUT(
       remindersEnabled: current.remindersEnabled,
       reminderLeadMinutes: current.reminderLeadMinutes ?? DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
       bookingConfirmPushEnabled: current.bookingConfirmPushEnabled !== false,
+      queueAheadPushEnabled: current.queueAheadPushEnabled !== false,
     };
 
     if ("logoDataUrl" in body) {
@@ -130,6 +138,10 @@ export async function PUT(
 
     if ("bookingConfirmPushEnabled" in body) {
       next.bookingConfirmPushEnabled = Boolean(body.bookingConfirmPushEnabled);
+    }
+
+    if ("queueAheadPushEnabled" in body) {
+      next.queueAheadPushEnabled = Boolean(body.queueAheadPushEnabled);
     }
 
     await getStore().setShopSettings(shop.id, next);
