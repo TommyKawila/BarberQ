@@ -162,7 +162,7 @@ export interface ApiErrorBody {
 export const BARBER_THAI_NAME: Record<string, string> = {
   Saeb: "แสบ",
   Tide: "ไทด์",
-  Nat: "นัท",
+  Nat: "นัด",
 };
 
 export function barberLabel(name: string, locale: "th" | "en" = "th"): string {

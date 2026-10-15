@@ -142,21 +142,13 @@ async function main() {
     target?.scrollIntoView({ block: "start" });
   });
   await page.waitForTimeout(300);
-  // Prefer demo barber นัท (photo + 60‑min slot) for the hero success showcase
-  const natBarber = page.locator("button, [role='button'], label, div").filter({
-    hasText: /นัท|Nat/,
-  });
-  if ((await natBarber.count()) > 0) {
-    await natBarber.first().click({ force: true }).catch(() => {});
-    await page.waitForTimeout(400);
-  }
   // Click first available time if visible later; for choose shot just show selectors
   const slots = page.locator("button").filter({ hasText: /^\d{1,2}:\d{2}$/ });
   // Wait for slots to load
   await page.waitForTimeout(800);
   await shot(page, "choose-slot");
 
-  // 3) Summary — pick first available slot (for นัท when selected)
+  // 3) Summary — pick first available slot
   const available = page.locator("button:not([disabled])").filter({
     hasText: /^\d{1,2}:\d{2}$/,
   });

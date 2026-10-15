@@ -28,26 +28,26 @@ SCREEN = ROOT / "public/marketing/screens/queue-ticket.webp"
 # (slight oversize hides subpixel gaps; rounded mask matches glass radius).
 DESKTOP_QUAD = np.array(
     [
-        [1546, 228],
-        [1915, 152],
-        [2060, 948],
-        [1680, 1022],
+        [1538, 218],
+        [1922, 145],
+        [2068, 958],
+        [1672, 1032],
     ],
     dtype=np.float32,
 )
 
 MOBILE_QUAD = np.array(
     [
-        [400, 575],
-        [710, 558],
-        [740, 1175],
-        [426, 1192],
+        [392, 562],
+        [718, 548],
+        [748, 1185],
+        [418, 1200],
     ],
     dtype=np.float32,
 )
 
 # iPhone-like display corner radius as fraction of the shorter screen side.
-CORNER_RADIUS_FRAC = 0.112
+CORNER_RADIUS_FRAC = 0.118
 
 
 def rounded_rect_mask(h: int, w: int, radius_frac: float = CORNER_RADIUS_FRAC) -> np.ndarray:
