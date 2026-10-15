@@ -7,12 +7,14 @@ import {
   ChartColumn,
   Check,
   CircleCheck,
+  ClipboardList,
   MessageCircle,
   Minus,
   Phone,
   Plus,
   QrCode,
   Smartphone,
+  UserRoundX,
   Users,
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -44,6 +46,7 @@ const BOARD_ICONS = [Phone, CalendarClock, Users, Bell, QrCode] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
+const PAIN_ICONS = [MessageCircle, ClipboardList, Users, UserRoundX] as const;
 const TRIAL_BOX_ITEMS = [1, 2, 3, 4] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 /** Never render testimonials in production until real reviews exist. */
@@ -189,6 +192,12 @@ export function SalesPage() {
     t("marketing.pain.chat3"),
     t("marketing.pain.chat4"),
   ];
+  const painTimes = [
+    t("marketing.pain.chatTime1"),
+    t("marketing.pain.chatTime2"),
+    t("marketing.pain.chatTime3"),
+    t("marketing.pain.chatTime4"),
+  ];
 
   const lineBullets = [
     "marketing.line.bullet1",
@@ -213,26 +222,45 @@ export function SalesPage() {
       <AttributionCapture />
       <SalesHero heroCtaRef={heroCtaRef} />
 
-      {/* Pain */}
-      <section className="overflow-x-clip bg-zinc-900/40">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-6 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,54%)_minmax(0,46%)] lg:gap-10">
-          <div>
-            <h2 className="text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-4xl lg:text-[2.5rem]">
+      {/* Pain — mobile: chat overwhelm first; desktop: copy + chat side by side */}
+      <section className="overflow-x-clip bg-zinc-900/50">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-12 md:gap-10 md:px-6 md:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
+          <PainChatMockup
+            messages={painMessages}
+            times={painTimes}
+            footer={t("marketing.pain.visualFooter")}
+            unreadLabel={t("marketing.pain.unreadBadge")}
+            className="order-1 lg:order-2"
+          />
+          <div className="order-2 lg:order-1">
+            <h2 className="text-[2rem] font-extrabold leading-[1.2] tracking-tight text-zinc-50 sm:text-[2.35rem] md:text-5xl lg:text-[3.15rem] lg:leading-[1.15]">
               {t("marketing.pain.title")}
             </h2>
-            <ul className="mt-6 space-y-3">
-              {PAIN_BULLETS.map((n) => (
-                <li key={n} className={`flex gap-3 ${BODY}`}>
-                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" aria-hidden />
-                  <span>{t(`marketing.pain.bullet${n}` as MessageKey)}</span>
-                </li>
-              ))}
+            <ul className="mt-8 space-y-5">
+              {PAIN_BULLETS.map((n) => {
+                const Icon = PAIN_ICONS[n - 1];
+                return (
+                  <li key={n} className="flex gap-3.5 sm:gap-4">
+                    <span
+                      className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-400/10 text-amber-300"
+                      aria-hidden
+                    >
+                      <Icon size={20} strokeWidth={2.25} />
+                    </span>
+                    <p className="pt-1.5 text-[1.05rem] font-semibold leading-snug text-zinc-100 sm:text-lg md:text-xl">
+                      {t(`marketing.pain.bullet${n}` as MessageKey)}
+                    </p>
+                  </li>
+                );
+              })}
             </ul>
-            <p className="mt-6 text-sm font-medium text-amber-400/90 md:text-base">
+            <p className="mt-8 text-xl font-extrabold leading-snug tracking-tight text-amber-300 sm:text-2xl md:text-[1.75rem] md:leading-snug">
+              {t("marketing.pain.punchline")}
+            </p>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400 md:text-base">
               {t("marketing.pain.close")}
             </p>
           </div>
-          <PainChatMockup messages={painMessages} footer={t("marketing.pain.visualFooter")} />
         </div>
       </section>
 

@@ -203,9 +203,16 @@ describe("marketing layout split", () => {
     );
     assert.match(sales, /PainChatMockup/);
     assert.match(sales, /marketing\.pain\.bullet/);
+    assert.match(sales, /marketing\.pain\.punchline/);
+    assert.match(sales, /PAIN_ICONS/);
+    assert.match(pain, /unreadLabel/);
+    assert.match(pain, /times/);
+    assert.equal(dictionary.th["marketing.pain.unreadBadge"], "99+");
+    assert.equal(dictionary.en["marketing.pain.unreadBadge"], "99+");
     assert.doesNotMatch(sales, /from: "shop"/);
     assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
     assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
+    assert.match(dictionary.th["marketing.pain.punchline"], /ค่าตัดผมที่ไม่ได้เก็บ/);
   });
 
   it("sales page follows blueprint section order with sticky CTA and no coming-soon", () => {
