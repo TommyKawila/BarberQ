@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AlertCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { thaiQrQueueError } from "@/lib/queue/qr-queue-errors";
 import type { QrQueuePublicView } from "@/lib/queue/qr-queue-types";
 
@@ -11,14 +12,15 @@ interface Props {
   onStarted: () => void;
 }
 
+type RowAlert =
+  | { kind: "error"; message: string }
+  | { kind: "shorten"; message: string; until: string };
+
 export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Props) {
   const [entries, setEntries] = useState<QrQueuePublicView[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [shorten, setShorten] = useState<{
-    id: string;
-    until: string;
-  } | null>(null);
+  /** Feedback for the row that was just acted on (error or shorten offer). */
+  const [alertById, setAlertById] = useState<Record<string, RowAlert>>({});
 
   const load = useCallback(async () => {
     if (!enabled) return;
@@ -39,9 +41,22 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
     return () => window.clearInterval(t);
   }, [load, enabled]);
 
+  function clearAlert(id: string) {
+    setAlertById((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
+  function setRowAlert(id: string, alert: RowAlert) {
+    setAlertById((prev) => ({ ...prev, [id]: alert }));
+  }
+
   async function act(id: string, action: "start" | "left" | "cancel", endTime?: string) {
     setBusyId(id);
-    setError(null);
+    clearAlert(id);
     try {
       const res = await fetch(shopApi(`/qr-queue/${id}`), {
         method: "PATCH",
@@ -52,18 +67,28 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
         error?: { code?: string; message?: string; canShortenUntil?: string };
       };
       if (res.status === 409 && json.error?.canShortenUntil && action === "start") {
-        setShorten({ id, until: json.error.canShortenUntil });
+        setRowAlert(id, {
+          kind: "shorten",
+          message: thaiQrQueueError("SLOT_TAKEN"),
+          until: json.error.canShortenUntil,
+        });
         return;
       }
       if (!res.ok) {
-        setError(thaiQrQueueError(json.error?.code, json.error?.message ?? "ทำรายการไม่สำเร็จ"));
+        setRowAlert(id, {
+          kind: "error",
+          message: thaiQrQueueError(
+            json.error?.code,
+            json.error?.message ?? "ทำรายการไม่สำเร็จ",
+          ),
+        });
         return;
       }
-      setShorten(null);
+      clearAlert(id);
       await load();
       if (action === "start") onStarted();
     } catch {
-      setError("ทำรายการไม่สำเร็จ");
+      setRowAlert(id, { kind: "error", message: "ทำรายการไม่สำเร็จ" });
     } finally {
       setBusyId(null);
     }
@@ -85,10 +110,13 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
             const barber =
               row.preferredBarberName ??
               (row.entry.preferred_barber_id ? "ช่างที่เลือก" : "ช่างที่ว่างก่อน");
+            const rowBusy = busyId === row.entry.id;
+            const alert = alertById[row.entry.id];
             return (
               <li
                 key={row.entry.id}
                 className="rounded-lg border border-zinc-700/80 bg-zinc-900/80 p-3"
+                data-qr-entry={row.entry.id}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
@@ -100,15 +128,23 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
                   <div className="flex flex-col gap-1.5">
                     <button
                       type="button"
-                      disabled={busyId === row.entry.id}
+                      disabled={busyId !== null}
                       onClick={() => void act(row.entry.id, "start")}
-                      className="min-h-10 rounded-lg bg-amber-400 px-3 text-xs font-semibold text-zinc-950 disabled:opacity-50"
+                      aria-busy={rowBusy}
+                      className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg bg-amber-400 px-3 text-xs font-semibold text-zinc-950 disabled:opacity-50"
                     >
-                      เริ่มตัด
+                      {rowBusy ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                          กำลังเริ่ม…
+                        </>
+                      ) : (
+                        "เริ่มตัด"
+                      )}
                     </button>
                     <button
                       type="button"
-                      disabled={busyId === row.entry.id}
+                      disabled={busyId !== null}
                       onClick={() => void act(row.entry.id, "left")}
                       className="min-h-9 rounded-lg border border-zinc-600 px-3 text-xs text-zinc-200 disabled:opacity-50"
                     >
@@ -116,18 +152,56 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
                     </button>
                   </div>
                 </div>
-                {shorten?.id === row.entry.id ? (
-                  <div className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-2">
-                    <p className="text-xs text-amber-100">
-                      ชนคิวจอง — ตัดให้จบก่อนคิวถัดไปได้
-                    </p>
+
+                {alert?.kind === "error" ? (
+                  <div
+                    role="alert"
+                    data-qr-alert="error"
+                    className="mt-3 flex gap-2.5 rounded-lg border border-red-500/60 bg-red-950/70 px-3 py-2.5 text-red-50 shadow-sm shadow-red-950/40"
+                  >
+                    <AlertCircle
+                      className="mt-0.5 h-5 w-5 shrink-0 text-red-300"
+                      aria-hidden
+                    />
+                    <p className="text-sm font-semibold leading-snug">{alert.message}</p>
+                  </div>
+                ) : null}
+
+                {alert?.kind === "shorten" ? (
+                  <div
+                    role="status"
+                    data-qr-alert="shorten"
+                    className="mt-3 rounded-lg border border-amber-500/60 bg-amber-500/15 p-3 shadow-sm shadow-amber-950/30"
+                  >
+                    <div className="flex gap-2.5">
+                      <AlertTriangle
+                        className="mt-0.5 h-5 w-5 shrink-0 text-amber-300"
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold leading-snug text-amber-50">
+                          {alert.message}
+                        </p>
+                        <p className="mt-1 text-xs leading-snug text-amber-100/90">
+                          ชนคิวจอง — ตัดให้จบก่อนคิวถัดไปได้
+                        </p>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      disabled={busyId === row.entry.id}
-                      onClick={() => void act(row.entry.id, "start", shorten.until)}
-                      className="mt-2 min-h-10 w-full rounded-lg bg-amber-400 text-xs font-semibold text-zinc-950"
+                      disabled={busyId !== null}
+                      onClick={() => void act(row.entry.id, "start", alert.until)}
+                      aria-busy={rowBusy}
+                      className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950 disabled:opacity-50"
                     >
-                      เริ่มตัดแบบสั้น
+                      {rowBusy ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                          กำลังเริ่ม…
+                        </>
+                      ) : (
+                        "เริ่มตัดแบบสั้น"
+                      )}
                     </button>
                   </div>
                 ) : null}
@@ -136,7 +210,6 @@ export function QrWaitingBoard({ shopApi, authHeaders, enabled, onStarted }: Pro
           })}
         </ul>
       )}
-      {error ? <p className="mt-2 text-sm text-red-400">{error}</p> : null}
     </section>
   );
 }
