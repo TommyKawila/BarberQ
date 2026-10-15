@@ -67,6 +67,7 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(hero, /hand-phone-cutout/);
     assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
     assert.match(hero, /marketing\.hero\.micro/);
+    assert.match(hero, /marketing\.hero\.setup/);
     assert.match(hero, /min-w-0/);
     assert.match(hero, /max-w-full/);
     assert.match(nav, /MarketingTrialLink/);
@@ -312,6 +313,20 @@ describe("visible marketing claim locks", () => {
     assert.ok(dictionary.th["marketing.faq.8.q"]);
     assert.match(dictionary.th["marketing.hero.cta"], /เริ่มใช้ฟรี \{days\} วัน →/);
     assert.match(dictionary.en["marketing.hero.cta"], /Start free for \{days\} days →/);
+    assert.match(dictionary.th["marketing.hero.eyebrow"], /1–2 ช่าง/);
+    assert.match(dictionary.th["marketing.hero.setup"], /ตั้งค่าเองได้ในไม่กี่นาที/);
+    assert.match(dictionary.th["marketing.hero.micro"], /\{price\}/);
+    assert.match(dictionary.th["marketing.pricing.title"], /\{price\}/);
+    assert.match(dictionary.th["marketing.pricing.tier1Badge"], /ร้านเล็ก/);
+    assert.match(dictionary.th["marketing.founder.body"], /ไม่ใช่เจ้าของร้าน/);
+    assert.match(dictionary.en["marketing.founder.body"], /not a barber shop owner/i);
+    assert.match(dictionary.th["marketing.faq.7.a"], /ตั้งค่าเองได้ในไม่กี่นาที/);
+    const pricingUi = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    assert.match(pricingUi, /tier1Badge/);
+    assert.match(pricingUi, /isStarter/);
   });
 
   it("rejects unverifiable and outdated pricing claims", () => {

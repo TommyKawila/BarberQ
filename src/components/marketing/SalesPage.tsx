@@ -461,18 +461,28 @@ export function SalesPage() {
             {t("marketing.pricing.eyebrow")}
           </p>
           <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
-            {t("marketing.pricing.title")}
+            {td("marketing.pricing.title")}
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {marketingOffer.tiers.map((tier) => {
               const perDay = tierPerDayHint(tier, locale);
+              const isStarter = tier.id === "tier1";
               return (
                 <div
                   key={tier.id}
-                  className="flex flex-col rounded-2xl border border-amber-500/35 bg-zinc-950/60 p-6 md:p-7"
+                  className={
+                    isStarter
+                      ? "flex flex-col rounded-2xl border-2 border-amber-400/70 bg-zinc-950/60 p-6 md:p-7"
+                      : "flex flex-col rounded-2xl border border-zinc-700 bg-zinc-950/40 p-6 md:p-7"
+                  }
                 >
+                  {isStarter ? (
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
+                      {t("marketing.pricing.tier1Badge")}
+                    </p>
+                  ) : null}
                   <p className="text-sm font-medium text-amber-400/90">
                     {tierBarberRangeLabel(tier, locale)}
                   </p>

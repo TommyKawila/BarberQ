@@ -77,8 +77,11 @@ export function SalesHero({
             <p className="mt-4 max-w-full break-words text-base leading-relaxed text-zinc-300 md:max-w-xl md:text-lg">
               {t("marketing.hero.subtitle")}
             </p>
+            <p className="mt-3 max-w-full text-sm font-medium text-amber-300/95 md:text-base">
+              {t("marketing.hero.setup")}
+            </p>
 
-            <div ref={heroCtaRef} className="relative mt-8 max-w-full md:max-w-xl">
+            <div ref={heroCtaRef} className="relative mt-6 max-w-full md:max-w-xl">
               <div className="relative flex w-full max-w-full flex-col gap-3">
                 <PrimaryTrialCta
                   labelKey="marketing.hero.cta"
