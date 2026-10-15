@@ -250,17 +250,33 @@ describe("marketing layout split", () => {
       "utf8",
     );
     const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    const hero = readFileSync(
+      resolve(root, "components/marketing/SalesHero.tsx"),
+      "utf8",
+    );
     assert.match(cta, /PRIMARY_TRIAL_CTA_CLASS/);
-    assert.match(cta, /min-h-14/);
+    assert.match(cta, /min-h-11/);
+    assert.match(cta, /md:min-h-14/);
+    assert.match(cta, /px-8/);
     assert.match(cta, /cta-pulse/);
+    assert.match(cta, /0_4px_14px_rgba\(251,191,36,0\.28\)/);
+    assert.match(cta, /mt-4/);
+    assert.match(cta, /justify-center/);
     assert.match(cta, /marketing\.risk\.noCard/);
     assert.match(cta, /marketing\.risk\.cancelAnytime/);
     assert.doesNotMatch(cta, /ตั้งค่าเสร็จใน 10|setup in 10/i);
     assert.match(css, /@keyframes cta-pulse/);
+    assert.match(css, /0 4px 14px rgba\(251, 191, 36, 0\.28\)/);
     assert.match(dictionary.th["marketing.hero.cta"], /เริ่มใช้ฟรี \{days\} วัน →/);
     assert.match(dictionary.en["marketing.hero.cta"], /Start free for \{days\} days →/);
     assert.match(dictionary.th["marketing.risk.noCard"], /ไม่ต้องผูกบัตร/);
     assert.match(dictionary.th["marketing.risk.cancelAnytime"], /ยกเลิกได้ทุกเมื่อ/);
+    // Hero: full-width primary <640px; secondary inline on sm+, text link on mobile
+    assert.match(hero, /showRisk=\{false\}/);
+    assert.match(hero, /RiskReversalRow/);
+    assert.match(hero, /w-full justify-center.*sm:w-auto/s);
+    assert.match(hero, /hidden.*sm:inline-flex/s);
+    assert.match(hero, /sm:hidden/);
   });
 
   it("feature claims for short leads and self-reschedule default on (toggleable)", () => {

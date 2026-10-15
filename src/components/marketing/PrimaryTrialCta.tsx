@@ -7,9 +7,9 @@ import type { MessageKey } from "@/lib/i18n/dictionary";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import type { MarketingEventName } from "@/lib/marketing/events";
 
-/** High-contrast amber CTA — shared by hero, pricing, final, sticky. */
+/** High-contrast amber CTA — shared by hero, pricing, final, sticky. Soft shadow so risk copy stays legible. */
 export const PRIMARY_TRIAL_CTA_CLASS =
-  "cta-pulse inline-flex min-h-14 items-center justify-center gap-2 rounded-xl bg-amber-400 px-7 py-3.5 text-base font-bold text-zinc-950 shadow-[0_10px_28px_rgba(251,191,36,0.55)] ring-2 ring-amber-300/80 hover:bg-amber-300 md:min-h-[3.75rem] md:text-lg";
+  "cta-pulse inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-400 px-8 py-3 text-base font-bold text-zinc-950 shadow-[0_4px_14px_rgba(251,191,36,0.28)] ring-1 ring-amber-300/70 hover:bg-amber-300 sm:min-h-12 md:min-h-14 md:text-lg";
 
 const RISK_ITEMS = ["marketing.risk.noCard", "marketing.risk.cancelAnytime"] as const;
 
@@ -18,7 +18,7 @@ export function RiskReversalRow({ className = "" }: { className?: string }) {
   const { t } = useI18n();
   return (
     <ul
-      className={`mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm font-medium leading-snug text-zinc-100 md:text-[15px] ${className}`}
+      className={`mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-medium leading-snug text-zinc-100 sm:justify-start md:text-[15px] ${className}`}
     >
       {RISK_ITEMS.map((key) => (
         <li key={key} className="inline-flex items-center gap-1.5">

@@ -62,10 +62,10 @@ input {
 @keyframes cta-pulse {
   0%,
   100% {
-    box-shadow: 0 10px 28px rgba(251, 191, 36, 0.55);
+    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.28);
   }
   50% {
-    box-shadow: 0 12px 36px rgba(251, 191, 36, 0.75);
+    box-shadow: 0 6px 18px rgba(251, 191, 36, 0.38);
   }
 }
 

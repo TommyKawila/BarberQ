@@ -2,7 +2,7 @@
 
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
-import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
+import { PrimaryTrialCta, RiskReversalRow } from "@/components/marketing/PrimaryTrialCta";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
@@ -82,12 +82,13 @@ export function SalesHero({
             </p>
 
             <div ref={heroCtaRef} className="relative mt-6 max-w-full md:max-w-xl">
-              <div className="relative flex w-full max-w-full flex-col gap-3">
+              {/* Primary + desktop secondary inline; risk below; mobile secondary last */}
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
                 <PrimaryTrialCta
                   labelKey="marketing.hero.cta"
                   placement="hero"
-                  fullWidth
-                  className="sm:w-auto sm:min-w-[280px]"
+                  showRisk={false}
+                  className="w-full justify-center text-center sm:w-auto sm:justify-start sm:text-left"
                 />
                 {supportUrl ? (
                   <a
@@ -97,7 +98,7 @@ export function SalesHero({
                     onClick={() =>
                       trackMarketingEvent("support_line_click", { cta_location: "hero" })
                     }
-                    className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl border border-amber-500/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-amber-300 sm:w-auto sm:px-6"
+                    className="hidden min-h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-500/45 bg-transparent px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-400 hover:text-zinc-50 sm:inline-flex"
                   >
                     {t("marketing.hero.secondary")}
                   </a>
@@ -105,12 +106,36 @@ export function SalesHero({
                   <a
                     href="#how-it-works"
                     onClick={() => trackMarketingEvent("how_it_works_click")}
-                    className="box-border inline-flex min-h-12 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/35 px-4 py-3 text-center font-medium text-zinc-100 sm:w-auto sm:px-6"
+                    className="hidden min-h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-500/45 bg-transparent px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-400 hover:text-zinc-50 sm:inline-flex"
                   >
                     {t("marketing.hero.secondaryFallback")}
                   </a>
                 )}
               </div>
+              <RiskReversalRow />
+              {supportUrl ? (
+                <a
+                  href={supportUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackMarketingEvent("support_line_click", { cta_location: "hero" })
+                  }
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1 text-sm font-medium text-zinc-300 underline-offset-4 hover:text-zinc-100 hover:underline sm:hidden"
+                >
+                  {t("marketing.hero.secondary")}
+                  <span aria-hidden>→</span>
+                </a>
+              ) : (
+                <a
+                  href="#how-it-works"
+                  onClick={() => trackMarketingEvent("how_it_works_click")}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-1 text-sm font-medium text-zinc-300 underline-offset-4 hover:text-zinc-100 hover:underline sm:hidden"
+                >
+                  {t("marketing.hero.secondaryFallback")}
+                  <span aria-hidden>→</span>
+                </a>
+              )}
             </div>
 
             <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
