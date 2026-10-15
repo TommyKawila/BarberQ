@@ -55,9 +55,11 @@ function Placeholder({
   const aspect =
     Math.abs(ratio - 16 / 9) < 0.02
       ? "aspect-video"
-      : Math.abs(ratio - 1) < 0.02
-        ? "aspect-square"
-        : "aspect-[4/5]";
+      : Math.abs(ratio - 4 / 3) < 0.02
+        ? "aspect-[4/3]"
+        : Math.abs(ratio - 1) < 0.02
+          ? "aspect-square"
+          : "aspect-[4/5]";
 
   return (
     <div

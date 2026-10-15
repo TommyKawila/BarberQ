@@ -222,16 +222,23 @@ export function SalesPage() {
       <AttributionCapture />
       <SalesHero heroCtaRef={heroCtaRef} />
 
-      {/* Pain — mobile: chat overwhelm first; desktop: copy + chat side by side */}
+      {/* Pain — mobile: chat → photo → copy; desktop: copy | photo + chat */}
       <section className="overflow-x-clip bg-zinc-900/50">
         <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-12 md:gap-10 md:px-6 md:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
-          <PainChatMockup
-            messages={painMessages}
-            times={painTimes}
-            footer={t("marketing.pain.visualFooter")}
-            unreadLabel={t("marketing.pain.unreadBadge")}
-            className="order-1 lg:order-2"
-          />
+          <div className="order-1 flex flex-col gap-5 lg:order-2">
+            <PainChatMockup
+              messages={painMessages}
+              times={painTimes}
+              footer={t("marketing.pain.visualFooter")}
+              unreadLabel={t("marketing.pain.unreadBadge")}
+            />
+            <MarketingPhotoSlot
+              slot="painBarber"
+              alt={t("marketing.pain.photoAlt")}
+              sizes="(min-width: 1024px) 40vw, 92vw"
+              className="w-full"
+            />
+          </div>
           <div className="order-2 lg:order-1">
             <h2 className="text-[2rem] font-extrabold leading-[1.2] tracking-tight text-zinc-50 sm:text-[2.35rem] md:text-5xl lg:text-[3.15rem] lg:leading-[1.15]">
               {t("marketing.pain.title")}

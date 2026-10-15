@@ -388,6 +388,8 @@ export const dictionary = {
     "marketing.pain.chatTime4": "17:48",
     "marketing.pain.unreadBadge": "99+",
     "marketing.pain.visualFooter": "คำถามเดิม ๆ • ทั้งวัน",
+    "marketing.pain.photoAlt":
+      "ช่างตัดผมไทยกำลังตัดผม มือหนึ่งถือกรรไกรไฟฟ้า อีกมือถือมือถือเต็มไปด้วยแชท — ใบหน้าเครียด",
     "marketing.line.eyebrow": "ลูกค้าจำร้านคุณได้ ตั้งแต่กดจอง",
     "marketing.line.title": "ข้อความเล็ก ๆ ใน LINE ที่ทำให้ลูกค้ารู้สึกว่าร้านใส่ใจ",
     "marketing.line.bullet1": "ยืนยันทันที + บัตรคิวใน LINE ส่งในนามร้านคุณ ลูกค้าไม่ต้องถามซ้ำว่า “จองติดไหม” (ร้านเปิด–ปิดได้)",
@@ -1472,6 +1474,8 @@ export const dictionary = {
     "marketing.pain.chatTime4": "17:48",
     "marketing.pain.unreadBadge": "99+",
     "marketing.pain.visualFooter": "Same questions • all day",
+    "marketing.pain.photoAlt":
+      "Thai barber mid-haircut, clippers in one hand and a phone flooded with chats in the other — stressed expression",
     "marketing.line.eyebrow": "Customers remember your shop from the moment they book",
     "marketing.line.title": "Small LINE messages that make customers feel cared for",
     "marketing.line.bullet1": "Instant confirmation + queue ticket in LINE under your shop’s name — no more “did my booking go through?” (shop can toggle this off)",

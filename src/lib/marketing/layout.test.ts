@@ -202,13 +202,22 @@ describe("marketing layout split", () => {
       "utf8",
     );
     assert.match(sales, /PainChatMockup/);
+    assert.match(sales, /slot="painBarber"/);
     assert.match(sales, /marketing\.pain\.bullet/);
     assert.match(sales, /marketing\.pain\.punchline/);
+    assert.match(sales, /marketing\.pain\.photoAlt/);
     assert.match(sales, /PAIN_ICONS/);
     assert.match(pain, /unreadLabel/);
     assert.match(pain, /times/);
     assert.equal(dictionary.th["marketing.pain.unreadBadge"], "99+");
     assert.equal(dictionary.en["marketing.pain.unreadBadge"], "99+");
+    assert.ok(dictionary.th["marketing.pain.photoAlt"]);
+    assert.ok(dictionary.en["marketing.pain.photoAlt"]);
+    assert.equal(marketingPhotoSlots.painBarber.src, null);
+    assert.equal(
+      marketingPhotoSlots.painBarber.swapPath,
+      "/marketing/photos/pain-barber.webp",
+    );
     assert.doesNotMatch(sales, /from: "shop"/);
     assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
     assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);

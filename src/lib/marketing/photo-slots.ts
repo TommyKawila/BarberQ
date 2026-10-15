@@ -8,13 +8,15 @@
  * - barberDesktop 960×1200
  * - barberMobile  1080×1350 4:5
  * - founder       1024×1024
+ * - painBarber    1600×1200 4:3  stressed barber + phone notifications
  */
 export type MarketingPhotoSlotId =
   | "heroDesktop"
   | "heroMobile"
   | "barberDesktop"
   | "barberMobile"
-  | "founder";
+  | "founder"
+  | "painBarber";
 
 export type MarketingPhotoPairId = "hero" | "barber";
 
@@ -77,6 +79,17 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     height: 1024,
     label: "PHOTO SLOT · founder",
     artNote: "1024×1024 · Tommy looking at camera",
+  },
+  painBarber: {
+    id: "painBarber",
+    /** null until Tommy picks an option from docs/mockups/pain-point/ */
+    src: null,
+    swapPath: "/marketing/photos/pain-barber.webp",
+    width: 1600,
+    height: 1200,
+    label: "PHOTO SLOT · pain barber 4:3",
+    artNote:
+      "1600×1200 · Thai barber mid-cut, clippers + phone flooded with chats, stressed · pick from docs/mockups/pain-point/",
   },
 } as const;
 
