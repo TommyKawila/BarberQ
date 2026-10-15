@@ -6,6 +6,7 @@ export type LineMessageKind =
   | "reply_ticket"
   | "push_cancel"
   | "push_reschedule"
+  | "push_reschedule_ticket"
   | "push_reminder"
   | "push_confirm"
   | "push_test"
@@ -131,6 +132,42 @@ export async function hasSuccessfulBookingConfirm(
     .eq("appointment_id", appointmentId)
     .eq("success", true)
     .in("kind", ["reply_confirm", "push_confirm"])
+    .limit(1);
+  if (error) {
+    console.warn(
+      JSON.stringify({
+        event: "line_message_log_lookup_failed",
+        message: error.message,
+      }),
+    );
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
+/** True if customer self-reschedule ticket already pushed for this booking. */
+export async function hasSuccessfulCustomerRescheduleTicket(
+  shopId: string,
+  appointmentId: string,
+): Promise<boolean> {
+  if (!appointmentId) return false;
+  if (isPrototypeMode()) {
+    return memoryLogs.some(
+      (row) =>
+        row.shopId === shopId &&
+        row.appointmentId === appointmentId &&
+        row.success &&
+        row.kind === "push_reschedule_ticket",
+    );
+  }
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("line_message_log")
+    .select("id")
+    .eq("shop_id", shopId)
+    .eq("appointment_id", appointmentId)
+    .eq("success", true)
+    .eq("kind", "push_reschedule_ticket")
     .limit(1);
   if (error) {
     console.warn(

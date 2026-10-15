@@ -63,6 +63,8 @@ export interface Appointment {
   reminder_lead_minutes?: number | null;
   reminder_due_at?: string | null;
   reminder_sent_at?: string | null;
+  /** Customer self-reschedule count (max 1). Shop moves do not increment. */
+  reschedule_count?: number;
 }
 
 export interface ShopService {

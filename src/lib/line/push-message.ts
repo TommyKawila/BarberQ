@@ -8,6 +8,7 @@ export type PushKind = Extract<
   LineMessageKind,
   | "push_cancel"
   | "push_reschedule"
+  | "push_reschedule_ticket"
   | "push_reminder"
   | "push_confirm"
   | "push_test"

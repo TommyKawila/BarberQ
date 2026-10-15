@@ -20,6 +20,8 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const barberId = searchParams.get("barberId");
     const date = searchParams.get("date");
+    const excludeAppointmentId =
+      searchParams.get("excludeAppointmentId")?.trim() || undefined;
 
     if (!date) {
       return NextResponse.json(
@@ -38,7 +40,9 @@ export async function GET(
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
 
-    const slots = await getAvailableSlots(barberId, date);
+    const slots = await getAvailableSlots(barberId, date, new Date(), {
+      excludeAppointmentId,
+    });
     return NextResponse.json({ slots });
   } catch (error) {
     return jsonError(error);

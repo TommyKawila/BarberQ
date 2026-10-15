@@ -39,7 +39,9 @@ describe("board card cancel for every source", () => {
       );
       assert.equal(flags.canOpenSheet, true);
       assert.equal(flags.canCancel, true);
+      assert.equal(flags.canReschedule, true);
       assert.equal(flags.cancelNotifiesLine, source === "line");
+      assert.equal(flags.rescheduleNotifiesLine, source === "line");
     });
   }
 
@@ -138,5 +140,24 @@ describe("board cancel UX wiring", () => {
     );
     assert.match(notify, /shouldSendLineCancelPush/);
     assert.match(notify, /if \(!shouldSendLineCancelPush/);
+  });
+
+  it("sheet exposes reschedule action", () => {
+    const sheet = readFileSync(
+      resolve(root, "components/admin/BookedSlotActionsSheet.tsx"),
+      "utf8",
+    );
+    assert.match(sheet, /admin\.rescheduleBooking/);
+    assert.match(sheet, /"reschedule"/);
+  });
+
+  it("staff reschedule route notifies LINE flex + Web Push", () => {
+    const route = readFileSync(
+      resolve(root, "app/api/appointments/[id]/reschedule/route.ts"),
+      "utf8",
+    );
+    assert.match(route, /notifyCustomerShopReschedule/);
+    assert.match(route, /notifyStaffWebPush/);
+    assert.match(route, /event:\s*"reschedule"/);
   });
 });

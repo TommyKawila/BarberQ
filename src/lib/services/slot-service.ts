@@ -11,6 +11,8 @@ import type { Barber, BusyInterval, Slot } from "@/types/booking";
 export const SHOP_TIMEZONE = "Asia/Bangkok";
 export const BOOKING_WINDOW_DAYS = 7;
 export const CANCEL_LEAD_MINUTES = 60;
+/** Max customer self-reschedules per booking (app + DB). */
+export const MAX_RESCHEDULE_COUNT = 1;
 export const LATE_GRACE_MINUTES = 10;
 
 export function getBangkokWeekday(dateISO: string): number {
@@ -73,6 +75,24 @@ export function formatSlotTime(iso: string): string {
 
 export function canCancelAt(startTime: string, now: Date = new Date()): boolean {
   return new Date(startTime).getTime() - now.getTime() >= CANCEL_LEAD_MINUTES * 60_000;
+}
+
+/** Customer may self-reschedule once, with the same 60-min lead as cancel. */
+export function canCustomerReschedule(
+  apt: {
+    status: string;
+    start_time: string;
+    reschedule_count?: number | null;
+    cancel_token?: string | null;
+  },
+  now: Date = new Date(),
+): boolean {
+  return (
+    apt.status === "confirmed" &&
+    Boolean(apt.cancel_token) &&
+    (apt.reschedule_count ?? 0) < MAX_RESCHEDULE_COUNT &&
+    canCancelAt(apt.start_time, now)
+  );
 }
 
 export function isLate(startTime: string, now: Date = new Date()): boolean {

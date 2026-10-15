@@ -7,6 +7,7 @@ export type BoardCardActionId =
   | "no_show"
   | "late_called"
   | "cancel"
+  | "reschedule"
   | "call";
 
 /** Cancel is available for every booking source on the queue board. */
@@ -24,9 +25,12 @@ export interface BoardCardActionFlags {
   canNoShow: boolean;
   canLateCalled: boolean;
   canCancel: boolean;
+  canReschedule: boolean;
   canCall: boolean;
   /** True when cancel confirm should mention LINE push (customer has LINE id). */
   cancelNotifiesLine: boolean;
+  /** True when shop reschedule LINE push would be sent (customer has LINE id). */
+  rescheduleNotifiesLine: boolean;
 }
 
 /** Which staff actions are available on a booked board card. */
@@ -49,8 +53,10 @@ export function getBookedCardActions(
       canNoShow: false,
       canLateCalled: false,
       canCancel: false,
+      canReschedule: false,
       canCall: false,
       cancelNotifiesLine: false,
+      rescheduleNotifiesLine: false,
     };
   }
 
@@ -61,6 +67,7 @@ export function getBookedCardActions(
   // Source must never gate cancel — phone/chat/walk-in/LINE all cancel.
   const sourceAllowsCancel =
     !slot.source || BOARD_CANCEL_SOURCES.includes(slot.source);
+  const hasLine = Boolean(slot.customerLineId?.trim());
 
   return {
     canOpenSheet: true,
@@ -69,7 +76,9 @@ export function getBookedCardActions(
     canNoShow: showNoShow && endPassed,
     canLateCalled,
     canCancel: sourceAllowsCancel,
+    canReschedule: sourceAllowsCancel,
     canCall: Boolean(slot.customerPhone?.trim()),
-    cancelNotifiesLine: Boolean(slot.customerLineId?.trim()),
+    cancelNotifiesLine: hasLine,
+    rescheduleNotifiesLine: hasLine,
   };
 }

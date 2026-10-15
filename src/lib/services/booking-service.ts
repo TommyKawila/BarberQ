@@ -9,6 +9,7 @@ import {
   getBookableDates,
   intervalsOverlap,
   isLate,
+  MAX_RESCHEDULE_COUNT,
   recurringBreaksForDate,
 } from "@/lib/services/slot-service";
 import { isBlockingStatus } from "@/lib/appointment-status";
@@ -51,6 +52,8 @@ function mapStoreError(error: unknown): BookingError {
       ],
       NOT_OWNER: ["You can only cancel your own booking", 403],
       NOT_CANCELLABLE: ["This booking cannot be cancelled", 400],
+      NOT_RESCHEDULABLE: ["This booking cannot be rescheduled", 400],
+      RESCHEDULE_LIMIT: ["This booking has already been rescheduled once", 400],
       NOT_FOUND: ["Appointment not found", 404],
       INVALID_RANGE: ["Invalid time range", 400],
       INVALID_OUTCOME: ["Cannot mark outcome yet", 400],
@@ -105,6 +108,7 @@ export async function getAvailableSlots(
   barberId: string,
   dateISO: string,
   now: Date = new Date(),
+  opts?: { excludeAppointmentId?: string },
 ): Promise<Slot[]> {
   if (!isUuid(barberId)) {
     throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
@@ -126,10 +130,20 @@ export async function getAvailableSlots(
     }
     const shopHours = await shopHoursForBarber(barber);
     const range = dayRangeUtc(dateISO);
-    const [busy, recurringBreaks] = await Promise.all([
+    const [busyRaw, recurringBreaks] = await Promise.all([
       store.getBusyIntervals(barberId, range.from, range.to),
       store.listRecurringBreaks(barberId),
     ]);
+    let busy = busyRaw;
+    if (opts?.excludeAppointmentId) {
+      const apt = await store.getAppointment(opts.excludeAppointmentId);
+      if (apt && apt.barber_id === barberId) {
+        busy = busyRaw.filter(
+          (row) =>
+            !(row.start_time === apt.start_time && row.end_time === apt.end_time),
+        );
+      }
+    }
     return generateSlots({ dateISO, barber, busy, recurringBreaks, shopHours, now });
   } catch (error) {
     if (error instanceof BookingError) throw error;
@@ -532,6 +546,176 @@ export async function cancelBookingByToken(token: string): Promise<Appointment> 
     throw mapStoreError(error);
   }
 }
+
+export type RescheduleResult = {
+  before: Appointment;
+  after: Appointment;
+};
+
+async function validateRescheduleTarget(
+  existing: Appointment,
+  newBarberId: string,
+  startTimeIso: string,
+  now: Date,
+  opts?: {
+    requireLead?: boolean;
+    requireRescheduleQuota?: boolean;
+    /** Staff may move onto active-but-not-online-bookable barbers */
+    staffMode?: boolean;
+  },
+): Promise<{ start: Date; end: Date }> {
+  if (!isUuid(newBarberId)) {
+    throw new BookingError("INVALID_BARBER", "Invalid barber id", 400);
+  }
+  if (existing.status !== "confirmed") {
+    throw new BookingError("NOT_RESCHEDULABLE", "This booking cannot be rescheduled", 400);
+  }
+  if (opts?.requireRescheduleQuota !== false) {
+    if ((existing.reschedule_count ?? 0) >= MAX_RESCHEDULE_COUNT) {
+      throw new BookingError(
+        "RESCHEDULE_LIMIT",
+        "This booking has already been rescheduled once",
+        400,
+      );
+    }
+  }
+  if (opts?.requireLead !== false && !canCancelAt(existing.start_time, now)) {
+    throw new BookingError(
+      "TOO_LATE",
+      `Reschedule must be at least ${CANCEL_LEAD_MINUTES} minutes before start time`,
+      400,
+    );
+  }
+
+  const start = new Date(startTimeIso);
+  if (Number.isNaN(start.getTime())) {
+    throw new BookingError("INVALID_TIME", "Invalid start time", 400);
+  }
+  if (start.getTime() <= now.getTime()) {
+    throw new BookingError("SLOT_PAST", "Cannot book a past slot", 400);
+  }
+
+  const barber = await getStore().getBarber(newBarberId);
+  if (!barber || barber.is_active === false) {
+    throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+  }
+  if (!opts?.staffMode && !isBarberBookable(barber)) {
+    throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+  }
+  if (existing.barber_id) {
+    const oldBarber = await getStore().getBarber(existing.barber_id);
+    if (oldBarber?.shop_id && barber.shop_id && oldBarber.shop_id !== barber.shop_id) {
+      throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
+    }
+  }
+
+  const dateISO = dateISOFromInstant(start);
+  if (opts?.staffMode) {
+    // Board already showed a free slot — still re-check busy excluding self.
+    const end = addMinutes(start, barber.slot_duration_minutes);
+    const busy = await getStore().getBusyIntervals(newBarberId, start, end);
+    const foreignConflict = busy.some((row) => {
+      const isSelf =
+        existing.barber_id === newBarberId &&
+        row.start_time === existing.start_time &&
+        row.end_time === existing.end_time;
+      if (isSelf) return false;
+      return intervalsOverlap(
+        start,
+        end,
+        new Date(row.start_time),
+        new Date(row.end_time),
+      );
+    });
+    if (foreignConflict) {
+      throw new BookingError("SLOT_TAKEN", "This slot is not available", 409);
+    }
+    return { start, end };
+  }
+
+  const slots = await getAvailableSlots(newBarberId, dateISO, now, {
+    excludeAppointmentId: existing.id,
+  });
+  const match = slots.find((slot) => slot.startTime === start.toISOString());
+  if (!match) {
+    throw new BookingError("INVALID_SLOT", "Start time is not a valid slot", 400);
+  }
+  if (!match.available) {
+    throw new BookingError("SLOT_TAKEN", "This slot is not available", 409);
+  }
+
+  return {
+    start,
+    end: addMinutes(start, barber.slot_duration_minutes),
+  };
+}
+
+/** Customer self-reschedule via cancel_token. Max 1; 60-min lead on original. */
+export async function rescheduleBookingByToken(
+  token: string,
+  newBarberId: string,
+  startTimeIso: string,
+  now: Date = new Date(),
+): Promise<RescheduleResult> {
+  const trimmed = token.trim();
+  if (!trimmed) {
+    throw new BookingError("INVALID_TOKEN", "Cancel token is required", 400);
+  }
+  try {
+    const existing = await getStore().getAppointmentByCancelToken(trimmed);
+    if (!existing) throw new BookingError("NOT_FOUND", "Appointment not found", 404);
+    const { start, end } = await validateRescheduleTarget(
+      existing,
+      newBarberId,
+      startTimeIso,
+      now,
+      { requireLead: true, requireRescheduleQuota: true },
+    );
+    return await getStore().rescheduleAppointmentByToken(
+      trimmed,
+      newBarberId,
+      start,
+      end,
+    );
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+/** Shop board reschedule — no lead / no count limit; does not consume customer quota. */
+export async function staffRescheduleBooking(
+  appointmentId: string,
+  newBarberId: string,
+  startTimeIso: string,
+  now: Date = new Date(),
+): Promise<RescheduleResult> {
+  if (!isUuid(appointmentId)) {
+    throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
+  }
+  try {
+    const existing = await getStore().getAppointment(appointmentId);
+    if (!existing) throw new BookingError("NOT_FOUND", "Appointment not found", 404);
+    const { start, end } = await validateRescheduleTarget(
+      existing,
+      newBarberId,
+      startTimeIso,
+      now,
+      { requireLead: false, requireRescheduleQuota: false, staffMode: true },
+    );
+    return await getStore().staffRescheduleAppointment(
+      appointmentId,
+      newBarberId,
+      start,
+      end,
+    );
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
+export { canCustomerReschedule } from "@/lib/services/slot-service";
 
 export async function markLateCalled(appointmentId: string): Promise<Appointment> {
   if (!isUuid(appointmentId)) {
