@@ -33,6 +33,7 @@ describe("normalizeStatsReport", () => {
     assert.equal(report!.totals.returningRatePct, null);
     assert.equal(report!.totals.waitMinutesAvg, null);
     assert.equal(report!.totals.cancelNoShowRatePct, null);
+    assert.equal(report!.totals.noShowRatePct, null);
     assert.equal(report!.comparison.completedDelta, 0);
     assert.equal(report!.byHour[0].blocked, 0);
     assert.equal(report!.byHour[0].chairBusyPct, 0);

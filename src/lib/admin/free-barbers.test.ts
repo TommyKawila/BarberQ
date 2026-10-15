@@ -105,4 +105,52 @@ describe("free-barbers helpers", () => {
     assert.equal(mini.remaining, 1);
     assert.equal(mini.freeSlots, 1);
   });
+
+  it("done counts only completed — not no_show or left; remaining still drops", () => {
+    const now = new Date("2026-10-12T05:00:00.000Z");
+    const columns = [
+      col({
+        barber: {
+          id: "b1",
+          name: "A",
+          slot_duration_minutes: 30,
+          off_days: [],
+          created_at: now.toISOString(),
+        },
+        slots: [
+          {
+            startTime: "2026-10-12T03:00:00.000Z",
+            endTime: "2026-10-12T03:30:00.000Z",
+            available: false,
+            kind: "booked",
+            status: "no_show",
+          },
+          {
+            startTime: "2026-10-12T03:30:00.000Z",
+            endTime: "2026-10-12T04:00:00.000Z",
+            available: false,
+            kind: "booked",
+            status: "left",
+          },
+          {
+            startTime: "2026-10-12T04:00:00.000Z",
+            endTime: "2026-10-12T04:30:00.000Z",
+            available: false,
+            kind: "booked",
+            status: "completed",
+          },
+          {
+            startTime: "2026-10-12T05:00:00.000Z",
+            endTime: "2026-10-12T05:30:00.000Z",
+            available: false,
+            kind: "booked",
+            status: "confirmed",
+          },
+        ],
+      }),
+    ];
+    const mini = computeBoardMiniStats(columns, now);
+    assert.equal(mini.done, 1);
+    assert.equal(mini.remaining, 1);
+  });
 });

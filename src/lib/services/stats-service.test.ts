@@ -1,8 +1,9 @@
 import { describe, it, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 import { memoryStore } from "@/lib/data/memory-store";
-import { getStatsReport } from "@/lib/services/stats-service";
+import { getStatsReport, isLegacyWalkInBlock } from "@/lib/services/stats-service";
 import {
+  createBlock,
   createStaffBooking,
   getAvailableSlots,
   markAppointmentOutcome,
@@ -88,6 +89,69 @@ describe("stats-service D5 KPIs", () => {
     assert.ok(report.insight);
   });
 
+  it("walkIns count source walk_in plus legacy walk-in blocks only", async () => {
+    const shop = await memoryStore.createShop({
+      name: `P7 WalkIn ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: `WalkBarber${Date.now()}`,
+      slotDuration: 30,
+    });
+    const staff: StaffAuth = {
+      staffId: "owner-p7w",
+      name: "Owner",
+      role: "owner",
+      barberId: barber.id,
+      shopId: shop.id,
+    };
+    const walkSlot = await firstFutureSlot(barber.id);
+    assert.ok(walkSlot);
+    await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: walkSlot!.startTime,
+      source: "walk_in",
+    });
+    const phoneSlot = await firstFutureSlot(barber.id);
+    assert.ok(phoneSlot);
+    await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: phoneSlot!.startTime,
+      source: "phone",
+      customerName: "Phone",
+      customerPhone: "0899999999",
+    });
+    // Legacy walk-in block + unrelated block (break/closed) in range
+    const legacyStart = new Date(walkSlot!.startTime);
+    legacyStart.setUTCHours(legacyStart.getUTCHours() + 5);
+    const legacyEnd = new Date(legacyStart.getTime() + 30 * 60_000);
+    await createBlock({
+      barberId: barber.id,
+      startTime: legacyStart.toISOString(),
+      endTime: legacyEnd.toISOString(),
+      reason: "walk-in",
+    });
+    const otherStart = new Date(legacyEnd.getTime() + 60 * 60_000);
+    const otherEnd = new Date(otherStart.getTime() + 30 * 60_000);
+    await createBlock({
+      barberId: barber.id,
+      startTime: otherStart.toISOString(),
+      endTime: otherEnd.toISOString(),
+      reason: "lunch",
+    });
+
+    assert.equal(isLegacyWalkInBlock("walk-in"), true);
+    assert.equal(isLegacyWalkInBlock("lunch"), false);
+
+    const dateISO = dateISOFromInstant(new Date(walkSlot!.startTime));
+    const report = await getStatsReport("week", dateISO, staff);
+    assert.ok(report.totals.bySource.walk_in >= 1);
+    assert.ok(report.totals.bySource.phone >= 1);
+    // walkIns = appointment walk_ins + exactly one legacy walk-in block (lunch ignored)
+    assert.equal(report.totals.walkIns, report.totals.bySource.walk_in + 1);
+  });
+
   it("cancel+no-show rate excludes headline booked emphasis", async () => {
     const shop = await memoryStore.createShop({
       name: `D5 Cancel ${Date.now()}`,
@@ -119,5 +183,72 @@ describe("stats-service D5 KPIs", () => {
     assert.equal(report.totals.cancelled >= 1, true);
     assert.ok(report.totals.cancelNoShowRatePct != null);
     assert.ok(report.totals.cancelNoShowRatePct! > 0);
+    // No finished visits yet → no-show rate is null (not diluted by cancelled).
+    assert.equal(report.totals.noShowRatePct, null);
+    // Cancelled chat booking must not remain in channel totals.
+    assert.equal(report.totals.bySource.chat, 0);
+  });
+
+  it("cancelled walk-in drops from walkIns/bySource; no-show stays in channel", async () => {
+    const shop = await memoryStore.createShop({
+      name: `P7 CancelWalk ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: `CWBarber${Date.now()}`,
+      slotDuration: 30,
+    });
+    const staff: StaffAuth = {
+      staffId: "owner-p7cw",
+      name: "Owner",
+      role: "owner",
+      barberId: barber.id,
+      shopId: shop.id,
+    };
+    const walkSlot = await firstFutureSlot(barber.id);
+    assert.ok(walkSlot);
+    const walkIn = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: walkSlot!.startTime,
+      source: "walk_in",
+    });
+    const phoneSlot = await firstFutureSlot(barber.id);
+    assert.ok(phoneSlot);
+    const phone = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: phoneSlot!.startTime,
+      source: "phone",
+      customerName: "Will NoShow",
+      customerPhone: "0888888888",
+    });
+    await memoryStore.staffCancelAppointment(walkIn.id);
+    // Past-end no_show (same shop barber)
+    const start = new Date(Date.now() - 2 * 60 * 60_000);
+    const past = await memoryStore.createAppointment({
+      barberId: barber.id,
+      customerName: "Past NoShow",
+      customerPhone: "0877777777",
+      customerRef: `ns-${Date.now()}`,
+      startTime: start,
+      endTime: new Date(start.getTime() + 30 * 60_000),
+      source: "phone",
+    });
+    await memoryStore.markAppointmentOutcome(past.id, "no_show");
+
+    // Month range covers past no-show + future slots on this barber
+    const report = await getStatsReport("month", dateISOFromInstant(new Date()), staff);
+    assert.equal(report.totals.bySource.walk_in, 0);
+    assert.equal(report.totals.walkIns, 0);
+    assert.ok(report.totals.bySource.phone >= 2); // confirmed phone + no_show phone
+    assert.ok(report.totals.noShow >= 1);
+    // Finished visits: only the no_show → 100%
+    assert.equal(report.totals.noShowRatePct, 100);
+
+    const ken = report.byBarber.find((b) => b.barberId === barber.id);
+    assert.ok(ken);
+    assert.equal(ken!.minutes, 0); // served minutes = completed only
+    assert.equal(ken!.completed, 0);
+    void phone;
   });
 });

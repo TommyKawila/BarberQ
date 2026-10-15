@@ -6,6 +6,7 @@ import {
   getBookedCardActions,
   type BoardCardActionFlags,
 } from "@/lib/admin/board-card-actions";
+import { NO_SHOW_WARNING_THRESHOLD } from "@/lib/admin/customer-no-show";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import { barberLabel, type AdminSlot } from "@/types/booking";
 
@@ -69,6 +70,19 @@ export function BookedSlotActionsSheet({
             {barberLabel(barberName, locale)} · {formatSlotTime(slot.startTime)}
             {slot.customerName ? ` · ${slot.customerName}` : ""}
           </p>
+          {(slot.noShowCount ?? 0) > 0 ? (
+            <p
+              className={`mt-2 rounded-lg px-2 py-1.5 text-xs font-medium ${
+                (slot.noShowCount ?? 0) >= NO_SHOW_WARNING_THRESHOLD
+                  ? "bg-orange-950/60 text-orange-200"
+                  : "bg-zinc-900 text-zinc-300"
+              }`}
+            >
+              {(slot.noShowCount ?? 0) >= NO_SHOW_WARNING_THRESHOLD
+                ? t("admin.noShowWarningBadge").replace("{n}", String(slot.noShowCount ?? 0))
+                : t("admin.noShowCountDetail").replace("{n}", String(slot.noShowCount ?? 0))}
+            </p>
+          ) : null}
         </div>
 
         {confirmCancel ? (

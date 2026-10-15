@@ -250,6 +250,18 @@ export default function AdminStatsPage() {
                   accent="red"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-2">
+                <StatCard
+                  label={t("admin.statsNoShowRate")}
+                  value={totals.noShowRatePct != null ? `${totals.noShowRatePct}%` : "—"}
+                  accent="red"
+                />
+                <StatCard
+                  label={t("admin.statsWalkIns")}
+                  value={totals.walkIns ?? 0}
+                  accent="amber"
+                />
+              </div>
             </section>
 
             {/* Trend */}

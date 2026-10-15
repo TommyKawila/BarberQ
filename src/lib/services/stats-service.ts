@@ -34,6 +34,11 @@ export interface StatsTotals {
   returningCustomers: number;
   returningRatePct: number | null;
   cancelNoShowRatePct: number | null;
+  /**
+   * No-show rate among finished non-walk-in visits:
+   * no_show / (completed + no_show). Cancelled and still-confirmed are excluded.
+   */
+  noShowRatePct: number | null;
   utilizationPct: number;
   revenueBaht: number;
   waitMinutesAvg: number | null;
@@ -288,6 +293,11 @@ function computeWaitAvg(completed: Appointment[]): number | null {
   return Math.round(waits.reduce((a, b) => a + b, 0) / waits.length);
 }
 
+/** Legacy pre-P3 walk-ins were blocked_slots with reason 'walk-in'. */
+export function isLegacyWalkInBlock(reason: string | null | undefined): boolean {
+  return (reason ?? "").trim().toLowerCase() === "walk-in";
+}
+
 interface TotalsInput {
   appointments: Appointment[];
   blocks: TimeBlock[];
@@ -311,20 +321,36 @@ function computeTotals(input: TotalsInput): StatsTotals {
   const returningRatePct =
     phones.size > 0 ? Math.round((returningCustomers / phones.size) * 100) : null;
 
+  // Channel / walk-in cards: exclude cancelled (voided). No-shows still count —
+  // they were real bookings that did not arrive.
+  const channelRows = appointments.filter((a) => a.status !== "cancelled");
   const bySource: StatsBySource = { line: 0, phone: 0, chat: 0, walk_in: 0 };
-  for (const row of appointments) {
+  for (const row of channelRows) {
     const src = row.source ?? "line";
     if (src in bySource) bySource[src as keyof StatsBySource] += 1;
   }
-  const walkInAppointments = appointments.filter((a) => a.source === "walk_in");
-  const noShowEligible = appointments.filter((a) => a.source !== "walk_in");
+  const walkInAppointments = channelRows.filter((a) => a.source === "walk_in");
+  const legacyWalkInBlocks = blocks.filter((b) => isLegacyWalkInBlock(b.reason));
   const cancelled = appointments.filter((a) => a.status === "cancelled").length;
   const completedRows = appointments.filter((a) => a.status === "completed");
   const completed = completedRows.length;
-  const noShow = noShowEligible.filter((a) => a.status === "no_show").length;
+  const noShow = appointments.filter(
+    (a) => a.source !== "walk_in" && a.status === "no_show",
+  ).length;
   const booked = appointments.length;
+  // Loss rate over every booking in range (incl. cancelled + still-confirmed).
   const cancelNoShowRatePct =
     booked > 0 ? Math.round(((cancelled + noShow) / booked) * 100) : null;
+  // Among finished non-walk-in visits (came vs no-show) — cancelled/confirmed excluded.
+  const finishedNonWalkIn = appointments.filter(
+    (a) =>
+      a.source !== "walk_in" &&
+      (a.status === "completed" || a.status === "no_show"),
+  );
+  const noShowRatePct =
+    finishedNonWalkIn.length > 0
+      ? Math.round((noShow / finishedNonWalkIn.length) * 100)
+      : null;
 
   let availableMinutes = 0;
   let occupiedMinutes = 0;
@@ -346,11 +372,13 @@ function computeTotals(input: TotalsInput): StatsTotals {
     completed,
     noShow,
     left: appointments.filter((a) => a.status === "left").length,
-    walkIns: walkInAppointments.length,
+    // Real walk-in bookings (P3+) plus legacy blocked_slots reason 'walk-in' only.
+    walkIns: walkInAppointments.length + legacyWalkInBlocks.length,
     newCustomers,
     returningCustomers,
     returningRatePct,
     cancelNoShowRatePct,
+    noShowRatePct,
     utilizationPct: availableMinutes > 0 ? Math.round((occupiedMinutes / availableMinutes) * 100) : 0,
     revenueBaht,
     waitMinutesAvg: computeWaitAvg(completedRows),
@@ -577,7 +605,9 @@ export async function getStatsReport(
       }
       for (const row of scopedBlocks) {
         if (formatInTimeZone(parseISO(row.start_time), SHOP_TIMEZONE, "yyyy-MM-dd") !== dayISO) continue;
-        blocked += overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        const mins = overlapsHour(row.start_time, row.end_time, hour, dayISO);
+        if (isLegacyWalkInBlock(row.reason)) walkIn += mins;
+        else blocked += mins;
       }
     }
     const capacity = Math.max(1, barbers.length * 60 * dayList.length);
@@ -595,17 +625,15 @@ export async function getStatsReport(
 
   const byBarber: StatsBarberRow[] = barbers.map((barber) => {
     const rows = scopedAppointments.filter((a) => a.barber_id === barber.id);
-    const mins = rows
-      .filter((a) => isOccupyingStatus(a.status))
-      .reduce((sum, a) => sum + appointmentMinutes(a), 0);
-    const revenueBaht = rows
-      .filter((a) => a.status === "completed")
-      .reduce((sum, a) => sum + (a.price_baht ?? 0), 0);
+    const completedRows = rows.filter((a) => a.status === "completed");
+    // Served minutes only — same rule as "เสร็จ" (exclude no_show / left / cancelled).
+    const mins = completedRows.reduce((sum, a) => sum + appointmentMinutes(a), 0);
+    const revenueBaht = completedRows.reduce((sum, a) => sum + (a.price_baht ?? 0), 0);
     return {
       barberId: barber.id,
       name: barber.name,
       booked: rows.length,
-      completed: rows.filter((a) => a.status === "completed").length,
+      completed: completedRows.length,
       cancelled: rows.filter((a) => a.status === "cancelled").length,
       minutes: mins,
       revenueBaht,

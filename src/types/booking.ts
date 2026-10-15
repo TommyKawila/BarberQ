@@ -113,6 +113,8 @@ export interface AdminSlot extends Slot {
   lateCalledAt?: string | null;
   blockId?: string;
   reason?: string;
+  /** Lifetime no-show count for this customer (LINE id or phone) in the shop. */
+  noShowCount?: number;
 }
 
 export interface AdminColumn {
