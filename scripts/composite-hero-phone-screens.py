@@ -24,29 +24,33 @@ PHOTOS = ROOT / "public/marketing/photos"
 SCREEN = ROOT / "public/marketing/screens/queue-ticket.webp"
 
 # Phone screen quads (TL, TR, BR, BL) in full-image pixel coords.
-# Tuned to the AI barbershop hero plates (green chat placeholder → real UI).
+# Tuned to the AI barbershop hero plates — corners sit just under the bezel
+# (slight oversize hides subpixel gaps; rounded mask matches glass radius).
 DESKTOP_QUAD = np.array(
     [
-        [1545, 215],
-        [1905, 145],
-        [2055, 935],
-        [1665, 1010],
+        [1546, 228],
+        [1915, 152],
+        [2060, 948],
+        [1680, 1022],
     ],
     dtype=np.float32,
 )
 
 MOBILE_QUAD = np.array(
     [
-        [365, 495],
-        [735, 485],
-        [755, 1135],
-        [385, 1145],
+        [400, 575],
+        [710, 558],
+        [740, 1175],
+        [426, 1192],
     ],
     dtype=np.float32,
 )
 
+# iPhone-like display corner radius as fraction of the shorter screen side.
+CORNER_RADIUS_FRAC = 0.112
 
-def rounded_rect_mask(h: int, w: int, radius_frac: float = 0.08) -> np.ndarray:
+
+def rounded_rect_mask(h: int, w: int, radius_frac: float = CORNER_RADIUS_FRAC) -> np.ndarray:
     mask = np.zeros((h, w), dtype=np.uint8)
     r = int(min(h, w) * radius_frac)
     cv2.rectangle(mask, (r, 0), (w - r - 1, h - 1), 255, -1)
@@ -76,8 +80,9 @@ def composite(hero_path: Path, quad: np.ndarray, out_path: Path) -> None:
         flags=cv2.INTER_LANCZOS4,
     )
 
-    mask = rounded_rect_mask(sh, sw, 0.08)
-    mask = cv2.GaussianBlur(mask, (0, 0), 1.5)
+    mask = rounded_rect_mask(sh, sw, CORNER_RADIUS_FRAC)
+    # Light feather so the glass edge blends into the bezel (no hard matte line).
+    mask = cv2.GaussianBlur(mask, (0, 0), 0.9)
     warped_mask = cv2.warpPerspective(
         mask,
         matrix,
@@ -90,21 +95,22 @@ def composite(hero_path: Path, quad: np.ndarray, out_path: Path) -> None:
     warm[:, :, 0] *= 0.90  # B
     warm[:, :, 1] *= 0.96  # G
     warm[:, :, 2] *= 1.04  # R
-    warm *= 0.90
+    warm *= 0.91
     warm = np.clip(warm, 0, 255).astype(np.uint8)
 
     alpha = (warped_mask.astype(np.float32) / 255.0)[..., None]
     out = hero.astype(np.float32) * (1.0 - alpha) + warm.astype(np.float32) * alpha
     out = np.clip(out, 0, 255).astype(np.uint8)
 
+    # Soft contact shadow along the screen edge (reads as glass depth).
     edge = cv2.Canny(warped_mask, 40, 120)
     edge = cv2.dilate(edge, np.ones((2, 2), np.uint8), iterations=1)
     edge = cv2.GaussianBlur(edge, (3, 3), 0)
-    e = (edge.astype(np.float32) / 255.0)[..., None] * 0.22
+    e = (edge.astype(np.float32) / 255.0)[..., None] * 0.18
     out = (out.astype(np.float32) * (1.0 - e)).clip(0, 255).astype(np.uint8)
 
     rgb = cv2.cvtColor(out, cv2.COLOR_BGR2RGB)
-    Image.fromarray(rgb).save(out_path, "WEBP", quality=80, method=6)
+    Image.fromarray(rgb).save(out_path, "WEBP", quality=82, method=6)
     print(f"wrote {out_path.relative_to(ROOT)} ({out_path.stat().st_size} bytes)")
 
 

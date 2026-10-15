@@ -36,11 +36,15 @@ describe("booking success source", () => {
     );
     const app = readFileSync(resolve(root, "components/customer/BookingApp.tsx"), "utf8");
     const post = readFileSync(resolve(root, "app/api/[shop]/bookings/route.ts"), "utf8");
-    assert.match(success, /\/images\/booking-success-chair\.png/);
+    assert.match(success, /\/images\/booking-success-chair\.webp/);
     assert.match(success, /object-contain/);
     assert.doesNotMatch(success, /object-cover/);
     assert.doesNotMatch(success, /✅/);
     assert.doesNotMatch(success, /CircleCheck/);
+    assert.match(success, /booking\.successBarberLabel/);
+    assert.match(success, /booking-success-chair|stage floor glow|spotlight/i);
+    assert.match(success, /BarberAvatar/);
+    assert.match(success, /successWhoLabel|successWhenLabel|successWhereLabel/);
     assert.doesNotMatch(success, /https:\/\/line\.me/);
     assert.match(success, /NEXT_PUBLIC_LINE_OA_ADD_URL/);
     assert.match(success, /shopPath\("\/bookings"\)/);

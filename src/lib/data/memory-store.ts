@@ -208,7 +208,9 @@ function inviteToken(): string {
 }
 
 const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
-  ...b,
+  id: b.id,
+  name: b.name,
+  slot_duration_minutes: b.slot_duration_minutes,
   off_days: [...b.off_days],
   created_at: nowIso(),
   shop_id: DEFAULT_SHOP_ID,
@@ -216,6 +218,12 @@ const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
   line_id: index === 0 ? MOCK_OWNER_LINE_ID : null,
   is_bookable: true,
   is_active: true,
+  profile_image_url:
+    "profile_image_url" in b ? (b.profile_image_url as string | null) : null,
+  show_profile_in_booking:
+    "show_profile_in_booking" in b
+      ? Boolean((b as { show_profile_in_booking?: boolean }).show_profile_in_booking)
+      : false,
 }));
 
 function countFutureConfirmedAppointments(barberId: string): number {

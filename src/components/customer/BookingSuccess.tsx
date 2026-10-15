@@ -14,6 +14,14 @@ import { formatSlotTime, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { Appointment, Barber } from "@/types/booking";
 
+function barberDisplayName(raw: string, locale: "th" | "en", labelTemplate: string): string {
+  const name = raw.trim();
+  if (!name) return name;
+  if (locale === "th" && name.startsWith("ช่าง")) return name;
+  if (locale === "en" && /^barber\s+/i.test(name)) return name;
+  return labelTemplate.replace("{name}", name);
+}
+
 export function BookingSuccess({
   appointment,
   barberName,
@@ -40,53 +48,84 @@ export function BookingSuccess({
     { locale: locale === "th" ? th : enUS },
   );
   const photoUrl = barber ? customerBarberPhotoUrl(barber) : null;
+  const whoLabel = barberDisplayName(
+    barber?.name ?? barberName,
+    locale,
+    t("booking.successBarberLabel"),
+  );
+  const reminderKey = reminderDisplayMessageKey(appointment.reminder_lead_minutes);
 
   return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-6 px-4 py-6">
+    <div className="mx-auto flex w-full max-w-[640px] flex-col gap-5 px-4 py-6">
+      {/* Peak-end success signal — stage spotlight chair (asset includes beam/sparkles/check) */}
       <header className="text-center">
-        <div className="booking-success-chair relative mx-auto w-fit">
+        <div className="booking-success-chair relative mx-auto flex h-[220px] w-full max-w-[280px] items-end justify-center sm:h-[240px]">
+          {/* Soft stage floor glow under the asset spotlight */}
           <div
-            className="pointer-events-none absolute inset-[12%] rounded-full bg-amber-400/15 blur-2xl"
+            className="pointer-events-none absolute bottom-[8%] left-1/2 h-12 w-[62%] -translate-x-1/2 rounded-[100%] bg-amber-300/20 blur-2xl"
             aria-hidden
           />
           <Image
-            src="/images/booking-success-chair.png"
+            src="/images/booking-success-chair.webp"
             alt=""
             width={230}
             height={230}
             priority
-            className="relative mx-auto h-auto w-[180px] object-contain sm:w-[200px] md:w-[220px]"
+            className="relative z-[1] mx-auto h-auto w-[176px] object-contain drop-shadow-[0_14px_32px_rgba(0,0,0,0.6)] sm:w-[196px] md:w-[208px]"
           />
         </div>
-        <h1 className="mt-4 text-2xl font-semibold text-zinc-50">{t("booking.successTitle")}</h1>
-        <p className="mt-1 text-sm text-zinc-400">{t("booking.successSubtitle")}</p>
+
+        <h1 className="mt-3 text-[1.65rem] font-bold leading-snug tracking-tight text-zinc-50 sm:text-2xl">
+          {t("booking.successTitle")}
+        </h1>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-300">{t("booking.successSubtitle")}</p>
         <p className="mt-1 text-sm text-zinc-500">{t("booking.successSeeYou")}</p>
       </header>
 
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-        {shopName ? <p className="text-sm font-semibold text-zinc-100">{shopName}</p> : null}
-        <div className="mt-3 flex items-center gap-3">
-          <BarberAvatar name={barber?.name ?? barberName} imageUrl={photoUrl} size="sm" />
-          <p className="text-sm text-zinc-300">{barberName}</p>
-        </div>
-        <p className="mt-3 text-sm text-zinc-400">{dateLabel}</p>
-        <p className="mt-2 text-3xl font-semibold tracking-tight text-zinc-50">
-          {formatSlotTime(appointment.start_time)}
-        </p>
-        {barber ? (
-          <p className="mt-1 text-sm text-zinc-500">
-            {barber.slot_duration_minutes} {t("common.minutes")}
-          </p>
-        ) : null}
-        {(() => {
-          const key = reminderDisplayMessageKey(appointment.reminder_lead_minutes);
-          if (!key) return null;
-          return (
-            <p className="mt-2 text-sm text-amber-200/90">
-              {t("booking.reminderChosen").replace("{lead}", t(key as MessageKey))}
+      {/* Who / when / where at a glance — reduces post-booking anxiety */}
+      <section className="rounded-2xl border border-amber-500/20 bg-zinc-900/90 p-4 shadow-[inset_0_1px_0_rgba(251,191,36,0.08)]">
+        {shopName ? (
+          <div className="flex items-baseline justify-between gap-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+              {t("booking.successWhereLabel")}
             </p>
-          );
-        })()}
+            <p className="text-right text-sm font-semibold text-zinc-100">{shopName}</p>
+          </div>
+        ) : null}
+
+        <div className={`${shopName ? "mt-3 border-t border-zinc-800 pt-3" : ""} flex items-center gap-3`}>
+          <BarberAvatar name={barber?.name ?? barberName} imageUrl={photoUrl} size="md" />
+          <div className="min-w-0">
+            {/* Name itself carries the role prefix (e.g. ช่างนัท) — avoid "ช่าง / ช่างนัท" */}
+            <p className="truncate text-base font-semibold text-zinc-50">{whoLabel}</p>
+            {shopName ? null : (
+              <p className="text-xs text-zinc-500">{t("booking.successWhoLabel")}</p>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-3 border-t border-zinc-800 pt-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+            {t("booking.successWhenLabel")}
+          </p>
+          <p className="mt-1 text-sm text-zinc-300">{dateLabel}</p>
+          <p className="mt-1 text-3xl font-bold tracking-tight text-amber-300">
+            {formatSlotTime(appointment.start_time)}
+          </p>
+          {barber ? (
+            <p className="mt-1 text-sm text-zinc-500">
+              {barber.slot_duration_minutes} {t("common.minutes")}
+            </p>
+          ) : null}
+        </div>
+
+        {reminderKey ? (
+          <p className="mt-3 rounded-xl border border-amber-500/25 bg-amber-400/5 px-3 py-2 text-sm text-amber-100">
+            {t("booking.reminderChosen").replace("{lead}", t(reminderKey as MessageKey))}
+          </p>
+        ) : (
+          <p className="mt-3 text-sm leading-relaxed text-zinc-400">{t("booking.successNextHint")}</p>
+        )}
       </section>
 
       {showLine ? (
@@ -108,17 +147,18 @@ export function BookingSuccess({
         </section>
       ) : null}
 
+      {/* Single clear next action */}
       <div className="flex flex-col gap-2">
         <Link
           href={shopPath("/bookings")}
-          className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 text-base font-bold text-zinc-950 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
         >
           {t("booking.viewMyBookings")}
         </Link>
         <button
           type="button"
           onClick={onBackToShop}
-          className="min-h-12 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
+          className="min-h-11 rounded-xl text-sm font-medium text-zinc-400 underline-offset-4 hover:text-zinc-200 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400"
         >
           {t("booking.backToShop")}
         </button>
