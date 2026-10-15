@@ -9,6 +9,8 @@
  * - barberMobile  1080×1350 4:5
  * - founder       1024×1024
  * - painBarber    1600×1200 4:3  stressed barber + phone notifications
+ * - solutionCustomer 1200×900 4:3  customer smiling at phone (LINE care)
+ * - solutionBarberCalm 1920×1080 16:9  calm barber + phone with real queue board
  */
 export type MarketingPhotoSlotId =
   | "heroDesktop"
@@ -16,7 +18,9 @@ export type MarketingPhotoSlotId =
   | "barberDesktop"
   | "barberMobile"
   | "founder"
-  | "painBarber";
+  | "painBarber"
+  | "solutionCustomer"
+  | "solutionBarberCalm";
 
 export type MarketingPhotoPairId = "hero" | "barber";
 
@@ -90,6 +94,28 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     label: "PHOTO SLOT · pain barber 4:3",
     artNote:
       "1600×1200 · Thai barber mid-cut, clippers + phone flooded with chats, stressed · pick from docs/mockups/pain-point/",
+  },
+  solutionCustomer: {
+    id: "solutionCustomer",
+    /** null until Tommy picks from docs/mockups/solution/customer-* */
+    src: null,
+    swapPath: "/marketing/photos/solution-customer.webp",
+    width: 1200,
+    height: 900,
+    label: "PHOTO SLOT · solution customer 4:3",
+    artNote:
+      "1200×900 · customer smiling at phone with LINE reminder · pick from docs/mockups/solution/customer-*",
+  },
+  solutionBarberCalm: {
+    id: "solutionBarberCalm",
+    /** null until Tommy picks from docs/mockups/solution/barber-* */
+    src: null,
+    swapPath: "/marketing/photos/solution-barber-calm.webp",
+    width: 1920,
+    height: 1080,
+    label: "PHOTO SLOT · solution barber calm 16:9",
+    artNote:
+      "1920×1080 · relaxed barber cutting; phone beside shows real BarberQx queue board · pick from docs/mockups/solution/barber-*",
   },
 } as const;
 

@@ -27,7 +27,6 @@ import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourne
 import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
-import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -271,42 +270,55 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* LINE Signature */}
+      {/* LINE Signature — relief after pain: airy, fewer boxes */}
       <section
         id="line-messages"
         ref={lineSectionRef}
-        className="scroll-mt-20 overflow-x-clip"
+        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/40 to-zinc-950"
       >
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-12">
-          <div className="order-2 flex flex-col items-center gap-6 lg:order-1">
-            <LineReminderMockup
-              shopName="BarberQx Demo"
-              title={t("marketing.line.mockTitle")}
-              body={t("marketing.line.mockBody")}
-              whenLabel={t("marketing.line.mockWhen")}
-              cta={t("marketing.line.mockCta")}
-            />
-            <PhoneScreen screen="ticket" fluid className="mx-auto w-[min(64vw,200px)]" />
-          </div>
-          <div className="order-1 lg:order-2">
-            <p className="text-sm font-medium text-amber-400/90">{t("marketing.line.eyebrow")}</p>
-            <h2 className="mt-2 text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+        <div className="mx-auto max-w-[1280px] px-4 py-16 md:px-6 md:py-24">
+          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-xl lg:text-left">
+            <p className="text-sm font-medium tracking-wide text-amber-300/80">
+              {t("marketing.line.eyebrow")}
+            </p>
+            <h2 className="mt-4 text-[1.75rem] font-bold leading-[1.35] tracking-tight text-zinc-50 sm:text-3xl md:text-[2.15rem] md:leading-[1.3]">
               {t("marketing.line.title")}
             </h2>
-            <ul className="mt-6 space-y-4">
-              {lineBullets.map((key) => (
-                <li key={key} className={`flex gap-3 ${BODY}`}>
-                  <Check size={18} className="mt-0.5 shrink-0 text-amber-400" />
-                  <span>{td(key as MessageKey)}</span>
-                </li>
-              ))}
-            </ul>
-            {marketingClaims.reminderShortLeads ? (
-              <div className="mt-5">
-                <p className="text-sm font-semibold text-zinc-200">
-                  {t("marketing.line.leadsLabel")}
-                </p>
-                <ul className="mt-2.5 flex flex-wrap gap-2">
+          </div>
+
+          <div className="mt-12 grid items-center gap-12 lg:mt-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16">
+            <div className="order-2 flex flex-col items-center gap-6 sm:flex-row sm:items-end sm:justify-center lg:order-1 lg:justify-start">
+              <LineReminderMockup
+                shopName="BarberQx Demo"
+                title={t("marketing.line.mockTitle")}
+                body={t("marketing.line.mockBody")}
+                whenLabel={t("marketing.line.mockWhen")}
+                cta={t("marketing.line.mockCta")}
+              />
+              <MarketingPhotoSlot
+                slot="solutionCustomer"
+                alt={t("marketing.line.customerPhotoAlt")}
+                sizes="(min-width: 640px) 220px, 70vw"
+                className="w-full max-w-[220px] shrink-0"
+              />
+            </div>
+
+            <div className="order-1 lg:order-2">
+              <ul className="space-y-5">
+                {lineBullets.map((key) => (
+                  <li key={key} className="flex gap-3 text-[15px] leading-relaxed text-zinc-300 md:text-base">
+                    <Check size={18} className="mt-0.5 shrink-0 text-amber-400/90" />
+                    <span>{td(key as MessageKey)}</span>
+                  </li>
+                ))}
+              </ul>
+
+              {marketingClaims.reminderShortLeads ? (
+                <p className="mt-6 text-sm leading-relaxed text-zinc-400">
+                  <span className="font-medium text-zinc-300">
+                    {t("marketing.line.leadsLabel")}
+                  </span>
+                  {" · "}
                   {(
                     [
                       "marketing.line.lead1d",
@@ -315,47 +327,56 @@ export function SalesPage() {
                       "marketing.line.lead30m",
                       "marketing.line.leadNone",
                     ] as const
-                  ).map((key) => (
-                    <li
-                      key={key}
-                      className="rounded-lg border border-amber-500/35 bg-zinc-950/70 px-3 py-1.5 text-sm font-medium text-amber-100"
-                    >
-                      {t(key)}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
-            {marketingClaims.customerSelfReschedule ? (
-              <div className="mt-5 rounded-2xl border border-zinc-700 bg-zinc-900/60 p-4 md:p-5">
-                <div className="flex items-start gap-3">
-                  <CalendarClock size={20} className="mt-0.5 shrink-0 text-amber-400" />
-                  <div>
-                    <h3 className="text-base font-semibold text-zinc-50">
+                  )
+                    .map((key) => t(key))
+                    .join(" · ")}
+                </p>
+              ) : null}
+
+              {marketingClaims.customerSelfReschedule ? (
+                <p className="mt-4 flex gap-2.5 text-sm leading-relaxed text-zinc-400 md:text-[15px]">
+                  <CalendarClock size={16} className="mt-0.5 shrink-0 text-amber-400/80" />
+                  <span>
+                    <span className="font-medium text-zinc-200">
                       {t("marketing.line.rescheduleTitle")}
-                    </h3>
-                    <p className={`mt-1.5 ${BODY}`}>{t("marketing.line.rescheduleBody")}</p>
-                  </div>
-                </div>
+                    </span>
+                    {" — "}
+                    {t("marketing.line.rescheduleBody")}
+                  </span>
+                </p>
+              ) : null}
+
+              <div className="mt-10 flex w-full max-w-[420px] flex-col gap-3">
+                <PrimaryTrialCta labelKey="marketing.line.cta" placement="line" fullWidth />
+                <LineCta label={t("marketing.line.lineCta")} className="w-full" placement="line" />
               </div>
-            ) : null}
-            <p className="mt-5 rounded-xl border border-zinc-700/80 bg-zinc-900/50 px-3 py-2.5 text-[13px] leading-relaxed text-zinc-400 md:text-sm">
-              {t("marketing.line.evidence")}
-            </p>
-            <div className="mt-5 rounded-2xl border border-amber-500/25 bg-amber-400/5 p-4 md:p-5">
-              <h3 className="text-base font-semibold text-amber-200">
-                {td("marketing.line.costTitle")}
-              </h3>
-              <p className={`mt-2 ${BODY}`}>{td("marketing.line.costBody")}</p>
-              <p className="mt-3 text-sm font-medium text-zinc-200">
-                {td("marketing.line.costClose")}
+
+              <p className="mt-8 max-w-lg text-xs leading-relaxed text-zinc-500 md:text-[13px]">
+                {t("marketing.line.evidence")}
+              </p>
+              <p className="mt-3 max-w-lg text-xs leading-relaxed text-zinc-500 md:text-[13px]">
+                <span className="font-medium text-zinc-400">
+                  {td("marketing.line.costTitle")}
+                </span>
+                {" · "}
+                {td("marketing.line.costBody")}
+                {" "}
+                <span className="text-zinc-400">{td("marketing.line.costClose")}</span>
               </p>
             </div>
-            <div className="mt-6 flex w-full max-w-[480px] flex-col gap-3">
-              <PrimaryTrialCta labelKey="marketing.line.cta" placement="line" fullWidth />
-              <LineCta label={t("marketing.line.lineCta")} className="w-full" placement="line" />
-            </div>
           </div>
+
+          <figure className="mt-16 md:mt-20">
+            <MarketingPhotoSlot
+              slot="solutionBarberCalm"
+              alt={t("marketing.line.barberPhotoAlt")}
+              sizes="(min-width: 1280px) 1200px, 92vw"
+              className="w-full"
+            />
+            <figcaption className="mt-4 text-center text-sm text-zinc-500 md:text-[15px]">
+              {t("marketing.line.barberCaption")}
+            </figcaption>
+          </figure>
         </div>
       </section>
 

@@ -307,8 +307,15 @@ describe("marketing layout split", () => {
     assert.match(sales, /marketingClaims\.customerSelfReschedule/);
     assert.match(sales, /marketing\.line\.lead3h/);
     assert.match(sales, /marketing\.line\.rescheduleTitle/);
+    assert.match(sales, /slot="solutionCustomer"/);
+    assert.match(sales, /slot="solutionBarberCalm"/);
+    assert.match(sales, /LineReminderMockup/);
+    assert.equal(marketingPhotoSlots.solutionCustomer.src, null);
+    assert.equal(marketingPhotoSlots.solutionBarberCalm.src, null);
     assert.match(dictionary.th["marketing.line.bullet2ShortLeads"], /3 ชม/);
     assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนคิวเอง/);
+    assert.ok(dictionary.th["marketing.line.customerPhotoAlt"]);
+    assert.ok(dictionary.th["marketing.line.barberCaption"]);
   });
 
   it("Clarity loads only via marketing script gated on env", () => {
