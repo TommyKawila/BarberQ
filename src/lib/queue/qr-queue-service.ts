@@ -1,4 +1,5 @@
 import { getStore } from "@/lib/data";
+import { isBarberWorkingAt } from "@/lib/queue/qr-barber-working";
 import { thaiQrQueueError } from "@/lib/queue/qr-queue-errors";
 import {
   aheadCount,
@@ -145,9 +146,10 @@ export async function markQrQueueLeft(
 }
 
 /**
- * Free-now for "เริ่มตัด" must ignore slot.available (mid-slot past starts are
- * unavailable for online booking but the chair can still take a walk-in now).
- * Use busy intervals across the whole shop — not staff-scoped board columns.
+ * Free-now for "เริ่มตัด" must:
+ * - only include barbers working now (off_days / bookable / shop hours / breaks)
+ * - ignore slot.available (mid-slot past starts are fine for walk-in)
+ * - use busy intervals shop-wide (not staff-scoped board columns)
  */
 async function buildFirstAvailableCandidates(
   shopId: string,
@@ -155,14 +157,18 @@ async function buildFirstAvailableCandidates(
   now: Date,
 ): Promise<FirstAvailableCandidate[]> {
   const store = getStore();
-  const barbers = (await store.listBarbersByShop(shopId)).filter(
-    (b) => b.is_active !== false && b.is_bookable !== false,
-  );
+  const settings = await store.getShopSettings(shopId);
+  const barbers = await store.listBarbersByShop(shopId);
   const nowMs = now.getTime();
   const horizon = addMinutes(now, 8 * 60);
   const candidates: FirstAvailableCandidate[] = [];
 
   for (const barber of barbers) {
+    const breaks = await store.listRecurringBreaks(barber.id);
+    if (!isBarberWorkingAt(barber, now, settings.hours, breaks)) {
+      continue;
+    }
+
     const busy = await store.getBusyIntervals(barber.id, now, horizon);
     let currentBusyEnd: Date | null = null;
     let nextBusyStart: Date | null = null;
@@ -194,6 +200,23 @@ async function buildFirstAvailableCandidates(
   return candidates;
 }
 
+async function assertPreferredBarberWorking(
+  shopId: string,
+  barberId: string,
+  now: Date,
+): Promise<void> {
+  const store = getStore();
+  const barber = await store.getBarber(barberId);
+  if (!barber || barber.shop_id !== shopId || barber.is_active === false) {
+    throw qrErr("INVALID_BARBER", 409);
+  }
+  const settings = await store.getShopSettings(shopId);
+  const breaks = await store.listRecurringBreaks(barber.id);
+  if (!isBarberWorkingAt(barber, now, settings.hours, breaks)) {
+    throw qrErr("BARBER_OFF", 409);
+  }
+}
+
 export async function resolveQrQueueBarberId(
   shopId: string,
   entry: QrQueueEntry,
@@ -201,11 +224,8 @@ export async function resolveQrQueueBarberId(
   now: Date = new Date(),
 ): Promise<string> {
   if (entry.preferred_barber_id) {
-    const barber = await getStore().getBarber(entry.preferred_barber_id);
-    if (!barber || barber.shop_id !== shopId || barber.is_active === false) {
-      throw qrErr("INVALID_BARBER", 409);
-    }
-    return barber.id;
+    await assertPreferredBarberWorking(shopId, entry.preferred_barber_id, now);
+    return entry.preferred_barber_id;
   }
   const candidates = await buildFirstAvailableCandidates(shopId, staff, now);
   // Starting a cut is always "now" — never assign a busy chair via nextFreeAt.

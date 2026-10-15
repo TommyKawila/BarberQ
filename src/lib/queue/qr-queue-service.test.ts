@@ -269,6 +269,198 @@ describe("qr-queue first-available assignment", () => {
     assert.equal(still[0].entry.status, "waiting");
   });
 
+  it("first-available skips off-day barber (board หยุด) and returns Thai NO_BARBER_FREE", async () => {
+    const { createStaffBooking, BookingError } = await import(
+      "@/lib/services/booking-service"
+    );
+    const { fromZonedTime } = await import("date-fns-tz");
+    const { getBangkokWeekday, SHOP_TIMEZONE } = await import(
+      "@/lib/services/slot-service"
+    );
+    const shop = await memoryStore.createShop({
+      name: `QR OffDay ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    await shopAlwaysOpen(shop.id);
+    // Pin to Wed 15:20 Bangkok — matches QA window where working chairs are full.
+    const now = fromZonedTime("2026-10-14T15:20:00", SHOP_TIMEZONE);
+    const weekday = getBangkokWeekday("2026-10-14");
+
+    const ken = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Ken",
+      slotDuration: 60,
+      isBookable: true,
+    });
+    const nick = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Nick",
+      slotDuration: 60,
+      isBookable: true,
+    });
+    const peter = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Peter",
+      slotDuration: 60,
+      isBookable: true,
+    });
+    const robert = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Robert",
+      slotDuration: 60,
+      isBookable: true,
+    });
+    await memoryStore.updateBarber(robert.id, { offDays: [weekday] });
+
+    const staff: StaffAuth = {
+      staffId: `staff-${shop.id}`,
+      name: "Owner",
+      role: "owner",
+      barberId: ken.id,
+      shopId: shop.id,
+    };
+
+    // Ken / Nick / Peter busy at now (QA: booked 15:20–17:00). Robert free but OFF.
+    for (const barberId of [ken.id, nick.id, peter.id]) {
+      await createStaffBooking(
+        shop.id,
+        {
+          barberId,
+          startTime: now.toISOString(),
+          source: "walk_in",
+          customerName: `Busy-${barberId}`,
+        },
+        now,
+      );
+    }
+
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: `offday-${shop.id}`,
+      customerName: "FirstAvail",
+      preferredBarberId: null,
+    });
+
+    // Robert is free but OFF — must not be assigned; entry stays waiting.
+    await assert.rejects(
+      () => startQrQueueEntry(shop.id, joined.entry.id, staff, { now }),
+      (err: unknown) => {
+        assert.ok(err instanceof BookingError);
+        assert.equal(err.code, "NO_BARBER_FREE");
+        assert.match(err.message, /ตอนนี้ไม่มีช่างว่าง/);
+        return true;
+      },
+    );
+    const still = await listShopWaitingQueue(shop.id);
+    assert.equal(still.length, 1);
+    assert.equal(still[0].entry.status, "waiting");
+    assert.equal(still[0].entry.assigned_barber_id, null);
+  });
+
+  it("preferred barber who is off today returns Thai BARBER_OFF and keeps waiting", async () => {
+    const { BookingError } = await import("@/lib/services/booking-service");
+    const { fromZonedTime } = await import("date-fns-tz");
+    const { getBangkokWeekday, SHOP_TIMEZONE } = await import(
+      "@/lib/services/slot-service"
+    );
+    const shop = await memoryStore.createShop({
+      name: `QR PrefOff ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    await shopAlwaysOpen(shop.id);
+    const now = fromZonedTime("2026-10-14T15:20:00", SHOP_TIMEZONE);
+    const weekday = getBangkokWeekday("2026-10-14");
+    const robert = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Robert Pref",
+      slotDuration: 60,
+      isBookable: true,
+    });
+    await memoryStore.updateBarber(robert.id, { offDays: [weekday] });
+    const staff: StaffAuth = {
+      staffId: `staff-${shop.id}`,
+      name: "Owner",
+      role: "owner",
+      barberId: robert.id,
+      shopId: shop.id,
+    };
+
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: `prefoff-${shop.id}`,
+      customerName: "Wants Robert",
+      preferredBarberId: robert.id,
+    });
+    await assert.rejects(
+      () => startQrQueueEntry(shop.id, joined.entry.id, staff, { now }),
+      (err: unknown) => {
+        assert.ok(err instanceof BookingError);
+        assert.equal(err.code, "BARBER_OFF");
+        assert.match(err.message, /วันนี้หยุดงาน/);
+        return true;
+      },
+    );
+    const still = await listShopWaitingQueue(shop.id);
+    assert.equal(still.length, 1);
+    assert.equal(still[0].entry.status, "waiting");
+  });
+
+  it("first-available skips queue-closed (is_bookable false) barber", async () => {
+    const { createStaffBooking, BookingError } = await import(
+      "@/lib/services/booking-service"
+    );
+    const shop = await memoryStore.createShop({
+      name: `QR ClosedToggle ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    await shopAlwaysOpen(shop.id);
+    const busy = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "BusyChair",
+      slotDuration: 30,
+      isBookable: true,
+    });
+    const closed = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "ClosedChair",
+      slotDuration: 30,
+      isBookable: false,
+    });
+    const staff: StaffAuth = {
+      staffId: `staff-${shop.id}`,
+      name: "Owner",
+      role: "owner",
+      barberId: busy.id,
+      shopId: shop.id,
+    };
+    const now = new Date();
+    await createStaffBooking(
+      shop.id,
+      {
+        barberId: busy.id,
+        startTime: now.toISOString(),
+        source: "walk_in",
+        customerName: "Occupying",
+      },
+      now,
+    );
+
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: `closed-${shop.id}`,
+      customerName: "Waiting",
+    });
+    await assert.rejects(
+      () => startQrQueueEntry(shop.id, joined.entry.id, staff, { now }),
+      (err: unknown) => {
+        assert.ok(err instanceof BookingError);
+        assert.equal(err.code, "NO_BARBER_FREE");
+        return true;
+      },
+    );
+    assert.ok(closed.id);
+  });
+
   it("preferred barber SLOT_TAKEN offers shorten when gap allows", async () => {
     const { createStaffBooking, BookingError } = await import(
       "@/lib/services/booking-service"
