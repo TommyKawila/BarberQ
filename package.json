@@ -18,6 +18,7 @@
     "capture:marketing-screens": "node scripts/capture-marketing-screens.mjs",
     "pad:marketing-screens": "node scripts/pad-marketing-screens.mjs",
     "composite:hand-phone": "node scripts/composite-hand-phone.mjs",
+    "composite:hero-phone-screens": "python3 scripts/composite-hero-phone-screens.py",
     "prepare:marketing-visuals": "node scripts/capture-marketing-screens.mjs && node scripts/pad-marketing-screens.mjs && node scripts/composite-hand-phone.mjs"
   },
   "dependencies": {

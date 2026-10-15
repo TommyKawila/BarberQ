@@ -40,7 +40,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     width: 2400,
     height: 1350,
     label: "PHOTO SLOT · hero desktop 16:9",
-    artNote: "2400×1350 · subject on right · leave left clear for copy",
+      artNote: "2400×1350 · subject on right · phone screen = booking-confirmed (queue-ticket.webp)",
   },
   heroMobile: {
     id: "heroMobile",
@@ -49,7 +49,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     width: 1080,
     height: 1350,
     label: "PHOTO SLOT · hero mobile 4:5",
-    artNote: "1080×1350 · dark top for headline overlay",
+      artNote: "1080×1350 · dark top for headline · phone screen = booking-confirmed (queue-ticket.webp)",
   },
   barberDesktop: {
     id: "barberDesktop",

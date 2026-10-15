@@ -122,6 +122,10 @@ describe("marketing layout split", () => {
       existsSync(resolve(root, "../public/marketing/photos/hero-desktop.webp")),
       "hero-desktop.webp missing",
     );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-desktop.ai-source.webp")),
+      "hero-desktop.ai-source.webp missing (rebuild plate)",
+    );
     assert.equal(
       marketingPhotoSlots.heroMobile.src,
       "/marketing/photos/hero-mobile.webp",
@@ -129,6 +133,18 @@ describe("marketing layout split", () => {
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/hero-mobile.webp")),
       "hero-mobile.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-mobile.ai-source.webp")),
+      "hero-mobile.ai-source.webp missing (rebuild plate)",
+    );
+    assert.match(
+      marketingPhotoSlots.heroDesktop.artNote,
+      /queue-ticket\.webp|booking-confirmed/,
+    );
+    assert.ok(
+      existsSync(resolve(root, "../scripts/composite-hero-phone-screens.py")),
+      "hero phone composite script missing",
     );
     assert.equal(
       marketingPhotoSlots.barberDesktop.src,
