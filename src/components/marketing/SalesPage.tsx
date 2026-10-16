@@ -221,73 +221,75 @@ export function SalesPage() {
       <AttributionCapture />
       <SalesHero heroCtaRef={heroCtaRef} />
 
-      {/* Pain — mobile: chat → photo → copy; desktop: copy | photo + chat */}
+      {/* Pain — desktop-first: copy | chat + photo; mobile stays readable */}
       <section className="overflow-x-clip bg-zinc-900/50">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-12 md:gap-10 md:px-6 md:py-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
-          <div className="order-1 flex flex-col gap-5 lg:order-2">
-            <PainChatMockup
-              messages={painMessages}
-              times={painTimes}
-              footer={t("marketing.pain.visualFooter")}
-              unreadLabel={t("marketing.pain.unreadBadge")}
-            />
-            <MarketingPhotoSlot
-              slot="painBarber"
-              alt={t("marketing.pain.photoAlt")}
-              sizes="(min-width: 1024px) 40vw, 92vw"
-              className="w-full"
-            />
-          </div>
-          <div className="order-2 lg:order-1">
-            <h2 className="text-[2rem] font-extrabold leading-[1.2] tracking-tight text-zinc-50 sm:text-[2.35rem] md:text-5xl lg:text-[3.15rem] lg:leading-[1.15]">
+        <div className="mx-auto grid max-w-[1440px] items-start gap-10 px-6 py-16 md:px-10 md:py-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 xl:gap-20 xl:px-12 xl:py-24">
+          <div className="order-2 lg:order-1 lg:max-w-[36rem] lg:pt-2">
+            <h2 className="text-[2rem] font-extrabold leading-[1.2] tracking-tight text-zinc-50 sm:text-[2.35rem] md:text-5xl lg:text-[3.25rem] lg:leading-[1.12] xl:text-[3.5rem]">
               {t("marketing.pain.title")}
             </h2>
-            <ul className="mt-8 space-y-5">
+            <ul className="mt-10 space-y-6">
               {PAIN_BULLETS.map((n) => {
                 const Icon = PAIN_ICONS[n - 1];
                 return (
-                  <li key={n} className="flex gap-3.5 sm:gap-4">
+                  <li key={n} className="flex gap-4">
                     <span
-                      className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-400/10 text-amber-300"
+                      className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-400/10 text-amber-300"
                       aria-hidden
                     >
-                      <Icon size={20} strokeWidth={2.25} />
+                      <Icon size={22} strokeWidth={2.25} />
                     </span>
-                    <p className="pt-1.5 text-[1.05rem] font-semibold leading-snug text-zinc-100 sm:text-lg md:text-xl">
+                    <p className="pt-1.5 text-lg font-semibold leading-snug text-zinc-100 md:text-xl lg:text-[1.35rem] lg:leading-snug">
                       {t(`marketing.pain.bullet${n}` as MessageKey)}
                     </p>
                   </li>
                 );
               })}
             </ul>
-            <p className="mt-8 text-xl font-extrabold leading-snug tracking-tight text-amber-300 sm:text-2xl md:text-[1.75rem] md:leading-snug">
+            <p className="mt-10 text-xl font-extrabold leading-snug tracking-tight text-amber-300 sm:text-2xl lg:text-[1.85rem] lg:leading-snug">
               {t("marketing.pain.punchline")}
             </p>
-            <p className="mt-3 text-sm leading-relaxed text-zinc-400 md:text-base">
+            <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400 md:text-base">
               {t("marketing.pain.close")}
             </p>
+          </div>
+
+          <div className="order-1 flex flex-col gap-6 lg:order-2 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)] xl:items-start xl:gap-5">
+            <PainChatMockup
+              messages={painMessages}
+              times={painTimes}
+              footer={t("marketing.pain.visualFooter")}
+              unreadLabel={t("marketing.pain.unreadBadge")}
+              className="xl:max-w-none"
+            />
+            <MarketingPhotoSlot
+              slot="painBarber"
+              alt={t("marketing.pain.photoAlt")}
+              sizes="(min-width: 1280px) 320px, (min-width: 1024px) 40vw, 92vw"
+              className="mx-auto w-full max-w-[280px] lg:mx-0 lg:max-w-[320px] xl:max-w-none"
+            />
           </div>
         </div>
       </section>
 
-      {/* LINE Signature — relief after pain: airy, fewer boxes */}
+      {/* LINE Signature — desktop-first relief: airy, fewer boxes */}
       <section
         id="line-messages"
         ref={lineSectionRef}
-        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/40 to-zinc-950"
+        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/35 to-zinc-950"
       >
-        <div className="mx-auto max-w-[1280px] px-4 py-16 md:px-6 md:py-24">
-          <div className="mx-auto max-w-2xl text-center lg:mx-0 lg:max-w-xl lg:text-left">
-            <p className="text-sm font-medium tracking-wide text-amber-300/80">
+        <div className="mx-auto max-w-[1440px] px-6 py-20 md:px-10 md:py-24 xl:px-12 xl:py-28">
+          <header className="max-w-3xl">
+            <p className="text-sm font-medium tracking-wide text-amber-300/80 lg:text-[15px]">
               {t("marketing.line.eyebrow")}
             </p>
-            <h2 className="mt-4 text-[1.75rem] font-bold leading-[1.35] tracking-tight text-zinc-50 sm:text-3xl md:text-[2.15rem] md:leading-[1.3]">
+            <h2 className="mt-4 text-[1.75rem] font-bold leading-[1.3] tracking-tight text-zinc-50 sm:text-3xl md:text-[2.35rem] lg:text-[2.75rem] lg:leading-[1.25] xl:text-[3rem]">
               {t("marketing.line.title")}
             </h2>
-          </div>
+          </header>
 
-          <div className="mt-12 grid items-center gap-12 lg:mt-16 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16">
-            <div className="order-2 flex flex-col items-center gap-6 sm:flex-row sm:items-end sm:justify-center lg:order-1 lg:justify-start">
+          <div className="mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 xl:mt-20 xl:gap-20">
+            <div className="order-2 flex flex-col items-center gap-8 sm:flex-row sm:items-end sm:justify-center lg:order-1 lg:justify-start xl:gap-10">
               <LineReminderMockup
                 shopName="BarberQx Demo"
                 title={t("marketing.line.mockTitle")}
@@ -298,23 +300,26 @@ export function SalesPage() {
               <MarketingPhotoSlot
                 slot="solutionCustomer"
                 alt={t("marketing.line.customerPhotoAlt")}
-                sizes="(min-width: 640px) 220px, 70vw"
-                className="w-full max-w-[220px] shrink-0"
+                sizes="(min-width: 1280px) 280px, 220px"
+                className="w-full max-w-[220px] shrink-0 lg:max-w-[260px] xl:max-w-[280px]"
               />
             </div>
 
-            <div className="order-1 lg:order-2">
-              <ul className="space-y-5">
+            <div className="order-1 lg:order-2 lg:pt-1">
+              <ul className="space-y-6">
                 {lineBullets.map((key) => (
-                  <li key={key} className="flex gap-3 text-[15px] leading-relaxed text-zinc-300 md:text-base">
-                    <Check size={18} className="mt-0.5 shrink-0 text-amber-400/90" />
+                  <li
+                    key={key}
+                    className="flex gap-3.5 text-[15px] leading-relaxed text-zinc-300 md:text-base lg:text-[1.05rem] lg:leading-relaxed"
+                  >
+                    <Check size={18} className="mt-1 shrink-0 text-amber-400/90" />
                     <span>{td(key as MessageKey)}</span>
                   </li>
                 ))}
               </ul>
 
               {marketingClaims.reminderShortLeads ? (
-                <p className="mt-6 text-sm leading-relaxed text-zinc-400">
+                <p className="mt-8 text-sm leading-relaxed text-zinc-400 lg:text-[15px]">
                   <span className="font-medium text-zinc-300">
                     {t("marketing.line.leadsLabel")}
                   </span>
@@ -334,7 +339,7 @@ export function SalesPage() {
               ) : null}
 
               {marketingClaims.customerSelfReschedule ? (
-                <p className="mt-4 flex gap-2.5 text-sm leading-relaxed text-zinc-400 md:text-[15px]">
+                <p className="mt-5 flex gap-2.5 text-sm leading-relaxed text-zinc-400 lg:text-[15px]">
                   <CalendarClock size={16} className="mt-0.5 shrink-0 text-amber-400/80" />
                   <span>
                     <span className="font-medium text-zinc-200">
@@ -346,34 +351,35 @@ export function SalesPage() {
                 </p>
               ) : null}
 
-              <div className="mt-10 flex w-full max-w-[420px] flex-col gap-3">
+              <div className="mt-12 flex w-full max-w-[440px] flex-col gap-3">
                 <PrimaryTrialCta labelKey="marketing.line.cta" placement="line" fullWidth />
                 <LineCta label={t("marketing.line.lineCta")} className="w-full" placement="line" />
               </div>
 
-              <p className="mt-8 max-w-lg text-xs leading-relaxed text-zinc-500 md:text-[13px]">
-                {t("marketing.line.evidence")}
-              </p>
-              <p className="mt-3 max-w-lg text-xs leading-relaxed text-zinc-500 md:text-[13px]">
-                <span className="font-medium text-zinc-400">
-                  {td("marketing.line.costTitle")}
-                </span>
-                {" · "}
-                {td("marketing.line.costBody")}
-                {" "}
-                <span className="text-zinc-400">{td("marketing.line.costClose")}</span>
-              </p>
+              <div className="mt-12 space-y-3 border-t border-zinc-800/80 pt-8">
+                <p className="max-w-md text-xs leading-relaxed text-zinc-500 lg:text-[13px]">
+                  {t("marketing.line.evidence")}
+                </p>
+                <p className="max-w-md text-xs leading-relaxed text-zinc-500 lg:text-[13px]">
+                  <span className="font-medium text-zinc-400">
+                    {td("marketing.line.costTitle")}
+                  </span>
+                  {" · "}
+                  {td("marketing.line.costBody")}{" "}
+                  <span className="text-zinc-400">{td("marketing.line.costClose")}</span>
+                </p>
+              </div>
             </div>
           </div>
 
-          <figure className="mt-16 md:mt-20">
+          <figure className="mt-20 xl:mt-24">
             <MarketingPhotoSlot
               slot="solutionBarberCalm"
               alt={t("marketing.line.barberPhotoAlt")}
-              sizes="(min-width: 1280px) 1200px, 92vw"
+              sizes="(min-width: 1440px) 1320px, (min-width: 1280px) 1200px, 92vw"
               className="w-full"
             />
-            <figcaption className="mt-4 text-center text-sm text-zinc-500 md:text-[15px]">
+            <figcaption className="mt-5 text-center text-sm text-zinc-500 lg:text-base">
               {t("marketing.line.barberCaption")}
             </figcaption>
           </figure>
