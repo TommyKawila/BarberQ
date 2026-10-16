@@ -57,7 +57,8 @@ export function PainStormVisual({
           {unreadLabel}
         </span>
 
-        <div className="absolute bottom-4 left-0 right-3 z-10 flex flex-col gap-2 sm:bottom-5 sm:-left-5 sm:right-4 lg:-left-7 lg:gap-2.5">
+        {/* Keep left inset ≥ logo size so LINE badges aren’t clipped by overflow-hidden */}
+        <div className="absolute bottom-4 left-3 right-3 z-10 flex flex-col gap-2 sm:bottom-5 sm:left-4 sm:right-4 lg:left-5 lg:gap-2.5">
           {messages.map((text, i) => (
             <div
               key={i}
