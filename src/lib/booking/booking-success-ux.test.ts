@@ -43,6 +43,8 @@ describe("booking success source", () => {
     assert.doesNotMatch(success, /CircleCheck/);
     assert.match(success, /booking\.successBarberLabel/);
     assert.match(success, /BarberAvatar/);
+    assert.match(success, /useMarketingAvatarSlot/);
+    assert.match(success, /bookingSuccessBarber/);
     assert.match(success, /successWhenLabel|successWhereLabel|successNextHint/);
     assert.doesNotMatch(success, /https:\/\/line\.me/);
     assert.match(success, /NEXT_PUBLIC_LINE_OA_ADD_URL/);

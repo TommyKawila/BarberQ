@@ -1,16 +1,14 @@
 /**
- * Sale-page photo slots — separate desktop/mobile art direction.
- * Drop WebP at `swapPath`, then set matching `src` (leave null for labeled placeholder).
+ * Sale-page photo slots — Tommy drops WebP at `swapPath`, then set `src` to the same path.
+ * People images stay `src: null` (gray Thai placeholder) until files land under /public/sale/.
+ * Product UI screenshots (LINE reminder, queue board) stay real mockups — not these slots.
  *
- * Specs (Tommy AI mockups):
- * - heroDesktop  2400×1350 16:9  subject on right, text over left
- * - heroMobile   1080×1350 4:5
- * - barberDesktop 960×1200
- * - barberMobile  1080×1350 4:5
- * - founder       1024×1024
- * - painBarber    1600×1200 4:3  stressed barber + phone notifications
- * - solutionCustomer 1200×900 4:3  customer smiling at phone (LINE care)
- * - solutionBarberCalm 1920×1080 16:9  calm barber + phone with real queue board
+ * Paths (single file per slot):
+ * - /sale/pain-barber.webp
+ * - /sale/solution-customer.webp
+ * - /sale/solution-barber-calm.webp
+ * - /sale/booking-success-barber.webp
+ * - /marketing/photos/* (existing hero / board / founder)
  */
 export type MarketingPhotoSlotId =
   | "heroDesktop"
@@ -20,21 +18,27 @@ export type MarketingPhotoSlotId =
   | "founder"
   | "painBarber"
   | "solutionCustomer"
-  | "solutionBarberCalm";
+  | "solutionBarberCalm"
+  | "bookingSuccessBarber";
 
 export type MarketingPhotoPairId = "hero" | "barber";
 
 export type MarketingPhotoSlot = {
   id: MarketingPhotoSlotId;
-  /** Public URL once ready; null = show placeholder. */
+  /** Public URL once ready; null = show Thai placeholder. */
   src: string | null;
-  /** Target path under /public for the swap. */
+  /** Target path under /public for the drop-in file. */
   swapPath: string;
   width: number;
   height: number;
-  /** Short machine label baked into the placeholder UI. */
-  label: string;
-  /** Art-direction note for designers. */
+  /** Aspect ratio label, e.g. "4:5". */
+  ratio: string;
+  /**
+   * Thai placeholder label shown in the gray box.
+   * Format: shot description + ratio + px (e.g. รูปช่างเหนื่อย … 4:5 1080×1350).
+   */
+  labelTh: string;
+  /** Short EN art-direction note (tests / designers). */
   artNote: string;
 };
 
@@ -45,8 +49,9 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     swapPath: "/marketing/photos/hero-desktop.webp",
     width: 2400,
     height: 1350,
-    label: "PHOTO SLOT · hero desktop 16:9",
-      artNote: "2400×1350 · subject on right · phone screen = booking-confirmed (queue-ticket.webp)",
+    ratio: "16:9",
+    labelTh: "รูปฮีโร่เดสก์ท็อป 16:9 2400×1350",
+    artNote: "2400×1350 · subject on right · phone screen = booking-confirmed (queue-ticket.webp)",
   },
   heroMobile: {
     id: "heroMobile",
@@ -54,8 +59,9 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     swapPath: "/marketing/photos/hero-mobile.webp",
     width: 1080,
     height: 1350,
-    label: "PHOTO SLOT · hero mobile 4:5",
-      artNote: "1080×1350 · dark top for headline · phone screen = booking-confirmed (queue-ticket.webp)",
+    ratio: "4:5",
+    labelTh: "รูปฮีโร่มือถือ 4:5 1080×1350",
+    artNote: "1080×1350 · dark top for headline · phone screen = booking-confirmed (queue-ticket.webp)",
   },
   barberDesktop: {
     id: "barberDesktop",
@@ -63,7 +69,8 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     swapPath: "/marketing/photos/barber-desktop.webp",
     width: 960,
     height: 1200,
-    label: "PHOTO SLOT · barber desktop",
+    ratio: "4:5",
+    labelTh: "รูปช่างดูบอร์ดคิว เดสก์ท็อป 4:5 960×1200",
     artNote: "960×1200 · barber looking at queue board",
   },
   barberMobile: {
@@ -72,7 +79,8 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     swapPath: "/marketing/photos/barber-mobile.webp",
     width: 1080,
     height: 1350,
-    label: "PHOTO SLOT · barber mobile 4:5",
+    ratio: "4:5",
+    labelTh: "รูปช่างดูบอร์ดคิว มือถือ 4:5 1080×1350",
     artNote: "1080×1350 · mobile crop of barber + board",
   },
   founder: {
@@ -81,41 +89,50 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     swapPath: "/marketing/photos/founder.webp",
     width: 1024,
     height: 1024,
-    label: "PHOTO SLOT · founder",
+    ratio: "1:1",
+    labelTh: "รูป Tommy ผู้สร้างระบบ 1:1 1024×1024",
     artNote: "1024×1024 · Tommy looking at camera",
   },
   painBarber: {
     id: "painBarber",
-    /** null until Tommy picks an option from docs/mockups/pain-point/ */
     src: null,
-    swapPath: "/marketing/photos/pain-barber.webp",
-    width: 1600,
-    height: 1200,
-    label: "PHOTO SLOT · pain barber 4:3",
-    artNote:
-      "1600×1200 · Thai barber mid-cut, clippers + phone flooded with chats, stressed · pick from docs/mockups/pain-point/",
+    swapPath: "/sale/pain-barber.webp",
+    width: 1080,
+    height: 1350,
+    ratio: "4:5",
+    labelTh: "รูปช่างเหนื่อย ถือมือถือแชทเด้ง 4:5 1080×1350",
+    artNote: "Stressed Thai barber mid-cut, clippers + phone flooded with LINE chats",
   },
   solutionCustomer: {
     id: "solutionCustomer",
-    /** null until Tommy picks from docs/mockups/solution/customer-* */
     src: null,
-    swapPath: "/marketing/photos/solution-customer.webp",
-    width: 1200,
-    height: 900,
-    label: "PHOTO SLOT · solution customer 4:3",
-    artNote:
-      "1200×900 · customer smiling at phone with LINE reminder · pick from docs/mockups/solution/customer-*",
+    swapPath: "/sale/solution-customer.webp",
+    width: 1080,
+    height: 1080,
+    ratio: "1:1",
+    labelTh: "รูปลูกค้ายิ้มมองมือถืออ่านข้อความร้าน 1:1 1080×1080",
+    artNote: "Customer smiling at phone reading shop LINE confirmation / reminder",
   },
   solutionBarberCalm: {
     id: "solutionBarberCalm",
-    /** null until Tommy picks from docs/mockups/solution/barber-* */
     src: null,
-    swapPath: "/marketing/photos/solution-barber-calm.webp",
+    swapPath: "/sale/solution-barber-calm.webp",
     width: 1920,
     height: 1080,
-    label: "PHOTO SLOT · solution barber calm 16:9",
+    ratio: "16:9",
+    labelTh: "รูปช่างผ่อนคลายตัดผม มือถือวางข้างโชว์บอร์ดคิวจริง 16:9 1920×1080",
     artNote:
-      "1920×1080 · relaxed barber cutting; phone beside shows real BarberQx queue board · pick from docs/mockups/solution/barber-*",
+      "Relaxed barber cutting; phone beside shows real BarberQx queue board (composite OK)",
+  },
+  bookingSuccessBarber: {
+    id: "bookingSuccessBarber",
+    src: null,
+    swapPath: "/sale/booking-success-barber.webp",
+    width: 512,
+    height: 512,
+    ratio: "1:1",
+    labelTh: "รูปโปรไฟล์ช่างหน้าจองสำเร็จ 1:1 512×512",
+    artNote: "Barber avatar on booking-success screen (demo / marketing)",
   },
 } as const;
 

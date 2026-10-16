@@ -5,10 +5,12 @@ import Link from "next/link";
 import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { BarberAvatar } from "@/components/barber/BarberAvatar";
+import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
 import { shouldShowLineReminder, type LineFriendship } from "@/lib/booking/booking-success-ux";
 import { customerBarberPhotoUrl } from "@/lib/barber/barber-avatar";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
+import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 import { reminderDisplayMessageKey } from "@/lib/reminders/display";
 import { formatSlotTime, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
@@ -31,6 +33,8 @@ export function BookingSuccess({
   barber,
   friendship,
   onBackToShop,
+  /** Marketing/preview: gray Thai placeholder until /sale/booking-success-barber.webp lands. */
+  useMarketingAvatarSlot = false,
 }: {
   appointment: Appointment;
   barberName: string;
@@ -38,6 +42,7 @@ export function BookingSuccess({
   barber: Barber | null;
   friendship: LineFriendship;
   onBackToShop: () => void;
+  useMarketingAvatarSlot?: boolean;
 }) {
   const { t, locale } = useI18n();
   const { shopPath } = useShopSlug();
@@ -95,7 +100,17 @@ export function BookingSuccess({
         ) : null}
 
         <div className={`${shopName ? "mt-3 border-t border-zinc-800 pt-3" : ""} flex items-center gap-3`}>
-          <BarberAvatar name={barber?.name ?? barberName} imageUrl={photoUrl} size="md" />
+          {useMarketingAvatarSlot && !marketingPhotoSlots.bookingSuccessBarber.src ? (
+            <MarketingPhotoSlot
+              slot="bookingSuccessBarber"
+              alt={marketingPhotoSlots.bookingSuccessBarber.labelTh}
+              shape="circle"
+              sizes="56px"
+              className="h-14 w-14 shrink-0"
+            />
+          ) : (
+            <BarberAvatar name={barber?.name ?? barberName} imageUrl={photoUrl} size="md" />
+          )}
           <div className="min-w-0">
             <p className="truncate text-base font-semibold text-zinc-50">{whoLabel}</p>
           </div>

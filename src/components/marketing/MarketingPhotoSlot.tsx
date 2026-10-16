@@ -37,6 +37,15 @@ type PairProps = SharedProps & {
 
 type Props = SingleProps | PairProps;
 
+function aspectClass(meta: MarketingPhotoSlot): string {
+  const ratio = meta.width / meta.height;
+  if (Math.abs(ratio - 16 / 9) < 0.02) return "aspect-video";
+  if (Math.abs(ratio - 4 / 3) < 0.02) return "aspect-[4/3]";
+  if (Math.abs(ratio - 1) < 0.02) return "aspect-square";
+  if (Math.abs(ratio - 3 / 4) < 0.02) return "aspect-[3/4]";
+  return "aspect-[4/5]";
+}
+
 function Placeholder({
   meta,
   alt,
@@ -51,34 +60,41 @@ function Placeholder({
   fill?: boolean;
 }) {
   const rounded = shape === "circle" ? "rounded-full" : "rounded-2xl";
-  const ratio = meta.width / meta.height;
-  const aspect =
-    Math.abs(ratio - 16 / 9) < 0.02
-      ? "aspect-video"
-      : Math.abs(ratio - 4 / 3) < 0.02
-        ? "aspect-[4/3]"
-        : Math.abs(ratio - 1) < 0.02
-          ? "aspect-square"
-          : "aspect-[4/5]";
+  const aspect = aspectClass(meta);
+  const sizeLabel = `${meta.ratio} · ${meta.width}×${meta.height}`;
+  // Circle slots usually pass fixed h/w via className — skip aspect + w-full stretch.
+  const sizeClasses = fill
+    ? "h-full w-full"
+    : shape === "circle"
+      ? "overflow-hidden p-1.5"
+      : `${aspect} w-full px-3`;
 
   return (
     <div
-      className={`relative flex flex-col items-center justify-center gap-2 border-2 border-dashed border-amber-500/40 bg-zinc-900/80 px-4 text-center ${rounded} ${
-        fill ? "h-full w-full" : `${aspect} w-full`
-      } ${className}`}
+      className={`relative flex flex-col items-center justify-center gap-0.5 border border-zinc-600/80 bg-zinc-800 text-center ${rounded} ${sizeClasses} ${className}`}
       role="img"
-      aria-label={alt}
+      aria-label={alt || meta.labelTh}
       data-photo-slot={meta.id}
       data-swap-path={meta.swapPath}
+      title={`${meta.labelTh} → ${meta.swapPath}`}
     >
-      <span className="rounded-md border border-amber-500/30 bg-amber-400/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300/90">
-        Placeholder
+      <span
+        className={`font-semibold leading-snug text-zinc-200 ${
+          shape === "circle"
+            ? "line-clamp-3 text-[8px] leading-tight"
+            : "max-w-[16rem] text-[13px] sm:text-sm"
+        }`}
+      >
+        {meta.labelTh}
       </span>
-      <span className="text-xs font-medium text-zinc-300">{meta.label}</span>
-      <span className="max-w-[18rem] text-[11px] leading-snug text-zinc-500">
-        {meta.artNote}
-      </span>
-      <span className="text-[11px] text-zinc-600">{meta.swapPath}</span>
+      {shape === "circle" ? null : (
+        <>
+          <span className="text-[11px] tabular-nums text-zinc-400">{sizeLabel}</span>
+          <span className="max-w-[16rem] break-all font-mono text-[10px] leading-snug text-zinc-500">
+            {meta.swapPath}
+          </span>
+        </>
+      )}
     </div>
   );
 }
@@ -141,7 +157,7 @@ function SlotFrame({
 
 /**
  * Single slot or responsive pair (desktop `lg+` / mobile below `lg`).
- * Set `src` in photo-slots.ts when the WebP is ready.
+ * Set `src` in photo-slots.ts when Tommy drops the WebP at `swapPath`.
  */
 export function MarketingPhotoSlot(props: Props) {
   if (props.pair) {

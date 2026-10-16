@@ -114,6 +114,12 @@ describe("marketing layout split", () => {
     assert.match(slots, /1024/);
     assert.match(photoUi, /hidden lg:block/);
     assert.match(photoUi, /lg:hidden/);
+    assert.match(photoUi, /labelTh/);
+    assert.match(slots, /\/sale\/pain-barber\.webp/);
+    assert.match(slots, /\/sale\/solution-customer\.webp/);
+    assert.match(slots, /\/sale\/solution-barber-calm\.webp/);
+    assert.match(slots, /\/sale\/booking-success-barber\.webp/);
+    assert.match(slots, /labelTh/);
     assert.equal(
       marketingPhotoSlots.heroDesktop.src,
       "/marketing/photos/hero-desktop.webp",
@@ -214,10 +220,9 @@ describe("marketing layout split", () => {
     assert.ok(dictionary.th["marketing.pain.photoAlt"]);
     assert.ok(dictionary.en["marketing.pain.photoAlt"]);
     assert.equal(marketingPhotoSlots.painBarber.src, null);
-    assert.equal(
-      marketingPhotoSlots.painBarber.swapPath,
-      "/marketing/photos/pain-barber.webp",
-    );
+    assert.equal(marketingPhotoSlots.painBarber.swapPath, "/sale/pain-barber.webp");
+    assert.match(marketingPhotoSlots.painBarber.labelTh, /รูปช่างเหนื่อย/);
+    assert.equal(marketingPhotoSlots.painBarber.ratio, "4:5");
     assert.doesNotMatch(sales, /from: "shop"/);
     assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
     assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
@@ -312,6 +317,18 @@ describe("marketing layout split", () => {
     assert.match(sales, /LineReminderMockup/);
     assert.equal(marketingPhotoSlots.solutionCustomer.src, null);
     assert.equal(marketingPhotoSlots.solutionBarberCalm.src, null);
+    assert.equal(marketingPhotoSlots.solutionCustomer.swapPath, "/sale/solution-customer.webp");
+    assert.equal(
+      marketingPhotoSlots.solutionBarberCalm.swapPath,
+      "/sale/solution-barber-calm.webp",
+    );
+    assert.equal(marketingPhotoSlots.bookingSuccessBarber.src, null);
+    assert.equal(
+      marketingPhotoSlots.bookingSuccessBarber.swapPath,
+      "/sale/booking-success-barber.webp",
+    );
+    assert.match(marketingPhotoSlots.solutionCustomer.labelTh, /ลูกค้ายิ้ม/);
+    assert.match(marketingPhotoSlots.solutionBarberCalm.labelTh, /ช่างผ่อนคลาย/);
     assert.match(dictionary.th["marketing.line.bullet2ShortLeads"], /3 ชม/);
     assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนคิวเอง/);
     assert.ok(dictionary.th["marketing.line.customerPhotoAlt"]);

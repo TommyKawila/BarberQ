@@ -14,7 +14,8 @@ const DEMO_BARBER: Barber = {
   role: "barber",
   is_bookable: true,
   is_active: true,
-  profile_image_url: "/marketing/demo/barber-nat.webp",
+  /** People photo comes from /sale/booking-success-barber.webp via marketing slot. */
+  profile_image_url: null,
   show_profile_in_booking: true,
 };
 
@@ -46,6 +47,7 @@ export function BookingSuccessPreview() {
             shopName="BarberQx Demo"
             barber={DEMO_BARBER}
             friendship="friend"
+            useMarketingAvatarSlot
             onBackToShop={() => {
               /* preview only */
             }}
