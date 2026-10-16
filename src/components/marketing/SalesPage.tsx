@@ -296,8 +296,8 @@ export function SalesPage() {
             </h2>
           </header>
 
-          <div className="mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 xl:mt-20 xl:gap-20">
-            <div className="order-2 flex flex-col items-center gap-8 sm:flex-row sm:items-end sm:justify-center lg:order-1 lg:justify-start xl:gap-10">
+          <div className="mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
+            <div className="order-2 flex flex-col items-center gap-6 sm:flex-row sm:items-end sm:justify-center lg:order-1 lg:justify-start lg:gap-7">
               <LineReminderMockup
                 shopName="BarberQx Demo"
                 title={t("marketing.line.mockTitle")}
@@ -305,56 +305,57 @@ export function SalesPage() {
                 whenLabel={t("marketing.line.mockWhen")}
                 cta={t("marketing.line.mockCta")}
               />
+              {/* Match phone width so lifestyle plate sits as a pair, not a larger square */}
               <MarketingPhotoSlot
                 slot="solutionCustomer"
                 alt={t("marketing.line.customerPhotoAlt")}
-                sizes="(min-width: 1280px) 280px, 220px"
-                className="w-full max-w-[220px] shrink-0 lg:max-w-[260px] xl:max-w-[280px]"
+                sizes="(min-width: 1024px) 220px, 200px"
+                className="w-full max-w-[200px] shrink-0 lg:max-w-[220px]"
               />
             </div>
 
             <div className="order-1 lg:order-2 lg:pt-1">
-              <ul className="space-y-6">
+              <div className="space-y-8">
                 {lineBullets.map((key) => (
-                  <li
+                  <p
                     key={key}
-                    className="flex gap-3.5 text-[15px] leading-relaxed text-zinc-300 md:text-base lg:text-[1.05rem] lg:leading-relaxed"
+                    className="flex gap-3.5 text-base leading-[1.65] text-zinc-300 md:text-[1.0625rem] lg:text-lg lg:leading-[1.6]"
                   >
-                    <Check size={18} className="mt-1 shrink-0 text-amber-400/90" />
+                    <Check size={20} className="mt-1 shrink-0 text-amber-400/90" />
                     <span>{td(key as MessageKey)}</span>
-                  </li>
+                  </p>
                 ))}
-              </ul>
+              </div>
 
               {marketingClaims.reminderShortLeads ? (
-                <p className="mt-8 text-sm leading-relaxed text-zinc-400 lg:text-[15px]">
-                  <span className="font-medium text-zinc-300">
+                <p className="mt-10 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
+                  <span className="font-medium text-zinc-200">
                     {t("marketing.line.leadsLabel")}
                   </span>
-                  {" · "}
-                  {(
-                    [
-                      "marketing.line.lead1d",
-                      "marketing.line.lead3h",
-                      "marketing.line.lead1h",
-                      "marketing.line.lead30m",
-                      "marketing.line.leadNone",
-                    ] as const
-                  )
-                    .map((key) => t(key))
-                    .join(" · ")}
+                  <span className="mt-1.5 block text-zinc-400">
+                    {(
+                      [
+                        "marketing.line.lead1d",
+                        "marketing.line.lead3h",
+                        "marketing.line.lead1h",
+                        "marketing.line.lead30m",
+                        "marketing.line.leadNone",
+                      ] as const
+                    )
+                      .map((key) => t(key))
+                      .join(" · ")}
+                  </span>
                 </p>
               ) : null}
 
               {marketingClaims.customerSelfReschedule ? (
-                <p className="mt-5 flex gap-2.5 text-sm leading-relaxed text-zinc-400 lg:text-[15px]">
-                  <CalendarClock size={16} className="mt-0.5 shrink-0 text-amber-400/80" />
+                <p className="mt-6 flex gap-3 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
+                  <CalendarClock size={18} className="mt-1 shrink-0 text-amber-400/80" />
                   <span>
                     <span className="font-medium text-zinc-200">
                       {t("marketing.line.rescheduleTitle")}
                     </span>
-                    {" — "}
-                    {t("marketing.line.rescheduleBody")}
+                    <span className="mt-1 block">{t("marketing.line.rescheduleBody")}</span>
                   </span>
                 </p>
               ) : null}

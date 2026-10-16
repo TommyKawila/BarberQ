@@ -15,7 +15,7 @@ export function LineReminderMockup({
   cta: string;
 }) {
   return (
-    <div className="mx-auto w-full max-w-[200px] lg:max-w-[220px]">
+    <div className="mx-auto w-full max-w-[200px] shrink-0 lg:max-w-[220px]">
       <PhoneFrame fluid className="mx-auto w-full">
         <div className="flex h-full flex-col bg-[#747474] text-[11px] leading-snug text-zinc-900">
           {/* Fake iOS status-bar safe area */}
