@@ -7,14 +7,12 @@ import {
   ChartColumn,
   Check,
   CircleCheck,
-  ClipboardList,
   MessageCircle,
   Minus,
   Phone,
   Plus,
   QrCode,
   Smartphone,
-  UserRoundX,
   Users,
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -26,7 +24,7 @@ import { SalesHero } from "@/components/marketing/SalesHero";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
-import { PainChatMockup } from "@/components/marketing/mockups/PainChatMockup";
+import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -45,7 +43,6 @@ const BOARD_ICONS = [Phone, CalendarClock, Users, Bell, QrCode] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
-const PAIN_ICONS = [MessageCircle, ClipboardList, Users, UserRoundX] as const;
 const TRIAL_BOX_ITEMS = [1, 2, 3, 4] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 /** Never render testimonials in production until real reviews exist. */
@@ -221,55 +218,66 @@ export function SalesPage() {
       <AttributionCapture />
       <SalesHero heroCtaRef={heroCtaRef} />
 
-      {/* Pain — desktop-first: copy | chat + photo; mobile stays readable */}
-      <section className="overflow-x-clip bg-zinc-900/50">
-        <div className="mx-auto grid max-w-[1440px] items-start gap-10 px-6 py-16 md:px-10 md:py-20 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 xl:gap-20 xl:px-12 xl:py-24">
-          <div className="order-2 lg:order-1 lg:max-w-[36rem] lg:pt-2">
-            <h2 className="text-[2rem] font-extrabold leading-[1.2] tracking-tight text-zinc-50 sm:text-[2.35rem] md:text-5xl lg:text-[3.25rem] lg:leading-[1.12] xl:text-[3.5rem]">
-              {t("marketing.pain.title")}
+      {/* Pain — Option C: checklist (F-pattern) + notification storm over photo */}
+      <section className="overflow-x-clip bg-zinc-950">
+        <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-14 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:pb-16 lg:pt-[112px] xl:px-[120px]">
+          <div className="order-2 lg:order-1">
+            <h2 className="text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] lg:text-[58px] xl:text-[64px]">
+              <span className="text-amber-300">
+                <span className="text-zinc-50">“</span>
+                {t("marketing.pain.titleLead")}
+                <span className="text-zinc-50">”</span>
+              </span>
+              <br />
+              <span className="text-zinc-50">{t("marketing.pain.titleRest")}</span>
             </h2>
-            <ul className="mt-10 space-y-6">
-              {PAIN_BULLETS.map((n) => {
-                const Icon = PAIN_ICONS[n - 1];
-                return (
-                  <li key={n} className="flex gap-4">
-                    <span
-                      className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-amber-500/25 bg-amber-400/10 text-amber-300"
-                      aria-hidden
-                    >
-                      <Icon size={22} strokeWidth={2.25} />
-                    </span>
-                    <p className="pt-1.5 text-lg font-semibold leading-snug text-zinc-100 md:text-xl lg:text-[1.35rem] lg:leading-snug">
-                      {t(`marketing.pain.bullet${n}` as MessageKey)}
-                    </p>
-                  </li>
-                );
-              })}
+
+            <ul className="mt-10 lg:mt-10">
+              {PAIN_BULLETS.map((n, i) => (
+                <li
+                  key={n}
+                  className={`flex items-start gap-3.5 py-[18px] ${
+                    i < PAIN_BULLETS.length - 1 ? "border-b border-zinc-800" : ""
+                  }`}
+                >
+                  <span
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] bg-amber-300 text-zinc-950"
+                    aria-hidden
+                  >
+                    <Check size={14} strokeWidth={3} />
+                  </span>
+                  <p className="text-[1.05rem] font-semibold leading-[1.45] text-zinc-50 sm:text-lg lg:text-[22px]">
+                    {t(`marketing.pain.bullet${n}` as MessageKey)}
+                  </p>
+                </li>
+              ))}
             </ul>
-            <p className="mt-10 text-xl font-extrabold leading-snug tracking-tight text-amber-300 sm:text-2xl lg:text-[1.85rem] lg:leading-snug">
-              {t("marketing.pain.punchline")}
-            </p>
-            <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400 md:text-base">
-              {t("marketing.pain.close")}
-            </p>
+
+            <div className="mt-10">
+              <div className="h-px w-12 bg-amber-300" aria-hidden />
+              <p className="mt-5 text-xl font-extrabold leading-[1.35] tracking-tight text-amber-300 sm:text-2xl lg:text-[32px]">
+                {t("marketing.pain.punchline")}
+              </p>
+              <p className="mt-3 max-w-md text-base leading-[1.5] text-zinc-300 lg:text-xl">
+                {t("marketing.pain.close")}
+              </p>
+            </div>
           </div>
 
-          <div className="order-1 flex flex-col gap-6 lg:order-2 xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,0.72fr)] xl:items-start xl:gap-5">
-            <PainChatMockup
+          <div className="order-1 lg:order-2">
+            <PainStormVisual
               messages={painMessages}
               times={painTimes}
-              footer={t("marketing.pain.visualFooter")}
               unreadLabel={t("marketing.pain.unreadBadge")}
-              className="xl:max-w-none"
-            />
-            <MarketingPhotoSlot
-              slot="painBarber"
               alt={t("marketing.pain.photoAlt")}
-              sizes="(min-width: 1280px) 320px, (min-width: 1024px) 40vw, 92vw"
-              className="mx-auto w-full max-w-[280px] lg:mx-0 lg:max-w-[320px] xl:max-w-none"
             />
           </div>
         </div>
+        {/* Hand-off fade into solution section */}
+        <div
+          className="pointer-events-none h-[80px] bg-gradient-to-b from-transparent to-[#111113] lg:h-[120px]"
+          aria-hidden
+        />
       </section>
 
       {/* LINE Signature — desktop-first relief: airy, fewer boxes */}

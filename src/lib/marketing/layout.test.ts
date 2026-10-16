@@ -198,27 +198,33 @@ describe("marketing layout split", () => {
     );
   });
 
-  it("pain section uses designer bullets and keeps chat mockup interruption-only", () => {
+  it("pain section uses Option C checklist + notification storm", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    const pain = readFileSync(
-      resolve(root, "components/marketing/mockups/PainChatMockup.tsx"),
+    const storm = readFileSync(
+      resolve(root, "components/marketing/mockups/PainStormVisual.tsx"),
       "utf8",
     );
-    assert.match(sales, /PainChatMockup/);
-    assert.match(sales, /slot="painBarber"/);
+    assert.match(sales, /PainStormVisual/);
+    assert.match(sales, /marketing\.pain\.titleLead/);
+    assert.match(sales, /marketing\.pain\.titleRest/);
     assert.match(sales, /marketing\.pain\.bullet/);
     assert.match(sales, /marketing\.pain\.punchline/);
     assert.match(sales, /marketing\.pain\.photoAlt/);
-    assert.match(sales, /PAIN_ICONS/);
-    assert.match(pain, /unreadLabel/);
-    assert.match(pain, /times/);
+    assert.match(sales, /border-b border-zinc-800/);
+    assert.match(storm, /unreadLabel/);
+    assert.match(storm, /times/);
+    assert.match(storm, /#06C755/);
+    assert.match(storm, /aspect-\[5\/6\]/);
+    assert.match(storm, /painBarber/);
     assert.equal(dictionary.th["marketing.pain.unreadBadge"], "99+");
     assert.equal(dictionary.en["marketing.pain.unreadBadge"], "99+");
     assert.ok(dictionary.th["marketing.pain.photoAlt"]);
     assert.ok(dictionary.en["marketing.pain.photoAlt"]);
+    assert.equal(dictionary.th["marketing.pain.titleLead"], "ว่างกี่โมงครับ?");
+    assert.doesNotMatch(dictionary.th["marketing.pain.bullet1"], /—/);
     assert.equal(marketingPhotoSlots.painBarber.src, "/sale/pain-barber.webp");
     assert.equal(marketingPhotoSlots.painBarber.swapPath, "/sale/pain-barber.webp");
     assert.match(marketingPhotoSlots.painBarber.labelTh, /รูปช่างเหนื่อย/);
@@ -228,7 +234,7 @@ describe("marketing layout split", () => {
       "pain-barber.webp missing",
     );
     assert.doesNotMatch(sales, /from: "shop"/);
-    assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
+    assert.doesNotMatch(storm, /from: "shop"|shopLabel/);
     assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
     assert.match(dictionary.th["marketing.pain.punchline"], /ค่าตัดผมที่ไม่ได้เก็บ/);
   });
