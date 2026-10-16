@@ -319,7 +319,11 @@ describe("marketing layout split", () => {
     assert.match(sales, /slot="solutionCustomer"/);
     assert.match(sales, /slot="solutionBarberCalm"/);
     assert.match(sales, /LineReminderMockup/);
-    assert.equal(marketingPhotoSlots.solutionCustomer.src, null);
+    assert.equal(marketingPhotoSlots.solutionCustomer.src, "/sale/solution-customer.webp");
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/solution-customer.webp")),
+      "solution-customer.webp missing",
+    );
     assert.equal(marketingPhotoSlots.solutionBarberCalm.src, null);
     assert.equal(marketingPhotoSlots.solutionCustomer.swapPath, "/sale/solution-customer.webp");
     assert.equal(

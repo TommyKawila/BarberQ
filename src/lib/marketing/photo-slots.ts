@@ -105,7 +105,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   solutionCustomer: {
     id: "solutionCustomer",
-    src: null,
+    src: "/sale/solution-customer.webp",
     swapPath: "/sale/solution-customer.webp",
     width: 1080,
     height: 1080,
