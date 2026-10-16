@@ -34,7 +34,7 @@ export function PainStormVisual({
             alt={alt}
             fill
             sizes="(min-width: 1280px) 44vw, (min-width: 1024px) 420px, 90vw"
-            className="object-cover object-[center_18%]"
+            className="object-cover object-[68%_22%]"
             priority={false}
           />
         ) : (

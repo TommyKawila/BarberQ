@@ -359,9 +359,17 @@ export function SalesPage() {
                 </p>
               ) : null}
 
-              <div className="mt-12 flex w-full max-w-[440px] flex-col gap-3">
-                <PrimaryTrialCta labelKey="marketing.line.cta" placement="line" fullWidth />
-                <LineCta label={t("marketing.line.lineCta")} className="w-full" placement="line" />
+              <div className="mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start">
+                <PrimaryTrialCta
+                  labelKey="marketing.line.cta"
+                  placement="line"
+                  className="w-full justify-center text-center sm:w-auto sm:justify-start sm:text-left"
+                />
+                <LineCta
+                  label={t("marketing.line.lineCta")}
+                  className="w-full sm:w-auto"
+                  placement="line"
+                />
               </div>
 
               <div className="mt-12 space-y-3 border-t border-zinc-800/80 pt-8">

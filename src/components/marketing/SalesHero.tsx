@@ -69,6 +69,7 @@ export function SalesHero({
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
         </div>
 
+        {/* Desktop copy column locked (Tommy): stays on dark left of hero-composite */}
         <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:gap-8 lg:px-6">
           <div className="relative z-10 min-w-0 max-w-full text-left lg:max-w-[34rem]">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
