@@ -174,7 +174,7 @@ describe("marketing layout split", () => {
     assert.equal(marketingPhotoSlots.barberDesktop.height, 941);
     assert.match(
       marketingPhotoSlots.barberDesktop.artNote,
-      /barber-ipad|admin-queue-landscape|composite-barber-ipad/,
+      /barber-ipad|blank black screen/,
     );
     assert.equal(
       marketingPhotoSlots.barberMobile.src,
@@ -191,18 +191,6 @@ describe("marketing layout split", () => {
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/barber-desktop.ai-source.png")),
       "barber-desktop.ai-source.png missing (Tommy plate)",
-    );
-    assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/admin-queue-landscape.webp")),
-      "admin-queue-landscape.webp missing",
-    );
-    assert.ok(
-      existsSync(resolve(root, "../scripts/composite-barber-ipad-queue.py")),
-      "barber iPad composite script missing",
-    );
-    assert.ok(
-      existsSync(resolve(root, "../scripts/capture-admin-queue-landscape.mjs")),
-      "landscape admin capture script missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/barber-mobile.webp")),

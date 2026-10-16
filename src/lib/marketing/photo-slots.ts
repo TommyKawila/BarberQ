@@ -75,9 +75,9 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     width: 1672,
     height: 941,
     ratio: "16:9",
-    labelTh: "รูปช่างชี้บอร์ดคิวบน iPad เดสก์ท็อป 16:9 1672×941",
+    labelTh: "รูปช่างชี้ iPad ที่เคาน์เตอร์ เดสก์ท็อป 16:9 1672×941",
     artNote:
-      "1672×941 · Tommy barber-ipad plate · admin-queue-landscape on glass (redo: capture-admin-queue-landscape.mjs + composite-barber-ipad-queue.py) · PNG fallback /marketing/photos/barber-desktop.png",
+      "1672×941 · Tommy barber-ipad plate as-is (blank black screen) · PNG fallback /marketing/photos/barber-desktop.png · screen mockup TBD after admin redesign",
   },
   barberMobile: {
     id: "barberMobile",
