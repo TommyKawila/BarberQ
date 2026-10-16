@@ -477,9 +477,9 @@ export function SalesPage() {
             <MarketingPhotoSlot
               pair="barber"
               alt={t("marketing.board.photoAlt")}
-              desktopSizes="280px"
-              mobileSizes="60vw"
-              className="w-full max-w-[240px] min-h-[280px]"
+              desktopSizes="320px"
+              mobileSizes="70vw"
+              className="w-full max-w-[300px] min-h-[340px] lg:max-w-[320px]"
             />
           </div>
         </div>
