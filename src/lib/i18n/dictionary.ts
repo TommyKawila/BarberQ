@@ -422,6 +422,7 @@ export const dictionary = {
       "ช่างตัดผมอย่างผ่อนคลาย มือถือวางข้าง ๆ แสดงบอร์ดคิว BarberQx",
     "marketing.line.barberCaption":
       "ช่างโฟกัสงานตัด — คิวเข้าบอร์ดเอง ไม่ต้องวางกรรไกรตอบแชท",
+    "marketing.line.queueBoardCallout": "บอร์ดคิวร้าน (ขยายจากมือถือในรูป)",
     "marketing.how.eyebrow": "3 ขั้นตอน",
     "marketing.how.title": "เริ่มได้ใน 3 ขั้น ลูกค้าไม่ต้องโหลดแอป",
     "marketing.how.1.title": "กด “จองคิว” ใน LINE OA ของร้าน",
@@ -1516,6 +1517,7 @@ export const dictionary = {
       "Relaxed barber cutting hair; phone beside them shows the BarberQx queue board",
     "marketing.line.barberCaption":
       "Barber stays in the cut — bookings land on the board without pausing for chat",
+    "marketing.line.queueBoardCallout": "Shop queue board (enlarged from the phone in the photo)",
     "marketing.how.eyebrow": "3 steps",
     "marketing.how.title": "Start in 3 steps — customers don’t install an app",
     "marketing.how.1.title": "Tap “Book queue” in the shop LINE OA",

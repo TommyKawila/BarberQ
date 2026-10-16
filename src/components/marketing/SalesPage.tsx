@@ -25,6 +25,7 @@ import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourne
 import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
+import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
@@ -390,12 +391,21 @@ export function SalesPage() {
           </div>
 
           <figure className="mt-20 xl:mt-24">
-            <MarketingPhotoSlot
-              slot="solutionBarberCalm"
-              alt={t("marketing.line.barberPhotoAlt")}
-              sizes="(min-width: 1440px) 1320px, (min-width: 1280px) 1200px, 92vw"
-              className="w-full"
-            />
+            <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-end lg:justify-center lg:gap-10 xl:gap-12">
+              {/* Magnified admin queue callout — phone in the photo is too small to read */}
+              <div className="relative w-full max-w-[220px] shrink-0 sm:max-w-[240px] lg:max-w-[260px] xl:max-w-[280px]">
+                <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85 lg:text-left lg:text-[13px]">
+                  {t("marketing.line.queueBoardCallout")}
+                </p>
+                <PhoneScreen screen="adminQueue" fluid />
+              </div>
+              <MarketingPhotoSlot
+                slot="solutionBarberCalm"
+                alt={t("marketing.line.barberPhotoAlt")}
+                sizes="(min-width: 1440px) 1000px, (min-width: 1280px) 900px, 92vw"
+                className="w-full min-w-0 flex-1"
+              />
+            </div>
             <figcaption className="mt-5 text-center text-sm text-zinc-500 lg:text-base">
               {t("marketing.line.barberCaption")}
             </figcaption>
@@ -409,11 +419,11 @@ export function SalesPage() {
           <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
             {t("marketing.how.title")}
           </h2>
-          <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:gap-6">
+          <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:items-stretch lg:gap-6">
             {([1, 2, 3] as const).map((n) => {
               const Icon = HOW_ICONS[n - 1];
               return (
-                <li key={n} className="flex flex-col items-center text-center">
+                <li key={n} className="flex h-full flex-col items-center text-center">
                   <span className="flex items-center gap-2 text-xl font-bold tabular-nums text-amber-400 lg:text-3xl">
                     <Icon size={22} className="shrink-0" strokeWidth={2} />
                     {String(n).padStart(2, "0")}
@@ -424,7 +434,8 @@ export function SalesPage() {
                   <p className={`mt-1.5 ${BODY}`}>
                     {t(`marketing.how.${n}.desc` as MessageKey)}
                   </p>
-                  <div className="mt-5">
+                  {/* mt-auto keeps phone bezels aligned across columns (right was sitting low) */}
+                  <div className="mt-5 w-full lg:mt-auto lg:pt-5">
                     <CustomerStepPhone step={n} />
                   </div>
                 </li>
