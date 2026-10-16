@@ -472,14 +472,16 @@ export function SalesPage() {
               })}
             </ul>
           </div>
-          {/* Queue phone removed — enlarged admin callout already lives above in #line-messages */}
-          <div className="flex justify-center">
+          {/* Desktop: Tommy iPad plate + live admin queue composite. Mobile keeps portrait barber plate. */}
+          <div className="flex justify-center lg:justify-end">
             <MarketingPhotoSlot
               pair="barber"
               alt={t("marketing.board.photoAlt")}
-              desktopSizes="320px"
+              desktopSizes="(min-width: 1280px) 560px, 480px"
               mobileSizes="70vw"
-              className="w-full max-w-[300px] min-h-[340px] lg:max-w-[320px]"
+              desktopClassName="w-full max-w-[560px]"
+              mobileClassName="w-full max-w-[300px] min-h-[340px]"
+              className="w-full"
             />
           </div>
         </div>

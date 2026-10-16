@@ -167,12 +167,42 @@ describe("marketing layout split", () => {
       "/marketing/photos/barber-desktop.webp",
     );
     assert.equal(
+      marketingPhotoSlots.barberDesktop.fallbackSrc,
+      "/marketing/photos/barber-desktop.png",
+    );
+    assert.equal(marketingPhotoSlots.barberDesktop.width, 1672);
+    assert.equal(marketingPhotoSlots.barberDesktop.height, 941);
+    assert.match(
+      marketingPhotoSlots.barberDesktop.artNote,
+      /barber-ipad|admin-queue-landscape|composite-barber-ipad/,
+    );
+    assert.equal(
       marketingPhotoSlots.barberMobile.src,
       "/marketing/photos/barber-mobile.webp",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/barber-desktop.webp")),
       "barber-desktop.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-desktop.png")),
+      "barber-desktop.png missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-desktop.ai-source.png")),
+      "barber-desktop.ai-source.png missing (Tommy plate)",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue-landscape.webp")),
+      "admin-queue-landscape.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../scripts/composite-barber-ipad-queue.py")),
+      "barber iPad composite script missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../scripts/capture-admin-queue-landscape.mjs")),
+      "landscape admin capture script missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/barber-mobile.webp")),

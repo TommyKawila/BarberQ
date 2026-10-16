@@ -443,7 +443,8 @@ export const dictionary = {
     "marketing.board.4.desc": "รู้ทันทีเมื่อมีคิวใหม่ ไม่กินโควตาข้อความ LINE",
     "marketing.board.5.title": "สแกน QR ต่อคิว walk-in",
     "marketing.board.5.desc": "ลูกค้าสแกน QR หน้าร้าน ต่อคิวผ่าน LINE เห็นลำดับคิวสด และได้ข้อความเตือนเมื่อใกล้ถึงคิว — ไม่ต้องนั่งรอในร้าน",
-    "marketing.board.photoAlt": "ช่องวางรูปช่างจริงกำลังดูบอร์ดคิว — รอรูปจากร้านนำร่อง",
+    "marketing.board.photoAlt":
+      "ช่างชี้บอร์ดคิว BarberQx บน iPad ที่เคาน์เตอร์ — จองและ walk-in เห็นชัดในจอเดียว",
     "marketing.owner.title": "เห็นร้านตัวเองชัดขึ้น ทุกวัน สัปดาห์ เดือน",
     "marketing.owner.body": "สรุปรายได้ ลูกค้าไม่มา และช่วงเวลายุ่ง — รู้ว่าร้านยุ่งตอนไหน และใครเคยไม่มาตามนัด",
     "marketing.owner.metric1": "รายได้",
@@ -1538,7 +1539,8 @@ export const dictionary = {
     "marketing.board.4.desc": "Know instantly when a new booking arrives — without using LINE message quota",
     "marketing.board.5.title": "Scan QR for walk-in queue",
     "marketing.board.5.desc": "Customers scan the shop QR, join the walk-in queue in LINE, see live position, and get a LINE ping when their turn is near — no need to wait inside",
-    "marketing.board.photoAlt": "Placeholder for a real barber looking at the queue board — awaiting pilot photo",
+    "marketing.board.photoAlt":
+      "Barber pointing at the BarberQx queue board on an iPad at the counter — bookings and walk-ins on one screen",
     "marketing.owner.title": "See your shop clearly — day, week, month",
     "marketing.owner.body": "Revenue, no-shows, and busy hours — know when the shop is packed and who has missed appointments.",
     "marketing.owner.metric1": "Revenue",
