@@ -56,12 +56,9 @@
     .who {
       display: flex; align-items: center; gap: 12px;
     }
-    .who .avatar-slot {
+    .who img.avatar {
       width: 52px; height: 52px; border-radius: 999px; flex-shrink: 0;
-      background: #44403c; border: 2px solid #fbbf24;
-      display: flex; align-items: center; justify-content: center;
-      padding: 3px; text-align: center;
-      font-size: 6.5px; font-weight: 600; line-height: 1.15; color: #fafaf9;
+      object-fit: cover; border: 2px solid #fbbf24; background: #1c1917;
     }
     .who-name { font-size: 16px; font-weight: 700; }
     .who-meta { font-size: 12px; color: #a8a29e; margin-top: 2px; }
@@ -106,7 +103,7 @@
 
     <section class="card">
       <div class="who">
-        <div class="avatar-slot" title="/sale/booking-success-barber.webp" role="img" aria-label="รูปโปรไฟล์ช่างหน้าจองสำเร็จ 1:1 512×512">รูปโปรไฟล์ช่าง<br/>1:1 · 512×512</div>
+        <img class="avatar" src="./assets/barber-nat.png" alt="ช่างนัท" width="52" height="52" />
         <div>
           <div class="who-name">ช่างนัท</div>
           <div class="who-meta">BarberQx Demo · 60 นาที</div>

@@ -76,12 +76,9 @@
       display: flex; align-items: center; gap: 12px;
       margin-top: 12px; padding-top: 12px; border-top: 1px solid #27272a;
     }
-    .who .avatar-slot {
+    .who img.avatar {
       width: 56px; height: 56px; border-radius: 999px; flex-shrink: 0;
-      background: #3f3f46; border: 1px solid #52525b;
-      display: flex; align-items: center; justify-content: center;
-      padding: 4px; text-align: center;
-      font-size: 7px; font-weight: 600; line-height: 1.15; color: #e4e4e7;
+      object-fit: cover; background: #27272a;
     }
     .who-name { font-size: 16px; font-weight: 600; }
     .when {
@@ -129,7 +126,7 @@
         <span class="shop">BarberQx Demo</span>
       </div>
       <div class="who">
-        <div class="avatar-slot" title="/sale/booking-success-barber.webp" role="img" aria-label="รูปโปรไฟล์ช่างหน้าจองสำเร็จ 1:1 512×512">รูปโปรไฟล์ช่าง<br/>1:1 · 512×512<br/>/sale/…</div>
+        <img class="avatar" src="./assets/barber-nat.png" alt="ช่างนัท" width="56" height="56" />
         <div>
           <div class="label">ช่าง</div>
           <div class="who-name">ช่างนัท</div>

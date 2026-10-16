@@ -91,12 +91,9 @@
       display: flex; align-items: center; gap: 12px;
       padding-bottom: 12px;
     }
-    .who .avatar-slot {
+    .who img.avatar {
       width: 48px; height: 48px; border-radius: 999px; flex-shrink: 0;
-      background: #e2e8f0; border: 1px solid #cbd5e1;
-      display: flex; align-items: center; justify-content: center;
-      padding: 3px; text-align: center;
-      font-size: 6px; font-weight: 600; line-height: 1.15; color: #334155;
+      object-fit: cover; background: #e2e8f0;
     }
     .who-label { font-size: 11px; color: #64748b; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
     .who-name { font-size: 16px; font-weight: 700; color: #0f172a; }
@@ -158,7 +155,7 @@
       <div class="perforation"><div class="dash"></div></div>
       <div class="ticket-body">
         <div class="who">
-          <div class="avatar-slot" title="/sale/booking-success-barber.webp" role="img" aria-label="รูปโปรไฟล์ช่างหน้าจองสำเร็จ 1:1 512×512">รูปโปรไฟล์<br/>1:1 512</div>
+          <img class="avatar" src="./assets/barber-nat.png" alt="ช่างนัท" width="48" height="48" />
           <div>
             <div class="who-label">ช่าง</div>
             <div class="who-name">ช่างนัท</div>
