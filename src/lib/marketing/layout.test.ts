@@ -330,7 +330,14 @@ describe("marketing layout split", () => {
       existsSync(resolve(root, "../public/sale/solution-customer.webp")),
       "solution-customer.webp missing",
     );
-    assert.equal(marketingPhotoSlots.solutionBarberCalm.src, null);
+    assert.equal(
+      marketingPhotoSlots.solutionBarberCalm.src,
+      "/sale/solution-barber-calm.webp",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/solution-barber-calm.webp")),
+      "solution-barber-calm.webp missing",
+    );
     assert.equal(marketingPhotoSlots.solutionCustomer.swapPath, "/sale/solution-customer.webp");
     assert.equal(
       marketingPhotoSlots.solutionBarberCalm.swapPath,

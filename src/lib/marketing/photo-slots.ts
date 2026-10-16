@@ -115,7 +115,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   solutionBarberCalm: {
     id: "solutionBarberCalm",
-    src: null,
+    src: "/sale/solution-barber-calm.webp",
     swapPath: "/sale/solution-barber-calm.webp",
     width: 1920,
     height: 1080,
