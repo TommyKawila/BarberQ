@@ -123,34 +123,71 @@ function SlotFrame({
     );
   }
 
+  const imageClass = fill
+    ? `object-cover ${rounded}`
+    : `h-full w-full object-cover ${rounded}`;
+  const imageStyle = { objectPosition };
+  const fallback = meta.fallbackSrc ?? null;
+
   if (fill) {
     return (
       <div className={`relative overflow-hidden ${rounded} ${className}`}>
-        <Image
-          src={meta.src}
-          alt={alt}
-          fill
-          priority={priority}
-          sizes={sizes}
-          className={`object-cover ${rounded}`}
-          style={{ objectPosition }}
-        />
+        {fallback ? (
+          <picture>
+            <source srcSet={meta.src} type="image/webp" />
+            <Image
+              src={fallback}
+              alt={alt}
+              fill
+              priority={priority}
+              sizes={sizes}
+              className={imageClass}
+              style={imageStyle}
+            />
+          </picture>
+        ) : (
+          <Image
+            src={meta.src}
+            alt={alt}
+            fill
+            priority={priority}
+            sizes={sizes}
+            className={imageClass}
+            style={imageStyle}
+          />
+        )}
       </div>
     );
   }
 
   return (
     <div className={`relative overflow-hidden ${rounded} ${className}`}>
-      <Image
-        src={meta.src}
-        alt={alt}
-        width={meta.width}
-        height={meta.height}
-        priority={priority}
-        sizes={sizes}
-        className={`h-full w-full object-cover ${rounded}`}
-        style={{ objectPosition }}
-      />
+      {fallback ? (
+        <picture>
+          <source srcSet={meta.src} type="image/webp" />
+          <Image
+            src={fallback}
+            alt={alt}
+            width={meta.width}
+            height={meta.height}
+            priority={priority}
+            sizes={sizes}
+            className={imageClass}
+            style={imageStyle}
+          />
+        </picture>
+      ) : (
+        <Image
+          src={meta.src}
+          alt={alt}
+          width={meta.width}
+          height={meta.height}
+          priority={priority}
+          sizes={sizes}
+          className={imageClass}
+          style={imageStyle}
+        />
+      )}
     </div>
   );
 }

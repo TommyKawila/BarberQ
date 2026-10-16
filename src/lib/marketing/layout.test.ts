@@ -105,16 +105,18 @@ describe("marketing layout split", () => {
       "utf8",
     );
     assert.match(slots, /hero-desktop\.webp/);
+    assert.match(slots, /hero-desktop\.png/);
     assert.match(slots, /hero-mobile\.webp/);
     assert.match(slots, /barber-desktop\.webp/);
     assert.match(slots, /barber-mobile\.webp/);
     assert.match(slots, /founder\.webp/);
-    assert.match(slots, /2400/);
+    assert.match(slots, /1731/);
     assert.match(slots, /1080/);
     assert.match(slots, /1024/);
     assert.match(photoUi, /hidden lg:block/);
     assert.match(photoUi, /lg:hidden/);
     assert.match(photoUi, /labelTh/);
+    assert.match(photoUi, /fallbackSrc|picture/);
     assert.match(slots, /\/sale\/pain-barber\.webp/);
     assert.match(slots, /\/sale\/solution-customer\.webp/);
     assert.match(slots, /\/sale\/solution-barber-calm\.webp/);
@@ -124,9 +126,17 @@ describe("marketing layout split", () => {
       marketingPhotoSlots.heroDesktop.src,
       "/marketing/photos/hero-desktop.webp",
     );
+    assert.equal(
+      marketingPhotoSlots.heroDesktop.fallbackSrc,
+      "/marketing/photos/hero-desktop.png",
+    );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/hero-desktop.webp")),
       "hero-desktop.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-desktop.png")),
+      "hero-desktop.png missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/hero-desktop.ai-source.webp")),
@@ -146,7 +156,7 @@ describe("marketing layout split", () => {
     );
     assert.match(
       marketingPhotoSlots.heroDesktop.artNote,
-      /queue-ticket\.webp|booking-confirmed/,
+      /hero-composite|booking-success B2/,
     );
     assert.ok(
       existsSync(resolve(root, "../scripts/composite-hero-phone-screens.py")),

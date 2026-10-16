@@ -27,6 +27,8 @@ export type MarketingPhotoSlot = {
   id: MarketingPhotoSlotId;
   /** Public URL once ready; null = show Thai placeholder. */
   src: string | null;
+  /** Optional PNG (or other) fallback when `src` is a modern format like webp. */
+  fallbackSrc?: string | null;
   /** Target path under /public for the drop-in file. */
   swapPath: string;
   width: number;
@@ -46,12 +48,14 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   heroDesktop: {
     id: "heroDesktop",
     src: "/marketing/photos/hero-desktop.webp",
+    fallbackSrc: "/marketing/photos/hero-desktop.png",
     swapPath: "/marketing/photos/hero-desktop.webp",
-    width: 2400,
-    height: 1350,
+    width: 1731,
+    height: 909,
     ratio: "16:9",
-    labelTh: "รูปฮีโร่เดสก์ท็อป 16:9 2400×1350",
-    artNote: "2400×1350 · subject on right · phone screen = booking-confirmed (queue-ticket.webp)",
+    labelTh: "รูปฮีโร่เดสก์ท็อป 16:9 1731×909",
+    artNote:
+      "1731×909 · Tommy hero-composite · hand+phone on right (booking-success B2) · dark left for copy · PNG fallback /marketing/photos/hero-desktop.png",
   },
   heroMobile: {
     id: "heroMobile",

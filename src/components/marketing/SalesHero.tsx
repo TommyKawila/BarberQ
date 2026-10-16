@@ -32,14 +32,15 @@ export function SalesHero({
           objectPosition="right center"
           className="absolute inset-0 h-full w-full rounded-none border-0"
         />
+        {/* Soft left scrim only — composite already leaves dark copy space; keep phone clear */}
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, #09090b 0%, #09090b 36%, rgba(9,9,11,0.96) 46%, rgba(9,9,11,0.72) 56%, rgba(9,9,11,0.28) 68%, transparent 82%)",
+              "linear-gradient(to right, rgba(9,9,11,0.55) 0%, rgba(9,9,11,0.28) 28%, rgba(9,9,11,0.08) 42%, transparent 52%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/75 via-transparent to-zinc-950/35" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/40 via-transparent to-zinc-950/25" />
       </div>
 
       <MarketingNav />
@@ -68,8 +69,8 @@ export function SalesHero({
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent" />
         </div>
 
-        <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,52%)_minmax(0,48%)] lg:gap-10 lg:px-6">
-          <div className="relative z-10 min-w-0 max-w-full text-left">
+        <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:gap-8 lg:px-6">
+          <div className="relative z-10 min-w-0 max-w-full text-left lg:max-w-[34rem]">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 break-words text-[1.75rem] font-bold leading-[1.3] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.2] lg:text-[3.5rem]">
               {t("marketing.hero.title")}
