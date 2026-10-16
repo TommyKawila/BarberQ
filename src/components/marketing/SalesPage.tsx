@@ -472,8 +472,8 @@ export function SalesPage() {
               })}
             </ul>
           </div>
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center lg:flex-col">
-            <OwnerSurfacePhone surface="queue" />
+          {/* Queue phone removed — enlarged admin callout already lives above in #line-messages */}
+          <div className="flex justify-center">
             <MarketingPhotoSlot
               pair="barber"
               alt={t("marketing.board.photoAlt")}
