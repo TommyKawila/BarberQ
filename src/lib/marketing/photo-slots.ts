@@ -95,7 +95,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   painBarber: {
     id: "painBarber",
-    src: null,
+    src: "/sale/pain-barber.webp",
     swapPath: "/sale/pain-barber.webp",
     width: 1080,
     height: 1350,

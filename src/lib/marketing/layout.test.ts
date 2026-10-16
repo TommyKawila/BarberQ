@@ -219,10 +219,14 @@ describe("marketing layout split", () => {
     assert.equal(dictionary.en["marketing.pain.unreadBadge"], "99+");
     assert.ok(dictionary.th["marketing.pain.photoAlt"]);
     assert.ok(dictionary.en["marketing.pain.photoAlt"]);
-    assert.equal(marketingPhotoSlots.painBarber.src, null);
+    assert.equal(marketingPhotoSlots.painBarber.src, "/sale/pain-barber.webp");
     assert.equal(marketingPhotoSlots.painBarber.swapPath, "/sale/pain-barber.webp");
     assert.match(marketingPhotoSlots.painBarber.labelTh, /รูปช่างเหนื่อย/);
     assert.equal(marketingPhotoSlots.painBarber.ratio, "4:5");
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/pain-barber.webp")),
+      "pain-barber.webp missing",
+    );
     assert.doesNotMatch(sales, /from: "shop"/);
     assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
     assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
