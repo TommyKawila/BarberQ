@@ -40,6 +40,7 @@ type Props = SingleProps | PairProps;
 function aspectClass(meta: MarketingPhotoSlot): string {
   const ratio = meta.width / meta.height;
   if (Math.abs(ratio - 16 / 9) < 0.02) return "aspect-video";
+  if (Math.abs(ratio - 3 / 2) < 0.02) return "aspect-[3/2]";
   if (Math.abs(ratio - 4 / 3) < 0.02) return "aspect-[4/3]";
   if (Math.abs(ratio - 1) < 0.02) return "aspect-square";
   if (Math.abs(ratio - 3 / 4) < 0.02) return "aspect-[3/4]";

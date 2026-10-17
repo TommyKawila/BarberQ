@@ -58,12 +58,14 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
           <LanguageToggle />
           {isTrial ? null : (
             <>
+              {/* Mobile: gold outline so the hero keeps a single solid gold CTA */}
               <MarketingTrialLink
                 placement="nav"
-                className="inline-flex min-h-11 max-w-full shrink items-center rounded-xl bg-amber-400 px-3 py-2 text-sm font-semibold text-zinc-950 sm:px-4 md:hidden"
+                className="inline-flex min-h-11 max-w-full shrink items-center rounded-xl border border-amber-400/90 bg-transparent px-3 py-2 text-sm font-semibold text-zinc-50 sm:px-4 md:hidden"
               >
                 {td("marketing.nav.trialShort")}
               </MarketingTrialLink>
+              {/* Desktop: solid gold unchanged */}
               <MarketingTrialLink
                 placement="nav"
                 className="hidden min-h-11 items-center rounded-xl bg-amber-400 px-5 py-2 text-sm font-semibold text-zinc-950 md:inline-flex"

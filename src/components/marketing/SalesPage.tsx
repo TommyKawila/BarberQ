@@ -102,6 +102,7 @@ export function SalesPage() {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
   const heroCtaRef = useRef<HTMLDivElement | null>(null);
+  const heroCtaDesktopRef = useRef<HTMLDivElement | null>(null);
   const finalCtaRef = useRef<HTMLElement | null>(null);
   const pricingRef = useRef<HTMLElement | null>(null);
   const lineSectionRef = useRef<HTMLElement | null>(null);
@@ -112,23 +113,31 @@ export function SalesPage() {
   }, []);
 
   useEffect(() => {
-    const heroEl = heroCtaRef.current;
+    const heroEls = [heroCtaRef.current, heroCtaDesktopRef.current].filter(
+      (el): el is HTMLDivElement => Boolean(el),
+    );
     const finalEl = finalCtaRef.current;
-    if (!heroEl) return;
+    if (heroEls.length === 0) return;
 
-    let heroVisible = true;
+    const heroVisibleByEl = new Map<Element, boolean>();
+    for (const el of heroEls) heroVisibleByEl.set(el, true);
     let finalVisible = false;
 
-    const sync = () => setShowSticky(!heroVisible && !finalVisible);
+    const sync = () => {
+      const heroVisible = [...heroVisibleByEl.values()].some(Boolean);
+      setShowSticky(!heroVisible && !finalVisible);
+    };
 
     const heroObs = new IntersectionObserver(
-      ([entry]) => {
-        heroVisible = entry.isIntersecting;
+      (entries) => {
+        for (const entry of entries) {
+          heroVisibleByEl.set(entry.target, entry.isIntersecting);
+        }
         sync();
       },
       { threshold: 0 },
     );
-    heroObs.observe(heroEl);
+    for (const el of heroEls) heroObs.observe(el);
 
     let finalObs: IntersectionObserver | null = null;
     if (finalEl) {
@@ -217,7 +226,7 @@ export function SalesPage() {
       <ClarityMarketingScript />
       <LiffCallbackRedirect />
       <AttributionCapture />
-      <SalesHero heroCtaRef={heroCtaRef} />
+      <SalesHero heroCtaRef={heroCtaRef} heroCtaDesktopRef={heroCtaDesktopRef} />
 
       {/* Pain — Option C: checklist (F-pattern) + notification storm over photo */}
       <section className="overflow-x-clip bg-zinc-950">

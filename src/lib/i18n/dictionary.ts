@@ -362,6 +362,8 @@ export const dictionary = {
     "marketing.hero.eyebrow": "สำหรับร้านเล็ก 1–2 ช่าง — ทั้งในกรุงและต่างจังหวัด",
     "marketing.hero.title": "ให้ลูกค้าจองคิวเองใน LINE ไม่ต้องตอบแชททั้งวัน",
     "marketing.hero.subtitle": "ลูกค้าเลือกช่าง วัน เวลาได้เอง ได้ข้อความยืนยันและบัตรคิวใน LINE ในนามร้านคุณ คิวออนไลน์ walk-in โทร และแชท อยู่บนบอร์ดเดียว",
+    "marketing.hero.subtitleShort":
+      "ลูกค้าเลือกช่าง วัน เวลาได้เอง ยืนยันใน LINE ในนามร้านคุณ",
     "marketing.hero.setup": "ตั้งค่าเองได้ในไม่กี่นาที",
     "marketing.hero.cta": "เริ่มใช้ฟรี {days} วัน →",
     "marketing.hero.ctaShort": "เริ่มใช้ฟรี {days} วัน →",
@@ -1458,6 +1460,8 @@ export const dictionary = {
     "marketing.hero.eyebrow": "For small 1–2 barber shops — cities and provinces",
     "marketing.hero.title": "Let customers book in LINE — stop answering queue chat all day",
     "marketing.hero.subtitle": "Customers pick barber, date, and time, then get a confirmation and queue ticket in LINE under your shop’s name. Online bookings, walk-ins, calls, and chats sit on one board.",
+    "marketing.hero.subtitleShort":
+      "Customers pick barber, day, and time — confirmed in LINE under your shop’s name",
     "marketing.hero.setup": "Set everything up yourself in a few minutes",
     "marketing.hero.cta": "Start free for {days} days →",
     "marketing.hero.ctaShort": "Start free for {days} days →",

@@ -60,17 +60,21 @@ describe("marketing layout split", () => {
     assert.match(hero, /heroDesktop/);
     assert.match(hero, /heroMobile/);
     assert.match(hero, /linear-gradient\(to right/);
-    assert.match(hero, /linear-gradient\(to bottom/);
     assert.match(hero, /right center/);
     assert.match(hero, /hidden lg:block/);
     assert.match(hero, /lg:hidden/);
-    assert.doesNotMatch(hero, /hand-phone-cutout/);
-    assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
+    // Design C: photo is inline below copy — never absolute behind text on mobile
+    assert.doesNotMatch(hero, /absolute inset-0 lg:hidden/);
+    assert.match(hero, /subtitleShort/);
+    assert.match(hero, /h-\[52px\]/);
     assert.match(hero, /marketing\.hero\.micro/);
     assert.match(hero, /marketing\.hero\.setup/);
     assert.match(hero, /min-w-0/);
     assert.match(hero, /max-w-full/);
     assert.match(nav, /MarketingTrialLink/);
+    // Mobile nav trial = gold outline; desktop stays solid amber
+    assert.match(nav, /border-amber-400/);
+    assert.match(nav, /bg-amber-400/);
     assert.doesNotMatch(sales, /href="\/trial"/);
     assert.doesNotMatch(hero, /href="\/trial"/);
     assert.doesNotMatch(nav, /href="\/trial"/);
@@ -146,9 +150,20 @@ describe("marketing layout split", () => {
       marketingPhotoSlots.heroMobile.src,
       "/marketing/photos/hero-mobile.webp",
     );
+    assert.equal(
+      marketingPhotoSlots.heroMobile.fallbackSrc,
+      "/marketing/photos/hero-mobile.png",
+    );
+    assert.equal(marketingPhotoSlots.heroMobile.width, 940);
+    assert.equal(marketingPhotoSlots.heroMobile.height, 627);
+    assert.match(marketingPhotoSlots.heroMobile.artNote, /3:2 crop|770|11:30/);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/hero-mobile.webp")),
       "hero-mobile.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-mobile.png")),
+      "hero-mobile.png missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/hero-mobile.ai-source.webp")),
@@ -330,13 +345,16 @@ describe("marketing layout split", () => {
     assert.match(dictionary.en["marketing.hero.cta"], /Start free for \{days\} days →/);
     assert.match(dictionary.th["marketing.risk.noCard"], /ไม่ต้องผูกบัตร/);
     assert.match(dictionary.th["marketing.risk.cancelAnytime"], /ยกเลิกได้ทุกเมื่อ/);
-    // Hero: full-width primary <640px; secondary inline on sm+, text link on mobile
+    // Hero mobile C: primary + outline secondary on one 52px row; risk under CTAs
     assert.match(hero, /showRisk=\{false\}/);
     assert.match(hero, /RiskReversalRow/);
-    assert.match(hero, /w-full justify-center/);
-    assert.match(hero, /sm:w-auto/);
-    assert.match(hero, /sm:inline-flex/);
-    assert.match(hero, /sm:hidden/);
+    assert.match(hero, /h-\[52px\]/);
+    assert.match(hero, /secondaryFallback/);
+    assert.match(dictionary.th["marketing.hero.subtitleShort"], /ยืนยันใน LINE/);
+    assert.match(
+      dictionary.en["marketing.hero.subtitleShort"],
+      /confirmed in LINE/i,
+    );
   });
 
   it("feature claims for short leads and self-reschedule default on (toggleable)", () => {
