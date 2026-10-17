@@ -302,6 +302,19 @@ describe("P6 customer self-reschedule", () => {
     assert.equal(shouldSendLineReschedulePush({ customer_line_id: null }), false);
   });
 
+  it("shop-reschedule Flex CTAs use LIFF customer URL (not plain web /bookings)", () => {
+    const notify = readFileSync(
+      resolve(root, "lib/line/shop-reschedule-notify.ts"),
+      "utf8",
+    );
+    assert.match(notify, /buildShopCustomerUrl/);
+    assert.match(notify, /shopRescheduleBookingsUrl/);
+    assert.doesNotMatch(notify, /buildShopWebUrl/);
+    const auth = readFileSync(resolve(root, "lib/line/use-line-auth.ts"), "utf8");
+    assert.match(auth, /isInClient\(\)/);
+    assert.match(auth, /setReady\(true\)/);
+  });
+
   it("customer self-reschedule route pushes ticket (separate from shop flex)", () => {
     const route = readFileSync(resolve(root, "app/api/reschedule/route.ts"), "utf8");
     const notify = readFileSync(
