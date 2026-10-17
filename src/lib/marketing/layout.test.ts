@@ -271,6 +271,11 @@ describe("marketing layout split", () => {
     assert.ok(dictionary.en["marketing.pain.photoAlt"]);
     assert.equal(dictionary.th["marketing.pain.titleLead"], "ว่างกี่โมงครับ?");
     assert.doesNotMatch(dictionary.th["marketing.pain.bullet1"], /—/);
+    // Pain Thai mid-word wrap guard (มือถือ / คิวเดียวกัน)
+    assert.match(sales, /PAIN_TH_PHRASES/);
+    assert.match(sales, /PainCopy/);
+    assert.match(sales, /มือไม่ว่างก็ต้องหยิบมือถือ/);
+    assert.match(sales, /เห็นคิวเดียวกัน/);
     assert.equal(marketingPhotoSlots.painBarber.src, "/sale/pain-barber.webp");
     assert.equal(marketingPhotoSlots.painBarber.swapPath, "/sale/pain-barber.webp");
     assert.match(marketingPhotoSlots.painBarber.labelTh, /รูปช่างเหนื่อย/);

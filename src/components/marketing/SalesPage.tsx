@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   Bell,
   CalendarClock,
@@ -48,6 +48,40 @@ const TRIAL_BOX_ITEMS = [1, 2, 3, 4] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 /** Never render testimonials in production until real reviews exist. */
 const SHOW_TESTIMONIALS_PLACEHOLDER = false;
+
+/**
+ * Thai Pain copy: break only between phrase spans so compounds
+ * (มือถือ, คิวเดียวกัน, …) never wrap mid-word. EN stays plain.
+ * Spans are inert on desktop widths (phrases already fit).
+ */
+const PAIN_TH_PHRASES: Partial<Record<MessageKey, readonly string[]>> = {
+  "marketing.pain.bullet1": ["ตอบแชทระหว่างตัดผม", "มือไม่ว่างก็ต้องหยิบมือถือ"],
+  "marketing.pain.bullet2": ["คิวจดกระดาษ", "ไม่รู้ว่าช่างคนไหนว่าง"],
+  "marketing.pain.bullet3": ["Walk-in ชนกับคิวที่จองไว้"],
+  "marketing.pain.bullet4": ["ลูกค้าลืมนัดหรือรอนานจนกลับไป", "ไม่มีใครบันทึก"],
+  "marketing.pain.punchline": ["ทุกคิวที่หายไปเงียบ ๆ", "คือค่าตัดผมที่ไม่ได้เก็บ"],
+  "marketing.pain.close": ["BarberQx ช่วยให้ลูกค้าจองเอง", "และให้ทั้งร้านเห็นคิวเดียวกัน"],
+};
+
+function PainCopy({ messageKey }: { messageKey: MessageKey }) {
+  const { t, locale } = useI18n();
+  const text = t(messageKey);
+  if (locale !== "th") return <>{text}</>;
+  const phrases = PAIN_TH_PHRASES[messageKey];
+  if (!phrases?.length) {
+    return <span className="[word-break:keep-all]">{text}</span>;
+  }
+  return (
+    <>
+      {phrases.map((phrase, i) => (
+        <Fragment key={`${messageKey}-${i}`}>
+          {i > 0 ? " " : null}
+          <span className="whitespace-nowrap [word-break:keep-all]">{phrase}</span>
+        </Fragment>
+      ))}
+    </>
+  );
+}
 
 function LineCta({
   label,
@@ -257,7 +291,7 @@ export function SalesPage() {
                     <Check size={14} strokeWidth={3} />
                   </span>
                   <p className="text-[1.05rem] font-semibold leading-[1.45] text-zinc-50 sm:text-lg lg:text-[22px]">
-                    {t(`marketing.pain.bullet${n}` as MessageKey)}
+                    <PainCopy messageKey={`marketing.pain.bullet${n}` as MessageKey} />
                   </p>
                 </li>
               ))}
@@ -266,10 +300,10 @@ export function SalesPage() {
             <div className="mt-10">
               <div className="h-px w-12 bg-amber-300" aria-hidden />
               <p className="mt-5 text-xl font-extrabold leading-[1.35] tracking-tight text-amber-300 sm:text-2xl lg:text-[32px]">
-                {t("marketing.pain.punchline")}
+                <PainCopy messageKey="marketing.pain.punchline" />
               </p>
               <p className="mt-3 max-w-md text-base leading-[1.5] text-zinc-300 lg:text-xl">
-                {t("marketing.pain.close")}
+                <PainCopy messageKey="marketing.pain.close" />
               </p>
             </div>
           </div>
