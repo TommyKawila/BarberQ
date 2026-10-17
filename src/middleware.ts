@@ -81,6 +81,17 @@ export function middleware(request: NextRequest) {
     return withLastShopCookie(res, duplicateMatch[1]);
   }
 
+  // Legacy Flex links used /{shop}/c/{token}; real page is global /c/{token}.
+  const shopCancelMatch = path.match(/^\/([^/]+)\/c\/([^/]+)\/?$/);
+  if (shopCancelMatch) {
+    const shopSeg = shopCancelMatch[1] ?? "";
+    const token = shopCancelMatch[2] ?? "";
+    if (shopSeg && token && shopSlugFromPath(`/${shopSeg}`)) {
+      const res = NextResponse.redirect(new URL(`/c/${token}`, request.url));
+      return withLastShopCookie(res, shopSeg);
+    }
+  }
+
   // Bare customer paths (LIFF secondary /bookings without shop in URL).
   // Never send these to the marketing home page.
   if (path === "/bookings" || path.startsWith("/bookings/")) {

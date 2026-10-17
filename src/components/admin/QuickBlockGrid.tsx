@@ -35,6 +35,8 @@ interface QuickBlockGridProps {
   onCancel?: (barberId: string, slot: AdminSlot) => void;
   onRescheduleStart?: (barberId: string, slot: AdminSlot) => void;
   onUnblock?: (barberId: string, slot: AdminSlot) => void;
+  /** When true, free cells pulse so staff can pick the new slot after เลื่อนคิว. */
+  reschedulePickMode?: boolean;
   bookingHref?: string;
   onCopyBookingLink?: () => void;
   bookingLinkCopied?: boolean;
@@ -87,6 +89,7 @@ export function QuickBlockGrid({
   onCancel,
   onRescheduleStart,
   onUnblock,
+  reschedulePickMode = false,
   bookingHref,
   onCopyBookingLink,
   bookingLinkCopied = false,
@@ -278,16 +281,35 @@ export function QuickBlockGrid({
                   );
                 }
 
+                const freePickable =
+                  reschedulePickMode &&
+                  slot.kind === "free" &&
+                  slot.available &&
+                  canEdit &&
+                  !pending &&
+                  !pastFree &&
+                  !locked;
                 return (
                   <button
                     key={slot.startTime}
                     type="button"
                     disabled={pending || booked || pastFree || locked || !canEdit}
                     onClick={() => onFreeSlot(column.barber.id, slot)}
-                    className={`min-h-14 rounded-lg px-1 py-1.5 text-left transition disabled:cursor-default ${slotClass(slot, pending)}`}
+                    className={`min-h-14 rounded-lg px-1 py-1.5 text-left transition disabled:cursor-default ${slotClass(slot, pending)}${
+                      freePickable
+                        ? " ring-2 ring-amber-400 ring-offset-1 ring-offset-zinc-950 animate-pulse"
+                        : reschedulePickMode && booked
+                          ? " opacity-40"
+                          : ""
+                    }`}
                   >
                     <div className="text-[11px] font-bold sm:text-xs">{formatSlotTime(slot.startTime)}</div>
                     <div className="truncate text-[10px] leading-tight sm:text-[11px]">{label}</div>
+                    {freePickable ? (
+                      <div className="mt-1 rounded bg-amber-400/90 px-1 py-0.5 text-center text-[9px] font-semibold text-zinc-950">
+                        {t("admin.rescheduleTapSlot")}
+                      </div>
+                    ) : null}
                   </button>
                 );
               })

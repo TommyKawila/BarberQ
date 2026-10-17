@@ -31,6 +31,20 @@ describe("liff deep-link path resolution", () => {
     );
   });
 
+  it("keeps global /c/{token} when LIFF endpoint already includes shop", () => {
+    assert.equal(
+      resolveLiffStateTarget(
+        "/barberqpilottest",
+        "/c/79599448a77d4ff28ca3c509d8f8fb5f",
+      ),
+      "/c/79599448a77d4ff28ca3c509d8f8fb5f",
+    );
+    assert.equal(
+      resolveLiffStateTarget("/barberqpilottest", "c/tok"),
+      "/c/tok",
+    );
+  });
+
   it("keeps already shop-scoped liff.state", () => {
     assert.equal(
       resolveLiffStateTarget("/barberqpilottest", "/barberqpilottest/bookings"),

@@ -664,6 +664,7 @@ export const dictionary = {
     "admin.rescheduleBooking": "เลื่อนคิว",
     "admin.rescheduleModeBanner": "เลือกช่องว่างใหม่สำหรับ {name} · แตะช่องว่างบนบอร์ด",
     "admin.rescheduleModeCancel": "ยกเลิกการเลื่อน",
+    "admin.rescheduleTapSlot": "แตะเพื่อย้ายมาที่นี่",
     "admin.confirmRescheduleTitle": "เลื่อนคิวไปเวลานี้?",
     "admin.confirmRescheduleBodyLine": "ระบบจะย้ายคิวทันที และแจ้งลูกค้าทาง LINE (นับโควตา push) ถ้าร้านเชื่อม OA แล้ว",
     "admin.confirmRescheduleBodyNoLine": "ระบบจะย้ายคิวทันที · คิวนี้ไม่มี LINE ของลูกค้า จึงไม่ส่งข้อความ LINE และไม่ใช้โควตา",
@@ -803,7 +804,7 @@ export const dictionary = {
     "admin.moreBookingHint": "เปิดหน้าจองที่ลูกค้าใช้จองคิว",
     "admin.close": "ปิด",
 
-    "cancel.title": "ยกเลิกคิว",
+    "cancel.title": "เลื่อนหรือยกเลิกคิว",
     "cancel.notFound": "ไม่พบคิวนี้",
     "cancel.alreadyCancelled": "คิวนี้ถูกยกเลิกแล้ว",
     "cancel.done": "ยกเลิกคิวแล้ว",
@@ -1675,6 +1676,7 @@ export const dictionary = {
     "admin.rescheduleBooking": "Reschedule",
     "admin.rescheduleModeBanner": "Pick a free slot for {name} · tap an empty cell on the board",
     "admin.rescheduleModeCancel": "Cancel reschedule",
+    "admin.rescheduleTapSlot": "Tap to move here",
     "admin.confirmRescheduleTitle": "Move booking to this slot?",
     "admin.confirmRescheduleBodyLine": "The booking moves immediately · customer is notified on LINE (counts as push) if the shop OA is connected",
     "admin.confirmRescheduleBodyNoLine": "The booking moves immediately · this booking has no customer LINE id, so no LINE message is sent and quota is unused",
@@ -1814,7 +1816,7 @@ export const dictionary = {
     "admin.moreBookingHint": "Open the page customers use to book",
     "admin.close": "Close",
 
-    "cancel.title": "Cancel booking",
+    "cancel.title": "Reschedule or cancel",
     "cancel.notFound": "Booking not found",
     "cancel.alreadyCancelled": "This booking is already cancelled",
     "cancel.done": "Booking cancelled",

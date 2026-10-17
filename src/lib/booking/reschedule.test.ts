@@ -205,6 +205,54 @@ describe("P6 customer self-reschedule", () => {
     assert.equal(result.after.reschedule_count ?? 0, 0);
   });
 
+  it("staffRescheduleBooking still works when customer already used 1-time limit", async () => {
+    const barbers = await memoryStore.listBarbers();
+    const a = barbers[0];
+    const b = barbers[1] ?? barbers[0];
+    const start = addMinutes(new Date(), 30 * 60);
+    start.setSeconds(0, 0);
+    const end = addMinutes(start, a.slot_duration_minutes);
+    const apt = await memoryStore.createAppointment({
+      barberId: a.id,
+      customerRef: `U-quota-${Date.now()}`,
+      customerName: "QuotaUsed",
+      customerPhone: "0866666666",
+      startTime: start,
+      endTime: end,
+      customerLineId: `U-quota-${Date.now()}`,
+      source: "line",
+    });
+    const afterCustomer = addMinutes(start, a.slot_duration_minutes * 2);
+    const customerMove = await memoryStore.rescheduleAppointmentByToken(
+      apt.cancel_token!,
+      a.id,
+      afterCustomer,
+      addMinutes(afterCustomer, a.slot_duration_minutes),
+    );
+    assert.equal(customerMove.after.reschedule_count, 1);
+
+    await assert.rejects(
+      () =>
+        rescheduleBookingByToken(
+          apt.cancel_token!,
+          a.id,
+          addMinutes(afterCustomer, a.slot_duration_minutes * 2).toISOString(),
+        ),
+      (err: unknown) =>
+        err instanceof BookingError && err.code === "RESCHEDULE_LIMIT",
+    );
+
+    const staffTarget = addMinutes(afterCustomer, a.slot_duration_minutes * 3);
+    const staffMove = await staffRescheduleBooking(
+      apt.id,
+      b.id,
+      staffTarget.toISOString(),
+    );
+    assert.equal(staffMove.after.barber_id, b.id);
+    assert.equal(staffMove.after.start_time, staffTarget.toISOString());
+    assert.equal(staffMove.after.reschedule_count ?? 0, 1);
+  });
+
   it("Thai copy covers slot-taken keep-old and เลื่อนคิว label", () => {
     assert.match(dictionary.th["booking.reschedule"], /เลื่อนคิว/);
     assert.match(dictionary.th["booking.rescheduleSlotTaken"], /คิวเดิมของคุณยังอยู่/);

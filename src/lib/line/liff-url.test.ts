@@ -1,6 +1,7 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildCustomerCancelUrl,
   buildShopCustomerUrl,
   buildShopLiffUrl,
   buildShopWebUrl,
@@ -25,12 +26,22 @@ describe("liff customer URLs", () => {
       "https://liff.line.me/2011971303-hdy1isos/barberqpilottest/bookings",
     );
     assert.equal(
-      buildShopCustomerUrl("barberqpilottest", "c/tok"),
-      "https://liff.line.me/2011971303-hdy1isos/barberqpilottest/c/tok",
-    );
-    assert.equal(
       buildShopLiffUrl("demo"),
       "https://liff.line.me/2011971303-hdy1isos/demo",
+    );
+  });
+
+  it("cancel URL is global /c/{token} (not /{shop}/c/{token})", () => {
+    process.env.NEXT_PUBLIC_LIFF_ID = "2011971303-hdy1isos";
+    process.env.NEXT_PUBLIC_APP_URL = "https://barberq-qa.vercel.app";
+    assert.equal(
+      buildCustomerCancelUrl("79599448a77d4ff28ca3c509d8f8fb5f"),
+      "https://liff.line.me/2011971303-hdy1isos/c/79599448a77d4ff28ca3c509d8f8fb5f",
+    );
+    delete process.env.NEXT_PUBLIC_LIFF_ID;
+    assert.equal(
+      buildCustomerCancelUrl("tok"),
+      "https://barberq-qa.vercel.app/c/tok",
     );
   });
 

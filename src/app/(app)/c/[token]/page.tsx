@@ -1,6 +1,7 @@
 import { CancelClient } from "@/components/customer/CancelClient";
 import { PlatformTopBar } from "@/components/layout/PlatformTopBar";
 import { getStore } from "@/lib/data";
+import { normalizeShopHours } from "@/lib/shop/shop-hours";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,7 @@ export default async function CancelPage({
   const appointment = await store.getAppointmentByCancelToken(token);
   const barber = appointment ? await store.getBarber(appointment.barber_id) : null;
   const shopId = barber?.shop_id;
-  const [settings, barbers] = await Promise.all([
+  const [settings, barbers, shops] = await Promise.all([
     shopId
       ? store.getShopSettings(shopId)
       : Promise.resolve({
@@ -31,7 +32,9 @@ export default async function CancelPage({
           queueAheadPushEnabled: true,
         }),
     shopId ? store.listBarbersByShop(shopId) : store.listBarbers(),
+    shopId ? store.listShops() : Promise.resolve([]),
   ]);
+  const shop = shopId ? (shops.find((s) => s.id === shopId) ?? null) : null;
 
   return (
     <>
@@ -40,6 +43,8 @@ export default async function CancelPage({
         token={token}
         appointment={appointment}
         barbers={barbers}
+        hours={normalizeShopHours(settings.hours)}
+        shopSlug={shop?.slug ?? null}
         lineUrl={settings.lineUrl}
         phone={settings.phone}
       />
