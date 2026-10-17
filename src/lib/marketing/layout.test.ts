@@ -263,7 +263,13 @@ describe("marketing layout split", () => {
     assert.match(storm, /unreadLabel/);
     assert.match(storm, /times/);
     assert.match(storm, /#06C755/);
-    assert.match(storm, /aspect-\[5\/6\]/);
+    assert.match(storm, /aspect-\[4\/5\]/);
+    assert.match(storm, /lg:aspect-\[5\/6\]/);
+    assert.match(storm, /object-\[50%_0%\]/);
+    assert.match(storm, /bottom-4 left-3/);
+    assert.match(storm, /gap-2/);
+    assert.match(storm, /lg:hidden/);
+    assert.match(storm, /hidden[\s\S]*?lg:flex/);
     assert.match(storm, /painBarber/);
     assert.equal(dictionary.th["marketing.pain.unreadBadge"], "99+");
     assert.equal(dictionary.en["marketing.pain.unreadBadge"], "99+");
@@ -277,12 +283,22 @@ describe("marketing layout split", () => {
     assert.match(sales, /มือไม่ว่างก็ต้องหยิบมือถือ/);
     assert.match(sales, /เห็นคิวเดียวกัน/);
     assert.equal(marketingPhotoSlots.painBarber.src, "/sale/pain-barber.webp");
+    assert.equal(
+      marketingPhotoSlots.painBarber.fallbackSrc,
+      "/sale/pain-barber.png",
+    );
     assert.equal(marketingPhotoSlots.painBarber.swapPath, "/sale/pain-barber.webp");
-    assert.match(marketingPhotoSlots.painBarber.labelTh, /รูปช่างเหนื่อย/);
+    assert.equal(marketingPhotoSlots.painBarber.width, 1122);
+    assert.equal(marketingPhotoSlots.painBarber.height, 1402);
+    assert.match(marketingPhotoSlots.painBarber.labelTh, /กรรไกรไฟฟ้า/);
     assert.equal(marketingPhotoSlots.painBarber.ratio, "4:5");
     assert.ok(
       existsSync(resolve(root, "../public/sale/pain-barber.webp")),
       "pain-barber.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/pain-barber.png")),
+      "pain-barber.png missing",
     );
     assert.doesNotMatch(sales, /from: "shop"/);
     assert.doesNotMatch(storm, /from: "shop"|shopLabel/);

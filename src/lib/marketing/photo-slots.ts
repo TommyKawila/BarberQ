@@ -104,12 +104,14 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   painBarber: {
     id: "painBarber",
     src: "/sale/pain-barber.webp",
+    fallbackSrc: "/sale/pain-barber.png",
     swapPath: "/sale/pain-barber.webp",
-    width: 1080,
-    height: 1350,
+    width: 1122,
+    height: 1402,
     ratio: "4:5",
-    labelTh: "รูปช่างเหนื่อย ถือมือถือแชทเด้ง 4:5 1080×1350",
-    artNote: "Stressed Thai barber mid-cut, clippers + phone flooded with LINE chats",
+    labelTh: "รูปช่างตัดผมถือกรรไกรไฟฟ้าและมือถือ 4:5 1122×1402",
+    artNote:
+      "1122×1402 · Tommy pain-barber-cutting · clippers left + phone right mid-cut · PNG fallback /sale/pain-barber.png",
   },
   solutionCustomer: {
     id: "solutionCustomer",
