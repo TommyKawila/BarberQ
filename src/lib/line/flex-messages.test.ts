@@ -10,7 +10,7 @@ import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 const SHOP = "BarberQx Demo";
 const BARBER = "นัท · Nat";
 const MY = "https://example.com/demo/bookings";
-const CANCEL = "https://example.com/demo/c/tok";
+const CANCEL = "https://example.com/c/tok";
 /** Sun 18 Oct 2026 18:30–19:30 ICT */
 const START = fromZonedTime("2026-10-18T18:30:00", SHOP_TIMEZONE).toISOString();
 const END = fromZonedTime("2026-10-18T19:30:00", SHOP_TIMEZONE).toISOString();

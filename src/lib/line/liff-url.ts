@@ -30,3 +30,16 @@ export function buildShopLiffUrl(slug: string, pathSuffix = ""): string | null {
 export function buildShopCustomerUrl(slug: string, pathSuffix = ""): string {
   return buildShopLiffUrl(slug, pathSuffix) ?? buildShopWebUrl(slug, pathSuffix);
 }
+
+/**
+ * Cancel / reschedule page is global `src/app/(app)/c/[token]` → `/c/{token}`.
+ * Do NOT nest under `/{shop}` — that path 404s.
+ */
+export function buildCustomerCancelUrl(cancelToken: string): string {
+  const token = cancelToken.trim().replace(/^\/+/, "");
+  const path = `/c/${token}`;
+  const id = liffId();
+  if (id) return `https://liff.line.me/${id}${path}`;
+  const base = appBase();
+  return base ? `${base}${path}` : path;
+}

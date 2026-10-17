@@ -1,6 +1,6 @@
 import { getStore } from "@/lib/data";
 import { buildShopRescheduleFlex } from "@/lib/line/flex-messages";
-import { buildShopWebUrl } from "@/lib/line/liff-url";
+import { buildCustomerCancelUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { pushMessagesForShop } from "@/lib/line/push-message";
 import type { Appointment, Shop } from "@/types/booking";
 
@@ -24,7 +24,7 @@ export async function notifyCustomerShopReschedule(
   const barber = await store.getBarber(after.barber_id);
   const bookingsUrl = `${buildShopWebUrl(shop.slug)}/bookings`;
   const cancelUrl = after.cancel_token
-    ? `${buildShopWebUrl(shop.slug)}/c/${after.cancel_token}`
+    ? buildCustomerCancelUrl(after.cancel_token)
     : bookingsUrl;
 
   const flex = buildShopRescheduleFlex({
