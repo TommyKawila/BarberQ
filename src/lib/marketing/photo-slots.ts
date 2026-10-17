@@ -4,7 +4,7 @@
  * Product UI screenshots (LINE reminder, queue board) stay real mockups — not these slots.
  *
  * Paths (single file per slot):
- * - /sale/pain-barber.webp
+ * - /sale/pain-barber-cutting.webp
  * - /sale/solution-customer.webp
  * - /sale/solution-barber-calm.webp
  * - /sale/booking-success-barber.webp
@@ -103,15 +103,15 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
   },
   painBarber: {
     id: "painBarber",
-    src: "/sale/pain-barber.webp",
-    fallbackSrc: "/sale/pain-barber.png",
-    swapPath: "/sale/pain-barber.webp",
+    src: "/sale/pain-barber-cutting.webp",
+    fallbackSrc: "/sale/pain-barber-cutting.png",
+    swapPath: "/sale/pain-barber-cutting.webp",
     width: 1122,
     height: 1402,
     ratio: "4:5",
     labelTh: "รูปช่างตัดผมถือกรรไกรไฟฟ้าและมือถือ 4:5 1122×1402",
     artNote:
-      "1122×1402 · Tommy pain-barber-cutting · clippers left + phone right mid-cut · PNG fallback /sale/pain-barber.png",
+      "1122×1402 · Tommy pain-barber-cutting (full frame) · clippers+customer left · phone right · PNG fallback /sale/pain-barber-cutting.png",
   },
   solutionCustomer: {
     id: "solutionCustomer",

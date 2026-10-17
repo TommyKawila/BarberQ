@@ -56,7 +56,10 @@ export function PainStormVisual({
       aria-hidden="true"
       className={`relative w-full max-w-[420px] justify-self-center lg:max-w-none lg:justify-self-end ${className}`}
     >
-      {/* Mobile: 4:5 · Desktop layout C: 5:6 */}
+      {/*
+        Mobile: 4:5 ≈ source → full frame (clippers+customer left visible).
+        Desktop 5:6: object-cover + top → crop top/bottom only, keep full width.
+      */}
       <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[28px] bg-zinc-900 lg:aspect-[5/6]">
         {slot.src ? (
           <Image
@@ -64,8 +67,8 @@ export function PainStormVisual({
             alt={alt}
             fill
             sizes="(min-width: 1280px) 44vw, (min-width: 1024px) 420px, 90vw"
-            className="object-cover object-[50%_0%]"
-            priority={false}
+            className="object-cover object-[left_top] lg:object-[center_top]"
+            priority
           />
         ) : (
           <MarketingPhotoSlot
@@ -73,7 +76,7 @@ export function PainStormVisual({
             alt={alt}
             fill
             sizes="(min-width: 1280px) 44vw, 90vw"
-            objectPosition="50% 0%"
+            objectPosition="left top"
             className="h-full w-full rounded-none border-0"
           />
         )}
@@ -125,9 +128,9 @@ export function PainStormVisual({
           </div>
         </div>
 
-        {/* Desktop: 2 bubbles, lower-left bottom band on cape — clear of face, phone, clippers */}
+        {/* Desktop: 2 bubbles, lower-right bottom band — clear of face, phone, clippers (left) */}
         <div
-          className="absolute bottom-4 left-5 z-10 hidden w-[min(100%-2.5rem,20.5rem)] flex-col gap-2 lg:flex"
+          className="absolute bottom-4 right-5 z-10 hidden w-[min(100%-2.5rem,20.5rem)] flex-col gap-2 lg:flex"
           aria-hidden
         >
           {desktopIdx.map((msgIdx, i) => (
