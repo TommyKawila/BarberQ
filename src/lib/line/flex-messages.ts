@@ -426,7 +426,8 @@ export function buildShopRescheduleFlex(input: {
       },
       footer: warmNoteFooter({
         accent: SHOP_MOVE.accent,
-        primaryLabel: "ตกลง เวลาใหม่",
+        // Matches My Bookings destination (LIFF /bookings); card is TH-only.
+        primaryLabel: "ดูคิวของฉัน",
         primaryUrl: input.acceptUrl,
         linkLabel: "เลือกเวลาอื่น",
         linkUrl: input.pickUrl,
