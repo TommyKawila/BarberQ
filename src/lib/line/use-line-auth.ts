@@ -61,6 +61,12 @@ export function useLineAuth() {
           setReady(true);
           return;
         }
+        // Flex / plain web opens LINE's in-app browser (not LIFF). Auto-login
+        // there often never returns → permanent "กำลังโหลด…". Show login CTA.
+        if (!liff.isInClient()) {
+          setReady(true);
+          return;
+        }
         startLiffLogin();
       })
       .catch((err: unknown) => {
