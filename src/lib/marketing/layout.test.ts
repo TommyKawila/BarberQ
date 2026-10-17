@@ -66,6 +66,9 @@ describe("marketing layout split", () => {
     // Design C: photo is inline below copy — never absolute behind text on mobile
     assert.doesNotMatch(hero, /absolute inset-0 lg:hidden/);
     assert.match(hero, /subtitleShort/);
+    // Mobile title: forced break after LINE so Thai “ไม่ต้อง” stays intact
+    assert.match(hero, /mobileTitle/);
+    assert.match(hero, /word-break:keep-all/);
     assert.match(hero, /h-\[52px\]/);
     assert.match(hero, /marketing\.hero\.micro/);
     assert.match(hero, /marketing\.hero\.setup/);

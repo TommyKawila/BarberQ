@@ -17,9 +17,25 @@ export function SalesHero({
   /** Desktop CTA block (lg+) for sticky-bar intersection. */
   heroCtaDesktopRef?: React.RefObject<HTMLDivElement | null>;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
+  /** Design C: break after LINE so Thai “ไม่ต้อง…” stays intact (no mid-word wrap). */
+  const mobileTitle = (() => {
+    const title = t("marketing.hero.title");
+    if (locale === "th") {
+      const i = title.indexOf("LINE ");
+      if (i >= 0) {
+        return [title.slice(0, i + 4), title.slice(i + 5).trimStart()] as const;
+      }
+    } else {
+      const i = title.indexOf("LINE — ");
+      if (i >= 0) {
+        return [title.slice(0, i + 6), title.slice(i + 7).trimStart()] as const;
+      }
+    }
+    return null;
+  })();
 
   return (
     <div className="relative max-w-full overflow-x-clip bg-zinc-950">
@@ -55,8 +71,16 @@ export function SalesHero({
       */}
       <section className="relative max-w-full px-4 pb-8 pt-5 lg:hidden">
         <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-        <h1 className="mt-2 break-words text-[1.75rem] font-bold leading-[1.3] text-zinc-50">
-          {t("marketing.hero.title")}
+        <h1 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50 [word-break:keep-all]">
+          {mobileTitle ? (
+            <>
+              {mobileTitle[0]}
+              <br />
+              {mobileTitle[1]}
+            </>
+          ) : (
+            t("marketing.hero.title")
+          )}
         </h1>
         <p className="mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300">
           {t("marketing.hero.subtitleShort")}
