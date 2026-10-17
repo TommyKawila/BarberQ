@@ -803,7 +803,7 @@ export const dictionary = {
     "admin.moreBookingHint": "เปิดหน้าจองที่ลูกค้าใช้จองคิว",
     "admin.close": "ปิด",
 
-    "cancel.title": "ยกเลิกคิว",
+    "cancel.title": "เลื่อนหรือยกเลิกคิว",
     "cancel.notFound": "ไม่พบคิวนี้",
     "cancel.alreadyCancelled": "คิวนี้ถูกยกเลิกแล้ว",
     "cancel.done": "ยกเลิกคิวแล้ว",
@@ -1814,7 +1814,7 @@ export const dictionary = {
     "admin.moreBookingHint": "Open the page customers use to book",
     "admin.close": "Close",
 
-    "cancel.title": "Cancel booking",
+    "cancel.title": "Reschedule or cancel",
     "cancel.notFound": "Booking not found",
     "cancel.alreadyCancelled": "This booking is already cancelled",
     "cancel.done": "Booking cancelled",
