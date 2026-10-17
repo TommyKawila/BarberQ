@@ -42,7 +42,7 @@ export async function notifyCustomerSelfRescheduleTicket(
   const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
   const cancelUrl = after.cancel_token
     ? buildCustomerCancelUrl(after.cancel_token)
-    : myBookingsUrl;
+    : null;
 
   const flex = buildCustomerRescheduleTicketFlex({
     shopName: shop.name,

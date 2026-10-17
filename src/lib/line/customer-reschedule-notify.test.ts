@@ -103,10 +103,12 @@ describe("customer self-reschedule LINE ticket", () => {
       cancelUrl: "https://example.com/c/tok",
     });
     const json = JSON.stringify(flex);
-    assert.match(json, /เลื่อนคิวสำเร็จแล้ว/);
+    assert.match(json, /เลื่อนคิวเรียบร้อยแล้ว/);
     assert.match(json, /เลื่อนจาก/);
     assert.match(json, /line-through/);
     assert.match(json, /นัท/);
+    assert.match(json, /ยกเลิกนัด/);
+    assert.match(flex.altText, /^✓ เลื่อนคิวแล้ว /);
   });
 
   it("skips without LINE id and uses no quota", async () => {

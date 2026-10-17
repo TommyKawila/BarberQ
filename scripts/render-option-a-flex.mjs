@@ -1,6 +1,6 @@
 /**
- * Render Option A Flex cards to PNG + save simulator-ready JSON.
- * Run: node --import tsx scripts/render-option-a-flex.mjs
+ * Render Option A Flex cards to PNG + simulator JSON (contents only, one line).
+ * Run: npx tsx scripts/render-option-a-flex.mjs
  */
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -9,12 +9,18 @@ import { fromZonedTime } from "date-fns-tz";
 import {
   buildAppointmentReminderFlex,
   buildBookingConfirmFlex,
+  buildCustomerRescheduleTicketFlex,
+  buildQueueTicketFlex,
+  buildShopCancelFlex,
+  buildShopRescheduleFlex,
 } from "../src/lib/line/flex-messages.ts";
 
 const OUT = process.env.ARTIFACT_DIR || "/opt/cursor/artifacts";
 const TZ = "Asia/Bangkok";
 const START = fromZonedTime("2026-10-18T18:30:00", TZ).toISOString();
 const END = fromZonedTime("2026-10-18T19:30:00", TZ).toISOString();
+const OLD_START = fromZonedTime("2026-10-18T17:00:00", TZ).toISOString();
+const OLD_END = fromZonedTime("2026-10-18T18:00:00", TZ).toISOString();
 const NOW_OK = fromZonedTime("2026-10-17T18:30:00", TZ);
 const NOW_LATE = fromZonedTime("2026-10-18T17:45:00", TZ);
 
@@ -32,14 +38,14 @@ const cases = [
     msg: buildBookingConfirmFlex({
       ...common,
       appointmentId: "a12f3b00-0000-4000-8000-000000000001",
-      cancelUrl: "https://example.com/demo/c/tok",
+      cancelUrl: "https://example.com/c/tok",
     }),
   },
   {
     id: "option-a-reminder-with-link",
     msg: buildAppointmentReminderFlex({
       ...common,
-      cancelUrl: "https://example.com/demo/c/tok",
+      cancelUrl: "https://example.com/c/tok",
       now: NOW_OK,
     }),
   },
@@ -47,28 +53,69 @@ const cases = [
     id: "option-a-reminder-no-link",
     msg: buildAppointmentReminderFlex({
       ...common,
-      cancelUrl: "https://example.com/demo/c/tok",
+      cancelUrl: "https://example.com/c/tok",
       now: NOW_LATE,
+    }),
+  },
+  {
+    id: "option-a-reschedule-success",
+    msg: buildCustomerRescheduleTicketFlex({
+      shopName: common.shopName,
+      oldStartTime: OLD_START,
+      oldEndTime: OLD_END,
+      newStartTime: START,
+      newEndTime: END,
+      barberName: common.barberName,
+      myBookingsUrl: common.myBookingsUrl,
+      cancelUrl: "https://example.com/c/tok",
+      now: NOW_OK,
+    }),
+  },
+  {
+    id: "option-a-queue-ticket",
+    msg: buildQueueTicketFlex({
+      shopName: common.shopName,
+      queueLabel: "Q-01",
+      aheadCount: 2,
+      waitMinutes: 60,
+      liveUrl: common.myBookingsUrl,
+    }),
+  },
+  {
+    id: "option-a-shop-cancel",
+    msg: buildShopCancelFlex({
+      shopName: common.shopName,
+      startTime: START,
+      barberName: common.barberName,
+      reason: "ช่างไม่สะดวก",
+      bookUrl: "https://example.com/demo",
+      callUrl: "tel:0812345678",
+    }),
+  },
+  {
+    id: "option-a-shop-reschedule",
+    msg: buildShopRescheduleFlex({
+      shopName: common.shopName,
+      oldStartTime: OLD_START,
+      newStartTime: START,
+      barberName: common.barberName,
+      acceptUrl: common.myBookingsUrl,
+      pickUrl: common.myBookingsUrl,
+      cancelUrl: "https://example.com/c/tok",
     }),
   },
 ];
 
 function textStyle(n) {
-  const sizeMap = {
-    xs: 13,
-    sm: 14,
-    md: 16,
-    lg: 19,
-    xl: 22,
-    xxl: 29,
-  };
+  const sizeMap = { xs: 13, sm: 14, md: 16, lg: 19, xl: 22, xxl: 29, "3xl": 36 };
   const size = sizeMap[n.size] ?? 14;
   const weight = n.weight === "bold" ? 700 : 400;
   const color = n.color ?? "#1C1917";
   const margin = { none: 0, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 }[
     n.margin ?? "none"
   ];
-  return `font-size:${size}px;font-weight:${weight};color:${color};margin-top:${margin}px;line-height:1.35;word-break:break-word;`;
+  const deco = n.decoration === "line-through" ? "text-decoration:line-through;" : "";
+  return `font-size:${size}px;font-weight:${weight};color:${color};margin-top:${margin}px;line-height:1.35;word-break:break-word;${deco}`;
 }
 
 function renderNode(n) {
@@ -143,17 +190,18 @@ mkdirSync(OUT, { recursive: true });
 
 const browser = await chromium.launch();
 const page = await browser.newPage({
-  viewport: { width: 360, height: 720 },
+  viewport: { width: 360, height: 780 },
   deviceScaleFactor: 2,
 });
 
 for (const { id, msg } of cases) {
-  const jsonPath = join(OUT, `${id}.json`);
-  writeFileSync(jsonPath, JSON.stringify(msg, null, 2));
-  console.log("wrote", jsonPath);
+  // Simulator paste: bubble contents only, minified one line
+  const contentsPath = join(OUT, `${id}.contents.json`);
+  writeFileSync(contentsPath, JSON.stringify(msg.contents));
+  console.log("wrote", contentsPath);
 
   await page.setContent(bubbleHtml(msg), { waitUntil: "networkidle" });
-  await page.waitForTimeout(400);
+  await page.waitForTimeout(350);
   const pngPath = join(OUT, `${id}.png`);
   await page.locator(".phone").screenshot({ path: pngPath });
   console.log("wrote", pngPath);

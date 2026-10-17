@@ -3,7 +3,7 @@ import { th } from "date-fns/locale";
 import { canCancelAt, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import { bookingShortCode } from "@/lib/line/booking-code";
 
-/** Option A · Warm Note tokens (confirm = green, reminder = amber). */
+/** Option A · Warm Note tokens. */
 const INK = "#1C1917";
 const INK_2 = "#57534E";
 const MUTED = "#78716C";
@@ -18,6 +18,24 @@ const REMINDER = {
   accent: "#B45309",
   accentText: "#92400E",
 } as const;
+/** Queue ticket — neutral warm stone. */
+const STONE = {
+  tint: "#F5F5F4",
+  accent: "#44403C",
+  accentText: "#44403C",
+} as const;
+/** Shop cancelled the booking — rose. */
+const CANCELLED = {
+  tint: "#FEF2F2",
+  accent: "#B91C1C",
+  accentText: "#991B1B",
+} as const;
+/** Shop asks to move the booking — amber (same family as reminder). */
+const SHOP_MOVE = {
+  tint: "#FFF7ED",
+  accent: "#C2410C",
+  accentText: "#9A3412",
+} as const;
 
 function whenLabel(iso: string): string {
   return formatInTimeZone(new Date(iso), SHOP_TIMEZONE, "EEE d MMM", { locale: th });
@@ -29,7 +47,13 @@ function timeRange(startIso: string, endIso: string): string {
   return `${start}–${end}`;
 }
 
-function detailRow(label: string, value: string, margin: "lg" | "md") {
+function detailRow(
+  label: string,
+  value: string,
+  margin: "lg" | "md",
+  opts?: { struck?: boolean },
+) {
+  const struck = Boolean(opts?.struck);
   return {
     type: "box",
     layout: "baseline",
@@ -41,9 +65,40 @@ function detailRow(label: string, value: string, margin: "lg" | "md") {
         type: "text",
         text: value,
         size: "md",
+        color: struck ? MUTED : INK,
+        weight: struck ? "regular" : "bold",
+        flex: 5,
+        wrap: true,
+        ...(struck ? { decoration: "line-through" } : {}),
+      },
+    ],
+  };
+}
+
+function warmNoteHeader(shopName: string, status: string, accentText: string, tint: string) {
+  return {
+    type: "box",
+    layout: "vertical",
+    backgroundColor: tint,
+    paddingAll: "20px",
+    paddingBottom: "16px",
+    contents: [
+      {
+        type: "text",
+        text: shopName,
+        size: "lg",
         color: INK,
         weight: "bold",
-        flex: 5,
+        wrap: true,
+        maxLines: 2,
+      },
+      {
+        type: "text",
+        text: status,
+        size: "sm",
+        color: accentText,
+        weight: "bold",
+        margin: "xs",
         wrap: true,
       },
     ],
@@ -52,8 +107,11 @@ function detailRow(label: string, value: string, margin: "lg" | "md") {
 
 function warmNoteFooter(opts: {
   accent: string;
-  myBookingsUrl: string;
-  cancelUrl?: string | null;
+  primaryLabel: string;
+  primaryUrl: string;
+  linkLabel?: string;
+  linkUrl?: string | null;
+  extraLinks?: Array<{ label: string; uri: string }>;
 }) {
   const contents: unknown[] = [
     {
@@ -63,12 +121,12 @@ function warmNoteFooter(opts: {
       height: "md",
       action: {
         type: "uri",
-        label: "ดูคิวของฉัน",
-        uri: opts.myBookingsUrl,
+        label: opts.primaryLabel,
+        uri: opts.primaryUrl,
       },
     },
   ];
-  if (opts.cancelUrl) {
+  if (opts.linkUrl && opts.linkLabel) {
     contents.push({
       type: "button",
       style: "link",
@@ -76,9 +134,18 @@ function warmNoteFooter(opts: {
       height: "sm",
       action: {
         type: "uri",
-        label: "เลื่อน / ยกเลิกนัด",
-        uri: opts.cancelUrl,
+        label: opts.linkLabel,
+        uri: opts.linkUrl,
       },
+    });
+  }
+  for (const link of opts.extraLinks ?? []) {
+    contents.push({
+      type: "button",
+      style: "link",
+      color: INK_2,
+      height: "sm",
+      action: { type: "uri", label: link.label, uri: link.uri },
     });
   }
   return {
@@ -112,32 +179,12 @@ export function buildBookingConfirmFlex(input: {
     contents: {
       type: "bubble",
       size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: CONFIRM.tint,
-        paddingAll: "20px",
-        paddingBottom: "16px",
-        contents: [
-          {
-            type: "text",
-            text: input.shopName,
-            size: "lg",
-            color: INK,
-            weight: "bold",
-            wrap: true,
-            maxLines: 2,
-          },
-          {
-            type: "text",
-            text: "✓ จองคิวเรียบร้อยแล้ว",
-            size: "sm",
-            color: CONFIRM.accentText,
-            weight: "bold",
-            margin: "xs",
-          },
-        ],
-      },
+      header: warmNoteHeader(
+        input.shopName,
+        "✓ จองคิวเรียบร้อยแล้ว",
+        CONFIRM.accentText,
+        CONFIRM.tint,
+      ),
       body: {
         type: "box",
         layout: "vertical",
@@ -173,13 +220,16 @@ export function buildBookingConfirmFlex(input: {
       },
       footer: warmNoteFooter({
         accent: CONFIRM.accent,
-        myBookingsUrl: input.myBookingsUrl,
-        cancelUrl: input.cancelUrl,
+        primaryLabel: "ดูคิวของฉัน",
+        primaryUrl: input.myBookingsUrl,
+        linkLabel: "เลื่อน / ยกเลิกนัด",
+        linkUrl: input.cancelUrl,
       }),
     },
   };
 }
 
+/** Option A · Warm Note — queue ticket (stone). Sent with booking confirm pair. */
 export function buildQueueTicketFlex(input: {
   shopName: string;
   queueLabel: string;
@@ -187,82 +237,60 @@ export function buildQueueTicketFlex(input: {
   waitMinutes: number;
   liveUrl: string;
 }) {
+  const waitLine = `ก่อนหน้า ${input.aheadCount} คิว · รอประมาณ ${input.waitMinutes} นาที`;
   return {
     type: "flex",
-    altText: `${input.shopName}: บัตรคิว ${input.queueLabel}`,
+    altText: `บัตรคิว ${input.queueLabel} · ${waitLine}`,
     contents: {
       type: "bubble",
       size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#18181B",
-        paddingAll: "16px",
-        contents: [
-          {
-            type: "text",
-            text: input.shopName,
-            color: "#FBBF24",
-            size: "xs",
-          },
-          {
-            type: "text",
-            text: "บัตรคิวของคุณ",
-            color: "#FFFFFF",
-            weight: "bold",
-            size: "lg",
-            margin: "sm",
-          },
-        ],
-      },
+      header: warmNoteHeader(
+        input.shopName,
+        "บัตรคิวของคุณ",
+        STONE.accentText,
+        STONE.tint,
+      ),
       body: {
         type: "box",
         layout: "vertical",
+        paddingAll: "20px",
+        paddingTop: "16px",
         contents: [
           {
             type: "text",
             text: "คิวของคุณ",
             size: "sm",
-            color: "#71717A",
+            color: MUTED,
           },
           {
             type: "text",
             text: input.queueLabel,
-            size: "3xl",
+            size: "xxl",
             weight: "bold",
-            color: "#18181B",
-            margin: "sm",
+            color: INK,
+            margin: "xs",
           },
+          { type: "separator", margin: "lg", color: LINE },
           {
             type: "text",
-            text: `ก่อนหน้า ${input.aheadCount} คิว · รอประมาณ ${input.waitMinutes} นาที`,
+            text: waitLine,
             size: "sm",
-            color: "#52525B",
-            margin: "md",
+            color: INK_2,
             wrap: true,
+            margin: "lg",
           },
         ],
       },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            color: "#18181B",
-            action: {
-              type: "uri",
-              label: "ดูสถานะสด",
-              uri: input.liveUrl,
-            },
-          },
-        ],
-      },
+      footer: warmNoteFooter({
+        accent: STONE.accent,
+        primaryLabel: "ดูสถานะสด",
+        primaryUrl: input.liveUrl,
+      }),
     },
   };
 }
 
+/** Option A · Warm Note — shop cancelled the customer's booking (rose). */
 export function buildShopCancelFlex(input: {
   shopName: string;
   startTime: string;
@@ -271,58 +299,70 @@ export function buildShopCancelFlex(input: {
   bookUrl: string;
   callUrl?: string | null;
 }) {
-  const contents: unknown[] = [
-    row("นัด", `${whenLabel(input.startTime)} ${formatInTimeZone(new Date(input.startTime), SHOP_TIMEZONE, "HH:mm")}`, true),
-    row("ช่าง", input.barberName),
-  ];
-  if (input.reason) contents.push(row("เหตุผล", input.reason));
-
-  const footerButtons: unknown[] = [
+  const date = whenLabel(input.startTime);
+  const time = formatInTimeZone(new Date(input.startTime), SHOP_TIMEZONE, "HH:mm");
+  const bodyContents: unknown[] = [
     {
-      type: "button",
-      style: "primary",
-      color: "#18181B",
-      action: { type: "uri", label: "จองเวลาใหม่", uri: input.bookUrl },
+      type: "text",
+      text: date,
+      size: "md",
+      color: INK_2,
+      weight: "bold",
     },
+    {
+      type: "text",
+      text: time,
+      size: "xxl",
+      color: INK,
+      weight: "bold",
+    },
+    { type: "separator", margin: "lg", color: LINE },
+    detailRow("ช่าง", input.barberName, "lg"),
   ];
-  if (input.callUrl) {
-    footerButtons.push({
-      type: "button",
-      style: "secondary",
-      action: { type: "uri", label: "โทรหาร้าน", uri: input.callUrl },
-    });
-  }
+  if (input.reason) bodyContents.push(detailRow("เหตุผล", input.reason, "md"));
+  bodyContents.push({
+    type: "text",
+    text: "ขออภัยในความไม่สะดวกนะครับ จองเวลาใหม่ได้เลย",
+    size: "sm",
+    color: INK_2,
+    wrap: true,
+    margin: "lg",
+  });
 
   return {
     type: "flex",
-    altText: `${input.shopName}: ร้านยกเลิกนัดของคุณ`,
+    altText: `ร้านยกเลิกนัด ${date} ${time} กับช่าง ${input.barberName}`,
     contents: {
       type: "bubble",
       size: "mega",
-      header: {
+      header: warmNoteHeader(
+        input.shopName,
+        "ร้านยกเลิกนัดของคุณ",
+        CANCELLED.accentText,
+        CANCELLED.tint,
+      ),
+      body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#DC2626",
-        paddingAll: "16px",
-        contents: [
-          { type: "text", text: input.shopName, color: "#FECACA", size: "xs" },
-          {
-            type: "text",
-            text: "ร้านยกเลิกนัดของคุณ",
-            color: "#FFFFFF",
-            weight: "bold",
-            size: "lg",
-            margin: "sm",
-            wrap: true,
-          },
-        ],
+        paddingAll: "20px",
+        paddingTop: "16px",
+        contents: bodyContents,
       },
-      body: { type: "box", layout: "vertical", spacing: "md", contents },
-      footer: { type: "box", layout: "vertical", spacing: "sm", contents: footerButtons },
+      footer: warmNoteFooter({
+        accent: CANCELLED.accent,
+        primaryLabel: "จองเวลาใหม่",
+        primaryUrl: input.bookUrl,
+        linkLabel: input.callUrl ? "โทรหาร้าน" : undefined,
+        linkUrl: input.callUrl ?? null,
+      }),
     },
   };
 }
 
+/**
+ * Option A shell for shop-initiated reschedule (multi-action footer kept:
+ * one primary + two links — not the single-link Warm Note pattern).
+ */
 export function buildShopRescheduleFlex(input: {
   shopName: string;
   oldStartTime: string;
@@ -333,68 +373,65 @@ export function buildShopRescheduleFlex(input: {
   pickUrl: string;
   cancelUrl: string;
 }) {
-  const contents: unknown[] = [
-    row(
-      "เดิม",
-      `${whenLabel(input.oldStartTime)} ${formatInTimeZone(new Date(input.oldStartTime), SHOP_TIMEZONE, "HH:mm")}`,
-    ),
-    row(
-      "ใหม่",
-      `${whenLabel(input.newStartTime)} ${formatInTimeZone(new Date(input.newStartTime), SHOP_TIMEZONE, "HH:mm")}`,
-      true,
-    ),
-    row("ช่าง", input.barberName),
+  const newDate = whenLabel(input.newStartTime);
+  const newTime = formatInTimeZone(new Date(input.newStartTime), SHOP_TIMEZONE, "HH:mm");
+  const oldLabel = `${whenLabel(input.oldStartTime)} ${formatInTimeZone(new Date(input.oldStartTime), SHOP_TIMEZONE, "HH:mm")}`;
+  const bodyContents: unknown[] = [
+    {
+      type: "text",
+      text: newDate,
+      size: "md",
+      color: INK_2,
+      weight: "bold",
+    },
+    {
+      type: "text",
+      text: newTime,
+      size: "xxl",
+      color: INK,
+      weight: "bold",
+    },
+    { type: "separator", margin: "lg", color: LINE },
+    detailRow("ช่าง", input.barberName, "lg"),
+    detailRow("เดิม", oldLabel, "md", { struck: true }),
   ];
-  if (input.reason) contents.push(row("เหตุผล", input.reason));
+  if (input.reason) bodyContents.push(detailRow("เหตุผล", input.reason, "md"));
+  bodyContents.push({
+    type: "text",
+    text: "ร้านขอเลื่อนนัดให้นะครับ เลือกรับเวลาใหม่หรือเลือกเองได้",
+    size: "sm",
+    color: INK_2,
+    wrap: true,
+    margin: "lg",
+  });
 
   return {
     type: "flex",
-    altText: `${input.shopName}: ร้านขอเลื่อนนัดของคุณ`,
+    altText: `ร้านขอเลื่อนนัด ${newDate} ${newTime} กับช่าง ${input.barberName}`,
     contents: {
       type: "bubble",
       size: "mega",
-      header: {
+      header: warmNoteHeader(
+        input.shopName,
+        "ร้านขอเลื่อนนัดของคุณ",
+        SHOP_MOVE.accentText,
+        SHOP_MOVE.tint,
+      ),
+      body: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#EA580C",
-        paddingAll: "16px",
-        contents: [
-          { type: "text", text: input.shopName, color: "#FFEDD5", size: "xs" },
-          {
-            type: "text",
-            text: "ร้านขอเลื่อนนัดของคุณ",
-            color: "#FFFFFF",
-            weight: "bold",
-            size: "lg",
-            margin: "sm",
-            wrap: true,
-          },
-        ],
+        paddingAll: "20px",
+        paddingTop: "16px",
+        contents: bodyContents,
       },
-      body: { type: "box", layout: "vertical", spacing: "md", contents },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            color: "#18181B",
-            action: { type: "uri", label: "ตกลง เวลาใหม่", uri: input.acceptUrl },
-          },
-          {
-            type: "button",
-            style: "secondary",
-            action: { type: "uri", label: "เลือกเวลาอื่น", uri: input.pickUrl },
-          },
-          {
-            type: "button",
-            style: "secondary",
-            action: { type: "uri", label: "ยกเลิกนัด", uri: input.cancelUrl },
-          },
-        ],
-      },
+      footer: warmNoteFooter({
+        accent: SHOP_MOVE.accent,
+        primaryLabel: "ตกลง เวลาใหม่",
+        primaryUrl: input.acceptUrl,
+        linkLabel: "เลือกเวลาอื่น",
+        linkUrl: input.pickUrl,
+        extraLinks: [{ label: "ยกเลิกนัด", uri: input.cancelUrl }],
+      }),
     },
   };
 }
@@ -426,32 +463,12 @@ export function buildAppointmentReminderFlex(input: {
     contents: {
       type: "bubble",
       size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: REMINDER.tint,
-        paddingAll: "20px",
-        paddingBottom: "16px",
-        contents: [
-          {
-            type: "text",
-            text: input.shopName,
-            size: "lg",
-            color: INK,
-            weight: "bold",
-            wrap: true,
-            maxLines: 2,
-          },
-          {
-            type: "text",
-            text: "ใกล้ถึงคิวของคุณแล้ว",
-            size: "sm",
-            color: REMINDER.accentText,
-            weight: "bold",
-            margin: "xs",
-          },
-        ],
-      },
+      header: warmNoteHeader(
+        input.shopName,
+        "ใกล้ถึงคิวของคุณแล้ว",
+        REMINDER.accentText,
+        REMINDER.tint,
+      ),
       body: {
         type: "box",
         layout: "vertical",
@@ -486,34 +503,19 @@ export function buildAppointmentReminderFlex(input: {
       },
       footer: warmNoteFooter({
         accent: REMINDER.accent,
-        myBookingsUrl: input.myBookingsUrl,
-        cancelUrl: showCancelLink ? input.cancelUrl : null,
+        primaryLabel: "ดูคิวของฉัน",
+        primaryUrl: input.myBookingsUrl,
+        linkLabel: "เลื่อน / ยกเลิกนัด",
+        linkUrl: showCancelLink ? input.cancelUrl : null,
       }),
     },
   };
 }
 
-function row(label: string, value: string, bold = false, struck = false) {
-  return {
-    type: "box",
-    layout: "baseline",
-    contents: [
-      { type: "text", text: label, size: "sm", color: "#71717A", flex: 2 },
-      {
-        type: "text",
-        text: value,
-        size: "sm",
-        color: struck ? "#A1A1AA" : "#18181B",
-        flex: 5,
-        wrap: true,
-        weight: bold ? "bold" : "regular",
-        ...(struck ? { decoration: "line-through" } : {}),
-      },
-    ],
-  };
-}
-
-/** Customer self-reschedule queue ticket (new slot + old time struck through). */
+/**
+ * Option A · Warm Note — customer self-reschedule success (confirm green).
+ * Link is cancel-only (`ยกเลิกนัด`) because the one reschedule is already used.
+ */
 export function buildCustomerRescheduleTicketFlex(input: {
   shopName: string;
   oldStartTime: string;
@@ -522,70 +524,68 @@ export function buildCustomerRescheduleTicketFlex(input: {
   newEndTime: string;
   barberName: string;
   myBookingsUrl: string;
-  cancelUrl: string;
+  cancelUrl?: string | null;
+  now?: Date;
 }) {
+  const date = whenLabel(input.newStartTime);
+  const time = timeRange(input.newStartTime, input.newEndTime);
   const oldLabel = `${whenLabel(input.oldStartTime)} ${timeRange(input.oldStartTime, input.oldEndTime)}`;
+  const showCancelLink =
+    Boolean(input.cancelUrl?.trim()) &&
+    canCancelAt(input.newStartTime, input.now ?? new Date());
+
   return {
     type: "flex",
-    altText: `${input.shopName}: เลื่อนคิวสำเร็จแล้ว`,
+    altText: `✓ เลื่อนคิวแล้ว ${date} ${time} กับช่าง ${input.barberName}`,
     contents: {
       type: "bubble",
       size: "mega",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#EA580C",
-        paddingAll: "16px",
-        contents: [
-          { type: "text", text: input.shopName, color: "#FFEDD5", size: "xs" },
-          {
-            type: "text",
-            text: "✓ เลื่อนคิวสำเร็จแล้ว",
-            color: "#FFFFFF",
-            weight: "bold",
-            size: "lg",
-            margin: "sm",
-            wrap: true,
-          },
-        ],
-      },
+      header: warmNoteHeader(
+        input.shopName,
+        "✓ เลื่อนคิวเรียบร้อยแล้ว",
+        CONFIRM.accentText,
+        CONFIRM.tint,
+      ),
       body: {
         type: "box",
         layout: "vertical",
-        spacing: "md",
-        contents: [
-          row("วัน", whenLabel(input.newStartTime)),
-          row("เวลา", timeRange(input.newStartTime, input.newEndTime), true),
-          row("ช่าง", input.barberName),
-          row("เลื่อนจาก", oldLabel, false, true),
-        ],
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
+        paddingAll: "20px",
+        paddingTop: "16px",
         contents: [
           {
-            type: "button",
-            style: "primary",
-            color: "#18181B",
-            action: {
-              type: "uri",
-              label: "ดูคิวของฉัน",
-              uri: input.myBookingsUrl,
-            },
+            type: "text",
+            text: date,
+            size: "md",
+            color: INK_2,
+            weight: "bold",
           },
           {
-            type: "button",
-            style: "secondary",
-            action: {
-              type: "uri",
-              label: "เลื่อน/ยกเลิก",
-              uri: input.cancelUrl,
-            },
+            type: "text",
+            text: time,
+            size: "xxl",
+            color: INK,
+            weight: "bold",
+          },
+          { type: "separator", margin: "lg", color: LINE },
+          detailRow("ช่าง", input.barberName, "lg"),
+          detailRow("เลื่อนจาก", oldLabel, "md", { struck: true }),
+          {
+            type: "text",
+            text: "เลื่อนคิวเรียบร้อยครับ แล้วเจอกันที่ร้าน",
+            size: "sm",
+            color: INK_2,
+            wrap: true,
+            margin: "lg",
           },
         ],
       },
+      footer: warmNoteFooter({
+        accent: CONFIRM.accent,
+        primaryLabel: "ดูคิวของฉัน",
+        primaryUrl: input.myBookingsUrl,
+        linkLabel: "ยกเลิกนัด",
+        linkUrl: showCancelLink ? input.cancelUrl : null,
+      }),
     },
   };
 }

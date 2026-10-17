@@ -4,6 +4,9 @@ import { fromZonedTime } from "date-fns-tz";
 import {
   buildAppointmentReminderFlex,
   buildBookingConfirmFlex,
+  buildCustomerRescheduleTicketFlex,
+  buildQueueTicketFlex,
+  buildShopCancelFlex,
 } from "@/lib/line/flex-messages";
 import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 
@@ -74,7 +77,7 @@ function assertValidFlexMessage(msg: { type: string; altText: string; contents: 
       assert.ok(action);
       assert.equal(action.type, "uri");
       assert.ok(typeof action.label === "string" && String(action.label).length <= 40);
-      assert.match(String(action.uri), /^https:\/\//);
+      assert.match(String(action.uri), /^(https:\/\/|tel:)/);
       if (n.style === "primary") primaryCount += 1;
     }
   });
@@ -222,5 +225,105 @@ describe("buildAppointmentReminderFlex (Option A)", () => {
     assert.match(msg.altText, /18:30–19:30/);
     assert.match(msg.altText, /กับช่าง นัท · Nat$/);
     assert.ok(!msg.altText.includes(SHOP));
+  });
+});
+
+describe("buildCustomerRescheduleTicketFlex (Option A)", () => {
+  const oldStart = fromZonedTime("2026-10-18T17:00:00", SHOP_TIMEZONE).toISOString();
+  const oldEnd = fromZonedTime("2026-10-18T18:00:00", SHOP_TIMEZONE).toISOString();
+
+  it("uses confirm green + เลื่อนจาก struck + cancel-only link", () => {
+    const msg = buildCustomerRescheduleTicketFlex({
+      shopName: SHOP,
+      oldStartTime: oldStart,
+      oldEndTime: oldEnd,
+      newStartTime: START,
+      newEndTime: END,
+      barberName: BARBER,
+      myBookingsUrl: MY,
+      cancelUrl: CANCEL,
+      now: fromZonedTime("2026-10-17T18:30:00", SHOP_TIMEZONE),
+    });
+    assertValidFlexMessage(msg);
+    const c = msg.contents as {
+      header: { backgroundColor: string; contents: Array<{ text: string }> };
+      body: { contents: Array<Record<string, unknown>> };
+    };
+    assert.equal(c.header.backgroundColor, "#ECFDF3");
+    assert.equal(c.header.contents[1]?.text, "✓ เลื่อนคิวเรียบร้อยแล้ว");
+    const struck = c.body.contents.find(
+      (n) =>
+        n.type === "box" &&
+        Array.isArray(n.contents) &&
+        (n.contents as Array<{ text?: string }>)[0]?.text === "เลื่อนจาก",
+    ) as { contents: Array<{ decoration?: string; color?: string }> };
+    assert.equal(struck.contents[1]?.decoration, "line-through");
+    const buttons = footerButtons(msg);
+    assert.equal(buttons.length, 2);
+    assert.equal(buttons[0]?.color, "#15803D");
+    assert.equal((buttons[1]?.action as { label: string }).label, "ยกเลิกนัด");
+    assert.match(msg.altText, /^✓ เลื่อนคิวแล้ว /);
+  });
+
+  it("hides ยกเลิกนัด when <60 min before new start", () => {
+    const msg = buildCustomerRescheduleTicketFlex({
+      shopName: SHOP,
+      oldStartTime: oldStart,
+      oldEndTime: oldEnd,
+      newStartTime: START,
+      newEndTime: END,
+      barberName: BARBER,
+      myBookingsUrl: MY,
+      cancelUrl: CANCEL,
+      now: fromZonedTime("2026-10-18T17:45:00", SHOP_TIMEZONE),
+    });
+    assert.equal(footerButtons(msg).length, 1);
+    assertValidFlexMessage(msg);
+  });
+});
+
+describe("buildQueueTicketFlex (Option A stone)", () => {
+  it("uses stone tint and xxl queue label", () => {
+    const msg = buildQueueTicketFlex({
+      shopName: SHOP,
+      queueLabel: "Q-01",
+      aheadCount: 2,
+      waitMinutes: 60,
+      liveUrl: MY,
+    });
+    assertValidFlexMessage(msg);
+    const c = msg.contents as {
+      header: { backgroundColor: string; contents: Array<{ text: string }> };
+      body: { contents: Array<{ text?: string; size?: string }> };
+    };
+    assert.equal(c.header.backgroundColor, "#F5F5F4");
+    assert.equal(c.header.contents[1]?.text, "บัตรคิวของคุณ");
+    assert.ok(c.body.contents.some((n) => n.text === "Q-01" && n.size === "xxl"));
+    const buttons = footerButtons(msg);
+    assert.equal(buttons.length, 1);
+    assert.equal(buttons[0]?.color, "#44403C");
+    assert.equal((buttons[0]?.action as { label: string }).label, "ดูสถานะสด");
+    assert.match(msg.altText, /^บัตรคิว Q-01/);
+    assert.ok(!msg.altText.includes(SHOP));
+  });
+});
+
+describe("buildShopCancelFlex (Option A rose)", () => {
+  it("uses rose warm-note with one primary", () => {
+    const msg = buildShopCancelFlex({
+      shopName: SHOP,
+      startTime: START,
+      barberName: BARBER,
+      bookUrl: "https://example.com/demo",
+      callUrl: "tel:0812345678",
+    });
+    assertValidFlexMessage(msg);
+    const c = msg.contents as { header: { backgroundColor: string } };
+    assert.equal(c.header.backgroundColor, "#FEF2F2");
+    const buttons = footerButtons(msg);
+    assert.equal(buttons.length, 2);
+    assert.equal(buttons[0]?.color, "#B91C1C");
+    assert.equal((buttons[0]?.action as { label: string }).label, "จองเวลาใหม่");
+    assert.equal((buttons[1]?.action as { label: string }).label, "โทรหาร้าน");
   });
 });
