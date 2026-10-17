@@ -1,61 +1,179 @@
 "use client";
 
-import Image from "next/image";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
-import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
-import { HeroProductMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
+import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
+import { PrimaryTrialCta, RiskReversalRow } from "@/components/marketing/PrimaryTrialCta";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import type { MessageKey } from "@/lib/i18n/dictionary";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-import { handPhoneHero } from "@/lib/marketing/screens";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 
-export function SalesHero() {
-  const { t } = useI18n();
+export function SalesHero({
+  heroCtaRef,
+  heroCtaDesktopRef,
+}: {
+  /** Mobile / tablet CTA block (<lg) for sticky-bar intersection. */
+  heroCtaRef?: React.RefObject<HTMLDivElement | null>;
+  /** Desktop CTA block (lg+) for sticky-bar intersection. */
+  heroCtaDesktopRef?: React.RefObject<HTMLDivElement | null>;
+}) {
+  const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
+  const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
+  /** Design C: break after LINE so Thai “ไม่ต้อง…” stays intact (no mid-word wrap). */
+  const mobileTitle = (() => {
+    const title = t("marketing.hero.title");
+    if (locale === "th") {
+      const i = title.indexOf("LINE ");
+      if (i >= 0) {
+        return [title.slice(0, i + 4), title.slice(i + 5).trimStart()] as const;
+      }
+    } else {
+      const i = title.indexOf("LINE — ");
+      if (i >= 0) {
+        return [title.slice(0, i + 6), title.slice(i + 7).trimStart()] as const;
+      }
+    }
+    return null;
+  })();
 
   return (
-    <div className="relative max-w-full overflow-x-clip">
-      {/* Full-bleed ambience — dark barbershop atmosphere under cutout / mobile visual */}
-      <div className="absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_18%_0%,rgba(244,183,64,0.14),transparent_48%),radial-gradient(ellipse_at_88%_18%,rgba(244,183,64,0.08),transparent_42%),radial-gradient(ellipse_at_70%_80%,rgba(39,39,42,0.95),transparent_50%),linear-gradient(165deg,#09090B_0%,#18181B_48%,#0B0B0B_100%)]" />
+    <div className="relative max-w-full overflow-x-clip bg-zinc-950">
+      {/*
+        Desktop (lg+): full-bleed — subject on right, left fade for copy.
+        Locked (Tommy hero-composite). Do not change.
+      */}
+      <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
+        <MarketingPhotoSlot
+          slot="heroDesktop"
+          alt=""
+          priority
+          fill
+          sizes="100vw"
+          objectPosition="right center"
+          className="absolute inset-0 h-full w-full rounded-none border-0"
+        />
         <div
-          className="absolute inset-0 opacity-[0.06]"
+          className="absolute inset-0"
           style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4B740' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
+            background:
+              "linear-gradient(to right, rgba(9,9,11,0.55) 0%, rgba(9,9,11,0.28) 28%, rgba(9,9,11,0.08) 42%, transparent 52%)",
           }}
         />
-        {/* Soft vignette so right-column cutout sits in a lit pocket */}
-        <div className="absolute inset-0 hidden bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent md:block" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/40 via-transparent to-zinc-950/25" />
       </div>
 
       <MarketingNav />
-      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[700px] lg:pt-10">
-        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-8 lg:px-6">
-          <div className="relative z-10 min-w-0 max-w-full text-left">
+
+      {/*
+        Mobile / tablet (<lg): design C — flat zinc-950, text then CTAs then photo.
+        Never place the photo behind type.
+      */}
+      <section className="relative max-w-full px-4 pb-8 pt-5 lg:hidden">
+        <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
+        <h1 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50 [word-break:keep-all]">
+          {mobileTitle ? (
+            <>
+              {mobileTitle[0]}
+              <br />
+              {mobileTitle[1]}
+            </>
+          ) : (
+            t("marketing.hero.title")
+          )}
+        </h1>
+        <p className="mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300">
+          {t("marketing.hero.subtitleShort")}
+        </p>
+
+        <div ref={heroCtaRef} className="relative mt-5 max-w-full">
+          <div className="flex w-full items-stretch gap-2.5">
+            <PrimaryTrialCta
+              labelKey="marketing.hero.cta"
+              placement="hero"
+              showRisk={false}
+              className="h-[52px] min-h-[52px] flex-1 justify-center px-4 py-0 text-center text-[15px] sm:text-base"
+            />
+            {/* Design C always shows “ดูวิธีทำงาน” — not the support LINE label */}
+            <a
+              href="#how-it-works"
+              onClick={() => trackMarketingEvent("how_it_works_click")}
+              className="inline-flex h-[52px] min-h-[52px] shrink-0 items-center justify-center rounded-xl border border-zinc-400/55 bg-transparent px-3.5 text-[15px] font-medium text-zinc-100 hover:border-zinc-300 hover:text-zinc-50"
+            >
+              {t("marketing.hero.secondaryFallback")}
+            </a>
+          </div>
+          <RiskReversalRow className="mt-3 justify-start gap-x-3 text-[13px] sm:justify-start" />
+        </div>
+
+        <div className="relative mt-5 overflow-hidden rounded-2xl">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-10 bg-gradient-to-b from-zinc-950/90 to-transparent"
+            aria-hidden
+          />
+          <MarketingPhotoSlot
+            slot="heroMobile"
+            alt=""
+            priority
+            sizes="(max-width: 1023px) 100vw, 0px"
+            className="w-full rounded-2xl"
+          />
+        </div>
+
+        <p className="mt-4 max-w-full break-words text-sm leading-relaxed text-zinc-400">
+          {td("marketing.hero.micro")}
+        </p>
+        <p className="mt-2 max-w-full text-sm font-medium text-amber-300/95">
+          {t("marketing.hero.setup")}
+        </p>
+      </section>
+
+      {/* Desktop copy column locked (Tommy): stays on dark left of hero-composite */}
+      <section className="relative hidden min-h-[min(720px,100svh)] max-w-full flex-col justify-center pb-16 pt-12 lg:flex">
+        <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:gap-8 lg:px-6">
+          <div className="relative z-10 min-w-0 max-w-full text-left lg:max-w-[34rem]">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-            <h1 className="mt-3 break-words text-[2rem] font-bold leading-[1.2] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
+            <h1 className="mt-3 break-words text-[3.5rem] font-bold leading-[1.2] text-zinc-50">
               {t("marketing.hero.title")}
             </h1>
-            <p className="mt-4 max-w-full break-words text-base leading-relaxed text-zinc-300 md:max-w-xl md:text-lg">
+            <p className="mt-4 max-w-full break-words text-lg leading-relaxed text-zinc-300 md:max-w-xl">
               {t("marketing.hero.subtitle")}
             </p>
+            <p className="mt-3 max-w-full text-base font-medium text-amber-300/95">
+              {t("marketing.hero.setup")}
+            </p>
 
-            <div className="relative mt-8 max-w-full md:max-w-xl">
-              <div className="relative flex w-full max-w-full flex-col gap-3 md:flex-row md:items-center">
-                <MarketingTrialLink className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl bg-amber-400 px-4 py-3 text-center font-semibold text-zinc-950 sm:px-6 md:w-auto">
-                  {td("marketing.hero.cta")}
-                </MarketingTrialLink>
-                <a
-                  href="#how-it-works"
-                  onClick={() => trackMarketingEvent("how_it_works_click")}
-                  className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/30 px-4 py-3 text-center font-medium text-zinc-100 sm:px-6 md:w-auto"
-                >
-                  {t("marketing.hero.secondary")}
-                </a>
+            <div ref={heroCtaDesktopRef} className="relative mt-6 max-w-full md:max-w-xl">
+              <div className="flex w-full flex-row items-center gap-3">
+                <PrimaryTrialCta
+                  labelKey="marketing.hero.cta"
+                  placement="hero"
+                  showRisk={false}
+                  className="w-auto justify-start text-left"
+                />
+                {supportUrl ? (
+                  <a
+                    href={supportUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      trackMarketingEvent("support_line_click", { cta_location: "hero" })
+                    }
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-500/45 bg-transparent px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-400 hover:text-zinc-50"
+                  >
+                    {t("marketing.hero.secondary")}
+                  </a>
+                ) : (
+                  <a
+                    href="#how-it-works"
+                    onClick={() => trackMarketingEvent("how_it_works_click")}
+                    className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-500/45 bg-transparent px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-400 hover:text-zinc-50"
+                  >
+                    {t("marketing.hero.secondaryFallback")}
+                  </a>
+                )}
               </div>
+              <RiskReversalRow />
             </div>
 
             <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
@@ -63,31 +181,7 @@ export function SalesHero() {
             </p>
           </div>
 
-          {/* Desktop: transparent cutout in the RIGHT column — full phone screen visible */}
-          <div
-            className="hero-phones-enter relative hidden w-full min-w-0 max-w-full md:flex md:justify-end md:self-center"
-            aria-label={t("marketing.hero.productAlt")}
-          >
-            <div className="relative w-full max-w-[min(100%,340px)] lg:max-w-[360px] xl:max-w-[380px]">
-              <Image
-                src={handPhoneHero.cutout}
-                alt=""
-                width={handPhoneHero.cutoutWidth}
-                height={handPhoneHero.cutoutHeight}
-                priority
-                sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, 340px"
-                className="h-auto w-full object-contain drop-shadow-[0_28px_60px_rgba(0,0,0,0.55)]"
-              />
-            </div>
-          </div>
-
-          {/* Mobile: keep large hand-phone product visual (unchanged) */}
-          <div
-            className="hero-phones-enter relative w-full min-w-0 max-w-full md:hidden"
-            aria-label={t("marketing.hero.productAlt")}
-          >
-            <HeroProductMockups />
-          </div>
+          <div className="hidden lg:block" aria-hidden />
         </div>
       </section>
     </div>

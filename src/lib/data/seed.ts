@@ -13,8 +13,11 @@ export const BARBER_SEED = [
   },
   {
     id: "33333333-3333-4333-8333-333333333333",
-    name: "Nat",
+    name: "นัท",
     slot_duration_minutes: 60,
     off_days: [4],
+    /** Demo portrait for booking-success showcase (memory mode). */
+    profile_image_url: "/marketing/demo/barber-nat.webp",
+    show_profile_in_booking: true,
   },
 ] as const;

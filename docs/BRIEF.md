@@ -11,26 +11,28 @@
 BarberQx เป็นแพลตฟอร์มจองคิวสำหรับร้านตัดผม ลูกค้าจองจาก LINE OA ของร้าน ร้านจัดการคิวและทีมช่างจากมือถือ  
 _(source: `README.md`, `src/app/page.tsx` metadata — verified 2026-10-15)_
 
-### ฟีเจอร์ที่ใช้งานจริงใน production (P5)
+### ฟีเจอร์ที่ใช้งานจริงใน production (ถึง P8)
 
 - จองคิวผ่าน LINE
 - บอร์ดคิว (queue board)
 - จัดการทีมช่าง (staff)
-- Walk-in
+- Walk-in (พนักงานลงคิว)
 - จองทางโทรและแชท
 - แจ้งเตือนผ่าน LINE
 - เตือนก่อนถึงคิว (reminders)
 - เปิด/ปิดข้อความยืนยัน (confirmation toggle)
 - เครื่องคำนวณต้นทุนข้อความ (message cost calculator)
+- P6: ลูกค้าเลื่อนคิวเอง (self-reschedule)
+- P7: สรุปรายได้ / ลูกค้าไม่มา / ช่วงเวลายุ่ง + เครื่องมือ no-show บนบอร์ด
+- P8: สแกน QR หน้าร้านต่อคิว walk-in ผ่าน LINE — เห็นลำดับคิวสด และได้ LINE เตือนเมื่อใกล้ถึงคิว
 
-_(source: Tommy / product status P5 — 2026-10-14)_
+_(source: merged P5–P8 on `main` — verified 2026-10-15)_
 
 ### ยังไม่รวมใน production
 
-- P6: ลูกค้าเลื่อนคิวเอง (self-reschedule) — อยู่ใน PR ยังไม่ merge  
-- P7: เครื่องมือจัดการ no-show — อยู่ใน PR ยังไม่ merge  
+- จอทีวีในร้าน (in-shop TV / waiting-room display) — ยังไม่สร้าง  
 
-_(source: Tommy — 2026-10-14)_
+_(source: Tommy / sale-page scope — 2026-10-15)_
 
 ### อื่น ๆ
 
@@ -79,7 +81,9 @@ _(source: `src/lib/i18n/dictionary.ts` marketing.pricing.* — verified 2026-10-
 
 รายละเอียดที่ยังไม่ยืนยัน:
 
-- ขนาดร้านเป้าหมาย (เมือง/ต่างจังหวัด, เชน vs ร้านเดี่ยว): `unknown`
+- กลุ่มหลักปัจจุบัน: ร้านเล็ก 1–2 ช่าง ทั้งในกรุงและต่างจังหวัด (เข้าถึงผ่านกลุ่ม Facebook ช่าง)  
+  _(source: Tommy target update — 2026-10-15)_
+- ขนาดร้านเป้าหมายอื่น / เชน vs ร้านเดี่ยวเพิ่มเติม: `unknown`
 - ICP / persona เชิง demography เพิ่มเติม: `unknown`
 - งบประมาณเฉลี่ยของร้านที่แปลงเป็นลูกค้าจ่ายเงิน: `unknown`
 - คู่แข่งที่อ้างอิงอย่างเป็นทางการ: `unknown`

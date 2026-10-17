@@ -208,7 +208,9 @@ describe("P6 customer self-reschedule", () => {
   it("Thai copy covers slot-taken keep-old and เลื่อนคิว label", () => {
     assert.match(dictionary.th["booking.reschedule"], /เลื่อนคิว/);
     assert.match(dictionary.th["booking.rescheduleSlotTaken"], /คิวเดิมของคุณยังอยู่/);
-    assert.match(dictionary.th["marketing.features.5.title"], /แจ้งยกเลิก–เลื่อนผ่าน LINE/);
+    // Sale page: customer self-reschedule lives in LINE section; features.5 is shop move/cancel.
+    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนคิวเอง/);
+    assert.match(dictionary.th["marketing.line.rescheduleTitle"], /เลื่อนคิวเอง/);
   });
 
   it("migration 0034 defines reschedule_count + atomic RPCs", () => {
