@@ -7,6 +7,7 @@ import {
   buildCustomerRescheduleTicketFlex,
   buildQueueTicketFlex,
   buildShopCancelFlex,
+  buildShopRescheduleFlex,
 } from "@/lib/line/flex-messages";
 import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 
@@ -325,5 +326,28 @@ describe("buildShopCancelFlex (Option A rose)", () => {
     assert.equal(buttons[0]?.color, "#B91C1C");
     assert.equal((buttons[0]?.action as { label: string }).label, "จองเวลาใหม่");
     assert.equal((buttons[1]?.action as { label: string }).label, "โทรหาร้าน");
+  });
+});
+
+describe("buildShopRescheduleFlex (Option A amber)", () => {
+  it("primary CTA is ดูคิวของฉัน; keep เลือกเวลาอื่น + ยกเลิกนัด", () => {
+    const oldStart = fromZonedTime("2026-10-18T17:00:00", SHOP_TIMEZONE).toISOString();
+    const msg = buildShopRescheduleFlex({
+      shopName: SHOP,
+      oldStartTime: oldStart,
+      newStartTime: START,
+      barberName: BARBER,
+      acceptUrl: MY,
+      pickUrl: MY,
+      cancelUrl: CANCEL,
+    });
+    assertValidFlexMessage(msg);
+    const buttons = footerButtons(msg);
+    assert.equal(buttons.length, 3);
+    assert.equal((buttons[0]?.action as { label: string }).label, "ดูคิวของฉัน");
+    assert.equal((buttons[0]?.action as { uri: string }).uri, MY);
+    assert.equal((buttons[1]?.action as { label: string }).label, "เลือกเวลาอื่น");
+    assert.equal((buttons[2]?.action as { label: string }).label, "ยกเลิกนัด");
+    assert.doesNotMatch(JSON.stringify(msg.contents), /ตกลง เวลาใหม่/);
   });
 });
