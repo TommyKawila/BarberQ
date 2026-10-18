@@ -22,6 +22,7 @@ import { ClarityMarketingScript } from "@/components/marketing/ClarityMarketingS
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
 import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { SalesHero } from "@/components/marketing/SalesHero";
+import { HowItWorksMobile } from "@/components/marketing/HowItWorksMobile";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import {
@@ -526,36 +527,45 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section id="how-it-works" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
+      {/* How it works — mobile compact tabs; desktop 3-column unchanged */}
+      <section
+        id="how-it-works"
+        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/25 to-zinc-950"
+      >
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
-          <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
-            {t("marketing.how.title")}
-          </h2>
-          <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:items-stretch lg:gap-6">
-            {([1, 2, 3] as const).map((n) => {
-              const Icon = HOW_ICONS[n - 1];
-              return (
-                <li key={n} className="flex h-full flex-col items-center text-center">
-                  <span className="flex items-center gap-2 text-xl font-bold tabular-nums text-amber-400 lg:text-3xl">
-                    <Icon size={22} className="shrink-0" strokeWidth={2} />
-                    {String(n).padStart(2, "0")}
-                  </span>
-                  <h3 className="mt-3 text-lg font-bold leading-snug text-zinc-50">
-                    {t(`marketing.how.${n}.title` as MessageKey)}
-                  </h3>
-                  <p className={`mt-1.5 ${BODY}`}>
-                    {t(`marketing.how.${n}.desc` as MessageKey)}
-                  </p>
-                  {/* mt-auto keeps phone bezels aligned across columns (right was sitting low) */}
-                  <div className="mt-5 w-full lg:mt-auto lg:pt-5">
-                    <CustomerStepPhone step={n} />
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-          <p className="mt-8 text-center text-sm text-zinc-400">{t("marketing.how.micro")}</p>
+          <HowItWorksMobile />
+
+          <div className="hidden md:block">
+            <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
+              {t("marketing.how.title")}
+            </h2>
+            <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:items-stretch lg:gap-6">
+              {([1, 2, 3] as const).map((n) => {
+                const Icon = HOW_ICONS[n - 1];
+                return (
+                  <li key={n} className="flex h-full flex-col items-center text-center">
+                    <span className="flex items-center gap-2 text-xl font-bold tabular-nums text-amber-400 lg:text-3xl">
+                      <Icon size={22} className="shrink-0" strokeWidth={2} />
+                      {String(n).padStart(2, "0")}
+                    </span>
+                    <h3 className="mt-3 text-lg font-bold leading-snug text-zinc-50">
+                      {t(`marketing.how.${n}.title` as MessageKey)}
+                    </h3>
+                    <p className={`mt-1.5 ${BODY}`}>
+                      {t(`marketing.how.${n}.desc` as MessageKey)}
+                    </p>
+                    {/* mt-auto keeps phone bezels aligned across columns (right was sitting low) */}
+                    <div className="mt-5 w-full lg:mt-auto lg:pt-5">
+                      <CustomerStepPhone step={n} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+            <p className="mt-8 text-center text-[15px] leading-relaxed text-zinc-300 md:text-base">
+              {t("marketing.how.micro")}
+            </p>
+          </div>
         </div>
       </section>
 

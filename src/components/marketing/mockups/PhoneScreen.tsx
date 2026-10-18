@@ -15,6 +15,8 @@ type Props = {
   /** Fill parent height; width follows phone aspect (desktop board row). */
   matchHeight?: boolean;
   className?: string;
+  /** Extra classes on the screenshot image (e.g. crop/zoom). */
+  imageClassName?: string;
   priority?: boolean;
 };
 
@@ -31,6 +33,7 @@ export function PhoneScreen({
   fluid,
   matchHeight,
   className,
+  imageClassName,
   priority,
 }: Props) {
   return (
@@ -48,7 +51,7 @@ export function PhoneScreen({
         height={844}
         sizes="(max-width: 768px) 64vw, 280px"
         priority={priority}
-        className="h-full w-full object-cover object-top"
+        className={`h-full w-full object-cover object-top ${imageClassName ?? ""}`}
       />
     </PhoneFrame>
   );

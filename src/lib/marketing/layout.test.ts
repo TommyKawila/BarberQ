@@ -92,11 +92,26 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
+    const mobileHow = readFileSync(
+      resolve(root, "components/marketing/HowItWorksMobile.tsx"),
+      "utf8",
+    );
     assert.match(sales, /lg:grid-cols-3/);
     assert.match(sales, /CustomerStepPhone/);
+    assert.match(sales, /HowItWorksMobile/);
+    assert.match(sales, /via-zinc-900\/25/);
+    assert.match(mobileHow, /role="tablist"/);
+    assert.match(mobileHow, /aria-selected/);
+    assert.match(mobileHow, /aria-controls/);
+    assert.match(mobileHow, /prefers-reduced-motion/);
+    assert.match(mobileHow, /IntersectionObserver/);
+    assert.match(mobileHow, /max-w-\[270px\]/);
+    assert.match(mobileHow, /marketing\.how\.eyebrow/);
     const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
     assert.match(stepFn, /hidden lg:block/);
     assert.match(stepFn, /size="md"/);
+    assert.match(stepFn, /compact/);
+    assert.match(stepFn, /object-\[center_32%\]/);
     assert.match(mockups, /1:\s*"choose"/);
     assert.match(mockups, /2:\s*"ticket"/);
     assert.match(mockups, /3:\s*"adminQueue"/);

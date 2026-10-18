@@ -30,8 +30,29 @@ function ScreenFrame({ screen, size, fluid, className, priority }: FrameProps) {
   );
 }
 
-export function CustomerStepPhone({ step }: { step: 1 | 2 | 3 }) {
+export function CustomerStepPhone({
+  step,
+  /** Compact mobile how-it-works: single capped phone; step 3 uses a readable board crop. */
+  compact,
+}: {
+  step: 1 | 2 | 3;
+  compact?: boolean;
+}) {
   const screen = STEP_SCREENS[step];
+  if (compact) {
+    return (
+      <PhoneScreen
+        screen={screen}
+        fluid
+        className="mx-auto w-full max-w-[270px]"
+        imageClassName={
+          step === 3
+            ? "origin-[center_30%] scale-[1.55] object-[center_32%]"
+            : undefined
+        }
+      />
+    );
+  }
   return (
     <>
       <div className="lg:hidden">
