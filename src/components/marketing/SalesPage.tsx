@@ -7,6 +7,7 @@ import {
   CalendarClock,
   ChartColumn,
   Check,
+  ChevronRight,
   CircleCheck,
   MessageCircle,
   Minus,
@@ -739,30 +740,36 @@ export function SalesPage() {
                   </div>
                 );
               })}
-              <div className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-3.5">
-                <p className="text-[15px] font-semibold leading-snug text-zinc-50">
-                  {t("marketing.pricing.contactRange")}
-                </p>
-                {supportLineUrl ? (
-                  <a
-                    href={supportLineUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() =>
-                      trackMarketingEvent("support_line_click", {
-                        cta_location: "pricing",
-                      })
-                    }
-                    className="shrink-0 text-base font-bold text-amber-400 underline-offset-2 hover:underline"
-                  >
+              {supportLineUrl ? (
+                <a
+                  href={supportLineUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() =>
+                    trackMarketingEvent("support_line_click", {
+                      cta_location: "pricing",
+                    })
+                  }
+                  className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-zinc-800/70 active:bg-zinc-800"
+                >
+                  <p className="text-[15px] font-semibold leading-snug text-zinc-50">
+                    {t("marketing.pricing.contactRange")}
+                  </p>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-base font-bold text-amber-400">
                     {t("marketing.pricing.contactTitle")}
-                  </a>
-                ) : (
+                    <ChevronRight size={18} strokeWidth={2.25} aria-hidden />
+                  </span>
+                </a>
+              ) : (
+                <div className="flex min-h-12 w-full items-center justify-between gap-3 px-4 py-3.5">
+                  <p className="text-[15px] font-semibold leading-snug text-zinc-50">
+                    {t("marketing.pricing.contactRange")}
+                  </p>
                   <span className="shrink-0 text-base font-bold text-amber-400">
                     {t("marketing.pricing.contactTitle")}
                   </span>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             <p className="mt-4 text-sm leading-snug text-zinc-400">
