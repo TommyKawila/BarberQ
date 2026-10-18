@@ -32,6 +32,7 @@ export async function notifyCustomerShopReschedule(
 
   const store = getStore();
   const barber = await store.getBarber(after.barber_id);
+  const settings = await store.getShopSettings(shop.id);
   const bookingsUrl = shopRescheduleBookingsUrl(shop.slug);
   const cancelUrl = after.cancel_token
     ? buildCustomerCancelUrl(after.cancel_token)
@@ -46,6 +47,7 @@ export async function notifyCustomerShopReschedule(
     acceptUrl: bookingsUrl,
     pickUrl: bookingsUrl,
     cancelUrl,
+    showBrandFooter: settings.showFlexBrandFooter !== false,
   });
 
   await pushMessagesForShop(

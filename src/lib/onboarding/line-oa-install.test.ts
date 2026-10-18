@@ -193,7 +193,7 @@ describe("line-oa-install copy", () => {
   it("has Thai help card copy", () => {
     assert.equal(dictionary.th["onboarding.oaHelpTitle"], "ติดตั้งไม่เป็น? ให้เราช่วยได้");
     assert.equal(dictionary.th["onboarding.oaHelpRequestCta"], "ให้ทีมช่วยติดตั้ง");
-    assert.equal(dictionary.th["onboarding.oaHelpNoPassword"], "BarberQ จะไม่ขอรหัสผ่าน LINE ของคุณ");
+    assert.equal(dictionary.th["onboarding.oaHelpNoPassword"], "ClipperQ จะไม่ขอรหัสผ่าน LINE ของคุณ");
     assert.equal(dictionary.th["onboarding.lineSupportSubmit"], "ส่งคำขอ");
   });
 });

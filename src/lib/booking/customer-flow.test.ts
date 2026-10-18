@@ -117,7 +117,7 @@ describe("customer flow helpers", () => {
   });
 
   it("bookingShopTitle uses trimmed shop name", () => {
-    assert.equal(bookingShopTitle("TMY BarberQx"), "TMY BarberQx");
+    assert.equal(bookingShopTitle("TMY ClipperQ"), "TMY ClipperQ");
     assert.equal(bookingShopTitle("  "), null);
     assert.equal(bookingShopTitle(null), null);
   });

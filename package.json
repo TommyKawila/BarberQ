@@ -19,7 +19,8 @@
     "pad:marketing-screens": "node scripts/pad-marketing-screens.mjs",
     "composite:hand-phone": "node scripts/composite-hand-phone.mjs",
     "composite:hero-phone-screens": "python3 scripts/composite-hero-phone-screens.py",
-    "prepare:marketing-visuals": "node scripts/capture-marketing-screens.mjs && node scripts/pad-marketing-screens.mjs && node scripts/composite-hand-phone.mjs"
+    "prepare:marketing-visuals": "node scripts/capture-marketing-screens.mjs && node scripts/pad-marketing-screens.mjs && node scripts/composite-hand-phone.mjs",
+    "brand:export-clipperq": "node scripts/brand/export-clipperq.mjs"
   },
   "dependencies": {
     "@line/liff": "^2.31.0",
@@ -34,6 +35,7 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/qrcode": "^1.5.6",
@@ -44,8 +46,9 @@
     "eslint-config-next": "16.3.4",
     "happy-dom": "^20.0.0",
     "playwright": "^1.55.0",
-    "sharp": "^0.34.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
+    "to-ico": "^1.1.5",
     "tsx": "^4.23.13",
     "typescript": "^5"
   }

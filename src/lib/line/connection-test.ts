@@ -104,7 +104,7 @@ export async function testShopLineConnection(
     const push = await pushTextForShop(
       shopId,
       opts.ownerLineId,
-      `BarberQx: ทดสอบการเชื่อมต่อ LINE OA ของร้านสำเร็จ (${bot.displayName})`,
+      `ClipperQ: ทดสอบการเชื่อมต่อ LINE OA ของร้านสำเร็จ (${bot.displayName})`,
       "push_test",
     );
     testOk = push.sent || push.skippedReason === "quota_full";

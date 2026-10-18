@@ -233,7 +233,7 @@ export const PILOT_STEPS: PilotStep[] = [
       { id: "succ-datetime", label: "เห็นวันเวลา" },
       { id: "succ-my-bookings", label: "มีดูคิวของฉัน" },
       { id: "succ-back", label: "มีกลับหน้าร้าน" },
-      { id: "succ-add-friend-optional", label: "Add Friend BarberQ เป็น optional" },
+      { id: "succ-add-friend-optional", label: "Add Friend ClipperQ เป็น optional" },
     ],
   },
   {

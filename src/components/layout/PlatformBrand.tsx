@@ -1,5 +1,6 @@
 "use client";
 
+import { clipperqIconSrc } from "@/lib/brand/barberqx";
 import { useI18n } from "@/lib/i18n/locale-provider";
 
 export type PlatformBrandVariant = "mini" | "header" | "icon";
@@ -18,37 +19,18 @@ function PlatformIcon({
   size: number;
   theme: PlatformBrandTheme;
 }) {
-  const tileClass = theme === "dark" ? "fill-zinc-900" : "fill-zinc-100";
-  const iconClass = theme === "dark" ? "text-amber-400/80" : "text-amber-600";
-
+  const surface = theme === "dark" ? "dark" : "light";
   return (
-    <svg
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={clipperqIconSrc(surface, size)}
+      alt=""
       width={size}
       height={size}
-      viewBox="0 0 32 32"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
+      className="shrink-0"
       aria-hidden="true"
-      className={`shrink-0 ${iconClass}`}
-    >
-      <rect width="32" height="32" rx="8" className={tileClass} />
-      <path
-        d="M8 12h16v2H8v-2zm2 4h12v1.5H10V16zm-2 6c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v1H8v-1z"
-        className="fill-current"
-        opacity="0.9"
-      />
-      <circle cx="22" cy="10" r="5" className="fill-current" />
-      <text
-        x="22"
-        y="12.5"
-        textAnchor="middle"
-        fontSize="7"
-        fontWeight="700"
-        className={theme === "dark" ? "fill-zinc-950" : "fill-white"}
-      >
-        Q
-      </text>
-    </svg>
+      decoding="async"
+    />
   );
 }
 

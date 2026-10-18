@@ -1,5 +1,6 @@
 import { formatInTimeZone } from "date-fns-tz";
 import { th } from "date-fns/locale";
+import { clipperqFlexSmallMarkUrl } from "@/lib/brand/barberqx";
 import { canCancelAt, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import { bookingShortCode } from "@/lib/line/booking-code";
 
@@ -8,6 +9,9 @@ const INK = "#1C1917";
 const INK_2 = "#57534E";
 const MUTED = "#78716C";
 const LINE = "#E7E5E4";
+/** Brand Guide: muted ink for "by ClipperQ" on light Flex cards (never amber text). */
+const BRAND_FOOTER = "#78716C";
+const BRAND_FOOTER_LABEL = "by ClipperQ";
 const CONFIRM = {
   tint: "#ECFDF3",
   accent: "#15803D",
@@ -105,6 +109,45 @@ function warmNoteHeader(shopName: string, status: string, accentText: string, ti
   };
 }
 
+/** Subtle "by ClipperQ" row — image+text when absolute HTTPS mark URL is available. */
+export function buildFlexBrandFooterRow(opts?: {
+  markUrl?: string | null;
+}): Record<string, unknown> {
+  const markUrl = opts?.markUrl === undefined ? clipperqFlexSmallMarkUrl() : opts.markUrl;
+  const textNode = {
+    type: "text",
+    text: BRAND_FOOTER_LABEL,
+    size: "xs",
+    color: BRAND_FOOTER,
+    flex: 0,
+    gravity: "center",
+    wrap: false,
+  };
+  const contents: unknown[] = markUrl
+    ? [
+        {
+          type: "image",
+          url: markUrl,
+          size: "20px",
+          aspectMode: "fit",
+          aspectRatio: "1:1",
+          flex: 0,
+        },
+        textNode,
+      ]
+    : [textNode];
+  return {
+    type: "box",
+    layout: "horizontal",
+    contents,
+    justifyContent: "center",
+    alignItems: "center",
+    spacing: "sm",
+    margin: "lg",
+    paddingTop: "4px",
+  };
+}
+
 function warmNoteFooter(opts: {
   accent: string;
   primaryLabel: string;
@@ -112,6 +155,10 @@ function warmNoteFooter(opts: {
   linkLabel?: string;
   linkUrl?: string | null;
   extraLinks?: Array<{ label: string; uri: string }>;
+  /** Default true; shop setting may turn off. */
+  showBrandFooter?: boolean;
+  /** Override mark URL (tests). null forces text-only. */
+  brandMarkUrl?: string | null;
 }) {
   const contents: unknown[] = [
     {
@@ -148,6 +195,13 @@ function warmNoteFooter(opts: {
       action: { type: "uri", label: link.label, uri: link.uri },
     });
   }
+  if (opts.showBrandFooter !== false) {
+    contents.push(
+      buildFlexBrandFooterRow(
+        opts.brandMarkUrl !== undefined ? { markUrl: opts.brandMarkUrl } : undefined,
+      ),
+    );
+  }
   return {
     type: "box",
     layout: "vertical",
@@ -160,6 +214,11 @@ function warmNoteFooter(opts: {
   };
 }
 
+type FlexBrandOpts = {
+  showBrandFooter?: boolean;
+  brandMarkUrl?: string | null;
+};
+
 /** Option A · Warm Note — booking confirmation (green). */
 export function buildBookingConfirmFlex(input: {
   shopName: string;
@@ -169,7 +228,7 @@ export function buildBookingConfirmFlex(input: {
   appointmentId: string;
   myBookingsUrl: string;
   cancelUrl: string;
-}) {
+} & FlexBrandOpts) {
   const code = bookingShortCode(input.appointmentId);
   const date = whenLabel(input.startTime);
   const time = timeRange(input.startTime, input.endTime);
@@ -224,6 +283,8 @@ export function buildBookingConfirmFlex(input: {
         primaryUrl: input.myBookingsUrl,
         linkLabel: "เลื่อน / ยกเลิกนัด",
         linkUrl: input.cancelUrl,
+        showBrandFooter: input.showBrandFooter,
+        brandMarkUrl: input.brandMarkUrl,
       }),
     },
   };
@@ -236,7 +297,7 @@ export function buildQueueTicketFlex(input: {
   aheadCount: number;
   waitMinutes: number;
   liveUrl: string;
-}) {
+} & FlexBrandOpts) {
   const waitLine = `ก่อนหน้า ${input.aheadCount} คิว · รอประมาณ ${input.waitMinutes} นาที`;
   return {
     type: "flex",
@@ -285,6 +346,8 @@ export function buildQueueTicketFlex(input: {
         accent: STONE.accent,
         primaryLabel: "ดูสถานะสด",
         primaryUrl: input.liveUrl,
+        showBrandFooter: input.showBrandFooter,
+        brandMarkUrl: input.brandMarkUrl,
       }),
     },
   };
@@ -298,7 +361,7 @@ export function buildShopCancelFlex(input: {
   reason?: string | null;
   bookUrl: string;
   callUrl?: string | null;
-}) {
+} & FlexBrandOpts) {
   const date = whenLabel(input.startTime);
   const time = formatInTimeZone(new Date(input.startTime), SHOP_TIMEZONE, "HH:mm");
   const bodyContents: unknown[] = [
@@ -354,6 +417,8 @@ export function buildShopCancelFlex(input: {
         primaryUrl: input.bookUrl,
         linkLabel: input.callUrl ? "โทรหาร้าน" : undefined,
         linkUrl: input.callUrl ?? null,
+        showBrandFooter: input.showBrandFooter,
+        brandMarkUrl: input.brandMarkUrl,
       }),
     },
   };
@@ -372,7 +437,7 @@ export function buildShopRescheduleFlex(input: {
   acceptUrl: string;
   pickUrl: string;
   cancelUrl: string;
-}) {
+} & FlexBrandOpts) {
   const newDate = whenLabel(input.newStartTime);
   const newTime = formatInTimeZone(new Date(input.newStartTime), SHOP_TIMEZONE, "HH:mm");
   const oldLabel = `${whenLabel(input.oldStartTime)} ${formatInTimeZone(new Date(input.oldStartTime), SHOP_TIMEZONE, "HH:mm")}`;
@@ -432,6 +497,8 @@ export function buildShopRescheduleFlex(input: {
         linkLabel: "เลือกเวลาอื่น",
         linkUrl: input.pickUrl,
         extraLinks: [{ label: "ยกเลิกนัด", uri: input.cancelUrl }],
+        showBrandFooter: input.showBrandFooter,
+        brandMarkUrl: input.brandMarkUrl,
       }),
     },
   };
@@ -451,7 +518,7 @@ export function buildAppointmentReminderFlex(input: {
   cancelUrl?: string | null;
   /** Override clock for cancel-link visibility (tests). */
   now?: Date;
-}) {
+} & FlexBrandOpts) {
   const date = whenLabel(input.startTime);
   const time = timeRange(input.startTime, input.endTime);
   const showCancelLink =
@@ -508,6 +575,8 @@ export function buildAppointmentReminderFlex(input: {
         primaryUrl: input.myBookingsUrl,
         linkLabel: "เลื่อน / ยกเลิกนัด",
         linkUrl: showCancelLink ? input.cancelUrl : null,
+        showBrandFooter: input.showBrandFooter,
+        brandMarkUrl: input.brandMarkUrl,
       }),
     },
   };
@@ -527,7 +596,7 @@ export function buildCustomerRescheduleTicketFlex(input: {
   myBookingsUrl: string;
   cancelUrl?: string | null;
   now?: Date;
-}) {
+} & FlexBrandOpts) {
   const date = whenLabel(input.newStartTime);
   const time = timeRange(input.newStartTime, input.newEndTime);
   const oldLabel = `${whenLabel(input.oldStartTime)} ${timeRange(input.oldStartTime, input.oldEndTime)}`;
@@ -586,6 +655,8 @@ export function buildCustomerRescheduleTicketFlex(input: {
         primaryUrl: input.myBookingsUrl,
         linkLabel: "ยกเลิกนัด",
         linkUrl: showCancelLink ? input.cancelUrl : null,
+        showBrandFooter: input.showBrandFooter,
+        brandMarkUrl: input.brandMarkUrl,
       }),
     },
   };

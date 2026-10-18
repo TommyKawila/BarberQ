@@ -89,7 +89,7 @@ Production ใช้ LIFF ID / channel token **คนละชุด** กับ
 
 1. เปิด [https://developers.line.biz/console/](https://developers.line.biz/console/)  
 2. สร้าง **Provider** ใหม่หรือใช้ provider แยกสำหรับ QA (แนะนำแยกจาก Production)  
-3. สร้าง **LINE Login** channel สำหรับ QA (ชื่อเช่น `BarberQ QA Login`)  
+3. สร้าง **LINE Login** channel สำหรับ QA (ชื่อเช่น `ClipperQ QA Login`)  
 4. (ถ้าจะทดสอบข้อความยืนยันจอง) สร้าง **Messaging API** channel สำหรับ QA ด้วย แล้วคัดลอก **Channel access token** → เป็น `LINE_CHANNEL_ACCESS_TOKEN` ของ QA  
    - ถ้ายังไม่เทส push: เว้นว่างได้ — แอปจะข้ามการส่งข้อความ (จองยังทำงาน)
 
@@ -102,7 +102,7 @@ Production ใช้ LIFF ID / channel token **คนละชุด** กับ
 
 | ช่อง | ค่าที่ใส่ |
 |---|---|
-| LIFF app name | เช่น `BarberQ QA` |
+| LIFF app name | เช่น `ClipperQ QA` |
 | Size | Full |
 | **Endpoint URL** | URL ของเว็บ QA หลัง deploy (ดูส่วน 3) เช่น `https://barberq-qa.vercel.app` **ไม่มี** `/` ท้าย และ **ไม่มี** path ร้าน |
 | Scope | `profile`, `openid` (ตามที่ Console บังคับ) |

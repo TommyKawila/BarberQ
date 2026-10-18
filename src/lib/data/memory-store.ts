@@ -115,6 +115,7 @@ function getState(): MemoryState {
       reminderLeadMinutes: 120,
       bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
+      showFlexBrandFooter: true,
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
@@ -159,6 +160,7 @@ function getState(): MemoryState {
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
+      showFlexBrandFooter: true,
       },
     };
   }
@@ -168,6 +170,9 @@ function getState(): MemoryState {
     }
     if (typeof settings.queueAheadPushEnabled !== "boolean") {
       settings.queueAheadPushEnabled = true;
+    }
+    if (typeof settings.showFlexBrandFooter !== "boolean") {
+      settings.showFlexBrandFooter = true;
     }
   }
   const legacy = g[GLOBAL_KEY] as MemoryState & {
@@ -691,6 +696,7 @@ export const memoryStore: BookingStore = {
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
+      showFlexBrandFooter: true,
       }
     );
   },
@@ -709,6 +715,7 @@ export const memoryStore: BookingStore = {
       reminderLeadMinutes: input.reminderLeadMinutes,
       bookingConfirmPushEnabled: input.bookingConfirmPushEnabled,
       queueAheadPushEnabled: input.queueAheadPushEnabled !== false,
+      showFlexBrandFooter: input.showFlexBrandFooter !== false,
     };
   },
 
@@ -926,6 +933,7 @@ export const memoryStore: BookingStore = {
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
+      showFlexBrandFooter: true,
       };
       return shop;
     }
@@ -960,6 +968,7 @@ export const memoryStore: BookingStore = {
       reminderLeadMinutes: 120,
       bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
+      showFlexBrandFooter: true,
     };
 
     barbers.push({
