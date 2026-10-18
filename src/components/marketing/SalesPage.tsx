@@ -141,6 +141,7 @@ function ContactCta({ label, className }: { label: string; className?: string })
 export function SalesPage() {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
+  const supportLineUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   const heroCtaRef = useRef<HTMLDivElement | null>(null);
   const heroCtaDesktopRef = useRef<HTMLDivElement | null>(null);
   const finalCtaRef = useRef<HTMLElement | null>(null);
@@ -694,18 +695,101 @@ export function SalesPage() {
         </section>
       ) : null}
 
-      {/* Pricing */}
+      {/* Pricing — mobile C: single price table; lg+ keeps three-card layout unchanged */}
       <section id="pricing" ref={pricingRef} className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
-        <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
+        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
           <p className="text-sm font-medium text-amber-400/90">
             {t("marketing.pricing.eyebrow")}
           </p>
-          <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+          <h2 className="mt-2 text-2xl font-bold leading-snug text-zinc-50 md:text-3xl">
             {td("marketing.pricing.title")}
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {/* Mobile: direction C price table */}
+          <div className="mt-8 lg:hidden">
+            <div className="overflow-hidden rounded-2xl border border-zinc-700">
+              {marketingOffer.tiers.map((tier) => {
+                const isStarter = tier.id === "tier1";
+                return (
+                  <div
+                    key={tier.id}
+                    className={`flex min-h-[52px] items-center justify-between gap-3 px-4 py-3.5 ${
+                      isStarter
+                        ? "border-b border-zinc-800 bg-amber-400/[0.08]"
+                        : "border-b border-zinc-800"
+                    }`}
+                  >
+                    <p
+                      className={`text-[15px] font-semibold leading-snug ${
+                        isStarter ? "text-amber-200" : "text-zinc-50"
+                      }`}
+                    >
+                      {tierBarberRangeLabel(tier, locale)}
+                      {isStarter ? (
+                        <span className="font-medium text-amber-400/90">
+                          {" "}
+                          · {t("marketing.pricing.tier1Badge")}
+                        </span>
+                      ) : null}
+                    </p>
+                    <p className="shrink-0 text-base font-bold text-amber-400">
+                      {tierPricePerMonthLabel(tier, locale)}
+                    </p>
+                  </div>
+                );
+              })}
+              <div className="flex min-h-[52px] items-center justify-between gap-3 px-4 py-3.5">
+                <p className="text-[15px] font-semibold leading-snug text-zinc-50">
+                  {t("marketing.pricing.contactRange")}
+                </p>
+                {supportLineUrl ? (
+                  <a
+                    href={supportLineUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() =>
+                      trackMarketingEvent("support_line_click", {
+                        cta_location: "pricing",
+                      })
+                    }
+                    className="shrink-0 text-base font-bold text-amber-400 underline-offset-2 hover:underline"
+                  >
+                    {t("marketing.pricing.contactTitle")}
+                  </a>
+                ) : (
+                  <span className="shrink-0 text-base font-bold text-amber-400">
+                    {t("marketing.pricing.contactTitle")}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <p className="mt-4 text-sm leading-snug text-zinc-400">
+              {t("marketing.pricing.tierSameFeatures")}
+            </p>
+            <ul className="mt-3 space-y-2">
+              {PRICING_INCLUDES.map((n) => (
+                <li key={n} className={`flex items-start gap-2 ${BODY}`}>
+                  <Check size={16} className="mt-1 shrink-0 text-amber-400" />
+                  {t(`marketing.pricing.include${n}` as MessageKey)}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-5">
+              <PrimaryTrialCta
+                labelKey="marketing.pricing.cta"
+                placement="pricing"
+                fullWidth
+              />
+              <p className="mt-2 text-center text-[13px] text-zinc-500">
+                {td("marketing.pricing.micro")}
+              </p>
+            </div>
+          </div>
+
+          {/* Desktop (lg+): three-card layout unchanged */}
+          <div className="mt-8 hidden gap-4 lg:grid lg:grid-cols-3">
             {marketingOffer.tiers.map((tier) => {
               const perDay = tierPerDayHint(tier, locale);
               const isStarter = tier.id === "tier1";
@@ -758,7 +842,7 @@ export function SalesPage() {
             })}
           </div>
 
-          <div className="mt-4 flex flex-col gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 sm:flex-row sm:items-center sm:justify-between md:p-6">
+          <div className="mt-4 hidden items-center justify-between gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 md:p-6 lg:flex">
             <div>
               <p className="text-sm font-medium text-zinc-400">
                 {t("marketing.pricing.contactRange")}
@@ -787,8 +871,10 @@ export function SalesPage() {
           </div>
 
           {/* Trial / risk-reversal box */}
-          <div className="mt-10 rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5 md:p-7">
-            <h3 className="text-xl font-bold text-zinc-50">{td("marketing.trialBox.title")}</h3>
+          <div className="mt-10 overflow-visible rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5 md:p-7">
+            <h3 className="text-xl font-bold leading-snug text-zinc-50">
+              {td("marketing.trialBox.title")}
+            </h3>
             <ul className="mt-5 grid gap-3 sm:grid-cols-2">
               {TRIAL_BOX_ITEMS.map((n) => (
                 <li key={n} className={`flex items-start gap-2 ${BODY}`}>
