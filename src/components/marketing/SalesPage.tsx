@@ -372,8 +372,9 @@ export function SalesPage() {
               </div>
             ) : null}
 
-            <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:h-full lg:items-start lg:gap-10 xl:gap-12">
-              <div className="flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7">
+            <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:h-full lg:items-stretch lg:gap-10 xl:gap-12">
+              {/* Same phones row as 36871e6 — w-full so fluid mocks don't collapse under items-start */}
+              <div className="flex w-full shrink-0 flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7">
                 {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
                 <LineConfirmMockup shopName="BarberQx Demo" />
                 <LineReminderMockup
@@ -386,7 +387,7 @@ export function SalesPage() {
               {marketingPhotoSlots.solutionCustomer.src ? (
                 <div
                   aria-hidden
-                  className="pointer-events-none relative mt-auto hidden w-full max-w-[420px] opacity-[0.97] lg:block xl:max-w-[460px]"
+                  className="pointer-events-none relative mt-auto hidden w-full max-w-[420px] self-start opacity-[0.97] lg:block xl:max-w-[460px]"
                 >
                   <div
                     className="relative aspect-square w-full"
