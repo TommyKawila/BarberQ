@@ -122,9 +122,9 @@ describe("stats-service D5 KPIs", () => {
       customerName: "Phone",
       customerPhone: "0899999999",
     });
-    // Legacy walk-in block + unrelated block (break/closed) in range
-    const legacyStart = new Date(walkSlot!.startTime);
-    legacyStart.setUTCHours(legacyStart.getUTCHours() + 5);
+    // Legacy walk-in block + unrelated block (break/closed) in range.
+    // Keep both on the same local day as walkSlot (+5h UTC can fall outside the week).
+    const legacyStart = new Date(new Date(walkSlot!.startTime).getTime() + 60 * 60_000);
     const legacyEnd = new Date(legacyStart.getTime() + 30 * 60_000);
     await createBlock({
       barberId: barber.id,
@@ -132,7 +132,7 @@ describe("stats-service D5 KPIs", () => {
       endTime: legacyEnd.toISOString(),
       reason: "walk-in",
     });
-    const otherStart = new Date(legacyEnd.getTime() + 60 * 60_000);
+    const otherStart = new Date(legacyEnd.getTime() + 30 * 60_000);
     const otherEnd = new Date(otherStart.getTime() + 30 * 60_000);
     await createBlock({
       barberId: barber.id,
