@@ -348,6 +348,10 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
     const ctaCount = (sales.match(/PrimaryTrialCta/g) ?? []).length;
     assert.ok(ctaCount >= 4, `expected >=4 PrimaryTrialCta uses, got ${ctaCount}`);
+    // Mobile sticky: soft gradient scrim (no hard top band) + hide when in-page CTAs visible
+    assert.match(sales, /linear-gradient\(to top/);
+    assert.match(sales, /data-inpage-trial-cta/);
+    assert.doesNotMatch(sales, /border-t border-zinc-800 bg-zinc-950\/95/);
   });
 
   it("primary CTAs use strong amber style and verified risk-reversal only", () => {

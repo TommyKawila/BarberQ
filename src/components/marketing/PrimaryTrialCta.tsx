@@ -54,8 +54,12 @@ export function PrimaryTrialCta({
 }) {
   const { t } = useI18n();
   const label = fillOfferCopy(t(labelKey));
+  const inPage = placement !== "sticky";
   return (
-    <div className={fullWidth ? "w-full" : undefined}>
+    <div
+      className={fullWidth ? "w-full" : undefined}
+      {...(inPage ? { "data-inpage-trial-cta": "" } : {})}
+    >
       <MarketingTrialLink
         placement={placement}
         eventName={eventName}

@@ -152,48 +152,37 @@ export function SalesPage() {
   }, []);
 
   useEffect(() => {
-    const heroEls = [heroCtaRef.current, heroCtaDesktopRef.current].filter(
-      (el): el is HTMLDivElement => Boolean(el),
-    );
-    const finalEl = finalCtaRef.current;
-    if (heroEls.length === 0) return;
+    // Hide sticky while any in-page primary CTA (hero, line, pricing, final, …) is on screen.
+    const ctaEls = [
+      ...document.querySelectorAll<HTMLElement>("[data-inpage-trial-cta]"),
+    ];
+    // Fallback: hero wrappers if attribute not yet on a wrapped block
+    for (const el of [heroCtaRef.current, heroCtaDesktopRef.current]) {
+      if (el && !ctaEls.includes(el)) ctaEls.push(el);
+    }
+    if (ctaEls.length === 0) return;
 
-    const heroVisibleByEl = new Map<Element, boolean>();
-    for (const el of heroEls) heroVisibleByEl.set(el, true);
-    let finalVisible = false;
+    const visibleByEl = new Map<Element, boolean>();
+    for (const el of ctaEls) visibleByEl.set(el, false);
 
     const sync = () => {
-      const heroVisible = [...heroVisibleByEl.values()].some(Boolean);
-      setShowSticky(!heroVisible && !finalVisible);
+      const anyInPageVisible = [...visibleByEl.values()].some(Boolean);
+      setShowSticky(!anyInPageVisible);
     };
 
-    const heroObs = new IntersectionObserver(
+    const obs = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          heroVisibleByEl.set(entry.target, entry.isIntersecting);
+          visibleByEl.set(entry.target, entry.isIntersecting);
         }
         sync();
       },
-      { threshold: 0 },
+      { threshold: 0, rootMargin: "0px" },
     );
-    for (const el of heroEls) heroObs.observe(el);
+    for (const el of ctaEls) obs.observe(el);
+    // Observer delivers an initial callback with current intersection — no eager sync.
 
-    let finalObs: IntersectionObserver | null = null;
-    if (finalEl) {
-      finalObs = new IntersectionObserver(
-        ([entry]) => {
-          finalVisible = entry.isIntersecting;
-          sync();
-        },
-        { threshold: 0.15 },
-      );
-      finalObs.observe(finalEl);
-    }
-
-    return () => {
-      heroObs.disconnect();
-      finalObs?.disconnect();
-    };
+    return () => obs.disconnect();
   }, []);
 
   useEffect(() => {
@@ -845,18 +834,27 @@ export function SalesPage() {
 
       <MarketingFooter />
 
-      {/* Sticky mobile CTA */}
-      {showSticky ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 px-3 pt-2 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-          <PrimaryTrialCta
-            labelKey="marketing.sticky.cta"
-            placement="sticky"
-            eventName="sticky_cta_click"
-            fullWidth
-            riskClassName="mt-2 justify-center text-[13px] sm:text-sm"
-          />
-        </div>
-      ) : null}
+      {/* Sticky mobile CTA — soft gradient scrim (no hard top band); fades out when any in-page CTA is visible */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-14 transition-[opacity,transform] duration-300 ease-out md:hidden ${
+          showSticky
+            ? "pointer-events-auto translate-y-0 opacity-100"
+            : "pointer-events-none translate-y-4 opacity-0"
+        }`}
+        style={{
+          background:
+            "linear-gradient(to top, rgba(9,9,11,0.98) 0%, rgba(9,9,11,0.9) 28%, rgba(9,9,11,0.55) 52%, rgba(9,9,11,0.18) 78%, transparent 100%)",
+        }}
+        aria-hidden={!showSticky}
+      >
+        <PrimaryTrialCta
+          labelKey="marketing.sticky.cta"
+          placement="sticky"
+          eventName="sticky_cta_click"
+          fullWidth
+          riskClassName="mt-2 justify-center text-[13px] sm:text-sm"
+        />
+      </div>
     </div>
   );
 }
