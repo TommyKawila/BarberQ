@@ -157,17 +157,33 @@ async function main() {
     const targetTop = target.getBoundingClientRect().top + window.scrollY;
     window.scrollTo(0, Math.max(0, targetTop - headerH - 16));
   });
-  await page.waitForTimeout(800);
-  await shot(page, "choose-slot");
-
-  // 3) Summary — pick first available slot
-  const available = page.locator("button:not([disabled])").filter({
-    hasText: /^\d{1,2}:\d{2}$/,
-  });
-  const count = await available.count();
-  if (count === 0) {
+  // Prefer a day with open slots (today may be full / past closing).
+  async function ensureAvailableSlots() {
+    const slotBtns = () =>
+      page.locator("button:not([disabled])").filter({ hasText: /^\d{1,2}:\d{2}$/ });
+    if ((await slotBtns().count()) > 0) return slotBtns();
+    const dayBtns = page.locator("button:not([disabled])").filter({
+      hasText:
+        /\d{1,2}\s*(ต\.ค\.|ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|พ\.ย\.|ธ\.ค\.|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i,
+    });
+    const n = await dayBtns.count();
+    for (let i = 0; i < n; i++) {
+      await dayBtns.nth(i).click();
+      await page.waitForTimeout(600);
+      if ((await slotBtns().count()) > 0) return slotBtns();
+    }
     throw new Error("No available time slots for summary screenshot");
   }
+
+  const available = await ensureAvailableSlots();
+  await page.waitForTimeout(400);
+  await shot(page, "choose-slot");
+  // Compact how-it-works step 1 uses the same frame (BrandMark unlock styles above).
+  await sharp(join(RAW_OUT, "choose-slot.webp")).toFile(join(RAW_OUT, "choose-booking-v3.webp"));
+  await sharp(join(OUT, "choose-slot.webp")).toFile(join(OUT, "choose-booking-v3.webp"));
+  console.log("wrote", join(RAW_OUT, "choose-booking-v3.webp"));
+
+  // 3) Summary — pick first available slot
   await available.first().click();
   await page.waitForTimeout(400);
   // Fill demo customer (no real PII)
@@ -200,19 +216,21 @@ async function main() {
   // Seed a second demo booking via UI for a fuller admin board (optional best-effort)
   await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle" });
   await page.waitForTimeout(600);
-  const avail2 = page.locator("button:not([disabled])").filter({
-    hasText: /^\d{1,2}:\d{2}$/,
-  });
-  if ((await avail2.count()) > 1) {
-    await avail2.nth(1).click();
-    await page.waitForTimeout(300);
-    const n = page.locator("input").first();
-    if (await n.count()) await n.fill("Walk-in Demo");
-    const p = page.locator('input[inputmode="tel"]');
-    if (await p.count()) await p.fill("0899999999");
-    const c = page.getByRole("button", { name: /ยืนยัน|Confirm|จอง/i }).last();
-    await c.click().catch(() => {});
-    await page.waitForTimeout(800);
+  try {
+    const avail2 = await ensureAvailableSlots();
+    if ((await avail2.count()) > 1) {
+      await avail2.nth(1).click();
+      await page.waitForTimeout(300);
+      const n = page.locator("input").first();
+      if (await n.count()) await n.fill("Walk-in Demo");
+      const p = page.locator('input[inputmode="tel"]');
+      if (await p.count()) await p.fill("0899999999");
+      const c = page.getByRole("button", { name: /ยืนยัน|Confirm|จอง/i }).last();
+      await c.click().catch(() => {});
+      await page.waitForTimeout(800);
+    }
+  } catch {
+    /* best-effort */
   }
 
   // 5) Admin queue board
@@ -220,6 +238,18 @@ async function main() {
   await page.waitForTimeout(1200);
   await hideChrome(page);
   await shot(page, "admin-queue");
+
+  // Compact how-it-works step 3: scroll to the barber column grid.
+  await page.evaluate(() => {
+    const grid = document.querySelector("[data-board], .board, main");
+    const target =
+      [...document.querySelectorAll("h2, h3, p")].find((el) =>
+        /คิว|บอร์ด|วันนี้|Queue|Board/i.test(el.textContent || ""),
+      ) || grid;
+    target?.scrollIntoView({ block: "start" });
+  });
+  await page.waitForTimeout(500);
+  await shot(page, "admin-queue-board");
 
   // 6) Admin team
   await page.goto(`${BASE}/${SHOP}/admin/staff`, { waitUntil: "networkidle" });

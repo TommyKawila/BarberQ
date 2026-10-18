@@ -52,7 +52,7 @@ export function CustomerStepPhone({
         screen={screen}
         fluid
         // Step 1 asset already has a tall status-bar pad; safeTop's pt+object-cover
-        // was cropping glyph tops off BarberQx Demo. Steps 2–3 keep safeTop.
+        // was cropping glyph tops off ClipperQ Demo. Steps 2–3 keep safeTop.
         safeTop={step !== 1}
         className="mx-auto w-full max-w-[270px]"
       />

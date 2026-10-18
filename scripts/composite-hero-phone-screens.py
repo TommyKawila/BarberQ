@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Composite a real BarberQx mobile screenshot into the hero photo phone screens.
+Composite a real ClipperQ mobile screenshot into the hero photo phone screens.
 
-Source screen: public/marketing/screens/queue-ticket.webp
-  (customer booking-confirmed — Thai, demo shop / dummy name)
+Source screen: public/marketing/screens/booking-success-screen.png
+  (booking-success B2 flat screen — Thai, ClipperQ Demo)
 
 Usage:
   python3 scripts/composite-hero-phone-screens.py
@@ -21,7 +21,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 PHOTOS = ROOT / "public/marketing/photos"
-SCREEN = ROOT / "public/marketing/screens/queue-ticket.webp"
+SCREEN = ROOT / "public/sale/booking-success-screen.png"
 
 # Phone screen quads (TL, TR, BR, BL) in full-image pixel coords.
 # Tuned to the AI barbershop hero plates — corners sit just under the bezel
