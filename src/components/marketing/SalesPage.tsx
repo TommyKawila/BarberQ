@@ -7,12 +7,11 @@ import {
   CalendarClock,
   ChartColumn,
   Check,
+  ChevronDown,
   ChevronRight,
   CircleCheck,
   MessageCircle,
-  Minus,
   Phone,
-  Plus,
   QrCode,
   Smartphone,
   Users,
@@ -149,6 +148,7 @@ export function SalesPage() {
   const pricingRef = useRef<HTMLElement | null>(null);
   const lineSectionRef = useRef<HTMLElement | null>(null);
   const [showSticky, setShowSticky] = useState(false);
+  const [openFaqIds, setOpenFaqIds] = useState<number[]>([]);
 
   useEffect(() => {
     trackMarketingEvent("sales_page_view");
@@ -895,45 +895,68 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* FAQ */}
+      {/* FAQ — mobile A: compact accordion + sticky clearance; desktop spacing restored at md+ */}
       <section id="faq" className="scroll-mt-20 overflow-x-clip">
-        <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
+        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
           <div className="mx-auto max-w-[800px]">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.faq.eyebrow")}</p>
             <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
               {t("marketing.faq.title")}
             </h2>
-            <div className="mt-6 space-y-3 md:mt-8">
-              {FAQ_ITEMS.map((n) => (
-                <details
-                  key={n}
-                  className="group rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 open:border-amber-500/30 open:pb-4"
-                  onToggle={(e) => {
-                    if ((e.target as HTMLDetailsElement).open) {
-                      trackMarketingEvent("faq_open", { faq_id: String(n) });
-                    }
-                  }}
-                >
-                  <summary className="flex min-h-14 cursor-pointer list-none items-center gap-3 py-2 text-zinc-50 [&::-webkit-details-marker]:hidden">
-                    <span className="min-w-0 flex-1 text-base font-medium leading-snug">
-                      {td(`marketing.faq.${n}.q` as MessageKey)}
-                    </span>
-                    <Plus
-                      size={18}
-                      className="shrink-0 text-amber-400 group-open:hidden"
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                    <Minus
-                      size={18}
-                      className="hidden shrink-0 text-amber-400 group-open:block"
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                  </summary>
-                  <p className={`pb-2 ${BODY}`}>{td(`marketing.faq.${n}.a` as MessageKey)}</p>
-                </details>
-              ))}
+            <div className="mt-5 space-y-1.5 md:mt-8 md:space-y-3">
+              {FAQ_ITEMS.map((n) => {
+                const open = openFaqIds.includes(n);
+                const panelId = `faq-panel-${n}`;
+                const buttonId = `faq-button-${n}`;
+                return (
+                  <div
+                    key={n}
+                    className={`rounded-lg border bg-zinc-900/40 px-3 md:rounded-xl md:bg-zinc-900/50 md:px-4 ${
+                      open
+                        ? "border-amber-500/30 pb-3 md:pb-4"
+                        : "border-zinc-800"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      id={buttonId}
+                      aria-expanded={open}
+                      aria-controls={panelId}
+                      className="flex min-h-12 w-full cursor-pointer items-center gap-2 py-1.5 text-left text-zinc-50 md:min-h-14 md:gap-3 md:py-2"
+                      onClick={() => {
+                        const willOpen = !openFaqIds.includes(n);
+                        setOpenFaqIds((prev) =>
+                          willOpen ? [...prev, n] : prev.filter((id) => id !== n),
+                        );
+                        if (willOpen) {
+                          trackMarketingEvent("faq_open", { faq_id: String(n) });
+                        }
+                      }}
+                    >
+                      <span className="min-w-0 flex-1 text-[15px] font-medium leading-snug md:text-base">
+                        {td(`marketing.faq.${n}.q` as MessageKey)}
+                      </span>
+                      <ChevronDown
+                        size={18}
+                        strokeWidth={2.25}
+                        aria-hidden
+                        className={`shrink-0 text-amber-400 transition-transform duration-200 ${
+                          open ? "rotate-180" : "rotate-0"
+                        }`}
+                      />
+                    </button>
+                    <div
+                      id={panelId}
+                      role="region"
+                      aria-labelledby={buttonId}
+                      hidden={!open}
+                      className={open ? "pb-1" : undefined}
+                    >
+                      <p className={BODY}>{td(`marketing.faq.${n}.a` as MessageKey)}</p>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
