@@ -12,6 +12,8 @@ type Props = {
   size?: PhoneSize;
   width?: number;
   fluid?: boolean;
+  /** Fill parent height; width follows phone aspect (desktop board row). */
+  matchHeight?: boolean;
   className?: string;
   priority?: boolean;
 };
@@ -27,6 +29,7 @@ export function PhoneScreen({
   size,
   width,
   fluid,
+  matchHeight,
   className,
   priority,
 }: Props) {
@@ -35,6 +38,7 @@ export function PhoneScreen({
       size={size}
       width={width}
       fluid={fluid}
+      matchHeight={matchHeight}
       className={className ?? (fluid ? PHONE_MOBILE : PHONE)}
     >
       <Image

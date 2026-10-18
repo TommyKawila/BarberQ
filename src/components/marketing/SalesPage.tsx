@@ -492,19 +492,29 @@ export function SalesPage() {
           </div>
 
           <figure className="mt-20 xl:mt-24">
-            <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-end lg:justify-center lg:gap-10 xl:gap-12">
+            {/* Desktop: callout above the row so phone top/bottom can match the photo */}
+            <p className="mb-3 hidden text-xs font-medium tracking-wide text-amber-300/85 lg:block lg:text-[13px]">
+              {t("marketing.line.queueBoardCallout")}
+            </p>
+            <div className="flex flex-col items-center gap-8 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:gap-12">
               {/* Magnified admin queue callout — phone in the photo is too small to read */}
-              <div className="relative w-full max-w-[220px] shrink-0 sm:max-w-[240px] lg:max-w-[260px] xl:max-w-[280px]">
-                <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85 lg:text-left lg:text-[13px]">
+              <div className="relative w-full max-w-[220px] sm:max-w-[240px] lg:flex lg:h-full lg:w-auto lg:max-w-none lg:items-stretch">
+                <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85 lg:hidden">
                   {t("marketing.line.queueBoardCallout")}
                 </p>
-                <PhoneScreen screen="adminQueue" fluid />
+                {/* Mobile: width-capped fluid phone. Desktop: match photo row height via grid stretch */}
+                <div className="w-full lg:hidden">
+                  <PhoneScreen screen="adminQueue" fluid />
+                </div>
+                <div className="hidden h-full lg:block lg:aspect-[390/844]">
+                  <PhoneScreen screen="adminQueue" matchHeight />
+                </div>
               </div>
               <MarketingPhotoSlot
                 slot="solutionBarberCalm"
                 alt={t("marketing.line.barberPhotoAlt")}
                 sizes="(min-width: 1440px) 1000px, (min-width: 1280px) 900px, 92vw"
-                className="w-full min-w-0 flex-1"
+                className="w-full min-w-0"
               />
             </div>
             <figcaption className="mt-5 text-center text-sm text-zinc-500 lg:text-base">
