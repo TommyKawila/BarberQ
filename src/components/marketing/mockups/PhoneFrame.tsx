@@ -35,7 +35,9 @@ export function PhoneFrame({
         matchHeight
           ? "h-full w-auto min-w-min shrink-0"
           : fluid
-            ? "min-w-0 w-full max-w-full"
+            ? // Width comes from className (e.g. max-w-[270px]) — do not set w-full /
+              // max-w-full here; those override caller caps via Tailwind source order.
+              "min-w-0"
             : "min-w-0 shrink-0"
       } ${className ?? ""}`}
     >

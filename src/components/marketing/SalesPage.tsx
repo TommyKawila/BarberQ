@@ -620,15 +620,15 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* Owner stats */}
+      {/* Owner stats — mobile C: compact phone, metric chips, sticky clearance; desktop unchanged */}
       <section id="owner" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-2 lg:gap-12">
+        <div className="mx-auto grid max-w-[1280px] items-center gap-4 px-4 pt-10 pb-40 md:gap-8 md:px-6 md:py-14 lg:grid-cols-2 lg:gap-12">
           <div>
             <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
               {t("marketing.owner.title")}
             </h2>
             <p className={`mt-4 ${BODY}`}>{t("marketing.owner.body")}</p>
-            <ul className="mt-5 space-y-2">
+            <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 lg:mt-5 lg:flex-col lg:items-start lg:gap-y-2">
               {([1, 2, 3] as const).map((n) => (
                 <li key={n} className={`flex items-center gap-2 ${BODY}`}>
                   <ChartColumn size={16} className="shrink-0 text-amber-400" />
@@ -639,7 +639,7 @@ export function SalesPage() {
           </div>
           <figure className="flex flex-col items-center">
             <OwnerSurfacePhone surface="stats" />
-            <figcaption className="mt-3 text-center text-sm text-zinc-500">
+            <figcaption className="mt-2 text-center text-sm text-zinc-400 md:mt-3">
               {t("marketing.owner.caption")}
             </figcaption>
           </figure>

@@ -1,8 +1,8 @@
 import { PhoneScreen } from "./PhoneScreen";
 import type { MarketingScreenKey } from "@/lib/marketing/screens";
 
-/** Keep feature phones compact on desktop so captions stay readable. */
-const PHONE_MOBILE = "mx-auto w-[min(64vw,240px)]";
+/** Mobile owner / compact surfaces — ~200–220px so section stays short above sticky CTA. */
+const PHONE_MOBILE = "mx-auto w-[min(58vw,220px)]";
 
 export type OwnerSurface = "queue" | "team" | "stats";
 
