@@ -133,18 +133,19 @@ async function main() {
   await hideChrome(page);
   await shot(page, "shop-landing");
 
-  // 2) Choose barber / date / time — scroll to booking steps
+  // 2) Choose barber / date / time — BrandMark header fully visible (sticky),
+  // booking steps in frame below; do not scroll h2 flush to top.
   const barberHeading = page.getByRole("heading", { level: 2 }).first();
   await barberHeading.waitFor({ timeout: 15000 });
   await page.evaluate(() => {
+    const header = document.querySelector("header");
+    const headerH = header ? header.getBoundingClientRect().height : 72;
     const headings = [...document.querySelectorAll("h2")];
     const target = headings.find((h) => /ช่าง|Barber|เลือก/i.test(h.textContent || ""));
-    target?.scrollIntoView({ block: "start" });
+    if (!target) return;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo(0, Math.max(0, targetTop - headerH - 16));
   });
-  await page.waitForTimeout(300);
-  // Click first available time if visible later; for choose shot just show selectors
-  const slots = page.locator("button").filter({ hasText: /^\d{1,2}:\d{2}$/ });
-  // Wait for slots to load
   await page.waitForTimeout(800);
   await shot(page, "choose-slot");
 
