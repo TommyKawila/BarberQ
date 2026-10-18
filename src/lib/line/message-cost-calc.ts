@@ -1,7 +1,7 @@
 /**
  * LINE Official Account (Thailand) message cost estimator.
  * Prices include VAT 7%, as of Oct 2026 — shops should verify in LINE OA Manager.
- * Client-side only; BarberQx does not bill for LINE messages.
+ * Client-side only; ClipperQ does not bill for LINE messages.
  */
 
 export type LineOaPlanId = "free" | "basic" | "pro";

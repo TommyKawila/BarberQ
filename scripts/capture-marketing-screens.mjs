@@ -1,5 +1,5 @@
 /**
- * Capture real BarberQx booking/admin screens at 390×844 @2x → WebP.
+ * Capture real ClipperQ booking/admin screens at 390×844 @2x → WebP.
  * Usage: node scripts/capture-marketing-screens.mjs [baseUrl]
  * Expects local memory-mode Next.js (no LIFF / no Supabase).
  */
@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "public/marketing/screens");
 const RAW_OUT = join(OUT, "raw");
-const DEMO_SHOP = "BarberQx Demo";
+const DEMO_SHOP = "ClipperQ Demo";
 const SHOP = "phinxstudio";
 const OWNER = "mock-owner-line-id";
 const VIEW = { width: 390, height: 844 };

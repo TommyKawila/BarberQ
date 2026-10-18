@@ -45,7 +45,7 @@ export async function POST(
         keys: { p256dh: sub.p256dh, auth: sub.auth },
       },
       JSON.stringify({
-        title: `BarberQx · ${shop.name}`,
+        title: `ClipperQ · ${shop.name}`,
         body: "แจ้งเตือนทดสอบ — Web Push ทำงานแล้ว",
         url: `/${shop.slug}/admin`,
         tag: "webpush-test",

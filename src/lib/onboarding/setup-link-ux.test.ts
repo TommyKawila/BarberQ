@@ -35,10 +35,10 @@ describe("setup link UX copy", () => {
     assert.equal(dictionary.th["onboarding.oaHelpTitle"], "ติดตั้งไม่เป็น? ให้เราช่วยได้");
     assert.equal(
       dictionary.th["onboarding.oaHelpHint"],
-      'ส่งข้อมูลร้านให้ทีม BarberQ เราช่วยตั้งปุ่ม "กดจองคิว" ใน LINE OA ให้ ดำเนินการภายใน 24 ชั่วโมง',
+      'ส่งข้อมูลร้านให้ทีม ClipperQ เราช่วยตั้งปุ่ม "กดจองคิว" ใน LINE OA ให้ ดำเนินการภายใน 24 ชั่วโมง',
     );
     assert.equal(dictionary.th["onboarding.oaHelpRequestCta"], "ให้ทีมช่วยติดตั้ง");
     assert.equal(dictionary.th["onboarding.oaHelpCta"], "แชทกับ Support");
-    assert.equal(dictionary.th["onboarding.oaHelpNoPassword"], "BarberQ จะไม่ขอรหัสผ่าน LINE ของคุณ");
+    assert.equal(dictionary.th["onboarding.oaHelpNoPassword"], "ClipperQ จะไม่ขอรหัสผ่าน LINE ของคุณ");
   });
 });

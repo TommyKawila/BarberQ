@@ -42,7 +42,7 @@ export function LineReminderMockup({
             <p className="text-center text-[9px] text-zinc-700/80">{whenLabel}</p>
             <div className="ml-1 max-w-[92%] overflow-hidden rounded-xl bg-white shadow-sm">
               <div className="bg-amber-400/90 px-2.5 py-1.5 text-[10px] font-bold text-zinc-950">
-                BarberQx
+                ClipperQ
               </div>
               <div className="space-y-1.5 px-2.5 py-2">
                 <p className="text-[11px] font-semibold text-zinc-900">{title}</p>
@@ -50,7 +50,7 @@ export function LineReminderMockup({
                 <div className="rounded-lg bg-zinc-100 px-2 py-1.5 text-[10px] text-zinc-700">
                   <p>นัท · Nat</p>
                   <p className="font-semibold text-zinc-900">พรุ่งนี้ 18:30</p>
-                  <p>BarberQx Demo · 60 นาที</p>
+                  <p>ClipperQ Demo · 60 นาที</p>
                 </div>
                 <div className="rounded-lg bg-[#06C755] py-1.5 text-center text-[10px] font-semibold text-white">
                   {cta}

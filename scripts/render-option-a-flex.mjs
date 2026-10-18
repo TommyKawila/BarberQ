@@ -25,7 +25,7 @@ const NOW_OK = fromZonedTime("2026-10-17T18:30:00", TZ);
 const NOW_LATE = fromZonedTime("2026-10-18T17:45:00", TZ);
 
 const common = {
-  shopName: "BarberQx Demo",
+  shopName: "ClipperQ Demo",
   startTime: START,
   endTime: END,
   barberName: "นัท · Nat",

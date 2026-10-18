@@ -1,18 +1,18 @@
-# BarberQx Brand System
+# ClipperQ Brand System
 
 > **Status:** Approved working brand guide for product, website, sales page, customer booking UI, admin UI, and app surfaces.  
-> **Brand name:** `BarberQx`  
-> **Thai pronunciation:** `บาร์เบอร์ควิกซ์`
+> **Brand name:** `ClipperQ`  
+> **Thai pronunciation:** `คลิปเปอร์คิว`
 
 ---
 
 ## 1. Brand role
 
-BarberQx is a **booking platform for barber shops**, not the barber shop itself.
+ClipperQ is a **booking platform for barber shops**, not the barber shop itself.
 
 This creates two different brand hierarchies:
 
-### A. BarberQx marketing surfaces
+### A. ClipperQ marketing surfaces
 Examples:
 - Sales page
 - Landing page
@@ -21,7 +21,7 @@ Examples:
 - Social marketing
 - App/PWA install surface
 
-**BarberQx is the primary brand.**
+**ClipperQ is the primary brand.**
 
 ### B. Merchant / shop customer surfaces
 Examples:
@@ -30,9 +30,9 @@ Examples:
 - Customer "My bookings"
 - Shop-specific public pages
 
-**The shop is the primary brand. BarberQx is a subtle platform signature.**
+**The shop is the primary brand. ClipperQ is a subtle platform signature.**
 
-Never let BarberQx visually compete with a merchant's shop name, shop logo, cover photo, or booking hero.
+Never let ClipperQ visually compete with a merchant's shop name, shop logo, cover photo, or booking hero.
 
 ---
 
@@ -42,7 +42,7 @@ The visual direction is:
 
 **Premium / Modern / Confident / Masculine / Simple / Slightly Hipster / Technology-first**
 
-BarberQx should feel connected to modern barber culture without looking like a traditional barbershop logo.
+ClipperQ should feel connected to modern barber culture without looking like a traditional barbershop logo.
 
 Avoid:
 - obvious scissors as the main logo device
@@ -74,8 +74,8 @@ Use these as the digital UI tokens unless the existing product token system alre
 ### Color behavior
 
 **Gold**
-- Primary BarberQx brand accent
-- CTA emphasis on BarberQx marketing surfaces
+- Primary ClipperQ brand accent
+- CTA emphasis on ClipperQ marketing surfaces
 - active states
 - selected states
 - small brand highlights
@@ -116,7 +116,7 @@ Use on:
 - dark Sales Page navbar
 - dark marketing hero
 - dark website footer
-- BarberQx-owned dark marketing pages
+- ClipperQ-owned dark marketing pages
 
 Do not use:
 - inside small mobile cards
@@ -168,7 +168,7 @@ Do not use as a normal navbar logo.
 
 ### `mark-gold.png`
 
-**Current asset form:** Compact BarberQx symbol presented inside a dark rounded tile.
+**Current asset form:** Compact ClipperQ symbol presented inside a dark rounded tile.
 
 Use for:
 - compact brand tile
@@ -185,7 +185,7 @@ Do not use it beside every heading.
 
 ### `mark-white.png`
 
-**Current asset form:** Compact BarberQx symbol presented inside a light rounded tile.
+**Current asset form:** Compact ClipperQ symbol presented inside a light rounded tile.
 
 Use for:
 - light compact brand tile
@@ -201,7 +201,7 @@ Do not treat this current PNG as a transparent standalone mark.
 ### 5.1 Sales Page / Marketing Website
 
 **Brand priority:**
-1. BarberQx
+1. ClipperQ
 2. Product benefit / headline
 3. Supporting visuals
 
@@ -226,14 +226,14 @@ Footer:
 **Brand priority:**
 1. Shop name / shop cover / merchant identity
 2. Booking task
-3. BarberQx platform signature
+3. ClipperQ platform signature
 
-BarberQx must be subtle.
+ClipperQ must be subtle.
 
 Preferred pattern:
 
 ```text
-[small BarberQx mark]  Powered by BarberQx
+[small ClipperQ mark]  Powered by ClipperQ
 -------------------------------------------
 [SHOP COVER]
 Shop Name
@@ -245,14 +245,14 @@ or:
 ```text
 [shop/app header]
 ...
-Powered by BarberQx
+Powered by ClipperQ
 ```
 
 Rules:
-- only one BarberQx signature per page
+- only one ClipperQ signature per page
 - do not use the full horizontal logo at the same visual size as the shop name
-- do not place BarberQx in the center of the merchant hero
-- do not overlay a large BarberQx logo on the merchant cover image
+- do not place ClipperQ in the center of the merchant hero
+- do not overlay a large ClipperQ logo on the merchant cover image
 - platform signature should be visually secondary
 
 Recommended:
@@ -262,8 +262,8 @@ Recommended:
 - minimum tap target only if the signature is interactive
 
 Suggested copy:
-- `Powered by BarberQx`
-- Thai UI may use `ระบบจองคิวโดย BarberQx`
+- `Powered by ClipperQ`
+- Thai UI may use `ระบบจองคิวโดย ClipperQ`
 
 Do not show both phrases at once.
 
@@ -273,9 +273,9 @@ Do not show both phrases at once.
 
 Use the same hierarchy as the booking page.
 
-The customer's current booking information is more important than BarberQx branding.
+The customer's current booking information is more important than ClipperQ branding.
 
-BarberQx may appear:
+ClipperQ may appear:
 - in the shared customer top shell
 - or once in the footer/signature area
 
@@ -285,17 +285,17 @@ Never both.
 
 ### 5.4 Owner / Admin / Staff application
 
-These are BarberQx product surfaces, but the current shop context still matters.
+These are ClipperQ product surfaces, but the current shop context still matters.
 
 **Brand priority:**
 1. Current operational task / page title
 2. Shop context
-3. BarberQx product shell branding
+3. ClipperQ product shell branding
 
 Recommended top header:
 
 ```text
-[small BarberQx mark] BarberQx
+[small ClipperQ mark] ClipperQ
 Shop: {shopName}                    [TH] [EN]
 ```
 
@@ -303,7 +303,7 @@ Alternative if the current shell already shows the shop name strongly:
 
 ```text
 {shopName}
-by BarberQx
+by ClipperQ
 ```
 
 Rules:
@@ -322,7 +322,7 @@ Recommended wordmark/text visual height:
 
 ### 5.5 Auth / onboarding / empty app state
 
-When no merchant identity is the primary subject, BarberQx can become the main brand.
+When no merchant identity is the primary subject, ClipperQ can become the main brand.
 
 Allowed:
 - `app-icon-dark.png`
@@ -378,7 +378,7 @@ Recommended:
 Do not redesign the entire product typography merely to match the logo.
 
 For product UI:
-- keep the existing BarberQx app font stack if already established
+- keep the existing ClipperQ app font stack if already established
 - prefer clean sans-serif UI typography
 - prioritize Thai readability
 
@@ -393,7 +393,7 @@ Avoid script fonts for UI.
 
 ## 9. Image and hero styling
 
-BarberQx marketing photography should feel:
+ClipperQ marketing photography should feel:
 - real barbershop environment
 - warm practical lighting
 - dark wood / black / metal
@@ -403,13 +403,13 @@ BarberQx marketing photography should feel:
 
 Customer shop cover photos belong to the merchant and may have a completely different style.
 
-Never force a merchant's cover photo into BarberQx's black/gold marketing look.
+Never force a merchant's cover photo into ClipperQ's black/gold marketing look.
 
-BarberQx should frame the merchant, not repaint the merchant.
+ClipperQ should frame the merchant, not repaint the merchant.
 
 ---
 
-## 10. Co-branding rule: BarberQx + shop
+## 10. Co-branding rule: ClipperQ + shop
 
 This is critical.
 
@@ -419,7 +419,7 @@ This is critical.
 TMY BARBER
 [large shop identity]
 
-Powered by BarberQx
+Powered by ClipperQ
 [small/subtle]
 ```
 
@@ -430,7 +430,7 @@ BARBERQX       TMY BARBER
 same size      same size
 ```
 
-BarberQx must not make a customer feel that the merchant is merely a branch of BarberQx.
+ClipperQ must not make a customer feel that the merchant is merely a branch of ClipperQ.
 
 ---
 
@@ -478,7 +478,7 @@ light -> /brand/barberqx/app-icon-light.png
 Customer-facing default:
 
 ```text
-Powered by BarberQx
+Powered by ClipperQ
 ```
 
 Must render visually smaller and quieter than the merchant brand.
@@ -487,9 +487,9 @@ Must render visually smaller and quieter than the merchant brand.
 
 ## 12. Asset selection decision tree
 
-Before selecting a BarberQx asset, use this order:
+Before selecting a ClipperQ asset, use this order:
 
-### Is this a BarberQx-owned marketing page?
+### Is this a ClipperQ-owned marketing page?
 Yes:
 - dark surface -> horizontal dark logo
 - light surface -> horizontal light logo
@@ -497,12 +497,12 @@ Yes:
 ### Is this a customer shop booking/public page?
 Yes:
 - merchant brand remains dominant
-- use only a small BarberQx platform signature
+- use only a small ClipperQ platform signature
 - do not automatically use the full horizontal logo
 
 ### Is this an admin/product shell?
 Yes:
-- use compact BarberQx header identity
+- use compact ClipperQ header identity
 - keep shop context visible
 
 ### Is this an OS/app/social icon?
@@ -522,10 +522,10 @@ Logo images must use meaningful `alt` text when they convey brand identity.
 Recommended:
 
 ```tsx
-alt="BarberQx"
+alt="ClipperQ"
 ```
 
-If the logo is next to visible text already reading `BarberQx`, use:
+If the logo is next to visible text already reading `ClipperQ`, use:
 
 ```tsx
 alt=""
@@ -548,7 +548,7 @@ Ensure sufficient contrast for surrounding text and controls.
 - use `object-contain`, never crop a logo
 
 ### Desktop
-- full horizontal logo is preferred on BarberQx marketing pages
+- full horizontal logo is preferred on ClipperQ marketing pages
 - keep branding contained within nav/header grid
 - do not upscale raster PNG beyond the point where it visibly softens
 
@@ -582,13 +582,13 @@ Do not:
 - distort the logo
 - rotate the logo
 - recreate the logo using arbitrary fonts
-- change `BarberQx` to `Barber Qx` inside the official wordmark artwork
-- recolor `Qx` to unrelated accent colors
+- change `ClipperQ` letterforms or spacing inside the official wordmark artwork
+- recolor the `Q` mark to unrelated accent colors
 - put the logo over a busy image without readable separation
 - use both dark and light variants on the same surface
 - use app icons as navbar logos
-- use multiple BarberQx logos on one mobile screen
-- make BarberQx larger than the merchant identity on merchant-facing pages
+- use multiple ClipperQ logos on one mobile screen
+- make ClipperQ larger than the merchant identity on merchant-facing pages
 - add barber-shop clichés around the master logo
 - create unapproved new logo variants during ordinary UI implementation
 
@@ -596,15 +596,15 @@ Do not:
 
 ## 17. Cursor / AI coding instruction
 
-When implementing UI, follow this guide before choosing a BarberQx asset.
+When implementing UI, follow this guide before choosing a ClipperQ asset.
 
 **Do not choose a logo based only on filename. Determine the page's brand hierarchy first.**
 
 Rules:
 
-1. On BarberQx Sales/Marketing pages, BarberQx is the primary brand.
+1. On ClipperQ Sales/Marketing pages, ClipperQ is the primary brand.
 2. On shop customer/public pages, the merchant is the primary brand.
-3. On admin pages, BarberQx is the product shell and the current shop remains visible context.
+3. On admin pages, ClipperQ is the product shell and the current shop remains visible context.
 4. Reuse centralized brand components instead of hardcoding asset paths repeatedly.
 5. Never generate a new logo automatically.
 6. Never change logo colors, proportions, or typography in code.
@@ -634,9 +634,9 @@ Keep this mapping centralized if the codebase has an existing constants/brand mo
 
 When uncertain:
 
-**Marketing website:** use full BarberQx horizontal logo.  
-**Customer booking:** use shop branding + subtle `Powered by BarberQx`.  
-**Admin:** use a small BarberQx platform header identity.  
+**Marketing website:** use full ClipperQ horizontal logo.  
+**Customer booking:** use shop branding + subtle `Powered by ClipperQ`.  
+**Admin:** use a small ClipperQ platform header identity.  
 **App/PWA icon:** use the supplied app icon.
 
 That is the default brand system.

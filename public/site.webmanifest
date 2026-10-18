@@ -1,0 +1,29 @@
+{
+  "name": "ClipperQ",
+  "short_name": "ClipperQ",
+  "description": "Queue booking for barber shops",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0B0B0B",
+  "theme_color": "#F6AD34",
+  "icons": [
+    {
+      "src": "/brand/clipperq/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/clipperq/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/brand/clipperq/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
