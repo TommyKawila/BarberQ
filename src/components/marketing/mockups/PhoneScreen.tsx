@@ -50,22 +50,21 @@ export function PhoneScreen({
       matchHeight={matchHeight}
       className={className ?? (fluid ? PHONE_MOBILE : PHONE)}
     >
-      <div
-        className={
-          safeTop
-            ? "absolute inset-0 overflow-hidden pt-[14%]"
-            : "absolute inset-0 overflow-hidden"
-        }
-      >
-        <Image
-          src={marketingScreens[screen]}
-          alt={alt}
-          width={390}
-          height={844}
-          sizes="(max-width: 768px) 64vw, 280px"
-          priority={priority}
-          className={`h-full w-full object-cover object-top ${imageClassName ?? ""}`}
-        />
+      <div className="absolute inset-0 flex flex-col overflow-hidden">
+        {safeTop ? (
+          <div className="h-[14%] shrink-0 bg-zinc-950" aria-hidden />
+        ) : null}
+        <div className="relative min-h-0 flex-1 overflow-hidden">
+          <Image
+            src={marketingScreens[screen]}
+            alt={alt}
+            width={390}
+            height={844}
+            sizes="(max-width: 768px) 64vw, 280px"
+            priority={priority}
+            className={`h-full w-full object-cover object-top ${imageClassName ?? ""}`}
+          />
+        </div>
       </div>
     </PhoneFrame>
   );

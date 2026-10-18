@@ -10,9 +10,9 @@ const STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
   3: "adminQueue",
 };
 
-/** Compact mobile step 3 uses a grid-focused board crop (desktop keeps full adminQueue). */
+/** Compact mobile: step 1 full-header booking shot; step 3 grid crop. Desktop unchanged. */
 const COMPACT_STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
-  1: "choose",
+  1: "chooseCompact",
   2: "ticket",
   3: "adminQueueBoard",
 };
@@ -51,7 +51,9 @@ export function CustomerStepPhone({
       <PhoneScreen
         screen={screen}
         fluid
-        safeTop
+        // Step 1 asset already has a tall status-bar pad; safeTop's pt+object-cover
+        // was cropping glyph tops off BarberQx Demo. Steps 2–3 keep safeTop.
+        safeTop={step !== 1}
         className="mx-auto w-full max-w-[270px]"
       />
     );

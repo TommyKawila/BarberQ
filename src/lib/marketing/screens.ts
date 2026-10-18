@@ -2,6 +2,8 @@
 export const marketingScreens = {
   landing: "/marketing/screens/shop-landing.webp",
   choose: "/marketing/screens/choose-slot.webp",
+  /** Compact how-it-works step 1: full BrandMark + extra status-bar breathing room. */
+  chooseCompact: "/marketing/screens/choose-booking-v3.webp",
   summary: "/marketing/screens/booking-summary.webp",
   ticket: "/marketing/screens/queue-ticket.webp",
   adminQueue: "/marketing/screens/admin-queue.webp",

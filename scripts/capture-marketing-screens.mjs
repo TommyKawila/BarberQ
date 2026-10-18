@@ -135,10 +135,21 @@ async function main() {
 
   // 2) Choose barber / date / time — BrandMark header fully visible (sticky),
   // booking steps in frame below; do not scroll h2 flush to top.
+  // Unlock truncate+leading so shop-name glyph tops aren't clipped in the shot.
+  await page.addStyleTag({
+    content: `
+      header.sticky p.truncate {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 1.4 !important;
+        padding-top: 2px !important;
+      }
+    `,
+  });
   const barberHeading = page.getByRole("heading", { level: 2 }).first();
   await barberHeading.waitFor({ timeout: 15000 });
   await page.evaluate(() => {
-    const header = document.querySelector("header");
+    const header = document.querySelector("header.sticky") || document.querySelector("header");
     const headerH = header ? header.getBoundingClientRect().height : 72;
     const headings = [...document.querySelectorAll("h2")];
     const target = headings.find((h) => /ช่าง|Barber|เลือก/i.test(h.textContent || ""));

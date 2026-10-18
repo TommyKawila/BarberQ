@@ -114,19 +114,25 @@ describe("marketing layout split", () => {
     assert.match(stepFn, /safeTop/);
     assert.match(stepFn, /COMPACT_STEP_SCREENS/);
     assert.match(mockups, /adminQueueBoard/);
+    assert.match(mockups, /chooseCompact/);
     assert.match(mockups, /COMPACT_STEP_SCREENS/);
     const phoneScreen = readFileSync(
       resolve(root, "components/marketing/mockups/PhoneScreen.tsx"),
       "utf8",
     );
     assert.match(phoneScreen, /safeTop/);
-    assert.match(phoneScreen, /pt-\[14%\]/);
+    assert.match(phoneScreen, /h-\[14%\]/);
+    assert.match(stepFn, /safeTop=\{step !== 1\}/);
     assert.match(mockups, /1:\s*"choose"/);
     assert.match(mockups, /2:\s*"ticket"/);
     assert.match(mockups, /3:\s*"adminQueue"/);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/admin-queue-board.webp")),
       "admin-queue-board.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/choose-booking-v3.webp")),
+      "choose-booking-v3.webp missing",
     );
     assert.match(dictionary.th["marketing.how.1.desc"], /เลือกช่าง|วัน|เวลา/);
     assert.match(dictionary.th["marketing.how.2.title"], /บัตรคิว/);
