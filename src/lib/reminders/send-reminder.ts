@@ -32,6 +32,7 @@ export async function sendAppointmentReminderPush(
   const store = getStore();
   const barber = await store.getBarber(row.barber_id);
   const appointment = await store.getAppointment(row.id);
+  const settings = await store.getShopSettings(shop.id);
   const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
   // Same cancel_token link as booking confirm; builder hides link when <60 min.
   const cancelUrl = reminderCancelUrl(appointment?.cancel_token);
@@ -43,6 +44,7 @@ export async function sendAppointmentReminderPush(
     barberName: barber?.name ?? "—",
     myBookingsUrl,
     cancelUrl,
+    showBrandFooter: settings.showFlexBrandFooter !== false,
   });
 
   return pushMessagesForShop(

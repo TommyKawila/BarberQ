@@ -21,7 +21,7 @@ interface BarberQxLogoProps {
 }
 
 function srcFor(variant: LogoVariant, surface: LogoSurface) {
-  if (variant === "icon") return clipperqIconSrc(surface);
+  if (variant === "icon") return clipperqIconSrc(surface, 32);
   if (variant === "wordmark") return clipperqWordmarkSrc(surface);
   return clipperqLockupSrc(surface);
 }

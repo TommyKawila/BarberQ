@@ -30,6 +30,7 @@ export default async function CancelPage({
           reminderLeadMinutes: 120,
           bookingConfirmPushEnabled: true,
           queueAheadPushEnabled: true,
+          showFlexBrandFooter: true,
         }),
     shopId ? store.listBarbersByShop(shopId) : store.listBarbers(),
     shopId ? store.listShops() : Promise.resolve([]),

@@ -32,6 +32,7 @@ export async function notifyCustomerShopCancel(
     reason: reason ?? null,
     bookUrl,
     callUrl,
+    showBrandFooter: settings.showFlexBrandFooter !== false,
   });
 
   await pushMessagesForShop(

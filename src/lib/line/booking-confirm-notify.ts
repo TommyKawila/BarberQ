@@ -24,6 +24,8 @@ export async function buildBookingConfirmFlexPair(
 
   const store = getStore();
   const barber = await store.getBarber(appointment.barber_id);
+  const settings = await store.getShopSettings(shop.id);
+  const showBrandFooter = settings.showFlexBrandFooter !== false;
   const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
   const cancelUrl = appointment.cancel_token
     ? buildCustomerCancelUrl(appointment.cancel_token)
@@ -53,6 +55,7 @@ export async function buildBookingConfirmFlexPair(
       appointmentId: appointment.id,
       myBookingsUrl,
       cancelUrl,
+      showBrandFooter,
     }),
     ticket: buildQueueTicketFlex({
       shopName: shop.name,
@@ -60,6 +63,7 @@ export async function buildBookingConfirmFlexPair(
       aheadCount: ahead,
       waitMinutes,
       liveUrl: myBookingsUrl,
+      showBrandFooter,
     }),
     myBookingsUrl,
     cancelUrl,

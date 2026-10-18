@@ -39,6 +39,26 @@ const cases = [
       ...common,
       appointmentId: "a12f3b00-0000-4000-8000-000000000001",
       cancelUrl: "https://example.com/c/tok",
+      brandMarkUrl: null,
+    }),
+  },
+  {
+    id: "flex-confirm-brand-footer-on",
+    msg: buildBookingConfirmFlex({
+      ...common,
+      appointmentId: "a12f3b00-0000-4000-8000-000000000001",
+      cancelUrl: "https://example.com/c/tok",
+      showBrandFooter: true,
+      brandMarkUrl: null,
+    }),
+  },
+  {
+    id: "flex-confirm-brand-footer-off",
+    msg: buildBookingConfirmFlex({
+      ...common,
+      appointmentId: "a12f3b00-0000-4000-8000-000000000001",
+      cancelUrl: "https://example.com/c/tok",
+      showBrandFooter: false,
     }),
   },
   {
@@ -134,6 +154,10 @@ function renderNode(n) {
     }
     return `<a style="display:block;text-align:center;color:${n.color ?? "#57534E"};text-decoration:none;padding:8px 4px;font-size:14px;font-weight:400;">${escapeHtml(label)}</a>`;
   }
+  if (n.type === "image") {
+    const size = n.size === "20px" ? 20 : 24;
+    return `<img src="${escapeHtml(n.url)}" width="${size}" height="${size}" style="display:block;object-fit:contain;" alt=""/>`;
+  }
   if (n.type === "box") {
     const padAll = n.paddingAll ?? "0";
     const padT = n.paddingTop ?? padAll;
@@ -141,8 +165,8 @@ function renderNode(n) {
     const padS = n.paddingStart ?? padAll;
     const padE = n.paddingEnd ?? padAll;
     const bg = n.backgroundColor ? `background:${n.backgroundColor};` : "";
+    const m = { none: 0, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24 }[n.margin ?? "none"] ?? 0;
     if (n.layout === "baseline") {
-      const m = { lg: 16, md: 12, sm: 8 }[n.margin] ?? 0;
       const kids = (n.contents ?? [])
         .map((c) => {
           const flex = c.flex ?? 1;
@@ -150,6 +174,21 @@ function renderNode(n) {
         })
         .join("");
       return `<div style="display:flex;align-items:baseline;gap:8px;margin-top:${m}px;">${kids}</div>`;
+    }
+    if (n.layout === "horizontal") {
+      const justify =
+        n.justifyContent === "center"
+          ? "justify-content:center;"
+          : n.justifyContent === "flex-end"
+            ? "justify-content:flex-end;"
+            : "";
+      const align =
+        n.alignItems === "center"
+          ? "align-items:center;"
+          : "align-items:flex-start;";
+      const gap = { none: 0, xs: 4, sm: 8, md: 12 }[n.spacing ?? "sm"] ?? 8;
+      const kids = (n.contents ?? []).map(renderNode).join("");
+      return `<div style="display:flex;${justify}${align}gap:${gap}px;margin-top:${m}px;padding-top:${n.paddingTop ?? 0};">${kids}</div>`;
     }
     const kids = (n.contents ?? []).map(renderNode).join("");
     return `<div style="${bg}padding:${padT} ${padE} ${padB} ${padS};">${kids}</div>`;

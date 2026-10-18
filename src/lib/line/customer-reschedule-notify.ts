@@ -53,6 +53,7 @@ export async function notifyCustomerSelfRescheduleTicket(
     barberName: barber?.name ?? "—",
     myBookingsUrl,
     cancelUrl,
+    showBrandFooter: settings.showFlexBrandFooter !== false,
   });
 
   return pushMessagesForShop(

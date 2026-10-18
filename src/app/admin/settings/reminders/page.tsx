@@ -19,6 +19,7 @@ export default function ReminderSettingsPage() {
   const { shopApi, shopPath } = useShopSlug();
   const [enabled, setEnabled] = useState(false);
   const [confirmPushEnabled, setConfirmPushEnabled] = useState(true);
+  const [flexBrandFooter, setFlexBrandFooter] = useState(true);
   const [lead, setLead] = useState(120);
   const [quota, setQuota] = useState<ShopPushQuota | null>(null);
   const [showEnableNotice, setShowEnableNotice] = useState(false);
@@ -40,9 +41,11 @@ export default function ReminderSettingsPage() {
           remindersEnabled?: boolean;
           reminderLeadMinutes?: number;
           bookingConfirmPushEnabled?: boolean;
+          showFlexBrandFooter?: boolean;
         };
         setEnabled(Boolean(s.remindersEnabled));
         setConfirmPushEnabled(s.bookingConfirmPushEnabled !== false);
+        setFlexBrandFooter(s.showFlexBrandFooter !== false);
         setLead(
           typeof s.reminderLeadMinutes === "number" ? s.reminderLeadMinutes : 120,
         );
@@ -105,6 +108,7 @@ export default function ReminderSettingsPage() {
     remindersEnabled?: boolean;
     reminderLeadMinutes?: number;
     bookingConfirmPushEnabled?: boolean;
+    showFlexBrandFooter?: boolean;
   }) {
     setBusy(true);
     setError(null);
@@ -123,9 +127,11 @@ export default function ReminderSettingsPage() {
         remindersEnabled?: boolean;
         reminderLeadMinutes?: number;
         bookingConfirmPushEnabled?: boolean;
+        showFlexBrandFooter?: boolean;
       };
       setEnabled(Boolean(json.remindersEnabled));
       setConfirmPushEnabled(json.bookingConfirmPushEnabled !== false);
+      setFlexBrandFooter(json.showFlexBrandFooter !== false);
       if (typeof json.reminderLeadMinutes === "number") {
         setLead(json.reminderLeadMinutes);
       }
@@ -233,6 +239,29 @@ export default function ReminderSettingsPage() {
                   const next = e.target.checked;
                   setConfirmPushEnabled(next);
                   void save({ bookingConfirmPushEnabled: next });
+                }}
+              />
+              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
+            </label>
+          </div>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold">{t("admin.flexBrandFooterToggle")}</h2>
+              <p className="mt-1 text-sm text-zinc-400">{t("admin.flexBrandFooterToggleHint")}</p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={flexBrandFooter}
+                disabled={busy}
+                onChange={(e) => {
+                  const next = e.target.checked;
+                  setFlexBrandFooter(next);
+                  void save({ showFlexBrandFooter: next });
                 }}
               />
               <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
