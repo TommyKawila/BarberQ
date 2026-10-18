@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { PlatformBrandMini } from "@/components/layout/PlatformBrand";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -267,6 +268,12 @@ export default function ReminderSettingsPage() {
               <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
             </label>
           </div>
+          {flexBrandFooter ? (
+            <div className="mt-3 flex justify-center border-t border-zinc-800 pt-3">
+              {/* Dark admin surface → cream small mark (clipperqIconSrc). */}
+              <PlatformBrandMini theme="dark" />
+            </div>
+          ) : null}
         </section>
 
         <Link

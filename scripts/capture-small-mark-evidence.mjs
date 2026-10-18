@@ -19,6 +19,8 @@ function dataUrlPng(rel) {
 const fav16 = dataUrlPng("public/brand/clipperq/favicon-16.png");
 const fav32 = dataUrlPng("public/brand/clipperq/favicon-32.png");
 const fav48 = dataUrlPng("public/brand/clipperq/favicon-48.png");
+/** Cream small mark for dark admin UI (never ink/dark mark on dark). */
+const markCream48 = dataUrlPng("public/brand/clipperq/small-mark-cream-48.png");
 
 const faviconHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
 <link rel="icon" href="${fav16}" sizes="16x16"/>
@@ -60,6 +62,9 @@ const adminHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
   p{font-size:14px;color:#a1a1aa;margin:6px 0 0;line-height:1.4;}
   .sw{position:relative;width:48px;height:28px;border-radius:999px;background:#fbbf24;flex-shrink:0;}
   .sw::after{content:"";position:absolute;left:2px;top:2px;width:24px;height:24px;border-radius:999px;background:#fff;transform:translateX(20px);}
+  .preview{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid #27272a;}
+  .preview img{width:16px;height:16px;}
+  .preview span{font-size:10px;font-weight:500;color:#71717a;}
 </style></head><body>
 <div class="page">
   <div class="back">← Settings</div>
@@ -72,6 +77,7 @@ const adminHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"/>
       </div>
       <div class="sw" aria-checked="true"></div>
     </div>
+    <div class="preview"><img src="${markCream48}" alt=""/><span>by ClipperQ</span></div>
   </section>
 </div>
 </body></html>`;
