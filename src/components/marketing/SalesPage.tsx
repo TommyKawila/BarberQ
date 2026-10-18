@@ -345,78 +345,78 @@ export function SalesPage() {
             </h2>
           </header>
 
-          <div className="relative mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
-            {/* Option B: customer mood plate — top mobile / right desktop; mask fades into black */}
+          <div className="relative mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-stretch lg:gap-16 xl:mt-20 xl:gap-20">
+            {/* Option B mobile: mood plate behind copy (unchanged) */}
             {marketingPhotoSlots.solutionCustomer.src ? (
-              <>
-                {/* Mobile: full square scaled down so face + hands/phone all show; soft bottom fade on square */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-x-0 -top-1 z-0 flex h-[400px] items-start justify-center opacity-[0.88] sm:h-[440px] lg:hidden"
+              >
                 <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 -top-1 z-0 flex h-[400px] items-start justify-center opacity-[0.88] sm:h-[440px] lg:hidden"
+                  className="relative mt-2 aspect-square w-[88%] max-w-[360px] overflow-hidden"
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
+                    maskImage:
+                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
+                  }}
                 >
-                  <div
-                    className="relative mt-2 aspect-square w-[88%] max-w-[360px] overflow-hidden"
-                    style={{
-                      WebkitMaskImage:
-                        "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
-                      maskImage:
-                        "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
-                    }}
-                  >
-                    <Image
-                      src={marketingPhotoSlots.solutionCustomer.src}
-                      alt=""
-                      fill
-                      sizes="90vw"
-                      className="object-cover"
-                    />
-                  </div>
+                  <Image
+                    src={marketingPhotoSlots.solutionCustomer.src}
+                    alt=""
+                    fill
+                    sizes="90vw"
+                    className="object-cover"
+                  />
                 </div>
-                {/* Desktop: far-right square — nested alpha masks only (fade into real section bg, no painted box) */}
+              </div>
+            ) : null}
+
+            <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:h-full lg:items-start lg:gap-10 xl:gap-12">
+              <div className="flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7">
+                {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
+                <LineConfirmMockup shopName="BarberQx Demo" />
+                <LineReminderMockup
+                  shopName="BarberQx Demo"
+                  whenLabel={t("marketing.line.mockWhen")}
+                />
+              </div>
+
+              {/* Desktop: mood beside evidence/cost — below phones, larger, soft all-edge fade */}
+              {marketingPhotoSlots.solutionCustomer.src ? (
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[26%] items-center justify-end overflow-visible opacity-[0.96] lg:flex xl:w-[24%]"
+                  className="pointer-events-none relative mt-auto hidden w-full max-w-[420px] opacity-[0.97] lg:block xl:max-w-[460px]"
                 >
                   <div
-                    className="relative mr-0 aspect-square h-[46%] max-h-[290px] w-auto xl:max-h-[270px]"
+                    className="relative aspect-square w-full"
                     style={{
-                      // Top + bottom → transparent into section (no hard box edge)
                       WebkitMaskImage:
-                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.2) 14%, rgba(0,0,0,0.55) 26%, #000 38%, #000 48%, rgba(0,0,0,0.5) 64%, rgba(0,0,0,0.15) 82%, transparent 100%)",
+                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 12%, #000 28%, #000 55%, rgba(0,0,0,0.45) 78%, transparent 100%)",
                       maskImage:
-                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.2) 14%, rgba(0,0,0,0.55) 26%, #000 38%, #000 48%, rgba(0,0,0,0.5) 64%, rgba(0,0,0,0.15) 82%, transparent 100%)",
+                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 12%, #000 28%, #000 55%, rgba(0,0,0,0.45) 78%, transparent 100%)",
                     }}
                   >
                     <div
                       className="absolute inset-0 overflow-hidden"
                       style={{
-                        // Left → transparent toward copy
                         WebkitMaskImage:
-                          "linear-gradient(90deg, transparent 0%, transparent 24%, rgba(0,0,0,0.25) 44%, #000 64%, #000 100%)",
+                          "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.3) 14%, #000 32%, #000 72%, rgba(0,0,0,0.35) 90%, transparent 100%)",
                         maskImage:
-                          "linear-gradient(90deg, transparent 0%, transparent 24%, rgba(0,0,0,0.25) 44%, #000 64%, #000 100%)",
+                          "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.3) 14%, #000 32%, #000 72%, rgba(0,0,0,0.35) 90%, transparent 100%)",
                       }}
                     >
                       <Image
                         src={marketingPhotoSlots.solutionCustomer.src}
                         alt=""
                         fill
-                        sizes="(min-width: 1280px) 15vw, 18vw"
-                        className="object-cover object-[70%_46%]"
+                        sizes="(min-width: 1280px) 28vw, 34vw"
+                        className="object-cover object-[62%_42%]"
                       />
                     </div>
                   </div>
                 </div>
-              </>
-            ) : null}
-
-            <div className="relative z-10 order-2 flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:order-1 lg:justify-start lg:gap-5 xl:gap-7">
-              {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
-              <LineConfirmMockup shopName="BarberQx Demo" />
-              <LineReminderMockup
-                shopName="BarberQx Demo"
-                whenLabel={t("marketing.line.mockWhen")}
-              />
+              ) : null}
             </div>
 
             <div className="relative z-10 order-1 max-w-xl lg:order-2 lg:max-w-[22rem] lg:pt-1 xl:max-w-[24rem]">
