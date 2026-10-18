@@ -962,21 +962,26 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* Final CTA */}
+      {/* Final CTA — mobile B: shorter headline/sub, dual CTAs, full-tier micro */}
       <section
         ref={finalCtaRef}
         className="overflow-x-clip border-t border-amber-500/20 bg-zinc-900/60"
       >
         <div className="mx-auto max-w-[1280px] px-4 py-12 text-center md:px-6 md:py-16">
-          <h2 className="text-2xl font-bold leading-tight text-zinc-50 md:text-4xl">
+          <h2 className="text-[1.375rem] font-bold leading-snug text-zinc-50 sm:text-2xl md:text-4xl md:leading-tight">
             {t("marketing.final.title")}
           </h2>
-          <p className={`mx-auto mt-4 max-w-xl ${BODY}`}>{t("marketing.final.sub")}</p>
-          <div className="mx-auto mt-8 flex w-full max-w-[480px] flex-col gap-3">
-            <PrimaryTrialCta labelKey="marketing.final.cta" placement="final" fullWidth />
+          <p className={`mx-auto mt-3 max-w-xl ${BODY}`}>{t("marketing.final.sub")}</p>
+          <div className="mx-auto mt-7 flex w-full max-w-[480px] flex-col gap-2.5 md:mt-8 md:gap-3">
+            <PrimaryTrialCta
+              labelKey="marketing.final.cta"
+              placement="final"
+              fullWidth
+              riskClassName="mt-3 justify-center text-[13px] sm:text-sm"
+            />
             <LineCta label={t("marketing.final.lineCta")} className="w-full" placement="final" />
           </div>
-          <p className="mt-4 text-[13px] text-zinc-400 md:text-sm">
+          <p className="mx-auto mt-4 max-w-xl text-[13px] leading-snug text-zinc-400 md:text-sm">
             {td("marketing.final.micro")}
           </p>
         </div>
