@@ -400,10 +400,12 @@ describe("marketing layout split", () => {
     assert.match(sales, /marketingClaims\.customerSelfReschedule/);
     assert.match(sales, /marketing\.line\.lead3h/);
     assert.match(sales, /marketing\.line\.rescheduleTitle/);
-    assert.match(sales, /slot="solutionCustomer"/);
+    // Option B mood plate uses solutionCustomer src (no framed MarketingPhotoSlot)
+    assert.match(sales, /marketingPhotoSlots\.solutionCustomer/);
     assert.match(sales, /slot="solutionBarberCalm"/);
     assert.match(sales, /LineConfirmMockup/);
     assert.match(sales, /LineReminderMockup/);
+    assert.match(sales, /maskImage|WebkitMaskImage/);
     const warmNote = readFileSync(
       resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
       "utf8",

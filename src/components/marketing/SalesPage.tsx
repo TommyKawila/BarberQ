@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import {
   Bell,
   CalendarClock,
@@ -33,6 +34,7 @@ import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
+import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 import {
   fillOfferCopy,
   marketingClaims,
@@ -333,8 +335,8 @@ export function SalesPage() {
         ref={lineSectionRef}
         className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/35 to-zinc-950"
       >
-        <div className="mx-auto max-w-[1440px] px-6 py-20 md:px-10 md:py-24 xl:px-12 xl:py-28">
-          <header className="max-w-3xl">
+        <div className="relative mx-auto max-w-[1440px] px-6 py-20 md:px-10 md:py-24 xl:px-12 xl:py-28">
+          <header className="relative z-10 max-w-3xl">
             <p className="text-sm font-medium tracking-wide text-amber-300/80 lg:text-[15px]">
               {t("marketing.line.eyebrow")}
             </p>
@@ -343,25 +345,74 @@ export function SalesPage() {
             </h2>
           </header>
 
-          <div className="mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
-            <div className="order-2 flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:order-1 lg:justify-start lg:gap-5 xl:gap-7">
+          <div className="relative mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
+            {/* Option B: customer mood plate — top mobile / right desktop; mask fades into black */}
+            {marketingPhotoSlots.solutionCustomer.src ? (
+              <>
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-x-0 -top-4 z-0 h-[300px] opacity-[0.46] sm:h-[340px] lg:hidden"
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(to bottom, transparent 0%, #000 12%, #000 48%, transparent 100%)",
+                    maskImage:
+                      "linear-gradient(to bottom, transparent 0%, #000 12%, #000 48%, transparent 100%)",
+                  }}
+                >
+                  <Image
+                    src={marketingPhotoSlots.solutionCustomer.src}
+                    alt=""
+                    fill
+                    sizes="100vw"
+                    className="object-cover object-[center_18%]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-transparent to-zinc-950/80" />
+                </div>
+                {/* Desktop: right plate; soft fade left into black; phones overlap */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[56%] overflow-hidden opacity-[0.55] lg:block xl:w-[52%]"
+                  style={{
+                    WebkitMaskImage:
+                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 18%, #000 40%, #000 100%)",
+                    maskImage:
+                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 18%, #000 40%, #000 100%)",
+                  }}
+                >
+                  <Image
+                    src={marketingPhotoSlots.solutionCustomer.src}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1280px) 42vw, 50vw"
+                    className="object-cover object-[center_16%]"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-l from-transparent via-zinc-950/10 to-zinc-950/45" />
+                  {/* Bottom dissolve into section black — full opaque at base, no hard cut */}
+                  <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-zinc-950 from-15% via-zinc-950/80 to-transparent" />
+                </div>
+              </>
+            ) : null}
+
+            <div className="relative z-10 order-2 flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:order-1 lg:justify-start lg:gap-5 xl:gap-7">
               {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
               <LineConfirmMockup shopName="BarberQx Demo" />
               <LineReminderMockup
                 shopName="BarberQx Demo"
                 whenLabel={t("marketing.line.mockWhen")}
               />
-              {/* Match phone width so lifestyle plate sits as a pair, not a larger square */}
-              <MarketingPhotoSlot
-                slot="solutionCustomer"
-                alt={t("marketing.line.customerPhotoAlt")}
-                sizes="(min-width: 1024px) 230px, 210px"
-                className="w-full max-w-[210px] shrink-0 lg:max-w-[230px]"
-              />
             </div>
 
-            <div className="order-1 lg:order-2 lg:pt-1">
-              <div className="space-y-8">
+            <div className="relative z-10 order-1 lg:order-2 lg:pt-1">
+              {/* Soft radial scrim — readable copy/evidence without a hard rounded frame */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute -inset-x-10 -inset-y-6 lg:-inset-x-14 lg:-inset-y-8"
+                style={{
+                  background:
+                    "radial-gradient(ellipse 95% 90% at 35% 35%, rgba(9,9,11,0.92) 0%, rgba(9,9,11,0.78) 42%, rgba(9,9,11,0.35) 68%, transparent 82%)",
+                }}
+              />
+              <div className="relative space-y-8">
                 {lineBullets.map((key) => (
                   <p
                     key={key}
@@ -374,7 +425,7 @@ export function SalesPage() {
               </div>
 
               {marketingClaims.reminderShortLeads ? (
-                <p className="mt-10 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
+                <p className="relative mt-10 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
                   <span className="font-medium text-zinc-200">
                     {t("marketing.line.leadsLabel")}
                   </span>
@@ -395,7 +446,7 @@ export function SalesPage() {
               ) : null}
 
               {marketingClaims.customerSelfReschedule ? (
-                <p className="mt-6 flex gap-3 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
+                <p className="relative mt-6 flex gap-3 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
                   <CalendarClock size={18} className="mt-1 shrink-0 text-amber-400/80" />
                   <span>
                     <span className="font-medium text-zinc-200">
@@ -406,7 +457,7 @@ export function SalesPage() {
                 </p>
               ) : null}
 
-              <div className="mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start">
+              <div className="relative mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start">
                 <PrimaryTrialCta
                   labelKey="marketing.line.cta"
                   placement="line"
@@ -419,17 +470,17 @@ export function SalesPage() {
                 />
               </div>
 
-              <div className="mt-12 space-y-3 border-t border-zinc-800/80 pt-8">
-                <p className="max-w-md text-xs leading-relaxed text-zinc-500 lg:text-[13px]">
+              <div className="relative mt-12 space-y-3 border-t border-zinc-800/80 pt-8">
+                <p className="max-w-md text-xs leading-relaxed text-zinc-400 lg:text-[13px]">
                   {t("marketing.line.evidence")}
                 </p>
-                <p className="max-w-md text-xs leading-relaxed text-zinc-500 lg:text-[13px]">
-                  <span className="font-medium text-zinc-400">
+                <p className="max-w-md text-xs leading-relaxed text-zinc-400 lg:text-[13px]">
+                  <span className="font-medium text-zinc-300">
                     {td("marketing.line.costTitle")}
                   </span>
                   {" · "}
                   {td("marketing.line.costBody")}{" "}
-                  <span className="text-zinc-400">{td("marketing.line.costClose")}</span>
+                  <span className="text-zinc-300">{td("marketing.line.costClose")}</span>
                 </p>
               </div>
             </div>
