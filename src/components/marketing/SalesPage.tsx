@@ -182,22 +182,23 @@ export function SalesPage() {
   }, []);
 
   useEffect(() => {
-    // Hide sticky while any in-page primary CTA (hero, line, pricing, final, …) is on screen.
-    const ctaEls = [
+    // Hide sticky while any in-page primary CTA is on screen, or the footer is in view.
+    const hideEls = [
       ...document.querySelectorAll<HTMLElement>("[data-inpage-trial-cta]"),
+      ...document.querySelectorAll<HTMLElement>("[data-hide-sticky]"),
     ];
     // Fallback: hero wrappers if attribute not yet on a wrapped block
     for (const el of [heroCtaRef.current, heroCtaDesktopRef.current]) {
-      if (el && !ctaEls.includes(el)) ctaEls.push(el);
+      if (el && !hideEls.includes(el)) hideEls.push(el);
     }
-    if (ctaEls.length === 0) return;
+    if (hideEls.length === 0) return;
 
     const visibleByEl = new Map<Element, boolean>();
-    for (const el of ctaEls) visibleByEl.set(el, false);
+    for (const el of hideEls) visibleByEl.set(el, false);
 
     const sync = () => {
-      const anyInPageVisible = [...visibleByEl.values()].some(Boolean);
-      setShowSticky(!anyInPageVisible);
+      const anyHideTargetVisible = [...visibleByEl.values()].some(Boolean);
+      setShowSticky(!anyHideTargetVisible);
     };
 
     const obs = new IntersectionObserver(
@@ -209,7 +210,7 @@ export function SalesPage() {
       },
       { threshold: 0, rootMargin: "0px" },
     );
-    for (const el of ctaEls) obs.observe(el);
+    for (const el of hideEls) obs.observe(el);
     // Observer delivers an initial callback with current intersection — no eager sync.
 
     return () => obs.disconnect();
