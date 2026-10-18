@@ -646,25 +646,39 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* Founder */}
+      {/* Founder — mobile B: centered stack, ~176px photo, amber eyebrow; desktop (sm+) unchanged */}
       <section id="founder" className="scroll-mt-20 overflow-x-clip">
-        <div className="mx-auto max-w-[800px] px-4 py-10 md:px-6 md:py-14">
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-8">
+        <div
+          className={`mx-auto max-w-[800px] px-4 pt-10 md:px-6 md:py-14 ${
+            process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL
+              ? "pb-36 md:pb-14"
+              : "pb-10"
+          }`}
+        >
+          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8">
             <MarketingPhotoSlot
               slot="founder"
               alt={t("marketing.founder.photoAlt")}
               shape="circle"
-              sizes="160px"
-              className="h-36 w-36 shrink-0 aspect-square sm:h-40 sm:w-40"
+              sizes="176px"
+              className="h-44 w-44 shrink-0 aspect-square sm:h-40 sm:w-40"
             />
             <div className="text-center sm:text-left">
+              <p className="mb-1.5 text-sm font-medium text-amber-400/90 sm:hidden">
+                {t("marketing.founder.eyebrow")}
+              </p>
               <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
                 {t("marketing.founder.title")}
               </h2>
               <p className={`mt-3 ${BODY}`}>{td("marketing.founder.body")}</p>
-              <div className="mt-5 flex justify-center sm:justify-start">
-                <LineCta label={t("marketing.founder.cta")} placement="founder" />
-              </div>
+              {process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL ? (
+                <div className="mt-4 flex justify-center sm:justify-start">
+                  <LineCta
+                    label={t("marketing.founder.cta")}
+                    placement="founder"
+                  />
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
