@@ -5,6 +5,8 @@ export const marketingScreens = {
   summary: "/marketing/screens/booking-summary.webp",
   ticket: "/marketing/screens/queue-ticket.webp",
   adminQueue: "/marketing/screens/admin-queue.webp",
+  /** Compact how-it-works step 3: grid-focused crop (full barber columns, no side clip). */
+  adminQueueBoard: "/marketing/screens/admin-queue-board.webp",
   adminTeam: "/marketing/screens/admin-team.webp",
   adminStats: "/marketing/screens/admin-stats.webp",
 } as const;

@@ -10,6 +10,13 @@ const STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
   3: "adminQueue",
 };
 
+/** Compact mobile step 3 uses a grid-focused board crop (desktop keeps full adminQueue). */
+const COMPACT_STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
+  1: "choose",
+  2: "ticket",
+  3: "adminQueueBoard",
+};
+
 type FrameProps = {
   screen: MarketingScreenKey;
   size?: PhoneSize;
@@ -38,18 +45,14 @@ export function CustomerStepPhone({
   step: 1 | 2 | 3;
   compact?: boolean;
 }) {
-  const screen = STEP_SCREENS[step];
+  const screen = compact ? COMPACT_STEP_SCREENS[step] : STEP_SCREENS[step];
   if (compact) {
     return (
       <PhoneScreen
         screen={screen}
         fluid
+        safeTop
         className="mx-auto w-full max-w-[270px]"
-        imageClassName={
-          step === 3
-            ? "origin-[center_30%] scale-[1.55] object-[center_32%]"
-            : undefined
-        }
       />
     );
   }

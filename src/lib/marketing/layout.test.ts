@@ -111,10 +111,23 @@ describe("marketing layout split", () => {
     assert.match(stepFn, /hidden lg:block/);
     assert.match(stepFn, /size="md"/);
     assert.match(stepFn, /compact/);
-    assert.match(stepFn, /object-\[center_32%\]/);
+    assert.match(stepFn, /safeTop/);
+    assert.match(stepFn, /COMPACT_STEP_SCREENS/);
+    assert.match(mockups, /adminQueueBoard/);
+    assert.match(mockups, /COMPACT_STEP_SCREENS/);
+    const phoneScreen = readFileSync(
+      resolve(root, "components/marketing/mockups/PhoneScreen.tsx"),
+      "utf8",
+    );
+    assert.match(phoneScreen, /safeTop/);
+    assert.match(phoneScreen, /pt-\[14%\]/);
     assert.match(mockups, /1:\s*"choose"/);
     assert.match(mockups, /2:\s*"ticket"/);
     assert.match(mockups, /3:\s*"adminQueue"/);
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue-board.webp")),
+      "admin-queue-board.webp missing",
+    );
     assert.match(dictionary.th["marketing.how.1.desc"], /เลือกช่าง|วัน|เวลา/);
     assert.match(dictionary.th["marketing.how.2.title"], /บัตรคิว/);
     assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|แจ้งเตือน/);
