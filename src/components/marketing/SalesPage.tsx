@@ -569,24 +569,37 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* Board — barbers / front desk */}
+      {/* Board — barbers / front desk. Mobile A: H2 → plate → bullets; desktop unchanged two-col. */}
       <section id="board" className="scroll-mt-20 overflow-x-clip">
         <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
           <div>
             <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
               {t("marketing.board.title")}
             </h2>
-            <ul className="mt-6 space-y-4">
+            {/* Mobile: barberMobile plate under H2 — near full column, shorter crop toward tablet/board */}
+            <MarketingPhotoSlot
+              slot="barberMobile"
+              alt={t("marketing.board.photoAlt")}
+              fill
+              objectPosition="58% 34%"
+              sizes="92vw"
+              className="mt-5 h-[330px] w-full lg:hidden"
+            />
+            <ul className="mt-5 space-y-3.5 lg:mt-6 lg:space-y-4">
               {([1, 2, 3, 4, 5] as const).map((n) => {
                 const Icon = BOARD_ICONS[n - 1];
                 return (
-                  <li key={n} className="flex gap-3">
-                    <Icon size={20} className="mt-0.5 shrink-0 text-amber-400" strokeWidth={2} />
+                  <li key={n} className="flex gap-2.5 lg:gap-3">
+                    <Icon
+                      size={20}
+                      className="mt-0.5 shrink-0 text-amber-400"
+                      strokeWidth={2}
+                    />
                     <div>
-                      <p className="font-semibold text-zinc-50">
+                      <p className="text-[15px] font-semibold leading-snug text-zinc-50 md:text-base">
                         {t(`marketing.board.${n}.title` as MessageKey)}
                       </p>
-                      <p className={`mt-1 ${BODY}`}>
+                      <p className="mt-0.5 text-[14px] leading-relaxed text-zinc-300 md:mt-1 md:text-base">
                         {t(`marketing.board.${n}.desc` as MessageKey)}
                       </p>
                     </div>
@@ -595,16 +608,13 @@ export function SalesPage() {
               })}
             </ul>
           </div>
-          {/* Desktop: Tommy iPad plate + live admin queue composite. Mobile keeps portrait barber plate. */}
-          <div className="flex justify-center lg:justify-end">
+          {/* Desktop: Tommy iPad plate + live admin queue composite (unchanged). */}
+          <div className="hidden justify-end lg:flex">
             <MarketingPhotoSlot
-              pair="barber"
+              slot="barberDesktop"
               alt={t("marketing.board.photoAlt")}
-              desktopSizes="(min-width: 1280px) 560px, 480px"
-              mobileSizes="70vw"
-              desktopClassName="w-full max-w-[560px]"
-              mobileClassName="w-full max-w-[300px] min-h-[340px]"
-              className="w-full"
+              sizes="(min-width: 1280px) 560px, 480px"
+              className="w-full max-w-[560px]"
             />
           </div>
         </div>
