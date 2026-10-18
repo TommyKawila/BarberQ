@@ -23,7 +23,10 @@ import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { SalesHero } from "@/components/marketing/SalesHero";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
 import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
-import { LineReminderMockup } from "@/components/marketing/mockups/LineReminderMockup";
+import {
+  LineConfirmMockup,
+  LineReminderMockup,
+} from "@/components/marketing/mockups/LineReminderMockup";
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
 import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
@@ -341,20 +344,19 @@ export function SalesPage() {
           </header>
 
           <div className="mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
-            <div className="order-2 flex flex-col items-center gap-6 sm:flex-row sm:items-end sm:justify-center lg:order-1 lg:justify-start lg:gap-7">
+            <div className="order-2 flex flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:order-1 lg:justify-start lg:gap-5 xl:gap-7">
+              {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
+              <LineConfirmMockup shopName="BarberQx Demo" />
               <LineReminderMockup
                 shopName="BarberQx Demo"
-                title={t("marketing.line.mockTitle")}
-                body={t("marketing.line.mockBody")}
                 whenLabel={t("marketing.line.mockWhen")}
-                cta={t("marketing.line.mockCta")}
               />
               {/* Match phone width so lifestyle plate sits as a pair, not a larger square */}
               <MarketingPhotoSlot
                 slot="solutionCustomer"
                 alt={t("marketing.line.customerPhotoAlt")}
-                sizes="(min-width: 1024px) 220px, 200px"
-                className="w-full max-w-[200px] shrink-0 lg:max-w-[220px]"
+                sizes="(min-width: 1024px) 230px, 210px"
+                className="w-full max-w-[210px] shrink-0 lg:max-w-[230px]"
               />
             </div>
 

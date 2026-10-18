@@ -402,7 +402,19 @@ describe("marketing layout split", () => {
     assert.match(sales, /marketing\.line\.rescheduleTitle/);
     assert.match(sales, /slot="solutionCustomer"/);
     assert.match(sales, /slot="solutionBarberCalm"/);
+    assert.match(sales, /LineConfirmMockup/);
     assert.match(sales, /LineReminderMockup/);
+    const warmNote = readFileSync(
+      resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
+      "utf8",
+    );
+    assert.match(warmNote, /ใกล้ถึงคิวของคุณแล้ว/);
+    assert.match(warmNote, /✓ จองคิวเรียบร้อยแล้ว/);
+    assert.match(warmNote, /ดูคิวของฉัน/);
+    assert.match(warmNote, /เลื่อน \/ ยกเลิกนัด/);
+    assert.match(warmNote, /#15803D/);
+    assert.match(warmNote, /#B45309/);
+    assert.match(warmNote, /#A12F3B/);
     assert.equal(marketingPhotoSlots.solutionCustomer.src, "/sale/solution-customer.webp");
     assert.ok(
       existsSync(resolve(root, "../public/sale/solution-customer.webp")),

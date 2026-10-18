@@ -414,10 +414,10 @@ export const dictionary = {
     "marketing.line.costClose": "ไม่กี่สตางค์ แลกกับลูกค้ามาตรงนัด",
     "marketing.line.cta": "เริ่มใช้ฟรี {days} วัน →",
     "marketing.line.lineCta": "คุยกับทีมทาง LINE",
-    "marketing.line.mockTitle": "เตือนคิวพรุ่งนี้",
-    "marketing.line.mockBody": "นัดของคุณใกล้ถึงแล้ว — มาก่อนเวลาเล็กน้อยได้เลย",
-    "marketing.line.mockWhen": "วันนี้ 18:00",
-    "marketing.line.mockCta": "ดูบัตรคิว",
+    "marketing.line.mockTitle": "ใกล้ถึงคิวของคุณแล้ว",
+    "marketing.line.mockBody": "ร้านรอต้อนรับนะครับ เดินทางปลอดภัยครับ",
+    "marketing.line.mockWhen": "วันนี้ 18:30",
+    "marketing.line.mockCta": "ดูคิวของฉัน",
     "marketing.line.customerPhotoAlt":
       "ลูกค้ายิ้มมองมือถือขณะอ่านข้อความยืนยันคิวจากร้าน",
     "marketing.line.barberPhotoAlt":
@@ -1513,10 +1513,10 @@ export const dictionary = {
     "marketing.line.costClose": "A few satang for customers who show up",
     "marketing.line.cta": "Start free for {days} days →",
     "marketing.line.lineCta": "Chat with the team on LINE",
-    "marketing.line.mockTitle": "Reminder for tomorrow",
-    "marketing.line.mockBody": "Your appointment is coming up — feel free to arrive a little early.",
-    "marketing.line.mockWhen": "Today 18:00",
-    "marketing.line.mockCta": "View ticket",
+    "marketing.line.mockTitle": "Your appointment is coming up",
+    "marketing.line.mockBody": "We’re ready for you — travel safe.",
+    "marketing.line.mockWhen": "Today 18:30",
+    "marketing.line.mockCta": "View my queue",
     "marketing.line.customerPhotoAlt":
       "Customer smiling at a phone while reading the shop’s booking confirmation",
     "marketing.line.barberPhotoAlt":
