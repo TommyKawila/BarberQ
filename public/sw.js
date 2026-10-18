@@ -11,8 +11,8 @@ self.addEventListener("push", (event) => {
       body: data.body || "",
       tag: data.tag || "barberqx",
       data: { url: data.url || "/admin" },
-      icon: "/brand/barberqx/app-icon-dark.png",
-      badge: "/brand/barberqx/mark-gold.png",
+      icon: "/brand/clipperq/app-icon-dark.png",
+      badge: "/brand/clipperq/mark-cream-64.png",
     }),
   );
 });
