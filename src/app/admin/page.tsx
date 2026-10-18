@@ -454,7 +454,11 @@ export default function AdminPage() {
 
   return (
     <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-4 px-3 py-4">
+      <div
+        className={`flex flex-col gap-4 px-3 py-4${
+          rescheduleFrom ? " pb-36" : ""
+        }`}
+      >
         <header className="flex flex-col gap-3">
           <div className="min-w-0">
             {mockMode ? (
@@ -584,10 +588,11 @@ export default function AdminPage() {
         ) : null}
         {rescheduleFrom ? (
           <div
-            className="rounded-xl border border-amber-500/50 bg-amber-500/10 p-3"
+            className="fixed inset-x-0 bottom-0 z-40 border-t border-amber-500/50 bg-zinc-950/95 p-4 pb-8 shadow-[0_-8px_24px_rgba(0,0,0,0.45)] sm:inset-x-auto sm:left-1/2 sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:rounded-t-2xl"
             data-testid="admin-reschedule-banner"
+            role="status"
           >
-            <p className="text-sm text-amber-100">
+            <p className="text-sm font-medium text-amber-100">
               {t("admin.rescheduleModeBanner").replace(
                 "{name}",
                 rescheduleFrom.customerName,
@@ -599,7 +604,7 @@ export default function AdminPage() {
                 setRescheduleFrom(null);
                 setRescheduleTarget(null);
               }}
-              className="mt-2 min-h-10 w-full rounded-lg border border-zinc-600 text-sm text-zinc-200"
+              className="mt-3 min-h-11 w-full rounded-xl border border-zinc-600 text-sm text-zinc-200"
             >
               {t("admin.rescheduleModeCancel")}
             </button>
@@ -655,6 +660,7 @@ export default function AdminPage() {
           onCancel={(id, slot) => void onCancel(id, slot)}
           onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
           onUnblock={(id, slot) => void onUnblock(id, slot)}
+          reschedulePickMode={Boolean(rescheduleFrom)}
           bookingHref={shopPath("/")}
           onCopyBookingLink={() => void copyBookingLink()}
           bookingLinkCopied={bookingLinkCopied}

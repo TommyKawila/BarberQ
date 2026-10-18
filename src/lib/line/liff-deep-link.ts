@@ -20,12 +20,20 @@ const RESERVED_FIRST_SEGMENTS = new Set([
   "favicon.ico",
 ]);
 
+/** Relative liff.state paths that nest under the LIFF endpoint shop. */
+const SHOP_SCOPED_RELATIVE = new Set(["admin", "bookings", "q"]);
+
 export function shopSlugFromPath(pathname: string): string | null {
   const match = pathname.match(/^\/([^/]+)/);
   if (!match) return null;
   const seg = match[1] ?? "";
   if (!seg || RESERVED_FIRST_SEGMENTS.has(seg)) return null;
   return seg;
+}
+
+/** First path segment of a normalized pathname (no leading empty). */
+function firstSegment(pathname: string): string {
+  return pathname.replace(/^\//, "").split("/")[0] ?? "";
 }
 
 export function normalizeLiffStatePath(liffState: string): string {
@@ -50,6 +58,11 @@ export function resolveLiffStateTarget(currentPath: string, liffState: string): 
       return state;
     }
     if (state === "/") return `/${shop}`;
+    // Global routes (e.g. /c/{token}) must not become /{shop}/c/{token}.
+    const first = firstSegment(state);
+    if (first && RESERVED_FIRST_SEGMENTS.has(first) && !SHOP_SCOPED_RELATIVE.has(first)) {
+      return state;
+    }
     return `/${shop}${state}`;
   }
 

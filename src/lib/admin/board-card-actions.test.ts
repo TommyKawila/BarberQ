@@ -151,6 +151,37 @@ describe("board cancel UX wiring", () => {
     assert.match(sheet, /"reschedule"/);
   });
 
+  it("admin เลื่อนคิว is board-pick mode — not gated by customer reschedule_count", () => {
+    const sheet = readFileSync(
+      resolve(root, "components/admin/BookedSlotActionsSheet.tsx"),
+      "utf8",
+    );
+    const grid = readFileSync(
+      resolve(root, "components/admin/QuickBlockGrid.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(resolve(root, "app/admin/page.tsx"), "utf8");
+    const actions = readFileSync(
+      resolve(root, "lib/admin/board-card-actions.ts"),
+      "utf8",
+    );
+    assert.doesNotMatch(sheet, /reschedule_count|canCustomerReschedule/);
+    assert.doesNotMatch(actions, /reschedule_count|canCustomerReschedule|MAX_RESCHEDULE/);
+    assert.match(grid, /onRescheduleStart\?\.\(barberId, slot\)/);
+    assert.match(grid, /setSheet\(null\)/);
+    assert.match(grid, /reschedulePickMode/);
+    assert.match(page, /setRescheduleFrom/);
+    assert.match(page, /admin-reschedule-banner/);
+    const service = readFileSync(
+      resolve(root, "lib/services/booking-service.ts"),
+      "utf8",
+    );
+    assert.match(
+      service,
+      /staffRescheduleBooking[\s\S]*?requireRescheduleQuota:\s*false/,
+    );
+  });
+
   it("staff reschedule route notifies LINE flex + Web Push", () => {
     const route = readFileSync(
       resolve(root, "app/api/appointments/[id]/reschedule/route.ts"),

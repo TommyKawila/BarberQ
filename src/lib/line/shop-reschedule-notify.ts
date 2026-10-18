@@ -1,6 +1,6 @@
 import { getStore } from "@/lib/data";
 import { buildShopRescheduleFlex } from "@/lib/line/flex-messages";
-import { buildShopWebUrl } from "@/lib/line/liff-url";
+import { buildCustomerCancelUrl, buildShopCustomerUrl } from "@/lib/line/liff-url";
 import { pushMessagesForShop } from "@/lib/line/push-message";
 import type { Appointment, Shop } from "@/types/booking";
 
@@ -9,6 +9,16 @@ export function shouldSendLineReschedulePush(
   appointment: Pick<Appointment, "customer_line_id">,
 ): boolean {
   return Boolean(appointment.customer_line_id?.trim());
+}
+
+/**
+ * Shop-reschedule Flex CTA targets (ตกลง / เลือกเวลาอื่น).
+ * Must be LIFF customer URLs — plain web `/bookings` opens LINE's in-app
+ * browser, where useLineAuth auto-login never finishes → stuck "กำลังโหลด…".
+ * There is no separate accept-reschedule API; both CTAs open My Bookings.
+ */
+export function shopRescheduleBookingsUrl(shopSlug: string): string {
+  return buildShopCustomerUrl(shopSlug, "/bookings");
 }
 
 export async function notifyCustomerShopReschedule(
@@ -22,9 +32,9 @@ export async function notifyCustomerShopReschedule(
 
   const store = getStore();
   const barber = await store.getBarber(after.barber_id);
-  const bookingsUrl = `${buildShopWebUrl(shop.slug)}/bookings`;
+  const bookingsUrl = shopRescheduleBookingsUrl(shop.slug);
   const cancelUrl = after.cancel_token
-    ? `${buildShopWebUrl(shop.slug)}/c/${after.cancel_token}`
+    ? buildCustomerCancelUrl(after.cancel_token)
     : bookingsUrl;
 
   const flex = buildShopRescheduleFlex({
