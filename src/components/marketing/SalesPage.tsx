@@ -380,11 +380,11 @@ export function SalesPage() {
                   <div
                     className="relative mr-0 aspect-square h-[46%] max-h-[290px] w-auto xl:max-h-[270px]"
                     style={{
-                      // Bottom → transparent into section gradient (no hard cutoff)
+                      // Top + bottom → transparent into section (no hard box edge)
                       WebkitMaskImage:
-                        "linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.15) 78%, transparent 100%)",
+                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.2) 14%, rgba(0,0,0,0.55) 26%, #000 38%, #000 48%, rgba(0,0,0,0.5) 64%, rgba(0,0,0,0.15) 82%, transparent 100%)",
                       maskImage:
-                        "linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.15) 78%, transparent 100%)",
+                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.2) 14%, rgba(0,0,0,0.55) 26%, #000 38%, #000 48%, rgba(0,0,0,0.5) 64%, rgba(0,0,0,0.15) 82%, transparent 100%)",
                     }}
                   >
                     <div
