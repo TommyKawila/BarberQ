@@ -349,15 +349,15 @@ export function SalesPage() {
             {/* Option B: customer mood plate — top mobile / right desktop; mask fades into black */}
             {marketingPhotoSlots.solutionCustomer.src ? (
               <>
-                {/* Mobile: full square scaled down so face + hands/phone all show */}
+                {/* Mobile: full square scaled down so face + hands/phone all show; soft bottom fade */}
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-x-0 -top-1 z-0 flex h-[400px] items-start justify-center opacity-[0.88] sm:h-[440px] lg:hidden"
                   style={{
                     WebkitMaskImage:
-                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 70%, transparent 100%)",
+                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 58%, rgba(0,0,0,0.35) 78%, transparent 100%)",
                     maskImage:
-                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 70%, transparent 100%)",
+                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 58%, rgba(0,0,0,0.35) 78%, transparent 100%)",
                   }}
                 >
                   <div className="relative mt-2 aspect-square w-[88%] max-w-[360px]">
@@ -369,35 +369,42 @@ export function SalesPage() {
                       className="object-cover"
                     />
                   </div>
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-950/20 via-transparent to-zinc-950/60" />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-950/20 via-transparent to-zinc-950/80" />
                 </div>
-                {/* Desktop: scaled square (not face-crop) — hands/phone visible; brighter */}
+                {/* Desktop: far-right square — nested alpha masks only (fade into real section bg, no painted box) */}
                 <div
                   aria-hidden
-                  className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[64%] items-center justify-end overflow-hidden opacity-[0.95] lg:flex xl:w-[60%]"
-                  style={{
-                    WebkitMaskImage:
-                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 12%, #000 28%, #000 78%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 8%, #000 100%)",
-                    maskImage:
-                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.35) 12%, #000 28%, #000 78%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 8%, #000 100%)",
-                    WebkitMaskComposite: "source-in",
-                    maskComposite: "intersect",
-                  }}
+                  className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[26%] items-center justify-end overflow-visible opacity-[0.96] lg:flex xl:w-[24%]"
                 >
-                  <div className="relative mr-[2%] aspect-square h-[72%] max-h-[520px] w-auto">
-                    <Image
-                      src={marketingPhotoSlots.solutionCustomer.src}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1280px) 32vw, 40vw"
-                      className="object-cover"
-                    />
+                  <div
+                    className="relative mr-0 aspect-square h-[46%] max-h-[290px] w-auto xl:max-h-[270px]"
+                    style={{
+                      // Bottom → transparent into section gradient (no hard cutoff)
+                      WebkitMaskImage:
+                        "linear-gradient(180deg, #000 0%, #000 44%, rgba(0,0,0,0.55) 64%, rgba(0,0,0,0.18) 80%, transparent 100%)",
+                      maskImage:
+                        "linear-gradient(180deg, #000 0%, #000 44%, rgba(0,0,0,0.55) 64%, rgba(0,0,0,0.18) 80%, transparent 100%)",
+                    }}
+                  >
+                    <div
+                      className="absolute inset-0 overflow-hidden"
+                      style={{
+                        // Left → transparent toward copy
+                        WebkitMaskImage:
+                          "linear-gradient(90deg, transparent 0%, transparent 24%, rgba(0,0,0,0.25) 44%, #000 64%, #000 100%)",
+                        maskImage:
+                          "linear-gradient(90deg, transparent 0%, transparent 24%, rgba(0,0,0,0.25) 44%, #000 64%, #000 100%)",
+                      }}
+                    >
+                      <Image
+                        src={marketingPhotoSlots.solutionCustomer.src}
+                        alt=""
+                        fill
+                        sizes="(min-width: 1280px) 15vw, 18vw"
+                        className="object-cover object-[70%_46%]"
+                      />
+                    </div>
                   </div>
-                  {/* Edge dissolves only — keep square subject bright */}
-                  <div className="absolute inset-0 bg-gradient-to-l from-transparent from-55% to-zinc-950/20" />
-                  <div className="absolute inset-x-0 bottom-0 h-[14%] bg-gradient-to-t from-zinc-950 from-40% via-zinc-950/35 to-transparent" />
-                  <div className="absolute inset-x-0 top-0 h-[10%] bg-gradient-to-b from-zinc-950 from-35% via-zinc-950/35 to-transparent" />
-                  <div className="absolute inset-y-0 right-0 w-[12%] bg-gradient-to-l from-zinc-950 from-40% via-zinc-950/35 to-transparent" />
                 </div>
               </>
             ) : null}
@@ -411,14 +418,14 @@ export function SalesPage() {
               />
             </div>
 
-            <div className="relative z-10 order-1 lg:order-2 lg:pt-1">
+            <div className="relative z-10 order-1 max-w-xl lg:order-2 lg:max-w-[22rem] lg:pt-1 xl:max-w-[24rem]">
               {/* Text-only scrim — denser under copy only; photo beyond stays bright */}
               <div
                 aria-hidden
                 className="pointer-events-none absolute -inset-x-6 -inset-y-3 lg:-inset-x-8 lg:-inset-y-5"
                 style={{
                   background:
-                    "radial-gradient(ellipse 82% 72% at 22% 36%, rgba(9,9,11,0.97) 0%, rgba(9,9,11,0.9) 40%, rgba(9,9,11,0.4) 60%, transparent 74%)",
+                    "radial-gradient(ellipse 95% 85% at 32% 40%, rgba(9,9,11,0.98) 0%, rgba(9,9,11,0.92) 52%, rgba(9,9,11,0.35) 74%, transparent 90%)",
                 }}
               />
               <div className="relative space-y-8">
