@@ -12,7 +12,7 @@ export function BarberQxLogo({ href = "/", priority, className }: BarberQxLogoPr
   const img = (
     <Image
       src={BARBERQX_BRAND.assets.logoHorizontalDark}
-      alt="BarberQx"
+      alt={BARBERQX_BRAND.name}
       width={140}
       height={32}
       priority={priority}

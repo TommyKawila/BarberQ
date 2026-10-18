@@ -70,8 +70,8 @@ describe("booking success source", () => {
       assert.doesNotMatch(dictionary.th[key], /เตือนก่อนนัด/);
       assert.doesNotMatch(dictionary.th[key], /แจ้งเตือน/);
       assert.doesNotMatch(dictionary.en[key], /notification|reminder|alert/i);
-      assert.doesNotMatch(dictionary.th[key], /BarberQx|BarberQ/);
-      assert.doesNotMatch(dictionary.en[key], /BarberQx|BarberQ/);
+      assert.doesNotMatch(dictionary.th[key], /ClipperQ|BarberQx|BarberQ/);
+      assert.doesNotMatch(dictionary.en[key], /ClipperQ|BarberQx|BarberQ/);
       assert.doesNotMatch(dictionary.th[key], /ร้าน/);
       assert.doesNotMatch(dictionary.en[key], /\bshop\b/i);
       assert.doesNotMatch(dictionary.th[key], /ไม่มาตามนัด/);

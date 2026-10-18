@@ -121,10 +121,10 @@ export default function GuidePage() {
         </p>
       </Section>
 
-      <Section id="barberq-oa" title="แจ้งเตือนจาก OA BarberQ">
-        <p>ข้อความยืนยันจองส่งจาก Line OA ของ BarberQ ไม่ใช่ OA ของร้าน</p>
+      <Section id="barberq-oa" title="แจ้งเตือนจาก OA ClipperQ">
+        <p>ข้อความยืนยันจองส่งจาก Line OA ของ ClipperQ ไม่ใช่ OA ของร้าน</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>ลูกค้าแอดเพื่อน BarberQ ครั้งหนึ่งหลังจอง (ปุ่มที่หน้าคิวของฉัน)</li>
+          <li>ลูกค้าแอดเพื่อน ClipperQ ครั้งหนึ่งหลังจอง (ปุ่มที่หน้าคิวของฉัน)</li>
           <li>ยังไม่แอดเพื่อนก็จองในเว็บได้ตามปกติ แค่ยังไม่ได้รับข้อความ</li>
           <li>คุยร้านเรื่องมาสาย / เลยเวลายกเลิก ยังใช้ LINE หรือโทรของร้านตามที่ตั้งใน settings</li>
         </ul>
@@ -327,7 +327,7 @@ export default function GuidePage() {
           <li>✅ Staff Cancellation — Owner ยกเลิกคิวจากบอร์ดได้</li>
           <li>✅ แสดง Line ID ของลูกค้าในบอร์ด Admin</li>
           <li>✅ แสดงชื่อและรูปโปรไฟล์ลูกค้าที่ header หลัง login</li>
-          <li>✅ ยืนยันจองทาง OA BarberQ + ปุ่มแอดเพื่อนที่คิวของฉัน</li>
+          <li>✅ ยืนยันจองทาง OA ClipperQ + ปุ่มแอดเพื่อนที่คิวของฉัน</li>
         </ul>
       </Section>
 

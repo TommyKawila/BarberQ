@@ -54,7 +54,7 @@ export function buildWebPushPayload(input: {
   const customer = input.appointment.customer_name || "ลูกค้า";
   if (input.event === "new_booking") {
     return {
-      title: `BarberQx · ${input.shopName}`,
+      title: `ClipperQ · ${input.shopName}`,
       body: `📅 จองใหม่: ${when}\n${customer} · ${input.barberName} · ${sourceLabel(input.appointment.source)}`,
       url: `${buildShopWebUrl(input.shopSlug)}/admin`,
       tag: `booking-${input.appointment.id}`,
@@ -62,7 +62,7 @@ export function buildWebPushPayload(input: {
   }
   if (input.event === "line_quota_full") {
     return {
-      title: `BarberQx · ${input.shopName}`,
+      title: `ClipperQ · ${input.shopName}`,
       body: `โควตา LINE push เต็มแล้ว · แจ้งเตือนก่อนคิวหยุดส่งชั่วคราว · ร้านต้องอัปเกรดแพ็กเกจกับ LINE เอง`,
       url: `${buildShopWebUrl(input.shopSlug)}/admin/settings/line/quota`,
       tag: `line-quota-${input.shopSlug}`,
@@ -73,14 +73,14 @@ export function buildWebPushPayload(input: {
       ? whenLabel(input.previousStartTime)
       : "—";
     return {
-      title: `BarberQx · ${input.shopName}`,
+      title: `ClipperQ · ${input.shopName}`,
       body: `↔ เลื่อนคิว: ${oldWhen} → ${when}\n${customer} · ${input.barberName}`,
       url: `${buildShopWebUrl(input.shopSlug)}/admin`,
       tag: `reschedule-${input.appointment.id}`,
     };
   }
   return {
-    title: `BarberQx · ${input.shopName}`,
+    title: `ClipperQ · ${input.shopName}`,
     body: `✗ ยกเลิก: ${when}\n${customer} · ${input.barberName} · ช่องนี้ว่างแล้ว`,
     url: `${buildShopWebUrl(input.shopSlug)}/admin`,
     tag: `cancel-${input.appointment.id}`,

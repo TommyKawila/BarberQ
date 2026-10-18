@@ -1,13 +1,13 @@
-/* BarberQx Web Push service worker */
+/* ClipperQ Web Push service worker */
 self.addEventListener("push", (event) => {
-  let data = { title: "BarberQx", body: "", url: "/admin", tag: "barberqx" };
+  let data = { title: "ClipperQ", body: "", url: "/admin", tag: "barberqx" };
   try {
     if (event.data) data = { ...data, ...event.data.json() };
   } catch {
     /* ignore */
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "BarberQx", {
+    self.registration.showNotification(data.title || "ClipperQ", {
       body: data.body || "",
       tag: data.tag || "barberqx",
       data: { url: data.url || "/admin" },

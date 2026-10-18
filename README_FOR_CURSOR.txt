@@ -3,7 +3,7 @@ BARBERQX — README FOR CURSOR
 
 Purpose
 -------
-This repository includes an approved BarberQx brand guide and logo asset set.
+This repository includes an approved ClipperQ brand guide and logo asset set.
 
 Before making ANY branding, UI, layout, navigation, marketing, customer-facing,
 or admin-facing visual changes, Cursor must read:
@@ -11,7 +11,7 @@ or admin-facing visual changes, Cursor must read:
   /docs/BRAND.md
 
 Treat /docs/BRAND.md as the source of truth for:
-- BarberQx brand hierarchy
+- ClipperQ brand hierarchy
 - merchant/shop vs platform branding
 - logo selection
 - dark/light logo usage
@@ -45,18 +45,18 @@ Approved files:
 CRITICAL BRAND HIERARCHY
 ------------------------
 
-1. BarberQx Sales / Marketing pages
-   BarberQx is the PRIMARY brand.
+1. ClipperQ Sales / Marketing pages
+   ClipperQ is the PRIMARY brand.
 
 2. Customer booking / shop public pages
    The SHOP / MERCHANT is the PRIMARY brand.
-   BarberQx must appear only as a subtle platform signature.
+   ClipperQ must appear only as a subtle platform signature.
 
 3. Admin / Owner / Staff pages
-   BarberQx is the product-shell brand,
+   ClipperQ is the product-shell brand,
    but the current shop context must remain clearly visible.
 
-Do not make BarberQx larger or more visually dominant than the merchant identity
+Do not make ClipperQ larger or more visually dominant than the merchant identity
 on shop-facing customer pages.
 
 
@@ -83,11 +83,11 @@ Customer booking/public shop page:
   Do NOT automatically use the full horizontal logo.
   Prefer a subtle platform signature such as:
 
-    Powered by BarberQx
+    Powered by ClipperQ
 
   or Thai:
 
-    ระบบจองคิวโดย BarberQx
+    ระบบจองคิวโดย ClipperQ
 
 
 IMPLEMENTATION RULE
@@ -118,7 +118,7 @@ DO NOT
 ------
 
 Do not:
-- invent new BarberQx logo variants
+- invent new ClipperQ logo variants
 - redraw the logo in code
 - recolor logo PNGs with CSS filters
 - distort or stretch the logo
@@ -126,9 +126,9 @@ Do not:
 - add glow, bevel, outline, shadow, or extra gradients to the logo
 - recreate the wordmark using arbitrary fonts
 - use app icons as normal navbar logos
-- use multiple BarberQx logos on one mobile screen
-- place BarberQx at equal visual weight with a shop logo/name on customer pages
-- replace a merchant's own branding with BarberQx branding
+- use multiple ClipperQ logos on one mobile screen
+- place ClipperQ at equal visual weight with a shop logo/name on customer pages
+- replace a merchant's own branding with ClipperQ branding
 - change auth, booking logic, routes, APIs, database, permissions, or tenant isolation
   as part of a branding-only task
 
@@ -136,7 +136,7 @@ Do not:
 CURSOR WORKFLOW
 ---------------
 
-For any new BarberQx UI / branding task:
+For any new ClipperQ UI / branding task:
 
 STEP 1
 Read /docs/BRAND.md completely.
@@ -194,7 +194,7 @@ Use this prompt when onboarding Cursor to the brand system:
 Read /docs/BRAND.md completely before making any brand or UI changes.
 
 Treat /docs/BRAND.md as the source of truth for:
-- BarberQx brand hierarchy
+- ClipperQ brand hierarchy
 - logo selection
 - dark/light logo usage
 - app icon usage
@@ -208,10 +208,10 @@ The approved assets are in:
 
 /public/brand/barberqx/
 
-Do not generate, redraw, recolor, distort, or invent new BarberQx logo variants.
+Do not generate, redraw, recolor, distort, or invent new ClipperQ logo variants.
 
 Before implementing, inspect the current branding/logo usage in the codebase and report:
-1. where BarberQx branding currently appears
+1. where ClipperQ branding currently appears
 2. any duplicated/hardcoded logo references
 3. any placements that conflict with BRAND.md
 4. proposed centralized brand components
@@ -227,13 +227,13 @@ FINAL PRINCIPLE
 When uncertain:
 
 Marketing website:
-  BarberQx is primary.
+  ClipperQ is primary.
 
 Customer shop booking:
-  Shop branding is primary; BarberQx is subtle.
+  Shop branding is primary; ClipperQ is subtle.
 
 Admin/product shell:
-  BarberQx is the platform shell; shop context remains visible.
+  ClipperQ is the platform shell; shop context remains visible.
 
 App/PWA:
   Use the approved app icon.

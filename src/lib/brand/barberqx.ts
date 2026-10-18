@@ -1,6 +1,6 @@
 export const BARBERQX_BRAND = {
-  name: "BarberQx",
-  pronunciation: "บาร์เบอร์ควิกซ์",
+  name: "ClipperQ",
+  pronunciation: "คลิปเปอร์คิว",
   gold: "#F4B740",
   assets: {
     logoHorizontalDark: "/brand/barberqx/logo-horizontal-dark.png",

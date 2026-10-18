@@ -11,7 +11,7 @@ import {
 } from "@/lib/line/flex-messages";
 import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 
-const SHOP = "BarberQx Demo";
+const SHOP = "ClipperQ Demo";
 const BARBER = "นัท · Nat";
 const MY = "https://example.com/demo/bookings";
 const CANCEL = "https://example.com/c/tok";

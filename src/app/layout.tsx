@@ -9,7 +9,7 @@ const notoThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "BarberQ",
+  title: "ClipperQ",
   description: "Barbershop booking prototype",
 };
 

@@ -1,14 +1,14 @@
-# BarberQx
+# ClipperQ
 
-Booking platform for barber shops. Thai pronunciation: **บาร์เบอร์ควิกซ์**.
+Booking platform for barber shops. Thai pronunciation: **คลิปเปอร์คิว**.
 
-BarberQx is the platform, not the shop. On customer pages the merchant brand comes first; BarberQx stays a small platform signature. Brand rules live in [`docs/BRAND.md`](docs/BRAND.md). Cursor/agent brand workflow lives in [`README_FOR_CURSOR.txt`](README_FOR_CURSOR.txt).
+ClipperQ is the platform, not the shop. On customer pages the merchant brand comes first; ClipperQ stays a small platform signature. Brand rules live in [`docs/BRAND.md`](docs/BRAND.md). Cursor/agent brand workflow lives in [`README_FOR_CURSOR.txt`](README_FOR_CURSOR.txt).
 
 Product OS: [`docs/barberqx-os/README.md`](docs/barberqx-os/README.md). This README is the map, not the full spec.
 
 ## Product
 
-Customers book from the shop’s LINE OA using BarberQx LIFF. Owners get a queue board, team, hours, and shop settings without building their own booking system.
+Customers book from the shop’s LINE OA using ClipperQ LIFF. Owners get a queue board, team, hours, and shop settings without building their own booking system.
 
 Each shop is a tenant at `/{shopSlug}` (example seed shop: `/phinxstudio`).
 
@@ -48,7 +48,7 @@ src/types/          shared types
 supabase/migrations SQL + Storage buckets
 docs/BRAND.md       brand system
 docs/barberqx-os/   product operating system
-public/brand/       approved BarberQx assets
+public/brand/       approved ClipperQ assets
 ```
 
 Shop-scoped APIs: `/api/[shop]/…`. Legacy unscoped `/api/bookings` etc. still exist; prefer shop-scoped routes.
