@@ -349,18 +349,20 @@ export function SalesPage() {
             {/* Option B: customer mood plate — top mobile / right desktop; mask fades into black */}
             {marketingPhotoSlots.solutionCustomer.src ? (
               <>
-                {/* Mobile: full square scaled down so face + hands/phone all show; soft bottom fade */}
+                {/* Mobile: full square scaled down so face + hands/phone all show; soft bottom fade on square */}
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-x-0 -top-1 z-0 flex h-[400px] items-start justify-center opacity-[0.88] sm:h-[440px] lg:hidden"
-                  style={{
-                    WebkitMaskImage:
-                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 58%, rgba(0,0,0,0.35) 78%, transparent 100%)",
-                    maskImage:
-                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 58%, rgba(0,0,0,0.35) 78%, transparent 100%)",
-                  }}
                 >
-                  <div className="relative mt-2 aspect-square w-[88%] max-w-[360px]">
+                  <div
+                    className="relative mt-2 aspect-square w-[88%] max-w-[360px] overflow-hidden"
+                    style={{
+                      WebkitMaskImage:
+                        "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
+                      maskImage:
+                        "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
+                    }}
+                  >
                     <Image
                       src={marketingPhotoSlots.solutionCustomer.src}
                       alt=""
@@ -369,7 +371,6 @@ export function SalesPage() {
                       className="object-cover"
                     />
                   </div>
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-zinc-950/20 via-transparent to-zinc-950/80" />
                 </div>
                 {/* Desktop: far-right square — nested alpha masks only (fade into real section bg, no painted box) */}
                 <div
@@ -381,9 +382,9 @@ export function SalesPage() {
                     style={{
                       // Bottom → transparent into section gradient (no hard cutoff)
                       WebkitMaskImage:
-                        "linear-gradient(180deg, #000 0%, #000 44%, rgba(0,0,0,0.55) 64%, rgba(0,0,0,0.18) 80%, transparent 100%)",
+                        "linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.15) 78%, transparent 100%)",
                       maskImage:
-                        "linear-gradient(180deg, #000 0%, #000 44%, rgba(0,0,0,0.55) 64%, rgba(0,0,0,0.18) 80%, transparent 100%)",
+                        "linear-gradient(180deg, #000 0%, #000 40%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.15) 78%, transparent 100%)",
                     }}
                   >
                     <div
