@@ -16,7 +16,7 @@ function DefaultMark({ size }: { size: number }) {
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
-        src={clipperqIconSrc("dark")}
+        src={clipperqIconSrc("dark", Math.round(size * 0.72))}
         alt=""
         width={Math.round(size * 0.72)}
         height={Math.round(size * 0.72)}

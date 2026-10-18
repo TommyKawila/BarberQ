@@ -81,13 +81,24 @@ function assertValidFlexMessage(msg: { type: string; altText: string; contents: 
       assert.match(String(action.uri), /^(https:\/\/|tel:)/);
       if (n.style === "primary") primaryCount += 1;
     }
+    if (n.type === "image") {
+      assert.match(String(n.url), /^https:\/\//);
+    }
   });
   assert.equal(primaryCount, 1, "exactly one primary button");
 }
 
 function footerButtons(msg: { contents: unknown }) {
   const footer = (msg.contents as { footer: { contents: FlexNode[] } }).footer;
-  return footer.contents;
+  return footer.contents.filter((n) => n.type === "button");
+}
+
+function footerHasBrand(msg: { contents: unknown }) {
+  let found = false;
+  walk(msg.contents, (n) => {
+    if (n.type === "text" && n.text === "by ClipperQ") found = true;
+  });
+  return found;
 }
 
 function confirmInput() {
@@ -349,5 +360,99 @@ describe("buildShopRescheduleFlex (Option A amber)", () => {
     assert.equal((buttons[1]?.action as { label: string }).label, "เลือกเวลาอื่น");
     assert.equal((buttons[2]?.action as { label: string }).label, "ยกเลิกนัด");
     assert.doesNotMatch(JSON.stringify(msg.contents), /ตกลง เวลาใหม่/);
+  });
+});
+
+describe("by ClipperQ Flex brand footer", () => {
+  it("shows muted text-only attribution by default when mark URL unavailable", () => {
+    const msg = buildBookingConfirmFlex({
+      ...confirmInput(),
+      brandMarkUrl: null,
+    });
+    assertValidFlexMessage(msg);
+    assert.equal(footerHasBrand(msg), true);
+    let imageCount = 0;
+    walk(msg.contents, (n) => {
+      if (n.type === "image") imageCount += 1;
+    });
+    assert.equal(imageCount, 0);
+  });
+
+  it("includes absolute https image when mark URL provided", () => {
+    const mark = "https://cdn.example.com/brand/clipperq/small-mark-dark-48.png";
+    const msg = buildBookingConfirmFlex({
+      ...confirmInput(),
+      brandMarkUrl: mark,
+    });
+    assertValidFlexMessage(msg);
+    assert.equal(footerHasBrand(msg), true);
+    let foundUrl: string | null = null;
+    walk(msg.contents, (n) => {
+      if (n.type === "image") foundUrl = String(n.url);
+    });
+    assert.equal(foundUrl, mark);
+  });
+
+  it("omits attribution when showBrandFooter is false", () => {
+    const builders = [
+      () => buildBookingConfirmFlex({ ...confirmInput(), showBrandFooter: false }),
+      () =>
+        buildQueueTicketFlex({
+          shopName: SHOP,
+          queueLabel: "Q-01",
+          aheadCount: 0,
+          waitMinutes: 0,
+          liveUrl: MY,
+          showBrandFooter: false,
+        }),
+      () =>
+        buildAppointmentReminderFlex({
+          shopName: SHOP,
+          startTime: START,
+          endTime: END,
+          barberName: BARBER,
+          myBookingsUrl: MY,
+          cancelUrl: CANCEL,
+          now: fromZonedTime("2026-10-17T18:30:00", SHOP_TIMEZONE),
+          showBrandFooter: false,
+        }),
+      () =>
+        buildShopCancelFlex({
+          shopName: SHOP,
+          startTime: START,
+          barberName: BARBER,
+          bookUrl: MY,
+          showBrandFooter: false,
+        }),
+      () =>
+        buildShopRescheduleFlex({
+          shopName: SHOP,
+          oldStartTime: START,
+          newStartTime: START,
+          barberName: BARBER,
+          acceptUrl: MY,
+          pickUrl: MY,
+          cancelUrl: CANCEL,
+          showBrandFooter: false,
+        }),
+      () =>
+        buildCustomerRescheduleTicketFlex({
+          shopName: SHOP,
+          oldStartTime: START,
+          oldEndTime: END,
+          newStartTime: START,
+          newEndTime: END,
+          barberName: BARBER,
+          myBookingsUrl: MY,
+          cancelUrl: CANCEL,
+          now: fromZonedTime("2026-10-17T18:30:00", SHOP_TIMEZONE),
+          showBrandFooter: false,
+        }),
+    ];
+    for (const build of builders) {
+      const msg = build();
+      assertValidFlexMessage(msg);
+      assert.equal(footerHasBrand(msg), false);
+    }
   });
 });

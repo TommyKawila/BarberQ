@@ -23,7 +23,7 @@ function PlatformIcon({
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={clipperqIconSrc(surface)}
+      src={clipperqIconSrc(surface, size)}
       alt=""
       width={size}
       height={size}

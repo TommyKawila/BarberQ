@@ -31,20 +31,32 @@ async function writePng(path, buffer) {
 async function main() {
   mkdirSync(BRAND, { recursive: true });
 
-  // Favicon sizes from dark transparent icon
-  const fav16 = await sharp(renderSvgFile("icon-dark-transparent.svg", 16)).png().toBuffer();
-  const fav32 = await sharp(renderSvgFile("icon-dark-transparent.svg", 32)).png().toBuffer();
-  const fav48 = await sharp(renderSvgFile("icon-dark-transparent.svg", 48)).png().toBuffer();
+  // 16–48px only: Brand Guide small mark (Q ring + solid amber tail, no clipper)
+  const SMALL_DARK = "clipperq-small-mark-dark.svg";
+  const SMALL_CREAM = "clipperq-small-mark-cream.svg";
+  const fav16 = await sharp(renderSvgFile(SMALL_DARK, 16)).png().toBuffer();
+  const fav32 = await sharp(renderSvgFile(SMALL_DARK, 32)).png().toBuffer();
+  const fav48 = await sharp(renderSvgFile(SMALL_DARK, 48)).png().toBuffer();
   await writePng(join(BRAND, "favicon-16.png"), fav16);
   await writePng(join(BRAND, "favicon-32.png"), fav32);
   await writePng(join(BRAND, "favicon-48.png"), fav48);
+  // PNG helpers for in-app ≤48px spots + LINE Flex (LINE prefers raster over SVG)
+  await writePng(join(BRAND, "small-mark-dark-16.png"), fav16);
+  await writePng(join(BRAND, "small-mark-dark-32.png"), fav32);
+  await writePng(join(BRAND, "small-mark-dark-48.png"), fav48);
+  const cream16 = await sharp(renderSvgFile(SMALL_CREAM, 16)).png().toBuffer();
+  const cream32 = await sharp(renderSvgFile(SMALL_CREAM, 32)).png().toBuffer();
+  const cream48 = await sharp(renderSvgFile(SMALL_CREAM, 48)).png().toBuffer();
+  await writePng(join(BRAND, "small-mark-cream-16.png"), cream16);
+  await writePng(join(BRAND, "small-mark-cream-32.png"), cream32);
+  await writePng(join(BRAND, "small-mark-cream-48.png"), cream48);
 
   const ico = await toIco([fav16, fav32, fav48]);
   await writePng(join(BRAND, "favicon.ico"), ico);
   await writePng(join(APP, "favicon.ico"), ico);
   await writePng(join(ROOT, "public/favicon.ico"), ico);
 
-  // App icons from white-bg square
+  // ≥49px: keep full icon (clipper detail) — apple-touch, PWA, maskable, OG
   const apple = await sharp(renderSvgFile("icon-white-bg.svg", 180)).png().toBuffer();
   await writePng(join(BRAND, "apple-touch-icon.png"), apple);
   await writePng(join(APP, "apple-icon.png"), apple);
@@ -77,7 +89,7 @@ async function main() {
     .toBuffer();
   await writePng(join(BRAND, "og.png"), og);
 
-  // Push / PWA helpers (cream icon for dark UI chrome)
+  // Push / PWA helpers (cream icon for dark UI chrome) — full icon (≥49)
   const mark64 = await sharp(renderSvgFile("icon-cream-transparent.svg", 64)).png().toBuffer();
   const appIconDark = await sharp(renderSvgFile("icon-black-bg.svg", 192)).png().toBuffer();
   await writePng(join(BRAND, "mark-cream-64.png"), mark64);

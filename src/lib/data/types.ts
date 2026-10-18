@@ -109,6 +109,11 @@ export interface ShopSettings {
    * ON by default; shops may turn OFF to save quota.
    */
   queueAheadPushEnabled: boolean;
+  /**
+   * ClipperQ Brand Guide: show subtle "by ClipperQ" on customer LINE Flex cards.
+   * ON by default; shops may turn OFF.
+   */
+  showFlexBrandFooter: boolean;
 }
 
 export type StaffRole = "barber" | "super_admin";

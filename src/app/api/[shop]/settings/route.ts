@@ -68,6 +68,7 @@ export async function PUT(
       reminderLeadMinutes?: number;
       bookingConfirmPushEnabled?: boolean;
       queueAheadPushEnabled?: boolean;
+      showFlexBrandFooter?: boolean;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -82,6 +83,7 @@ export async function PUT(
       reminderLeadMinutes: current.reminderLeadMinutes ?? DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
       bookingConfirmPushEnabled: current.bookingConfirmPushEnabled !== false,
       queueAheadPushEnabled: current.queueAheadPushEnabled !== false,
+      showFlexBrandFooter: current.showFlexBrandFooter !== false,
     };
 
     if ("logoDataUrl" in body) {
@@ -142,6 +144,10 @@ export async function PUT(
 
     if ("queueAheadPushEnabled" in body) {
       next.queueAheadPushEnabled = Boolean(body.queueAheadPushEnabled);
+    }
+
+    if ("showFlexBrandFooter" in body) {
+      next.showFlexBrandFooter = Boolean(body.showFlexBrandFooter);
     }
 
     await getStore().setShopSettings(shop.id, next);
