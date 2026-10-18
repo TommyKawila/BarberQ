@@ -374,9 +374,11 @@ export function SalesPage() {
                   className="pointer-events-none absolute inset-y-0 right-0 z-0 hidden w-[56%] overflow-hidden opacity-[0.55] lg:block xl:w-[52%]"
                   style={{
                     WebkitMaskImage:
-                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 18%, #000 40%, #000 100%)",
+                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 18%, #000 40%, #000 72%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 14%, #000 100%)",
                     maskImage:
-                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 18%, #000 40%, #000 100%)",
+                      "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.55) 18%, #000 40%, #000 72%, transparent 100%), linear-gradient(180deg, transparent 0%, #000 14%, #000 100%)",
+                    WebkitMaskComposite: "source-in",
+                    maskComposite: "intersect",
                   }}
                 >
                   <Image
@@ -389,6 +391,9 @@ export function SalesPage() {
                   <div className="absolute inset-0 bg-gradient-to-l from-transparent via-zinc-950/10 to-zinc-950/45" />
                   {/* Bottom dissolve into section black — full opaque at base, no hard cut */}
                   <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-zinc-950 from-15% via-zinc-950/80 to-transparent" />
+                  {/* Top + right edge dissolve — kill faint rectangular corner */}
+                  <div className="absolute inset-x-0 top-0 h-[22%] bg-gradient-to-b from-zinc-950 from-10% via-zinc-950/75 to-transparent" />
+                  <div className="absolute inset-y-0 right-0 w-[28%] bg-gradient-to-l from-zinc-950 from-15% via-zinc-950/70 to-transparent" />
                 </div>
               </>
             ) : null}
