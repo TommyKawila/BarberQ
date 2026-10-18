@@ -113,6 +113,33 @@ function LineCta({
   );
 }
 
+/** Final CTA micro: two balanced rows (tiers / features); never break mid-phrase. */
+function FinalMicroLines({ text }: { text: string }) {
+  const phrases = text.split(" · ");
+  const tierPhrases = phrases.slice(0, 4);
+  const featurePhrases = phrases.slice(4);
+  const row = (parts: string[], keyPrefix: string) => (
+    <span className="flex flex-wrap items-center justify-center">
+      {parts.map((phrase, i) => (
+        <Fragment key={`${keyPrefix}-${i}`}>
+          {i > 0 ? (
+            <span className="whitespace-nowrap px-1" aria-hidden>
+              ·
+            </span>
+          ) : null}
+          <span className="whitespace-nowrap [word-break:keep-all]">{phrase}</span>
+        </Fragment>
+      ))}
+    </span>
+  );
+  return (
+    <p className="mx-auto mt-4 flex max-w-xl flex-col items-center gap-y-1 text-center text-[13px] leading-snug text-zinc-400 text-balance md:text-sm">
+      {row(tierPhrases, "tier")}
+      {featurePhrases.length > 0 ? row(featurePhrases, "feat") : null}
+    </p>
+  );
+}
+
 function ContactCta({ label, className }: { label: string; className?: string }) {
   const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   if (!supportUrl) {
@@ -981,9 +1008,7 @@ export function SalesPage() {
             />
             <LineCta label={t("marketing.final.lineCta")} className="w-full" placement="final" />
           </div>
-          <p className="mx-auto mt-4 max-w-xl text-[13px] leading-snug text-zinc-400 md:text-sm">
-            {td("marketing.final.micro")}
-          </p>
+          <FinalMicroLines text={td("marketing.final.micro")} />
         </div>
       </section>
 
