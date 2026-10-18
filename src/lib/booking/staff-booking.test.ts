@@ -361,8 +361,10 @@ describe("staff booking + source (P3)", () => {
       shopId: shop.id,
       barberId: barber.id,
     };
-    const dates = getBookableDates();
-    const report = await getStatsReport("week", dates[0]!, staff);
+    // Use month (not week-of-today): near Sunday midnight, firstFutureSlot can
+    // land next Monday while week-of-getBookableDates()[0] still ends Sunday.
+    const anchorISO = getBookableDates()[0]!;
+    const report = await getStatsReport("month", anchorISO, staff);
     assert.ok(report.totals.bySource.line >= 1);
     assert.ok(report.totals.bySource.walk_in >= 1);
     assert.equal(report.totals.walkIns, report.totals.bySource.walk_in);
