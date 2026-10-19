@@ -5,8 +5,9 @@
  * Usage:
  *   node scripts/composite-hand-phone.mjs [sourcePng]
  */
+import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
@@ -15,9 +16,12 @@ const ROOT = join(__dirname, "..");
 const OUT_DIR = join(ROOT, "public/marketing");
 const SCREENS = join(OUT_DIR, "screens");
 
+const PLATE_FALLBACK = join(OUT_DIR, "hand-phone.webp");
+const LEGACY_SRC =
+  "/home/ubuntu/.cursor/projects/workspace/assets/3db5fd34b7a47ebb918a9b126b12856b8a88e564903a2956f82cfc902b7c03ab.png";
 const DEFAULT_SRC =
   process.argv[2] ||
-  "/home/ubuntu/.cursor/projects/workspace/assets/3db5fd34b7a47ebb918a9b126b12856b8a88e564903a2956f82cfc902b7c03ab.png";
+  (existsSync(LEGACY_SRC) ? LEGACY_SRC : PLATE_FALLBACK);
 
 // Prefer raw capture so we can size the safe area to THIS photo's island
 const SCREENSHOT_RAW = join(SCREENS, "raw/choose-slot.webp");
@@ -344,10 +348,17 @@ async function main() {
   await mkdir(join(OUT_DIR, "hero"), { recursive: true });
 
   // 1) Optimized green-screen source (for reference / future re-composite)
-  await sharp(DEFAULT_SRC)
-    .webp({ quality: 88, effort: 5 })
-    .toFile(join(OUT_DIR, "hand-phone.webp"));
-  console.log("wrote hand-phone.webp");
+  const plateOut = resolve(OUT_DIR, "hand-phone.webp");
+  const srcAbs = resolve(DEFAULT_SRC);
+  // Allow re-composite from the committed plate without same-file I/O errors.
+  if (plateOut !== srcAbs) {
+    await sharp(DEFAULT_SRC)
+      .webp({ quality: 88, effort: 5 })
+      .toFile(plateOut);
+    console.log("wrote hand-phone.webp");
+  } else {
+    console.log("reusing existing hand-phone.webp as green-screen plate");
+  }
 
   const result = await compositeFull(DEFAULT_SRC);
 
