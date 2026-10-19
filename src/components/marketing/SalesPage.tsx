@@ -66,7 +66,7 @@ const PAIN_TH_PHRASES: Partial<Record<MessageKey, readonly string[]>> = {
   "marketing.pain.bullet3": ["Walk-in ชนกับคิวที่จองไว้"],
   "marketing.pain.bullet4": ["ลูกค้าลืมนัดหรือรอนานจนกลับไป", "ไม่มีใครบันทึก"],
   "marketing.pain.punchline": ["ทุกคิวที่หายไปเงียบ ๆ", "คือค่าตัดผมที่ไม่ได้เก็บ"],
-  "marketing.pain.close": ["BarberQx ช่วยให้ลูกค้าจองเอง", "และให้ทั้งร้านเห็นคิวเดียวกัน"],
+  "marketing.pain.close": ["ClipperQ ช่วยให้ลูกค้าจองเอง", "และให้ทั้งร้านเห็นคิวเดียวกัน"],
 };
 
 function PainCopy({ messageKey }: { messageKey: MessageKey }) {
@@ -396,9 +396,9 @@ export function SalesPage() {
               {/* Same phones row as 36871e6 — w-full so fluid mocks don't collapse under items-start */}
               <div className="flex w-full shrink-0 flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7">
                 {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
-                <LineConfirmMockup shopName="BarberQx Demo" />
+                <LineConfirmMockup shopName="ClipperQ Demo" />
                 <LineReminderMockup
-                  shopName="BarberQx Demo"
+                  shopName="ClipperQ Demo"
                   whenLabel={t("marketing.line.mockWhen")}
                 />
               </div>

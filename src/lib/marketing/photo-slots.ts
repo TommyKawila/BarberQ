@@ -132,7 +132,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     ratio: "16:9",
     labelTh: "รูปช่างผ่อนคลายตัดผม มือถือวางข้างโชว์บอร์ดคิวจริง 16:9 1920×1080",
     artNote:
-      "Relaxed barber cutting; phone beside shows real BarberQx queue board (composite OK)",
+      "Relaxed barber cutting; phone beside shows real ClipperQ queue board (composite OK)",
   },
   bookingSuccessBarber: {
     id: "bookingSuccessBarber",

@@ -26,7 +26,7 @@ export const WARM_NOTE = {
 
 /** Sample booking used by flex-messages tests / render-option-a-flex.mjs */
 export const WARM_NOTE_SAMPLE = {
-  shopName: "BarberQx Demo",
+  shopName: "ClipperQ Demo",
   barberName: "นัท · Nat",
   /** Asia/Bangkok · Sun 18 Oct 2026 */
   date: "อา. 18 ต.ค.",
