@@ -55,20 +55,21 @@ export default function SuperAdminPage() {
   if (!isAuthenticated) {
     return (
       <section className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 py-16">
-        <h1 className="text-2xl font-semibold">Super Admin</h1>
+        <h1 className="font-heading text-2xl font-semibold text-zinc-100">ClipperQ Super Admin</h1>
+        <p className="text-sm text-zinc-400">Platform operator</p>
         <input
           type="password"
           placeholder="Super Admin Token"
           value={token}
           onChange={(e) => setToken(e.target.value)}
-          className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none"
+          className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-zinc-100 outline-none"
         />
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         <button
           type="button"
           onClick={() => void loadShops(token)}
           disabled={loading || !token}
-          className="min-h-12 w-full max-w-sm rounded-xl bg-amber-500 font-semibold text-zinc-950 disabled:opacity-50"
+          className="min-h-12 w-full max-w-sm rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
         >
           {loading ? "Loading..." : "Login"}
         </button>

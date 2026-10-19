@@ -10,8 +10,12 @@ import { HourlyBars } from "@/components/admin/charts/HourlyBars";
 import { StatCard } from "@/components/admin/charts/StatCard";
 import { TrendBars } from "@/components/admin/charts/TrendBars";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
+import { formatLastUpdated, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
@@ -40,6 +44,8 @@ export default function AdminStatsPage() {
   const { t, locale } = useI18n();
   const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
   const { shopApi, shopSlug } = useShopSlug();
+  const toast = useToast();
+  const online = useOnlineStatus();
 
   const [range, setRange] = useState<StatsRange>("day");
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
@@ -48,6 +54,7 @@ export default function AdminStatsPage() {
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const loadStats = useCallback(async () => {
     setLoadingStats(true);
@@ -61,6 +68,7 @@ export default function AdminStatsPage() {
         setError(json.error?.message ?? t("admin.loadFailed"));
         setOffline(false);
         setReport(null);
+        toast.error(t("admin.toast.refreshFailed"));
         return;
       }
       const normalized = normalizeStatsReport(json);
@@ -72,14 +80,16 @@ export default function AdminStatsPage() {
       setError(null);
       setOffline(false);
       setReport(normalized);
+      setLastUpdated(new Date());
     } catch {
       setOffline(true);
       setError(t("admin.statsOffline"));
       setReport(null);
+      toast.error(t("admin.toast.refreshFailed"));
     } finally {
       setLoadingStats(false);
     }
-  }, [authHeaders, dateISO, range, shopApi, t]);
+  }, [authHeaders, dateISO, range, shopApi, t, toast]);
 
   useEffect(() => {
     if (!ready || !profile) return;
@@ -90,6 +100,7 @@ export default function AdminStatsPage() {
     const url = buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug);
     await navigator.clipboard.writeText(url);
     setLinkCopied(true);
+    toast.success(t("admin.toast.copyBookingLink"));
     window.setTimeout(() => setLinkCopied(false), 2000);
   }
 
@@ -131,32 +142,37 @@ export default function AdminStatsPage() {
                 {t("common.prototypeMode")}
               </span>
             ) : null}
-            <h1 className="text-xl font-semibold">{title}</h1>
+            <h1 className="font-heading text-xl font-semibold">{title}</h1>
+            {lastUpdated || report?.range.displayLabel ? (
+              <p className="mt-0.5 text-xs text-zinc-500">
+                {report?.range.displayLabel ?? dateISO}
+                {lastUpdated
+                  ? ` · ${formatLastUpdated(lastUpdated, locale === "th" ? "th" : "en")}`
+                  : ""}
+              </p>
+            ) : null}
             <AdminSessionBadge name={profile.displayName || profile.barberName} role={profile.role} />
           </div>
           <button
             type="button"
             onClick={() => void loadStats()}
-            className="min-h-11 min-w-11 rounded-xl bg-zinc-800 px-3 text-[11px] text-zinc-200"
+            className="min-h-11 min-w-11 rounded-xl bg-zinc-800 px-3 text-xs text-zinc-200"
           >
             {t("admin.refresh")}
           </button>
         </header>
 
-        <div className="grid grid-cols-3 gap-2">
-          {RANGES.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setRange(item)}
-              className={`min-h-11 rounded-xl text-sm font-medium ${
-                range === item ? "bg-amber-400 text-zinc-950" : "bg-zinc-800 text-zinc-300"
-              }`}
-            >
-              {t(`admin.statsRange.${item}`)}
-            </button>
-          ))}
-        </div>
+        <OfflineBanner message={t("admin.offlineBanner")} visible={!online || offline} />
+
+        <SegmentedControl
+          ariaLabel={title}
+          value={range}
+          onChange={setRange}
+          options={RANGES.map((item) => ({
+            value: item,
+            label: t(`admin.statsRange.${item}`),
+          }))}
+        />
 
         <div className="flex items-center justify-between gap-2">
           <button
@@ -189,31 +205,38 @@ export default function AdminStatsPage() {
           <>
             {/* Results: hero + secondary KPIs */}
             <section className="flex flex-col gap-3">
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/80 p-4">
-                <p className="text-[11px] text-zinc-400">{t("admin.statsCompletedHero")}</p>
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+                <p className="text-xs text-zinc-400">{t("admin.statsCompletedHero")}</p>
                 <div className="mt-1 flex items-end gap-3">
-                  <p className="text-4xl font-semibold tabular-nums text-amber-400">{totals.completed}</p>
+                  <p className="font-heading text-4xl font-semibold tabular-nums text-zinc-100">
+                    {totals.completed}
+                    <span className="ml-1 text-lg font-medium text-zinc-400">
+                      {t("admin.statsQueueUnit")}
+                    </span>
+                  </p>
                   {comparison ? (
                     <p
-                      className={`mb-1 text-sm tabular-nums ${
+                      className={`mb-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs tabular-nums ${
                         comparison.completedDelta > 0
-                          ? "text-emerald-400"
+                          ? "border-emerald-500/50 text-emerald-400"
                           : comparison.completedDelta < 0
-                            ? "text-red-400"
-                            : "text-zinc-500"
+                            ? "border-red-500/50 text-red-400"
+                            : "border-zinc-600 text-zinc-500"
                       }`}
                     >
-                      {comparison.completedDelta > 0 ? "▲" : comparison.completedDelta < 0 ? "▼" : "—"}{" "}
-                      {Math.abs(comparison.completedDelta)}
-                      {comparison.completedDeltaPct != null ? ` (${comparison.completedDeltaPct}%)` : ""}
+                      {comparison.completedDelta > 0 ? "✓ +" : comparison.completedDelta < 0 ? "▼ " : "— "}
+                      {t("admin.statsDeltaQueues").replace(
+                        "{n}",
+                        String(Math.abs(comparison.completedDelta)),
+                      )}
                     </p>
                   ) : null}
                 </div>
                 <p className="mt-2 text-sm text-zinc-300">{insightText()}</p>
-                <p className="mt-1 text-[11px] text-zinc-500">{t("admin.statsPrevPeriod")}</p>
+                <p className="mt-1 text-xs text-zinc-500">{t("admin.statsPrevPeriod")}</p>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <StatCard
                   label={t("admin.statsRevenue")}
                   value={t("admin.statsBaht").replace("{amount}", String(totals.revenueBaht ?? 0))}
@@ -221,9 +244,21 @@ export default function AdminStatsPage() {
                   delta={comparison?.revenueDelta}
                 />
                 <StatCard
+                  label={t("admin.statsUtilization")}
+                  value={`${totals.utilizationPct ?? 0}%`}
+                  accent="zinc"
+                  hint={t("admin.statsUtilizationHint")}
+                />
+                <StatCard
+                  label={t("admin.statsCancelNoShowRate")}
+                  value={totals.cancelNoShowRatePct != null ? `${totals.cancelNoShowRatePct}%` : "—"}
+                  accent="red"
+                />
+                <StatCard
                   label={t("admin.statsReturningRate")}
                   value={totals.returningRatePct != null ? `${totals.returningRatePct}%` : "—"}
                   accent="emerald"
+                  hint={t("admin.statsReturningHint")}
                   delta={comparison?.returningRateDeltaPct}
                 />
                 <StatCard
@@ -235,26 +270,6 @@ export default function AdminStatsPage() {
                   }
                   accent="sky"
                   delta={comparison?.waitMinutesDelta}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard
-                  label={t("admin.statsUtilization")}
-                  value={`${totals.utilizationPct ?? 0}%`}
-                  accent="zinc"
-                />
-                <StatCard
-                  label={t("admin.statsCancelNoShowRate")}
-                  value={totals.cancelNoShowRatePct != null ? `${totals.cancelNoShowRatePct}%` : "—"}
-                  accent="red"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard
-                  label={t("admin.statsNoShowRate")}
-                  value={totals.noShowRatePct != null ? `${totals.noShowRatePct}%` : "—"}
-                  accent="red"
                 />
                 <StatCard
                   label={t("admin.statsWalkIns")}
@@ -341,7 +356,7 @@ export default function AdminStatsPage() {
               onClick={() => void copyBookingLink()}
               className="min-h-11 w-full max-w-xs rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
             >
-              {linkCopied ? t("onboarding.copied") : t("onboarding.copyLink")}
+              {linkCopied ? t("admin.toast.copyBookingLink") : t("onboarding.copyLink")}
             </button>
           </section>
         ) : null}

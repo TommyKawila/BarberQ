@@ -32,18 +32,22 @@ export function StatCard({
   const deltaDown = delta != null && delta < 0;
   return (
     <div
-      className={`rounded-xl border border-zinc-800 border-l-4 bg-zinc-900/80 p-3 ${accentClass[accent]} ${
+      className={`rounded-xl border border-zinc-800 border-l-4 bg-zinc-900 p-3 ${accentClass[accent]} ${
         highlight ? "ring-1 ring-amber-400/40" : ""
       }`}
     >
-      <p className={`tabular-nums ${highlight ? "text-3xl font-semibold text-amber-400" : "text-2xl font-semibold"}`}>
+      <p
+        className={`font-heading tabular-nums ${
+          highlight ? "text-3xl font-semibold text-amber-400" : "text-2xl font-semibold text-zinc-100"
+        }`}
+      >
         {value}
       </p>
-      <p className="mt-1 text-[11px] text-zinc-400">{label}</p>
-      {hint ? <p className="mt-0.5 text-[10px] text-amber-400/90">{hint}</p> : null}
+      <p className="mt-1 text-xs text-zinc-400">{label}</p>
+      {hint ? <p className="mt-0.5 text-xs text-zinc-500">{hint}</p> : null}
       {delta != null ? (
         <p
-          className={`mt-1 text-[11px] tabular-nums ${
+          className={`mt-1 text-xs tabular-nums ${
             deltaUp ? "text-emerald-400" : deltaDown ? "text-red-400" : "text-zinc-500"
           }`}
         >

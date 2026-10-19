@@ -6,6 +6,9 @@ import { AddBarberSheet } from "@/components/admin/AddBarberSheet";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { StaffActionsSheet } from "@/components/admin/StaffActionsSheet";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { useToast } from "@/components/ui/ToastProvider";
+import { shortBookingUrl } from "@/lib/admin/short-url";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import {
@@ -18,7 +21,9 @@ import {
   shouldShowRemoveMenu,
   updateBarberBookableInList,
 } from "@/lib/barber/optimistic-bookable";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant } from "@/lib/services/slot-service";
 import { barberLabel, type AdminColumn, type Barber } from "@/types/booking";
@@ -33,10 +38,13 @@ export default function AdminStaffPage() {
   const { t, locale } = useI18n();
   const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
   const { shopApi, shopPath, shopSlug } = useShopSlug();
+  const toast = useToast();
+  const online = useOnlineStatus();
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const bookingUrl = buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug);
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [lineId, setLineId] = useState("");
@@ -173,9 +181,10 @@ export default function AdminStaffPage() {
   }
 
   async function copyBookingLink() {
-    const url = `${window.location.origin}/${shopSlug}`;
+    const url = bookingUrl || `${window.location.origin}/${shopSlug}`;
     await navigator.clipboard.writeText(url);
     setCopied(true);
+    toast.success(t("admin.toast.copyBookingLink"));
     window.setTimeout(() => setCopied(false), 2000);
   }
 
@@ -298,9 +307,28 @@ export default function AdminStaffPage() {
               {t("common.prototypeMode")}
             </span>
           ) : null}
-          <h1 className="text-xl font-semibold">{t("admin.staffManagement")}</h1>
+          <h1 className="font-heading text-xl font-semibold">{t("admin.staffManagement")}</h1>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.teamOnlineBooking")}</p>
           <AdminSessionBadge name={profile.displayName || profile.barberName} role={profile.role} />
         </header>
+
+        <OfflineBanner message={t("admin.offlineBanner")} visible={!online} />
+
+        <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
+          <p className="text-xs font-medium text-zinc-400">{t("admin.bookingLinkShortLabel")}</p>
+          <div className="mt-2 flex items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-sm text-zinc-200">
+              {shortBookingUrl(bookingUrl || `/${shopSlug}`)}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copyBookingLink()}
+              className="min-h-11 shrink-0 rounded-xl border border-zinc-600 px-3 text-sm text-zinc-100"
+            >
+              {copied ? t("admin.bookingLinkCopied") : t("admin.copyBookingLink")}
+            </button>
+          </div>
+        </section>
 
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         {loadingBarbers ? <p className="text-sm text-zinc-400">{t("common.loading")}</p> : null}
@@ -394,40 +422,58 @@ export default function AdminStaffPage() {
               const cardError = bookableErrors[barber.id];
 
               return (
-                <div key={barber.id} className="rounded-2xl bg-zinc-900 p-4">
+                <div key={barber.id} className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold">{displayName}</p>
-                        {barber.role === "owner" ? (
-                          <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-300">
-                            {t("admin.ownerBadge")}
-                          </span>
-                        ) : null}
+                        <span
+                          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 font-heading text-sm font-semibold text-zinc-200"
+                          aria-hidden
+                        >
+                          {(displayName.trim()[0] || "?").toUpperCase()}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="font-heading font-semibold">
+                            {displayName}{" "}
+                            <span className="text-sm font-normal text-zinc-400">
+                              {barber.role === "owner" ? t("admin.roleOwner") : t("admin.roleBarber")}
+                            </span>
+                          </p>
+                          <div className="mt-1.5 flex flex-wrap gap-1.5">
+                            {bookable ? (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/50 px-2 py-0.5 text-xs text-emerald-300">
+                                ✓ {t(statusLabelKey)}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full border border-zinc-600 px-2 py-0.5 text-xs text-zinc-300">
+                                ⛔ {t(statusLabelKey)}
+                              </span>
+                            )}
+                            {barber.line_id ? (
+                              <span className="inline-flex items-center rounded-full bg-sky-700 px-2 py-0.5 text-xs text-white">
+                                {t("admin.barberLineLinked")}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-400 px-2 py-0.5 text-xs font-medium text-zinc-950">
+                                ⚠ {t("admin.barberLineNotLinked")}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-1.5 text-xs text-zinc-500">
+                            {t("admin.teamTodayBookings").replace(
+                              "{n}",
+                              String(todayCounts[barber.id] ?? 0),
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <p className="mt-1 text-[11px] text-zinc-400">
-                        {barber.role === "owner" ? t("admin.roleOwner") : t("admin.roleBarber")}
-                        · {barber.slot_duration_minutes} {t("common.minutes")}
-                      </p>
-                      <p className="mt-1 text-[11px] text-zinc-500">
-                        LINE:{" "}
-                        {barber.line_id
-                          ? t("admin.barberLineLinked")
-                          : t("admin.barberLineNotLinked")}
-                      </p>
-                      <p className="mt-1 text-[11px] text-amber-300/90">
-                        {t("admin.teamTodayBookings").replace(
-                          "{n}",
-                          String(todayCounts[barber.id] ?? 0),
-                        )}
-                      </p>
                     </div>
                     {shouldShowRemoveMenu(barber.role) ? (
                       <button
                         type="button"
-                        aria-label="More"
+                        aria-label={t("admin.nav.more")}
                         onClick={() => setMenuBarber(barber)}
-                        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-lg text-zinc-300"
+                        className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-transparent text-lg text-zinc-300"
                       >
                         ⋯
                       </button>
@@ -451,14 +497,14 @@ export default function AdminStaffPage() {
                             {t(statusLabelKey)}
                           </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-zinc-500">
+                        <p className="mt-1 text-xs text-zinc-500">
                           {t(statusHintKey).replace("{name}", displayName)}
                         </p>
                         {isPending ? (
-                          <p className="mt-1 text-[11px] text-zinc-400">{t("admin.savingBookable")}</p>
+                          <p className="mt-1 text-xs text-zinc-400">{t("admin.savingBookable")}</p>
                         ) : null}
                         {cardError ? (
-                          <p className="mt-1 text-[11px] text-red-400">{cardError}</p>
+                          <p className="mt-1 text-xs text-red-400">{cardError}</p>
                         ) : null}
                       </div>
                       <button

@@ -166,14 +166,14 @@ export function QuickBlockGrid({
               <div className="truncate text-xs font-semibold sm:text-sm">
                 {barberLabel(column.barber.name, locale)}
               </div>
-              <div className="text-[10px] text-zinc-400">
+              <div className="text-xs text-zinc-400">
                 {column.barber.slot_duration_minutes} {t("common.minutes")}
               </div>
               {canEdit && onWalkInQuick ? (
                 <button
                   type="button"
                   onClick={() => onWalkInQuick(column.barber.id)}
-                  className="mt-1 min-h-11 w-full rounded-md bg-rose-700/80 px-1 py-1 text-[11px] font-semibold text-white"
+                  className="mt-1 min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
                 >
                   {t("admin.addWalkIn")}
                 </button>

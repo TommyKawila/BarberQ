@@ -11,9 +11,12 @@ import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
 import { QrWaitingBoard } from "@/components/admin/QrWaitingBoard";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
 import { isShopOperatorRole } from "@/lib/admin-auth";
+import { formatLastUpdated, useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import type { ShopActivation } from "@/lib/onboarding/activation";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -35,6 +38,9 @@ export default function AdminPage() {
   const { locale, t } = useI18n();
   const { shopApi, shopPath, shopSlug } = useShopSlug();
   const { ready, profile, error: authError, authHeaders, mockMode } = useAdminPageAuth();
+  const toast = useToast();
+  const online = useOnlineStatus();
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
@@ -101,15 +107,20 @@ export default function AdminPage() {
         columns?: AdminColumn[];
       } & ApiError;
       if (!res.ok) {
-        setError(json.error?.message ?? t("admin.loadFailed"));
+        const msg = json.error?.message ?? t("admin.loadFailed");
+        setError(msg);
+        if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
+        else toast.error(t("admin.toast.refreshFailed"));
         return;
       }
       setError(null);
       setColumns(json.columns ?? []);
+      setLastUpdated(new Date());
     } catch {
       setError(t("admin.networkError"));
+      toast.error(t("admin.toast.refreshFailed"));
     }
-  }, [authHeaders, dateISO, shopApi, showClosedQueue, t]);
+  }, [authHeaders, dateISO, shopApi, showClosedQueue, t, toast]);
 
   useEffect(() => {
     if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
@@ -214,10 +225,14 @@ export default function AdminPage() {
           setSheet({ ...sheet, shortenUntil: json.error.canShortenUntil });
           return;
         }
-        setError(json.error?.message ?? t("admin.staffBook.slotTaken"));
+        const msg = json.error?.message ?? t("admin.staffBook.slotTaken");
+        setError(msg);
+        if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
+        else if (json.error?.code?.includes("LINE")) toast.error(t("admin.toast.lineSendFailed"));
         return;
       }
       setSheet(null);
+      toast.success(t("admin.toast.success"));
       await loadDay();
     } catch {
       setError(t("admin.networkError"));
@@ -298,8 +313,11 @@ export default function AdminPage() {
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
+        if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
+        else if (json.error?.code?.includes("LINE")) toast.error(t("admin.toast.lineSendFailed"));
         return;
       }
+      toast.success(t("admin.toast.success"));
       await loadDay();
     } catch {
       setError(t("admin.networkError"));
@@ -449,14 +467,39 @@ export default function AdminPage() {
     const url = bookingUrl || buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug);
     await navigator.clipboard.writeText(url);
     setBookingLinkCopied(true);
+    toast.success(t("admin.toast.copyBookingLink"));
     window.setTimeout(() => setBookingLinkCopied(false), 2000);
   }
 
+  const thumbBar =
+    isToday && isOperator ? (
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onWhoIsFree}
+          className="flex min-h-12 flex-1 items-center justify-center gap-1 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+        >
+          {t("admin.whoIsFree")}
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const first = freeNow[0];
+            if (first) onWalkInFromFreeSheet(first);
+            else onWhoIsFree();
+          }}
+          className="flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+        >
+          + Walk-in
+        </button>
+      </div>
+    ) : undefined;
+
   return (
-    <AdminShell role={profile.role}>
+    <AdminShell role={profile.role} thumbBar={thumbBar}>
       <div
-        className={`flex flex-col gap-4 px-3 py-4${
-          rescheduleFrom ? " pb-36" : ""
+        className={`flex flex-col gap-4 px-3 py-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6${
+          rescheduleFrom || thumbBar ? " pb-28 lg:pb-4" : ""
         }`}
       >
         <header className="flex flex-col gap-3">
@@ -466,10 +509,17 @@ export default function AdminPage() {
                 {t("common.prototypeMode")}
               </span>
             ) : null}
-            <h1 className="text-xl font-semibold">
+            <h1 className="font-heading text-xl font-semibold">
               {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
             </h1>
-            <p className="text-sm text-zinc-400">{displayDate}</p>
+            <p className="text-sm text-zinc-400">
+              {displayDate}
+              {lastUpdated ? (
+                <span className="ml-2 text-xs text-zinc-500">
+                  · {formatLastUpdated(lastUpdated, locale === "th" ? "th" : "en")}
+                </span>
+              ) : null}
+            </p>
             <AdminSessionBadge name={profile.displayName || profile.barberName} role={badgeRole} />
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -502,15 +552,6 @@ export default function AdminPage() {
             >
               {t("admin.refresh")}
             </button>
-            {isToday ? (
-              <button
-                type="button"
-                onClick={onWhoIsFree}
-                className="min-h-11 rounded-xl bg-rose-700 px-3 text-sm font-semibold text-white"
-              >
-                {t("admin.whoIsFree")}
-              </button>
-            ) : null}
           </div>
           {isOperator ? (
             <label className="flex min-h-11 items-center gap-3 text-sm text-zinc-300">
@@ -534,22 +575,24 @@ export default function AdminPage() {
           ) : null}
         </header>
 
-        <div className="grid grid-cols-3 gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
+        <OfflineBanner message={t("admin.offlineBanner")} visible={!online} />
+
+        <div className="grid grid-cols-3 gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 lg:max-w-md">
           <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-amber-400">{mini.remaining}</p>
-            <p className="text-[11px] text-zinc-400">
+            <p className="font-heading text-lg font-semibold tabular-nums text-amber-400">{mini.remaining}</p>
+            <p className="text-xs text-zinc-400">
               {t("admin.miniRemaining").replace("{n}", String(mini.remaining))}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-zinc-100">{mini.done}</p>
-            <p className="text-[11px] text-zinc-400">
+            <p className="font-heading text-lg font-semibold tabular-nums text-zinc-100">{mini.done}</p>
+            <p className="text-xs text-zinc-400">
               {t("admin.miniDone").replace("{n}", String(mini.done))}
             </p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-emerald-400">{mini.freeSlots}</p>
-            <p className="text-[11px] text-zinc-400">
+            <p className="font-heading text-lg font-semibold tabular-nums text-emerald-400">{mini.freeSlots}</p>
+            <p className="text-xs text-zinc-400">
               {t("admin.miniFree").replace("{n}", String(mini.freeSlots))}
             </p>
           </div>
@@ -564,7 +607,7 @@ export default function AdminPage() {
           />
         ) : null}
 
-        <div className="flex flex-wrap gap-1.5 text-[11px] text-zinc-400">
+        <div className="flex flex-wrap gap-1.5 text-xs text-zinc-400">
           <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>
           <span className="rounded bg-sky-700 px-2 py-0.5 text-white">{t("admin.sourceLine")}</span>
           <span className="rounded bg-rose-700 px-2 py-0.5 text-white">{t("admin.sourceWalkIn")}</span>
@@ -646,25 +689,27 @@ export default function AdminPage() {
             </button>
           </div>
         ) : null}
-        <QuickBlockGrid
-          columns={columns}
-          pendingKey={pendingKey}
-          outcomePendingKey={outcomePendingKey}
-          latePendingKey={latePendingKey}
-          cancelPendingKey={cancelPendingKey}
-          editableBarberId={editableBarberId}
-          onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
-          onWalkInQuick={(id) => onWalkInQuick(id)}
-          onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
-          onLateCalled={(id, slot) => void onLateCalled(id, slot)}
-          onCancel={(id, slot) => void onCancel(id, slot)}
-          onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
-          onUnblock={(id, slot) => void onUnblock(id, slot)}
-          reschedulePickMode={Boolean(rescheduleFrom)}
-          bookingHref={shopPath("/")}
-          onCopyBookingLink={() => void copyBookingLink()}
-          bookingLinkCopied={bookingLinkCopied}
-        />
+        <div className="lg:col-span-2">
+          <QuickBlockGrid
+            columns={columns}
+            pendingKey={pendingKey}
+            outcomePendingKey={outcomePendingKey}
+            latePendingKey={latePendingKey}
+            cancelPendingKey={cancelPendingKey}
+            editableBarberId={editableBarberId}
+            onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
+            onWalkInQuick={(id) => onWalkInQuick(id)}
+            onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
+            onLateCalled={(id, slot) => void onLateCalled(id, slot)}
+            onCancel={(id, slot) => void onCancel(id, slot)}
+            onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
+            onUnblock={(id, slot) => void onUnblock(id, slot)}
+            reschedulePickMode={Boolean(rescheduleFrom)}
+            bookingHref={shopPath("/")}
+            onCopyBookingLink={() => void copyBookingLink()}
+            bookingLinkCopied={bookingLinkCopied}
+          />
+        </div>
         {rescheduleTarget && rescheduleFrom ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
             <button

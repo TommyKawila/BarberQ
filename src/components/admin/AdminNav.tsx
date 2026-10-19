@@ -57,6 +57,20 @@ function NavIcon({ id }: { id: AdminNavItemId }) {
   return <MoreHorizontal size={ICON.size} strokeWidth={ICON.strokeWidth} />;
 }
 
+function navItemClass(active: boolean, side: boolean) {
+  if (side) {
+    return `flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium ${
+      active
+        ? "bg-zinc-800 text-amber-400"
+        : "bg-transparent text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+    }`;
+  }
+  // Bottom nav: amber label + charcoal tile (not solid amber fill) — ClipperQ v3
+  return `flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl mx-1 my-1.5 px-1 text-xs font-medium leading-tight ${
+    active ? "bg-zinc-800 text-amber-400" : "bg-transparent text-zinc-400"
+  }`;
+}
+
 export function AdminNav({ role }: { role: ShopStaffRole }) {
   const { t } = useI18n();
   const { shopPath } = useShopSlug();
@@ -123,6 +137,39 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     };
   }, [moreOpen]);
 
+  function renderItems(side: boolean) {
+    return items.map((item) => {
+      const active = isPrimaryNavActive(item, pathname, hrefs, moreOpen, moreItems);
+      const className = navItemClass(active, side);
+      if (item === "more") {
+        return (
+          <button
+            key={item}
+            ref={moreButtonRef}
+            type="button"
+            aria-expanded={moreOpen}
+            aria-haspopup="dialog"
+            aria-label={t("admin.nav.more")}
+            onClick={() => setMoreOpen(true)}
+            className={className}
+          >
+            <NavIcon id={item} />
+            <span>{t(NAV_LABELS[item])}</span>
+          </button>
+        );
+      }
+      const href = hrefs[item as AdminNavDestinationId];
+      const labelKey =
+        item === "stats" && role === "barber" ? "admin.statsMySummary" : NAV_LABELS[item];
+      return (
+        <Link key={item} href={href} className={className} aria-current={active ? "page" : undefined}>
+          <NavIcon id={item} />
+          <span>{t(labelKey)}</span>
+        </Link>
+      );
+    });
+  }
+
   return (
     <>
       {moreOpen ? (
@@ -139,10 +186,10 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             aria-modal="true"
             aria-labelledby={titleId}
             aria-describedby={subtitleId}
-            className={`absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-zinc-800 bg-zinc-950 px-4 pt-3 ${ADMIN_NAV_BAR_PADDING_CLASS}`}
+            className={`absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-zinc-800 bg-zinc-950 px-4 pt-3 md:mx-auto md:max-w-[640px] lg:left-56 lg:right-auto lg:mx-0 lg:mb-4 lg:max-w-sm lg:rounded-2xl lg:border ${ADMIN_NAV_BAR_PADDING_CLASS}`}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
-            <h2 id={titleId} className="text-base font-semibold">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 lg:hidden" />
+            <h2 id={titleId} className="font-heading text-base font-semibold">
               {t("admin.moreMenuTitle")}
             </h2>
             <p id={subtitleId} className="mt-1 text-sm text-zinc-400">
@@ -187,43 +234,21 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
         </div>
       ) : null}
 
-      <nav
-        className={`fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur ${ADMIN_NAV_BAR_PADDING_CLASS}`}
+      {/* Desktop side rail (AD-06 / AD-19) */}
+      <aside
+        className="sticky top-14 z-30 hidden h-[calc(100vh-3.5rem)] w-56 shrink-0 flex-col border-r border-zinc-800 bg-zinc-950 px-3 py-4 lg:flex"
         aria-label={t("admin.nav.label")}
       >
-        <div className="mx-auto flex h-16 max-w-lg items-stretch">
-          {items.map((item) => {
-            const active = isPrimaryNavActive(item, pathname, hrefs, moreOpen, moreItems);
-            const className = `flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl mx-1 my-1.5 px-1 text-[11px] font-medium leading-tight ${
-              active ? "bg-amber-400 text-zinc-950" : "bg-transparent text-zinc-400"
-            }`;
-            if (item === "more") {
-              return (
-                <button
-                  key={item}
-                  ref={moreButtonRef}
-                  type="button"
-                  aria-expanded={moreOpen}
-                  aria-haspopup="dialog"
-                  aria-label={t("admin.nav.more")}
-                  onClick={() => setMoreOpen(true)}
-                  className={className}
-                >
-                  <NavIcon id={item} />
-                  <span>{t(NAV_LABELS[item])}</span>
-                </button>
-              );
-            }
-            const href = hrefs[item as AdminNavDestinationId];
-            const labelKey =
-              item === "stats" && role === "barber" ? "admin.statsMySummary" : NAV_LABELS[item];
-            return (
-              <Link key={item} href={href} className={className} aria-current={active ? "page" : undefined}>
-                <NavIcon id={item} />
-                <span>{t(labelKey)}</span>
-              </Link>
-            );
-          })}
+        <nav className="flex flex-col gap-1">{renderItems(true)}</nav>
+      </aside>
+
+      {/* Mobile / tablet bottom nav */}
+      <nav
+        className={`fixed inset-x-0 bottom-0 z-40 border-t border-zinc-800 bg-zinc-950/95 backdrop-blur lg:hidden ${ADMIN_NAV_BAR_PADDING_CLASS}`}
+        aria-label={t("admin.nav.label")}
+      >
+        <div className="mx-auto flex h-16 max-w-lg items-stretch md:max-w-[640px]">
+          {renderItems(false)}
         </div>
       </nav>
     </>

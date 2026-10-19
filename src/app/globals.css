@@ -1,28 +1,114 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
+  /* ClipperQ Admin v3 tokens */
+  --cq-ink: #111111;
+  --cq-surface: #1f1c19;
+  --cq-charcoal: #2a2622;
+  --cq-border: #2e2a25;
+  --cq-border-strong: #3a342e;
+  --cq-outline: #857c70;
+  --cq-cream: #f3eee3;
+  --cq-muted: #b9b0a2;
+  --cq-subtle: #a39a8c;
+  --cq-sand: #e3d9c6;
+  --cq-amber: #f6ad34;
+  --cq-amber-pressed: #d9952a;
+  --cq-destructive: #b42318;
+  --cq-destructive-pressed: #912018;
+  --cq-danger: #f97066;
+  --cq-focus-ring: #f6ad34;
+  --cq-focus-gap: #111111;
+  --cq-warning-chip: #fb923c;
+
+  --background: var(--cq-ink);
+  --foreground: var(--cq-cream);
+  --font-heading: var(--font-prompt), "Prompt", sans-serif;
+  --font-body: var(--font-ibm-plex-thai), "IBM Plex Sans Thai", sans-serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Remap zinc → ClipperQ warm darks (admin + operator) */
+  --color-zinc-950: var(--cq-ink);
+  --color-zinc-900: var(--cq-surface);
+  --color-zinc-800: var(--cq-charcoal);
+  --color-zinc-700: var(--cq-border-strong);
+  --color-zinc-600: #4a433c;
+  --color-zinc-500: var(--cq-subtle);
+  --color-zinc-400: var(--cq-muted);
+  --color-zinc-300: var(--cq-sand);
+  --color-zinc-200: var(--cq-cream);
+  --color-zinc-100: var(--cq-cream);
+  --color-zinc-50: var(--cq-cream);
+
+  --color-amber-300: #f8c15a;
+  --color-amber-400: var(--cq-amber);
+  --color-amber-500: var(--cq-amber);
+  --color-amber-600: var(--cq-amber-pressed);
+
+  --color-red-400: var(--cq-danger);
+  --color-red-500: var(--cq-destructive);
+  --color-red-600: var(--cq-destructive);
+  --color-red-700: var(--cq-destructive-pressed);
+
+  --font-sans: var(--font-body);
 }
 
 html,
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
 }
 
 body {
   min-height: 100%;
 }
 
+h1,
+h2,
+h3,
+h4,
+.font-heading,
 button,
-input {
+nav,
+[role="tab"],
+[role="tablist"] {
+  font-family: var(--font-heading);
+}
+
+button,
+input,
+select,
+textarea {
   font: inherit;
+  font-size: 16px;
+}
+
+/* WCAG 2.4.7 / AD-03: visible focus ring (2px gap + 2px amber) */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cq-focus-ring);
+  outline-offset: 2px;
+}
+
+/* Admin scroll container — keep focused/content clear of sticky bars (AD-16) */
+.admin-scroll {
+  scroll-padding-bottom: 170px;
+}
+
+@media (min-width: 1024px) {
+  .admin-scroll {
+    scroll-padding-bottom: 24px;
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -59,6 +145,17 @@ input {
   }
 }
 
+@keyframes cq-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .hero-phones-enter {
     animation: hero-phones-in 0.6s ease-out both;
@@ -66,5 +163,9 @@ input {
 
   .booking-success-chair {
     animation: booking-success-chair-in 0.5s ease-out both;
+  }
+
+  .cq-toast-enter {
+    animation: cq-toast-in 0.2s ease-out both;
   }
 }

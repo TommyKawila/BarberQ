@@ -94,7 +94,7 @@ function getState(): MemoryState {
       shops: [
         {
           id: DEFAULT_SHOP_ID,
-          name: "PHINX STUDIO",
+          name: "ClipperQ Demo",
           slug: "phinxstudio",
           status: "active",
           subscribed_until: null,
@@ -107,7 +107,7 @@ function getState(): MemoryState {
       shopId: DEFAULT_SHOP_ID,
       logoDataUrl: null,
       coverImageUrl: null,
-      shopName: "PHINX STUDIO",
+      shopName: "ClipperQ Demo",
       lineUrl: null,
       phone: null,
       hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
@@ -125,7 +125,7 @@ function getState(): MemoryState {
     g[GLOBAL_KEY].shops = [
       {
         id: DEFAULT_SHOP_ID,
-        name: "PHINX STUDIO",
+        name: "ClipperQ Demo",
         slug: "phinxstudio",
         status: "active",
         subscribed_until: null,
@@ -152,7 +152,7 @@ function getState(): MemoryState {
         shopId: DEFAULT_SHOP_ID,
         logoDataUrl: null,
         coverImageUrl: null,
-        shopName: "PHINX STUDIO",
+        shopName: "ClipperQ Demo",
         lineUrl: null,
         phone: null,
         hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
