@@ -479,7 +479,7 @@ export default function AdminSettingsPage() {
           {contactError ? <p className="mt-3 text-sm text-red-400">{contactError}</p> : null}
         </section>
 
-        <section className="rounded-2xl bg-zinc-900 p-4">
+        <section id="shop-hours" className="scroll-mt-24 rounded-2xl bg-zinc-900 p-4">
           <h2 className="text-sm font-semibold">{t("admin.shopHours")}</h2>
           <p className="mt-1 text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
           <div className="mt-4 flex flex-col gap-3">
