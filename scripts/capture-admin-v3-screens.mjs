@@ -27,7 +27,7 @@ const VIEWPORTS = [
 const PAGES = [
   { id: "today", path: `/${SHOP}/admin` },
   { id: "team", path: `/${SHOP}/admin/staff` },
-  { id: "summary", path: `/${SHOP}/admin/stats` },
+  { id: "summary", path: `/${SHOP}/admin/stats?cqSample=1` },
   { id: "settings", path: `/${SHOP}/admin/settings` },
   { id: "schedule", path: `/${SHOP}/admin/my-schedule` },
 ];

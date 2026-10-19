@@ -20,6 +20,7 @@ import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
+import { shouldShowStatsSampleLabel } from "@/lib/admin/stats-sample-label";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -52,6 +53,11 @@ export default function AdminStatsPage() {
   const { shopApi, shopSlug } = useShopSlug();
   const toast = useToast();
   const online = useOnlineStatus();
+  // Opt-in ?cqSample=1 only (never default on in QA/prod deploys)
+  const [showSampleLabel, setShowSampleLabel] = useState(false);
+  useEffect(() => {
+    setShowSampleLabel(shouldShowStatsSampleLabel(window.location.search));
+  }, []);
 
   const [range, setRange] = useState<StatsRange>("week");
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
@@ -126,7 +132,9 @@ export default function AdminStatsPage() {
     const insight = report?.insight as
       | (NonNullable<StatsReport["insight"]> & { label?: string })
       | undefined;
-    if (!insight || insight.kind === "empty") return t("admin.statsInsightEmpty");
+    if (!insight || insight.kind === "empty" || (totals?.completed ?? 0) === 0) {
+      return t("admin.statsPeakLabel").replace("{hint}", "—");
+    }
     if (insight.label) {
       return t("admin.statsPeakLabel").replace("{hint}", insight.label);
     }
@@ -139,10 +147,11 @@ export default function AdminStatsPage() {
     }
     if (insight.kind === "trend_up") return t("admin.statsInsightUp");
     if (insight.kind === "trend_down") return t("admin.statsInsightDown");
-    return t("admin.statsInsightEmpty");
+    return t("admin.statsPeakLabel").replace("{hint}", "—");
   }
 
   const rangeSubtitle = report?.range.displayLabel ?? dateISO;
+  const insufficient = t("admin.statsInsufficientData");
 
   return (
     <AdminShell role={profile.role}>
@@ -151,7 +160,8 @@ export default function AdminStatsPage() {
           <div className="min-w-0">
             <h1 className="font-heading text-2xl font-semibold">{title}</h1>
             <p className="mt-0.5 text-xs text-zinc-500">
-              {t("admin.statsSampleLabel")} · {rangeSubtitle}
+              {showSampleLabel ? `${t("admin.statsSampleLabel")} · ` : ""}
+              {rangeSubtitle}
             </p>
           </div>
           <button
@@ -258,13 +268,21 @@ export default function AdminStatsPage() {
                 <StatCard
                   label={t("admin.statsCancelNoShowRate")}
                   value={totals.cancelNoShowRatePct != null ? `${totals.cancelNoShowRatePct}%` : "—"}
-                  hint={t("admin.statsCancelHint")}
+                  hint={
+                    totals.cancelNoShowRatePct != null
+                      ? t("admin.statsCancelHint")
+                      : insufficient
+                  }
                   icon={<UserX size={14} aria-hidden />}
                 />
                 <StatCard
                   label={t("admin.statsReturningRate")}
                   value={totals.returningRatePct != null ? `${totals.returningRatePct}%` : "—"}
-                  hint={t("admin.statsReturningHint")}
+                  hint={
+                    totals.returningRatePct != null
+                      ? t("admin.statsReturningHint")
+                      : insufficient
+                  }
                   icon={<RotateCcw size={14} aria-hidden />}
                 />
               </div>
@@ -328,6 +346,7 @@ export default function AdminStatsPage() {
                       ? t("admin.statsMinutesShort").replace("{n}", String(totals.waitMinutesAvg))
                       : "—"
                   }
+                  hint={totals.waitMinutesAvg != null ? undefined : insufficient}
                   delta={comparison?.waitMinutesDelta}
                 />
                 <StatCard quiet label={t("admin.statsWalkIns")} value={totals.walkIns ?? 0} />
@@ -344,10 +363,12 @@ export default function AdminStatsPage() {
             {isOperator && report?.byBarber.length ? (
               <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
                 <h2 className="mb-2 text-sm font-medium text-zinc-400">{t("admin.statsByBarber")}</h2>
+                <p className="mb-2 text-[11px] text-zinc-500">{t("admin.statsByBarberHint")}</p>
                 <BarberBars
                   rows={report.byBarber}
                   locale={locale}
-                  minuteLabel={t("common.minutes")}
+                  queueUnit={t("admin.statsQueueUnit")}
+                  completedMinutesLabel={t("admin.statsCompletedMinutes")}
                 />
               </section>
             ) : null}
