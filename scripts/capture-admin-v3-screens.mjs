@@ -366,7 +366,6 @@ async function main() {
 
     // Booking page (customer)
     if (vp.width === 390 || vp.width === 820) {
-      await page.unroute(`**/api/${SHOP}/stats**`).catch(() => {});
       await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
       await shot(page, `booking-${vp.name}.png`);
