@@ -55,7 +55,7 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     ratio: "16:9",
     labelTh: "รูปฮีโร่เดสก์ท็อป 16:9 1731×909",
     artNote:
-      "1731×909 · Tommy hero-composite · hand+phone on right (booking-success B2) · dark left for copy · PNG fallback /marketing/photos/hero-desktop.png",
+      "1731×909 · Tommy hero-composite · ClipperQ Demo booking-success B2 on phone · cover-crop from 1672×941 plate · hand+phone on right · dark left for copy · PNG fallback /marketing/photos/hero-desktop.png",
   },
   heroMobile: {
     id: "heroMobile",
