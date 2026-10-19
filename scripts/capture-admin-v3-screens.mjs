@@ -450,34 +450,24 @@ async function main() {
     await page.waitForTimeout(1500);
 
     // Prefer known active barbers; never soft-removed sample
-    const preferred = page
-      .locator("button")
-      .filter({ hasText: /^(?!.*(?:ช่างเก่า|ตัวอย่าง|removed)).*(?:นาทีต่อคิว|min per)/is });
+    const barberBtns = page.locator("button").filter({ hasText: /นาทีต่อคิว|min per/i });
     let clicked = false;
-    const preferredCount = await preferred.count();
-    for (let i = 0; i < preferredCount; i += 1) {
-      const label = (await preferred.nth(i).innerText()).replace(/\s+/g, " ").trim();
+    const barberCount = await barberBtns.count();
+    for (let i = 0; i < barberCount; i += 1) {
+      const label = (await barberBtns.nth(i).innerText()).replace(/\s+/g, " ").trim();
       if (/ช่างเก่า|ตัวอย่าง|removed/i.test(label)) continue;
-      await preferred.nth(i).click();
+      await barberBtns.nth(i).click();
       clicked = true;
-      console.log("past-expanded: selected barber", label.slice(0, 40));
+      console.log("past-expanded: selected barber", label.slice(0, 48));
       break;
-    }
-    if (!clicked) {
-      const fallback = page.getByRole("button", { name: /Nat|Ken|Saeb|Tide/i }).first();
-      if (await fallback.count()) {
-        await fallback.click();
-        clicked = true;
-        console.log("past-expanded: fallback barber click");
-      }
     }
     if (!clicked) console.warn("past-expanded: no barber clicked");
 
-    await page.waitForTimeout(1000);
-    // Ensure today (or first date chip) is selected so slots load
-    const dateSection = page.locator("button").filter({ hasText: /^\s*\d{1,2}\s/ });
-    if (await dateSection.count()) {
-      await dateSection.first().click();
+    await page.waitForTimeout(1200);
+    // Date chips use Thai labels like "วันนี้ 19 ต.ค." — click first if present
+    const dateChip = page.locator("button").filter({ hasText: /วันนี้|Tomorrow|ต\.ค\.|ม\.ค\./i });
+    if (await dateChip.count()) {
+      await dateChip.first().click();
       await page.waitForTimeout(1200);
     }
 
