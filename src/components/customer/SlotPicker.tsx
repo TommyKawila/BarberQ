@@ -111,13 +111,19 @@ export function SlotPicker({ slots, value, loading, shopClosed, onChange }: Slot
         <div className="flex flex-col gap-2">
           <button
             type="button"
+            aria-expanded={showPast}
             onClick={() => setShowPast((v) => !v)}
-            className="self-start text-sm text-zinc-500 underline-offset-2 hover:text-zinc-400 hover:underline"
+            className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-zinc-700 px-3 text-left text-sm text-zinc-300"
           >
-            {(showPast ? t("booking.hidePastSlots") : t("booking.showPastSlots")).replace(
-              "{count}",
-              String(past.length),
-            )}
+            <span className="text-zinc-500" aria-hidden>
+              {showPast ? "⌃" : "⌄"}
+            </span>
+            <span className="min-w-0 flex-1">
+              {(showPast ? t("booking.hidePastSlots") : t("booking.showPastSlots")).replace(
+                "{count}",
+                String(past.length),
+              )}
+            </span>
           </button>
 
           {showPast ? (
