@@ -36,7 +36,8 @@
   --color-zinc-900: var(--cq-surface);
   --color-zinc-800: var(--cq-charcoal);
   --color-zinc-700: var(--cq-border-strong);
-  --color-zinc-600: #4a433c;
+  /* Was #4a433c (~fail AA as text on surface); use outline-tier for borders/muted UI */
+  --color-zinc-600: var(--cq-outline);
   --color-zinc-500: var(--cq-subtle);
   --color-zinc-400: var(--cq-muted);
   --color-zinc-300: var(--cq-sand);
