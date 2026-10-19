@@ -683,9 +683,9 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => void copyBookingLink()}
-              className="mt-2 min-h-11 w-full rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950"
+              className="mt-2 min-h-11 w-full rounded-lg border border-zinc-600 text-sm font-semibold text-zinc-100"
             >
-              {bookingLinkCopied ? t("onboarding.copied") : t("onboarding.copyLink")}
+              {bookingLinkCopied ? t("admin.toast.copyBookingLink") : t("onboarding.copyLink")}
             </button>
           </div>
         ) : null}
