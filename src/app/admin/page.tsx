@@ -21,15 +21,16 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
+import { describeWhoIsFreeEmpty, type FreeBarberNow } from "@/lib/admin/free-barbers";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import type { ShopActivation } from "@/lib/onboarding/activation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
+import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot, StaffBookingSource } from "@/types/booking";
-import type { FreeBarberNow } from "@/lib/admin/free-barbers";
 
 type BoardTab = "queue" | "schedule";
 type ThumbIntent = "walk_in" | "block";
@@ -78,6 +79,7 @@ export default function AdminPage() {
   const [bookingUrl, setBookingUrl] = useState("");
   const [lineQuotaFull, setLineQuotaFull] = useState(false);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [shopHours, setShopHours] = useState<ShopHours>(() => normalizeShopHours(null));
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
   const [showClosedQueue, setShowClosedQueue] = useState(false);
   const [sheet, setSheet] = useState<{
@@ -105,6 +107,10 @@ export default function AdminPage() {
     columns,
     isToday,
     activation,
+  );
+  const whoIsFreeEmpty = useMemo(
+    () => describeWhoIsFreeEmpty(columns, shopHours, new Date()),
+    [columns, shopHours, lastUpdated],
   );
 
   function shiftDay(days: number) {
@@ -161,8 +167,12 @@ export default function AdminPage() {
           setLineQuotaFull(q.quota?.level === "full");
         }
         if (settingsRes.ok) {
-          const s = (await settingsRes.json()) as { remindersEnabled?: boolean };
+          const s = (await settingsRes.json()) as {
+            remindersEnabled?: boolean;
+            hours?: ShopHours | null;
+          };
           setRemindersEnabled(Boolean(s.remindersEnabled));
+          if (s.hours) setShopHours(normalizeShopHours(s.hours));
         }
       })
       .catch(() => {});
@@ -530,9 +540,8 @@ export default function AdminPage() {
         type="button"
         onClick={() => {
           setThumbIntent("walk_in");
-          const first = freeNow[0];
-          if (first) onPickFreeBarber(first, "walk_in");
-          else setWhoFreeOpen(true);
+          // Always open the picker so it matches Today cards (never skip when freeNow is nonempty)
+          setWhoFreeOpen(true);
         }}
         className="flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
       >
@@ -794,7 +803,8 @@ export default function AdminPage() {
             onWalkInNow={() =>
               void createStaffBooking({
                 barberId: sheet.barberId,
-                startTime: sheet.slot.startTime,
+                // Walk-in always starts now — slot cells flip available:false after start
+                startTime: new Date().toISOString(),
                 source: "walk_in",
               })
             }
@@ -814,8 +824,13 @@ export default function AdminPage() {
         <WhoIsFreeSheet
           open={whoFreeOpen}
           rows={freeNow}
+          emptyState={whoIsFreeEmpty}
           onClose={() => setWhoFreeOpen(false)}
           onWalkIn={(row) => onPickFreeBarber(row)}
+          onOpenSchedule={() => {
+            setBoardTab("schedule");
+            setWhoFreeOpen(false);
+          }}
         />
         <BookedSlotActionsSheet
           open={Boolean(actionsSheet)}

@@ -21,6 +21,7 @@ const VIEWPORTS = [
   { name: "mobile-390", width: 390, height: 844 },
   { name: "ipad-820", width: 820, height: 1180 },
   { name: "desktop-1180", width: 1180, height: 820 },
+  { name: "desktop-1440", width: 1440, height: 900 },
 ];
 
 const PAGES = [

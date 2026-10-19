@@ -1,3 +1,4 @@
+import { getBarberFreeNow } from "@/lib/admin/free-barbers";
 import type { AdminColumn, AdminSlot, AppointmentSource } from "@/types/booking";
 
 export type TodayBarberState = "cutting" | "free" | "idle";
@@ -35,28 +36,6 @@ function isActiveBooked(slot: AdminSlot, nowMs: number): boolean {
   return start <= nowMs && nowMs < end;
 }
 
-function isFreeNow(slot: AdminSlot, nowMs: number): boolean {
-  if (slot.kind !== "free" || !slot.available) return false;
-  const start = new Date(slot.startTime).getTime();
-  const end = new Date(slot.endTime).getTime();
-  if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
-  return start <= nowMs + 5 * 60_000 && end > nowMs;
-}
-
-function freeUntilFor(column: AdminColumn, fromSlot: AdminSlot): string {
-  let until = fromSlot.endTime;
-  const slots = safeSlots(column);
-  const startIdx = slots.findIndex((s) => s.startTime === fromSlot.startTime);
-  if (startIdx < 0) return until;
-  for (let i = startIdx + 1; i < slots.length; i += 1) {
-    const next = slots[i];
-    if (next.kind !== "free" || !next.available) break;
-    if (next.startTime !== until) break;
-    until = next.endTime;
-  }
-  return until;
-}
-
 function nextUpcoming(column: AdminColumn, afterMs: number): AdminSlot | null {
   const upcoming = safeSlots(column)
     .filter((s) => {
@@ -81,7 +60,6 @@ export function deriveTodayQueueCards(
     if (!column?.barber?.id) continue;
     const slots = safeSlots(column);
     const current = slots.find((s) => isActiveBooked(s, nowMs)) ?? null;
-    const freeSlot = !current ? slots.find((s) => isFreeNow(s, nowMs)) ?? null : null;
 
     if (current) {
       const start = new Date(current.startTime).getTime();
@@ -103,26 +81,10 @@ export function deriveTodayQueueCards(
       continue;
     }
 
+    const free = getBarberFreeNow(column, now);
     const next = nextUpcoming(column, nowMs);
-    // Free now: live free slot, OR gap before next booking (past free cells are often unavailable)
-    let until: string | null = null;
-    if (freeSlot) {
-      until = freeUntilFor(column, freeSlot);
-    } else if (next) {
-      until = next.startTime;
-    } else {
-      const futureFree = slots.find(
-        (s) =>
-          s.kind === "free" &&
-          s.available &&
-          Number.isFinite(new Date(s.endTime).getTime()) &&
-          new Date(s.endTime).getTime() > nowMs,
-      );
-      if (futureFree) until = freeUntilFor(column, futureFree);
-    }
-
-    if (until && new Date(until).getTime() > nowMs) {
-      const untilMs = new Date(until).getTime();
+    if (free) {
+      const untilMs = new Date(free.freeUntil).getTime();
       const freeMinutes = Math.max(0, Math.round((untilMs - nowMs) / 60_000));
       cards.push({
         barberId: column.barber.id,
@@ -131,7 +93,7 @@ export function deriveTodayQueueCards(
         current: null,
         progress: 0,
         remainingMinutes: null,
-        freeUntil: until,
+        freeUntil: free.freeUntil,
         freeMinutes,
         next,
       });
@@ -151,7 +113,6 @@ export function deriveTodayQueueCards(
     });
   }
 
-  // Cutting first, then free, then idle
   const rank = { cutting: 0, free: 1, idle: 2 } as const;
   return cards.sort((a, b) => rank[a.state] - rank[b.state] || a.barberName.localeCompare(b.barberName));
 }

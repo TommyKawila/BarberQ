@@ -96,7 +96,7 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
       {cards.map((card) => {
         const canEdit =
           props.editableBarberId == null || props.editableBarberId === card.barberId;
