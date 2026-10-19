@@ -310,6 +310,22 @@ async function sideBySide(leftPath, rightPath, outPath, labelLeft, labelRight) {
   console.log("wrote", outPath);
 }
 
+async function shot(page, file) {
+  await hideChrome(page);
+  await page.waitForTimeout(200);
+  const buf = await page.screenshot({ type: "png", fullPage: false });
+  const path = join(OUT, file);
+  await sharp(buf).png().toFile(path);
+  console.log("wrote", path);
+  return path;
+}
+
+async function openMoreMenu(page) {
+  const trigger = page.getByRole("button", { name: /เพิ่มเติม|More/i }).first();
+  await trigger.click();
+  await page.waitForTimeout(400);
+}
+
 async function main() {
   await mkdir(OUT, { recursive: true });
   await waitForServer(BASE);
@@ -337,14 +353,35 @@ async function main() {
     for (const route of PAGES) {
       await page.goto(`${BASE}${route.path}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
-      await hideChrome(page);
-      await page.waitForTimeout(200);
-      const buf = await page.screenshot({ type: "png", fullPage: false });
-      const file = `${route.id}-${vp.name}.png`;
-      const path = join(OUT, file);
-      await sharp(buf).png().toFile(path);
-      console.log("wrote", path);
+      await shot(page, `${route.id}-${vp.name}.png`);
     }
+
+    // More menu open (mobile sheet < lg; rail expand ≥ lg)
+    if (vp.width === 390 || vp.width === 820) {
+      await page.goto(`${BASE}/${SHOP}/admin`, { waitUntil: "networkidle", timeout: 60000 });
+      await page.waitForTimeout(600);
+      await openMoreMenu(page);
+      await shot(page, `more-menu-${vp.name}.png`);
+    }
+
+    await context.close();
+  }
+
+  // Summary @ 820 without stats mock (real-data path — no ?cqSample=1)
+  {
+    const context = await browser.newContext({
+      viewport: { width: 820, height: 1180 },
+      deviceScaleFactor: 2,
+    });
+    const page = await context.newPage();
+    await page.goto(`${BASE}/${SHOP}/admin/stats`, {
+      waitUntil: "networkidle",
+      timeout: 60000,
+    });
+    await page.waitForTimeout(900);
+    await shot(page, "summary-ipad-820-real.png");
+    // Also overwrite summary-ipad-820 with real data (requested final set)
+    await shot(page, "summary-ipad-820.png");
     await context.close();
   }
 
