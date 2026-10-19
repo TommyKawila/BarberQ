@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=390, initial-scale=1" />
+  <title>ClipperQ Demo — Booking success</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 390px;
+      height: 844px;
+      overflow: hidden;
+      font-family: "Noto Sans Thai", system-ui, sans-serif;
+      background: #000;
+      color: #fafafa;
+      -webkit-font-smoothing: antialiased;
+    }
+    .phone {
+      width: 390px;
+      height: 844px;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-bottom: 1px solid #1a1a1a;
+      flex-shrink: 0;
+    }
+    .topbar .close {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 22px;
+      height: 22px;
+      color: #d4d4d8;
+      font-size: 22px;
+      line-height: 1;
+      font-weight: 300;
+    }
+    .topbar .title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f4f4f5;
+      letter-spacing: -0.01em;
+    }
+    .body {
+      flex: 1;
+      padding: 8px 20px 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .hero {
+      position: relative;
+      height: 248px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      margin-top: 4px;
+    }
+    .beam {
+      position: absolute;
+      top: 0;
+      left: 18%;
+      right: 18%;
+      height: 72%;
+      background: linear-gradient(
+        to bottom,
+        rgba(251, 191, 36, 0.34),
+        rgba(251, 191, 36, 0.1) 48%,
+        transparent
+      );
+      clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+      pointer-events: none;
+    }
+    .hero img.chair {
+      position: relative;
+      z-index: 1;
+      width: 196px;
+      height: auto;
+      filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.55));
+    }
+    .check-badge {
+      position: absolute;
+      z-index: 2;
+      right: 78px;
+      bottom: 42px;
+      width: 36px;
+      height: 36px;
+      border-radius: 999px;
+      background: #22c55e;
+      border: 2px solid #fbbf24;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+    }
+    .check-badge svg { width: 18px; height: 18px; }
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-top: 6px;
+      line-height: 1.25;
+    }
+    .card {
+      margin-top: 18px;
+      border: 1px solid rgba(251, 191, 36, 0.35);
+      border-radius: 18px;
+      background: #141414;
+      padding: 18px 16px 16px;
+    }
+    .date {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 500;
+      color: #e4e4e7;
+    }
+    .time {
+      text-align: center;
+      margin-top: 4px;
+      font-size: 44px;
+      font-weight: 700;
+      color: #fbbf24;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+    .duration {
+      text-align: center;
+      margin-top: 4px;
+      font-size: 13px;
+      color: #a1a1aa;
+    }
+    .divider {
+      margin: 14px 0 12px;
+      border: 0;
+      border-top: 1px solid #27272a;
+    }
+    .who {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .who img {
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      object-fit: cover;
+      border: 2px solid #fbbf24;
+      background: #18181b;
+      flex-shrink: 0;
+    }
+    .who-name {
+      font-size: 17px;
+      font-weight: 700;
+      color: #fafafa;
+      line-height: 1.2;
+    }
+    .who-shop {
+      margin-top: 2px;
+      font-size: 13px;
+      color: #a1a1aa;
+    }
+    .next-label {
+      margin-top: 22px;
+      text-align: center;
+      font-size: 13px;
+      color: #71717a;
+      font-weight: 500;
+    }
+    .steps {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 0 4px;
+    }
+    .step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: #e4e4e7;
+      line-height: 1.35;
+    }
+    .step .dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .step .dot.done {
+      background: #22c55e;
+    }
+    .step .dot.todo {
+      border: 1.5px solid #52525b;
+      background: transparent;
+    }
+    .step .dot.done svg { width: 12px; height: 12px; }
+    .cta {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 52px;
+      border-radius: 999px;
+      background: #fbbf24;
+      color: #18181b;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+    }
+    .back {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 14px;
+      color: #fafafa;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <header class="topbar">
+      <span class="close" aria-hidden="true">×</span>
+      <div class="title">ClipperQ Demo</div>
+    </header>
+    <div class="body">
+      <div class="hero">
+        <div class="beam" aria-hidden="true"></div>
+        <img class="chair" src="/images/booking-success-chair.webp" alt="" width="196" height="196" />
+        <div class="check-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+      </div>
+      <h1>จองคิวสำเร็จ!</h1>
+
+      <section class="card">
+        <div class="date">ศุกร์ 16 ต.ค. 2026</div>
+        <div class="time">11:30</div>
+        <div class="duration">60 นาที · เสร็จประมาณ 12:30</div>
+        <hr class="divider" />
+        <div class="who">
+          <img src="/sale/booking-success-barber.webp" alt="ช่างนัท" width="52" height="52" />
+          <div>
+            <div class="who-name">ช่างนัท</div>
+            <div class="who-shop">ClipperQ Demo</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="next-label">ขั้นตอนต่อไป</div>
+      <div class="steps">
+        <div class="step">
+          <span class="dot done">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <span>จองคิวแล้ว</span>
+        </div>
+        <div class="step">
+          <span class="dot done">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </span>
+          <span>ส่งข้อความยืนยันทาง LINE แล้ว</span>
+        </div>
+        <div class="step">
+          <span class="dot todo"></span>
+          <span>แจ้งเตือนทาง LINE ก่อนถึงเวลานัด</span>
+        </div>
+        <div class="step">
+          <span class="dot todo"></span>
+          <span>เจอกันที่ร้าน ClipperQ Demo</span>
+        </div>
+      </div>
+
+      <a class="cta" href="#">ดูคิวของฉัน</a>
+      <div class="back">กลับหน้าร้าน</div>
+    </div>
+  </div>
+</body>
+</html>

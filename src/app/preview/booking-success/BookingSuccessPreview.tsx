@@ -44,7 +44,7 @@ export function BookingSuccessPreview() {
           <BookingSuccess
             appointment={DEMO_APPOINTMENT}
             barberName="นัท"
-            shopName="BarberQx Demo"
+            shopName="ClipperQ Demo"
             barber={DEMO_BARBER}
             friendship="friend"
             useMarketingAvatarSlot
