@@ -157,6 +157,8 @@ async function main() {
     const targetTop = target.getBoundingClientRect().top + window.scrollY;
     window.scrollTo(0, Math.max(0, targetTop - headerH - 16));
   });
+  await page.waitForTimeout(300);
+
   // Prefer a day with open slots (today may be full / past closing).
   async function ensureAvailableSlots() {
     const slotBtns = () =>
