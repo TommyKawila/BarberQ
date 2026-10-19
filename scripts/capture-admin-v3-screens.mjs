@@ -439,7 +439,7 @@ async function main() {
     await context.close();
   }
 
-  // Booking past-expanded @ 390 — scroll to time step and expand past slots
+  // Booking past-expanded @ 390 — select barber, expand past slots, frame the time step
   {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
@@ -448,39 +448,79 @@ async function main() {
     const page = await context.newPage();
     await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle", timeout: 60000 });
     await page.waitForTimeout(1500);
-    // Prefer an active bookable barber (skip soft-removed sample)
-    const barbers = page.locator("button").filter({ hasText: /นาทีต่อคิว|min per/i });
-    const count = await barbers.count();
-    for (let i = 0; i < count; i += 1) {
-      const label = (await barbers.nth(i).innerText()).trim();
+
+    // Prefer known active barbers; never soft-removed sample
+    const preferred = page
+      .locator("button")
+      .filter({ hasText: /^(?!.*(?:ช่างเก่า|ตัวอย่าง|removed)).*(?:นาทีต่อคิว|min per)/is });
+    let clicked = false;
+    const preferredCount = await preferred.count();
+    for (let i = 0; i < preferredCount; i += 1) {
+      const label = (await preferred.nth(i).innerText()).replace(/\s+/g, " ").trim();
       if (/ช่างเก่า|ตัวอย่าง|removed/i.test(label)) continue;
-      await barbers.nth(i).click();
+      await preferred.nth(i).click();
+      clicked = true;
+      console.log("past-expanded: selected barber", label.slice(0, 40));
       break;
     }
-    await page.waitForTimeout(800);
-    // Click today's date chip if present
-    const dateBtns = page.locator("button").filter({ hasText: /^\d{1,2}/ });
-    if (await dateBtns.count()) {
-      await dateBtns.first().click();
-      await page.waitForTimeout(1000);
+    if (!clicked) {
+      const fallback = page.getByRole("button", { name: /Nat|Ken|Saeb|Tide/i }).first();
+      if (await fallback.count()) {
+        await fallback.click();
+        clicked = true;
+        console.log("past-expanded: fallback barber click");
+      }
     }
-    // Scroll toward time section
-    await page.evaluate(() => {
-      const el = [...document.querySelectorAll("h2, h3, p")].find((n) =>
-        /เลือกเวลา|Select time|stepTime/i.test(n.textContent || ""),
-      );
-      el?.scrollIntoView({ block: "start" });
-    });
-    await page.waitForTimeout(600);
+    if (!clicked) console.warn("past-expanded: no barber clicked");
+
+    await page.waitForTimeout(1000);
+    // Ensure today (or first date chip) is selected so slots load
+    const dateSection = page.locator("button").filter({ hasText: /^\s*\d{1,2}\s/ });
+    if (await dateSection.count()) {
+      await dateSection.first().click();
+      await page.waitForTimeout(1200);
+    }
+
+    // Wait for time step + either future slots or past toggle
+    const timeHeading = page.getByText(/3\.\s*เลือกเวลา|3\.\s*Select time/i).first();
+    await timeHeading.waitFor({ state: "visible", timeout: 15000 }).catch(() => null);
+    await timeHeading.scrollIntoViewIfNeeded().catch(() => null);
+    await page.waitForTimeout(400);
+
     const pastToggle = page.getByRole("button", {
       name: /เวลาที่ผ่านไปแล้ว|past times/i,
     });
-    if (await pastToggle.count()) {
-      await pastToggle.first().scrollIntoViewIfNeeded();
+    await pastToggle.first().waitFor({ state: "visible", timeout: 15000 });
+    await pastToggle.first().scrollIntoViewIfNeeded();
+    const expanded = await pastToggle.first().getAttribute("aria-expanded");
+    if (expanded !== "true") {
       await pastToggle.first().click();
-      await page.waitForTimeout(500);
-      await pastToggle.first().scrollIntoViewIfNeeded();
+      await page.waitForTimeout(400);
     }
+    // Frame: time heading through past grid
+    await page.evaluate(() => {
+      const heading = [...document.querySelectorAll("h2, h3, p, div")].find((n) =>
+        /3\.\s*เลือกเวลา|3\.\s*Select time/i.test(n.textContent || ""),
+      );
+      heading?.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(300);
+    const pastLabel = page.getByText(/ผ่านไปแล้ว|Past —/i).first();
+    if (await pastLabel.count()) {
+      await pastLabel.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(200);
+      // Nudge so heading + toggle + past grid share the viewport
+      await page.evaluate(() => {
+        const heading = [...document.querySelectorAll("h2, h3, p")].find((n) =>
+          /3\.\s*เลือกเวลา|3\.\s*Select time/i.test(n.textContent || ""),
+        );
+        heading?.scrollIntoView({ block: "start" });
+      });
+    }
+    console.log(
+      "past-expanded: aria-expanded=",
+      await pastToggle.first().getAttribute("aria-expanded"),
+    );
     await shot(page, "booking-mobile-390-past-expanded.png");
     await context.close();
   }
