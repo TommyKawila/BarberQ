@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { addDays, addMonths, subDays, subMonths } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
 import { BarberBars } from "@/components/admin/charts/BarberBars";
 import { BlockTimeline } from "@/components/admin/charts/BlockTimeline";
 import { HourlyBars } from "@/components/admin/charts/HourlyBars";
@@ -42,7 +41,7 @@ function shiftDate(kind: StatsRange, dateISO: string, dir: -1 | 1): string {
 
 export default function AdminStatsPage() {
   const { t, locale } = useI18n();
-  const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
+  const { ready, profile, authHeaders } = useAdminPageAuth();
   const { shopApi, shopSlug } = useShopSlug();
   const toast = useToast();
   const online = useOnlineStatus();
@@ -137,26 +136,18 @@ export default function AdminStatsPage() {
       <div className="flex flex-col gap-4 px-3 py-4">
         <header className="flex items-start justify-between gap-2">
           <div>
-            {mockMode ? (
-              <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[11px] uppercase tracking-wide text-amber-400">
-                {t("common.prototypeMode")}
-              </span>
-            ) : null}
-            <h1 className="font-heading text-xl font-semibold">{title}</h1>
-            {lastUpdated || report?.range.displayLabel ? (
-              <p className="mt-0.5 text-xs text-zinc-500">
-                {report?.range.displayLabel ?? dateISO}
-                {lastUpdated
-                  ? ` · ${formatLastUpdated(lastUpdated, locale === "th" ? "th" : "en")}`
-                  : ""}
-              </p>
-            ) : null}
-            <AdminSessionBadge name={profile.displayName || profile.barberName} role={profile.role} />
+            <h1 className="font-heading text-2xl font-semibold">{title}</h1>
+            <p className="mt-0.5 text-xs text-zinc-500">
+              {t("admin.statsSampleLabel")} · {report?.range.displayLabel ?? dateISO}
+              {lastUpdated
+                ? ` · ${formatLastUpdated(lastUpdated, locale === "th" ? "th" : "en")}`
+                : ""}
+            </p>
           </div>
           <button
             type="button"
             onClick={() => void loadStats()}
-            className="min-h-11 min-w-11 rounded-xl bg-zinc-800 px-3 text-xs text-zinc-200"
+            className="min-h-11 min-w-11 rounded-xl border border-zinc-700 px-3 text-xs text-zinc-200"
           >
             {t("admin.refresh")}
           </button>
@@ -316,23 +307,51 @@ export default function AdminStatsPage() {
 
             {/* Sources */}
             {totals.bySource ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
-                <h2 className="mb-2 text-sm font-semibold">{t("admin.statsBySource")}</h2>
-                <div className="grid grid-cols-2 gap-2">
-                  <StatCard label={t("admin.sourceLine")} value={totals.bySource.line} accent="sky" />
-                  <StatCard label={t("admin.sourcePhone")} value={totals.bySource.phone} accent="emerald" />
-                  <StatCard label={t("admin.sourceChat")} value={totals.bySource.chat} accent="amber" />
-                  <StatCard
-                    label={t("admin.sourceWalkIn")}
-                    value={totals.bySource.walk_in}
-                    hint={
-                      (totals.qrWalkIns ?? 0) > 0
-                        ? `QR ${totals.qrWalkIns}`
-                        : undefined
-                    }
-                    accent="red"
-                  />
-                </div>
+              <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
+                <h2 className="mb-3 text-sm font-semibold">{t("admin.statsBySource")}</h2>
+                {(() => {
+                  const rows = [
+                    {
+                      label: t("admin.sourceLine"),
+                      value: totals.bySource.line,
+                      bar: "bg-sky-600",
+                    },
+                    {
+                      label: t("admin.sourceWalkIn"),
+                      value: totals.bySource.walk_in,
+                      bar: "bg-teal-600",
+                    },
+                    {
+                      label: t("admin.sourcePhone"),
+                      value: totals.bySource.phone,
+                      bar: "bg-stone-400",
+                    },
+                    {
+                      label: t("admin.sourceChat"),
+                      value: totals.bySource.chat,
+                      bar: "bg-zinc-500",
+                    },
+                  ];
+                  const max = Math.max(1, ...rows.map((r) => r.value));
+                  return (
+                    <div className="flex flex-col gap-2.5">
+                      {rows.map((row) => (
+                        <div key={row.label} className="flex items-center gap-2 text-sm">
+                          <span className="w-16 shrink-0 text-zinc-300">{row.label}</span>
+                          <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-950">
+                            <div
+                              className={`h-full rounded-full ${row.bar}`}
+                              style={{ width: `${Math.round((row.value / max) * 100)}%` }}
+                            />
+                          </div>
+                          <span className="w-8 shrink-0 text-right tabular-nums text-zinc-200">
+                            {row.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </section>
             ) : null}
 

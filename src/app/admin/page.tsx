@@ -5,18 +5,24 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { addDays } from "date-fns";
 import { enUS, th } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
+import { RefreshCw } from "lucide-react";
 import { AdminShell } from "@/components/admin/AdminShell";
+import {
+  BookedSlotActionsSheet,
+  type BookedSlotSheetAction,
+} from "@/components/admin/BookedSlotActionsSheet";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
+import { QrWaitingRow } from "@/components/admin/QrWaitingRow";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
+import { TodayQueueCards } from "@/components/admin/TodayQueueCards";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
-import { QrWaitingBoard } from "@/components/admin/QrWaitingBoard";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
 import { isShopOperatorRole } from "@/lib/admin-auth";
-import { formatLastUpdated, useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import type { ShopActivation } from "@/lib/onboarding/activation";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -24,6 +30,9 @@ import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot, StaffBookingSource } from "@/types/booking";
 import type { FreeBarberNow } from "@/lib/admin/free-barbers";
+
+type BoardTab = "queue" | "schedule";
+type ThumbIntent = "walk_in" | "block";
 
 interface ApiError {
   error?: {
@@ -37,12 +46,19 @@ interface ApiError {
 export default function AdminPage() {
   const { locale, t } = useI18n();
   const { shopApi, shopPath, shopSlug } = useShopSlug();
-  const { ready, profile, error: authError, authHeaders, mockMode } = useAdminPageAuth();
+  const { ready, profile, error: authError, authHeaders } = useAdminPageAuth();
   const toast = useToast();
   const online = useOnlineStatus();
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [boardTab, setBoardTab] = useState<BoardTab>("queue");
+  const [thumbIntent, setThumbIntent] = useState<ThumbIntent>("walk_in");
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [actionsSheet, setActionsSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    slot: AdminSlot;
+  } | null>(null);
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
   const [latePendingKey, setLatePendingKey] = useState<string | null>(null);
   const [cancelPendingKey, setCancelPendingKey] = useState<string | null>(null);
@@ -74,15 +90,15 @@ export default function AdminPage() {
   const todayISO = dateISOFromInstant(new Date());
   const isToday = dateISO === todayISO;
   const dateLocale = locale === "th" ? th : enUS;
-  const displayDate = useMemo(
+  const displayDateShort = useMemo(
     () =>
       formatInTimeZone(
         fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE),
         SHOP_TIMEZONE,
-        "EEEE d MMMM yyyy",
+        locale === "th" ? "EEE d MMM" : "EEE d MMM",
         { locale: dateLocale },
       ),
-    [dateISO, dateLocale],
+    [dateISO, dateLocale, locale],
   );
   // Unconditional — never after auth early-return (React #310).
   const { freeNow, mini, hasBookingsToday, setupIncomplete } = useAdminTodayDerived(
@@ -440,14 +456,42 @@ export default function AdminPage() {
     setWhoFreeOpen(true);
   }
 
-  function onWalkInFromFreeSheet(row: FreeBarberNow) {
+  function onPickFreeBarber(row: FreeBarberNow, intent: ThumbIntent = thumbIntent) {
     setWhoFreeOpen(false);
+    if (intent === "block") {
+      void onBlockSlot(row.barberId, row.slot);
+      return;
+    }
     setSheet({
       barberId: row.barberId,
       barberName: row.barberName,
       slot: row.slot,
       shortenUntil: null,
     });
+  }
+
+  function handleBookedSheetAction(action: BookedSlotSheetAction) {
+    if (!actionsSheet) return;
+    const { barberId, slot } = actionsSheet;
+    if (action === "cancel") {
+      void onCancel(barberId, slot);
+      setActionsSheet(null);
+      return;
+    }
+    if (action === "reschedule") {
+      onRescheduleStart(barberId, slot);
+      setActionsSheet(null);
+      return;
+    }
+    if (action === "late_called") {
+      void onLateCalled(barberId, slot);
+      setActionsSheet(null);
+      return;
+    }
+    if (action === "completed" || action === "no_show" || action === "left") {
+      void onOutcome(barberId, slot, action);
+      setActionsSheet(null);
+    }
   }
 
   if (!ready || !profile) {
@@ -461,7 +505,6 @@ export default function AdminPage() {
 
   const isOperator = isShopOperatorRole(profile.role);
   const editableBarberId = isOperator ? null : profile.barberId;
-  const badgeRole = profile.role;
 
   async function copyBookingLink() {
     const url = bookingUrl || buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug);
@@ -471,152 +514,105 @@ export default function AdminPage() {
     window.setTimeout(() => setBookingLinkCopied(false), 2000);
   }
 
-  const thumbBar =
-    isToday && isOperator ? (
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={onWhoIsFree}
-          className="flex min-h-12 flex-1 items-center justify-center gap-1 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
-        >
-          {t("admin.whoIsFree")}
-        </button>
-        <button
-          type="button"
-          onClick={() => {
-            const first = freeNow[0];
-            if (first) onWalkInFromFreeSheet(first);
-            else onWhoIsFree();
-          }}
-          className="flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
-        >
-          + Walk-in
-        </button>
-      </div>
-    ) : undefined;
+  const thumbBar = isOperator ? (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          setThumbIntent("block");
+          setWhoFreeOpen(true);
+        }}
+        className="flex min-h-12 flex-1 items-center justify-center gap-1 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+      >
+        🚫 {t("admin.staffBook.blockTime")}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setThumbIntent("walk_in");
+          const first = freeNow[0];
+          if (first) onPickFreeBarber(first, "walk_in");
+          else setWhoFreeOpen(true);
+        }}
+        className="flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+      >
+        + Walk-in
+      </button>
+    </div>
+  ) : undefined;
 
   return (
     <AdminShell role={profile.role} thumbBar={thumbBar}>
       <div
-        className={`flex flex-col gap-4 px-3 py-4 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6${
+        className={`flex flex-col gap-3 px-3 py-3${
           rescheduleFrom || thumbBar ? " pb-28 lg:pb-4" : ""
         }`}
       >
-        <header className="flex flex-col gap-3">
-          <div className="min-w-0">
-            {mockMode ? (
-              <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[11px] uppercase tracking-wide text-amber-400">
-                {t("common.prototypeMode")}
-              </span>
-            ) : null}
-            <h1 className="font-heading text-xl font-semibold">
-              {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
-            </h1>
-            <p className="text-sm text-zinc-400">
-              {displayDate}
-              {lastUpdated ? (
-                <span className="ml-2 text-xs text-zinc-500">
-                  · {formatLastUpdated(lastUpdated, locale === "th" ? "th" : "en")}
-                </span>
-              ) : null}
-            </p>
-            <AdminSessionBadge name={profile.displayName || profile.barberName} role={badgeRole} />
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
+        <header className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
             <button
               type="button"
               onClick={() => shiftDay(-1)}
-              className="min-h-11 min-w-11 rounded-xl bg-zinc-800 text-sm text-zinc-200"
+              className="flex min-h-11 min-w-9 items-center justify-center rounded-xl text-zinc-300"
+              aria-label={t("admin.prevDay")}
             >
               ‹
             </button>
             <button
               type="button"
-              disabled={isToday}
               onClick={() => setDateISO(todayISO)}
-              className="min-h-11 rounded-xl bg-zinc-800 px-3 text-sm text-zinc-200 disabled:opacity-40"
+              className="min-h-11 truncate rounded-xl px-1 text-left text-sm text-zinc-200"
             >
-              {t("admin.today")}
+              <span className="font-medium">
+                {displayDateShort}
+                {isToday ? ` · ${t("admin.today")}` : ""}
+              </span>
+              {lastUpdated ? (
+                <span className="ml-1 text-xs text-zinc-500">
+                  · {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm")}
+                </span>
+              ) : null}
             </button>
             <button
               type="button"
               onClick={() => shiftDay(1)}
-              className="min-h-11 min-w-11 rounded-xl bg-zinc-800 text-sm text-zinc-200"
+              className="flex min-h-11 min-w-9 items-center justify-center rounded-xl text-zinc-300"
+              aria-label={t("admin.nextDay")}
             >
               ›
             </button>
-            <button
-              type="button"
-              onClick={() => void loadDay()}
-              className="min-h-11 rounded-xl bg-zinc-800 px-3 text-sm text-zinc-200"
-            >
-              {t("admin.refresh")}
-            </button>
           </div>
-          {isOperator ? (
-            <label className="flex min-h-11 items-center gap-3 text-sm text-zinc-300">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showClosedQueue}
-                onClick={() => setShowClosedQueue((v) => !v)}
-                className={`relative min-h-11 w-14 shrink-0 rounded-full transition ${
-                  showClosedQueue ? "bg-amber-400" : "bg-zinc-700"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 left-1 h-9 w-9 rounded-full bg-white shadow transition ${
-                    showClosedQueue ? "translate-x-6" : "translate-x-0"
-                  }`}
-                />
-              </button>
-              {t("admin.showClosedQueueBarbers")}
-            </label>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => void loadDay()}
+            aria-label={t("admin.refresh")}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-zinc-700 text-zinc-200"
+          >
+            <RefreshCw size={18} />
+          </button>
         </header>
 
         <OfflineBanner message={t("admin.offlineBanner")} visible={!online} />
 
-        <div className="grid grid-cols-3 gap-2 rounded-xl border border-zinc-800 bg-zinc-900 p-2 lg:max-w-md">
-          <div className="text-center">
-            <p className="font-heading text-lg font-semibold tabular-nums text-amber-400">{mini.remaining}</p>
-            <p className="text-xs text-zinc-400">
-              {t("admin.miniRemaining").replace("{n}", String(mini.remaining))}
-            </p>
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SegmentedControl
+              ariaLabel={t("admin.nav.board")}
+              value={boardTab}
+              onChange={setBoardTab}
+              options={[
+                { value: "queue" as const, label: t("admin.segmentQueue") },
+                { value: "schedule" as const, label: t("admin.segmentSchedule") },
+              ]}
+            />
           </div>
-          <div className="text-center">
-            <p className="font-heading text-lg font-semibold tabular-nums text-zinc-100">{mini.done}</p>
-            <p className="text-xs text-zinc-400">
-              {t("admin.miniDone").replace("{n}", String(mini.done))}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="font-heading text-lg font-semibold tabular-nums text-emerald-400">{mini.freeSlots}</p>
-            <p className="text-xs text-zinc-400">
-              {t("admin.miniFree").replace("{n}", String(mini.freeSlots))}
-            </p>
-          </div>
+          <p className="shrink-0 text-xs tabular-nums text-zinc-400">
+            {t("admin.miniRemainDone")
+              .replace("{remain}", String(mini.remaining))
+              .replace("{done}", String(mini.done))}
+          </p>
         </div>
 
-        {isToday ? (
-          <QrWaitingBoard
-            shopApi={shopApi}
-            authHeaders={authHeaders}
-            enabled={Boolean(profile)}
-            onStarted={() => void loadDay()}
-          />
-        ) : null}
-
-        <div className="flex flex-wrap gap-1.5 text-xs text-zinc-400">
-          <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>
-          <span className="rounded bg-sky-700 px-2 py-0.5 text-white">{t("admin.sourceLine")}</span>
-          <span className="rounded bg-rose-700 px-2 py-0.5 text-white">{t("admin.sourceWalkIn")}</span>
-          <span className="rounded border border-red-500/60 bg-red-950 px-2 py-0.5 text-red-200">
-            {t("admin.staffBook.blockTime")}
-          </span>
-          <span className="rounded bg-yellow-600 px-2 py-0.5 text-zinc-950">{t("admin.late")}</span>
-          <span className="rounded bg-zinc-600 px-2 py-0.5 text-white">{t("admin.completed")}</span>
-        </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         {isOperator && remindersEnabled && lineQuotaFull ? (
           <div className="rounded-xl border border-red-500/50 bg-red-950/40 p-4">
@@ -677,8 +673,8 @@ export default function AdminPage() {
             </Link>
           </div>
         ) : null}
-        {isOperator && isToday && !hasBookingsToday && activation?.ready ? (
-          <div className="rounded-xl bg-zinc-900 p-4 text-sm">
+        {isOperator && isToday && !hasBookingsToday && activation?.ready && boardTab === "queue" ? (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm">
             <p className="text-zinc-300">{t("onboarding.noBookingsToday")}</p>
             <button
               type="button"
@@ -689,7 +685,43 @@ export default function AdminPage() {
             </button>
           </div>
         ) : null}
-        <div className="lg:col-span-2">
+
+        {boardTab === "queue" ? (
+          <>
+            <TodayQueueCards
+              columns={columns}
+              editableBarberId={editableBarberId}
+              outcomePendingKey={outcomePendingKey}
+              latePendingKey={latePendingKey}
+              onWalkInBarber={(id) => onWalkInQuick(id)}
+              onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
+              onLateOrNoShow={(id, slot) => {
+                const col = columns.find((c) => c.barber.id === id);
+                setActionsSheet({
+                  barberId: id,
+                  barberName: col?.barber.name ?? "",
+                  slot,
+                });
+              }}
+              onOpenNext={(id, slot) => {
+                const col = columns.find((c) => c.barber.id === id);
+                setActionsSheet({
+                  barberId: id,
+                  barberName: col?.barber.name ?? "",
+                  slot,
+                });
+              }}
+            />
+            {isToday ? (
+              <QrWaitingRow
+                shopApi={shopApi}
+                authHeaders={authHeaders}
+                enabled={Boolean(profile)}
+                onStarted={() => void loadDay()}
+              />
+            ) : null}
+          </>
+        ) : (
           <QuickBlockGrid
             columns={columns}
             pendingKey={pendingKey}
@@ -709,7 +741,7 @@ export default function AdminPage() {
             onCopyBookingLink={() => void copyBookingLink()}
             bookingLinkCopied={bookingLinkCopied}
           />
-        </div>
+        )}
         {rescheduleTarget && rescheduleFrom ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
             <button
@@ -783,7 +815,28 @@ export default function AdminPage() {
           open={whoFreeOpen}
           rows={freeNow}
           onClose={() => setWhoFreeOpen(false)}
-          onWalkIn={onWalkInFromFreeSheet}
+          onWalkIn={(row) => onPickFreeBarber(row)}
+        />
+        <BookedSlotActionsSheet
+          open={Boolean(actionsSheet)}
+          barberId={actionsSheet?.barberId ?? ""}
+          barberName={actionsSheet?.barberName ?? ""}
+          slot={
+            actionsSheet?.slot ?? {
+              startTime: "",
+              endTime: "",
+              available: false,
+              kind: "free",
+            }
+          }
+          pending={Boolean(
+            actionsSheet &&
+              (outcomePendingKey === `${actionsSheet.barberId}:${actionsSheet.slot.startTime}` ||
+                latePendingKey === `${actionsSheet.barberId}:${actionsSheet.slot.startTime}` ||
+                cancelPendingKey === `${actionsSheet.barberId}:${actionsSheet.slot.startTime}`),
+          )}
+          onClose={() => setActionsSheet(null)}
+          onAction={handleBookedSheetAction}
         />
       </div>
     </AdminShell>

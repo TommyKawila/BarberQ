@@ -1,8 +1,9 @@
 /**
  * Capture ClipperQ Admin v3 screens at 390 / 820 / 1180.
+ * Seeds sample bookings for the demo shop in memory-mode only (not production).
  * Usage: node scripts/capture-admin-v3-screens.mjs [baseUrl]
  */
-import { mkdir, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
@@ -30,6 +31,21 @@ const PAGES = [
   { id: "schedule", path: `/${SHOP}/admin/my-schedule` },
 ];
 
+const FIGMA_AFTER = {
+  today: join(
+    ROOT,
+    "../home/ubuntu/.cursor/projects/workspace/uploads/today-after_776d.png",
+  ),
+  team: join(
+    ROOT,
+    "../home/ubuntu/.cursor/projects/workspace/uploads/team-after_998c.png",
+  ),
+  summary: join(
+    ROOT,
+    "../home/ubuntu/.cursor/projects/workspace/uploads/summary-after_7e25.png",
+  ),
+};
+
 async function waitForServer(url, tries = 90) {
   for (let i = 0; i < tries; i++) {
     try {
@@ -52,40 +68,167 @@ async function renameShop(base) {
     },
     body: JSON.stringify({ shopName: DEMO_SHOP }),
   });
-  if (!res.ok) {
-    const text = await res.text();
-    console.warn("Rename shop:", res.status, text);
+  if (!res.ok) console.warn("Rename shop:", res.status, await res.text());
+}
+
+/** Sample bookings for screenshot cards only (memory store / local). */
+async function seedSampleBookings(base) {
+  const headers = {
+    Authorization: `Bearer ${OWNER}`,
+    "Content-Type": "application/json",
+  };
+  const barbersRes = await fetch(`${base}/api/${SHOP}/barbers`, { headers });
+  const barbersJson = await barbersRes.json();
+  const barbers = (barbersJson.barbers ?? []).filter(
+    (b) => b.is_active !== false && b.is_bookable !== false,
+  );
+  if (barbers.length < 2) {
+    console.warn("Need ≥2 bookable barbers to seed sample board");
+    return;
+  }
+  const cutting = barbers[0];
+  const free = barbers[1];
+  const now = Date.now();
+  // Within staff-booking past window (≤30m) so "กำลังตัด" is visible
+  const cutDur = (cutting.slot_duration_minutes || 30) * 60_000;
+  const cuttingStart = new Date(now - Math.min(12 * 60_000, cutDur / 2)).toISOString();
+  const cuttingEnd = new Date(new Date(cuttingStart).getTime() + cutDur).toISOString();
+  const nextDur = cutDur;
+  const nextStart = cuttingEnd;
+  const nextEnd = new Date(new Date(nextStart).getTime() + nextDur).toISOString();
+  const freeDur = (free.slot_duration_minutes || 45) * 60_000;
+  const freeNextStart = new Date(now + 30 * 60_000).toISOString();
+  const freeNextEnd = new Date(new Date(freeNextStart).getTime() + freeDur).toISOString();
+
+  const posts = [
+    {
+      barberId: cutting.id,
+      startTime: cuttingStart,
+      endTime: cuttingEnd,
+      source: "walk_in",
+      customerName: "คุณต้น",
+      customerPhone: "0810000001",
+      allowShorten: true,
+    },
+    {
+      barberId: cutting.id,
+      startTime: nextStart,
+      endTime: nextEnd,
+      source: "walk_in",
+      customerName: "คุณบอส",
+      customerPhone: "0810000002",
+      allowShorten: true,
+    },
+    {
+      barberId: free.id,
+      startTime: freeNextStart,
+      endTime: freeNextEnd,
+      source: "phone",
+      customerName: "Peter K.",
+      customerPhone: "0810000003",
+      allowShorten: true,
+    },
+  ];
+
+  for (const body of posts) {
+    const res = await fetch(`${base}/api/${SHOP}/staff-bookings`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      console.warn("Seed booking failed", res.status, await res.text());
+    } else {
+      console.log("Seeded", body.customerName, "→", body.barberId.slice(0, 8));
+    }
   }
 }
 
 async function hideChrome(page) {
   await page.addStyleTag({
     content: `
+      /* Prototype badge */
       header span.uppercase, header span.tracking-wide.text-amber-400 {
         display: none !important;
       }
+      /* Next.js / Vercel floating widgets + round "N" indicator */
       vercel-live-feedback, #vercel-live-feedback,
       nextjs-portal, [data-nextjs-toast], [data-next-mark-loading],
-      #__next-build-watcher, .nextjs-toast-errors-parent {
+      [data-nextjs-dev-overlay], [data-nextjs-dialog-overlay],
+      #__next-build-watcher, .nextjs-toast-errors-parent,
+      body > nextjs-portal,
+      /* Round Next.js "N" floating indicator */
+      a[href*="nextjs.org"],
+      [aria-label*="Next.js"],
+      [aria-label*="next.js"] {
         display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
       }
     `,
   });
   await page.evaluate(() => {
-    for (const el of document.querySelectorAll("span, div, button")) {
+    for (const el of document.querySelectorAll("span, div, button, a")) {
       const t = (el.textContent || "").trim();
       if (/^PROTOTYPE MODE$/i.test(t)) el.style.display = "none";
+      // Circular Next.js badge often has single letter N
+      if (
+        t === "N" &&
+        el instanceof HTMLElement &&
+        el.getBoundingClientRect().width < 56 &&
+        el.getBoundingClientRect().height < 56
+      ) {
+        el.style.display = "none";
+      }
+    }
+    for (const el of document.querySelectorAll(
+      "nextjs-portal, [data-nextjs-dev-overlay], [data-nextjs-toast]",
+    )) {
+      el.remove();
     }
   });
+}
+
+async function sideBySide(leftPath, rightPath, outPath, labelLeft, labelRight) {
+  const left = sharp(leftPath).resize({ width: 390, height: 844, fit: "cover", position: "top" });
+  const right = sharp(rightPath).resize({
+    width: 390,
+    height: 844,
+    fit: "cover",
+    position: "top",
+  });
+  const [lb, rb] = await Promise.all([left.png().toBuffer(), right.png().toBuffer()]);
+  const gap = 16;
+  const labelH = 36;
+  const w = 390 * 2 + gap * 3;
+  const h = 844 + gap * 2 + labelH;
+  const svg = Buffer.from(
+    `<svg width="${w}" height="${labelH}" xmlns="http://www.w3.org/2000/svg">
+      <text x="${gap}" y="24" fill="#F3EEE3" font-size="14" font-family="sans-serif">${labelLeft}</text>
+      <text x="${gap * 2 + 390}" y="24" fill="#F3EEE3" font-size="14" font-family="sans-serif">${labelRight}</text>
+    </svg>`,
+  );
+  await sharp({
+    create: { width: w, height: h, channels: 3, background: "#111111" },
+  })
+    .composite([
+      { input: svg, left: 0, top: 0 },
+      { input: lb, left: gap, top: labelH + gap },
+      { input: rb, left: gap * 2 + 390, top: labelH + gap },
+    ])
+    .png()
+    .toFile(outPath);
+  console.log("wrote", outPath);
 }
 
 async function main() {
   await mkdir(OUT, { recursive: true });
   await waitForServer(BASE);
   await renameShop(BASE);
+  await seedSampleBookings(BASE);
 
   const browser = await chromium.launch({ headless: true });
-  const contactTiles = [];
 
   for (const vp of VIEWPORTS) {
     const context = await browser.newContext({
@@ -96,7 +239,7 @@ async function main() {
 
     for (const route of PAGES) {
       await page.goto(`${BASE}${route.path}`, { waitUntil: "networkidle", timeout: 60000 });
-      await page.waitForTimeout(800);
+      await page.waitForTimeout(900);
       await hideChrome(page);
       await page.waitForTimeout(200);
       const buf = await page.screenshot({ type: "png", fullPage: false });
@@ -104,43 +247,65 @@ async function main() {
       const path = join(OUT, file);
       await sharp(buf).png().toFile(path);
       console.log("wrote", path);
-      if (["today", "team", "summary", "settings"].includes(route.id)) {
-        contactTiles.push({ file, label: `${route.id} @ ${vp.width}` });
-      }
     }
     await context.close();
   }
 
-  // Contact sheet: 3 cols × rows for key pages at each viewport
+  // Contact sheet
   const sheetFiles = VIEWPORTS.flatMap((vp) =>
     ["today", "team", "summary"].map((id) => join(OUT, `${id}-${vp.name}.png`)),
   );
   const tiles = await Promise.all(
     sheetFiles.map(async (f) => {
-      const img = sharp(f);
-      const meta = await img.metadata();
-      const resized = await img.resize({ width: 360, height: 640, fit: "cover", position: "top" }).png().toBuffer();
-      return { buf: resized, w: 360, h: 640, meta };
+      const resized = await sharp(f)
+        .resize({ width: 360, height: 640, fit: "cover", position: "top" })
+        .png()
+        .toBuffer();
+      return resized;
     }),
   );
   const cols = 3;
   const rows = Math.ceil(tiles.length / cols);
-  const sheet = sharp({
+  const composites = tiles.map((buf, i) => ({
+    input: buf,
+    left: 16 + (i % cols) * (360 + 16),
+    top: 16 + Math.floor(i / cols) * (640 + 16),
+  }));
+  await sharp({
     create: {
       width: cols * 360 + (cols + 1) * 16,
       height: rows * 640 + (rows + 1) * 16,
       channels: 3,
       background: "#111111",
     },
-  });
-  const composites = tiles.map((t, i) => ({
-    input: t.buf,
-    left: 16 + (i % cols) * (360 + 16),
-    top: 16 + Math.floor(i / cols) * (640 + 16),
-  }));
-  const contactPath = join(OUT, "contact-sheet.png");
-  await sheet.composite(composites).png().toFile(contactPath);
-  console.log("wrote", contactPath);
+  })
+    .composite(composites)
+    .png()
+    .toFile(join(OUT, "contact-sheet.png"));
+  console.log("wrote contact-sheet.png");
+
+  // Side-by-side vs Figma after (mobile)
+  const uploads = "/home/ubuntu/.cursor/projects/workspace/uploads";
+  const pairs = [
+    ["today", "today-after_776d.png"],
+    ["team", "team-after_998c.png"],
+    ["summary", "summary-after_7e25.png"],
+  ];
+  for (const [id, afterName] of pairs) {
+    const impl = join(OUT, `${id}-mobile-390.png`);
+    const figma = join(uploads, afterName);
+    try {
+      await sideBySide(
+        figma,
+        impl,
+        join(OUT, `${id}-vs-figma.png`),
+        `Figma after · ${id}`,
+        `Impl mobile · ${id}`,
+      );
+    } catch (err) {
+      console.warn("Compare skip", id, err.message);
+    }
+  }
 
   await writeFile(
     join(OUT, "manifest.json"),
