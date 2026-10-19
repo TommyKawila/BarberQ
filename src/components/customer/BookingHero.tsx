@@ -26,12 +26,20 @@ export function BookingHero({ shopName, coverImageUrl, prototypeMode }: BookingH
           />
         ) : (
           <div
-            className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_20%_0%,_#52525b_0%,_transparent_55%),radial-gradient(ellipse_at_90%_30%,_#b45309_0%,_transparent_40%),linear-gradient(160deg,_#27272a_0%,_#18181b_48%,_#09090b_100%)]"
             aria-hidden
-          />
+          >
+            <div
+              className="absolute inset-0 opacity-[0.12]"
+              style={{
+                backgroundImage:
+                  "repeating-linear-gradient(-18deg, transparent, transparent 11px, rgba(243,238,227,0.35) 11px, rgba(243,238,227,0.35) 12px)",
+              }}
+            />
+          </div>
         )}
         <div
-          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/25"
+          className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/50 to-black/20"
           aria-hidden
         />
         <div className="relative flex h-full flex-col justify-end p-4">

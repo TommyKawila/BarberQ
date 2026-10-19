@@ -7,17 +7,10 @@ import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
+import { deviceLabelFromUa } from "@/lib/webpush/device-label";
 import type { BarberWebpushScope, WebPushSubscriptionRow } from "@/lib/webpush/subscriptions";
 
 type Perm = NotificationPermission | "unsupported" | "loading";
-
-function deviceLabelFromUa(ua: string): string {
-  if (/iPhone|iPad/i.test(ua)) return "iPhone Safari";
-  if (/Android/i.test(ua) && /Chrome/i.test(ua)) return "Android Chrome";
-  if (/Mac/i.test(ua) && /Safari/i.test(ua) && !/Chrome/i.test(ua)) return "Mac Safari";
-  if (/Chrome/i.test(ua)) return "Chrome";
-  return "Browser";
-}
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -49,7 +42,10 @@ export default function NotificationsSettingsPage() {
     return t("admin.roleBarber");
   }, [profile, t]);
 
-  const device = typeof navigator !== "undefined" ? deviceLabelFromUa(navigator.userAgent) : "";
+  const device =
+    typeof navigator !== "undefined"
+      ? deviceLabelFromUa(navigator.userAgent, navigator.maxTouchPoints ?? 0)
+      : "";
 
   const refreshPermission = useCallback(() => {
     if (typeof window === "undefined" || !("Notification" in window)) {
@@ -121,7 +117,10 @@ export default function NotificationsSettingsPage() {
           endpoint: json.endpoint,
           keys: json.keys,
           userAgent: navigator.userAgent,
-          deviceLabel: deviceLabelFromUa(navigator.userAgent),
+          deviceLabel: deviceLabelFromUa(
+            navigator.userAgent,
+            navigator.maxTouchPoints ?? 0,
+          ),
         }),
       });
       if (!res.ok) throw new Error(t("admin.updateFailed"));
@@ -325,14 +324,21 @@ export default function NotificationsSettingsPage() {
         </section>
 
         {isOperator ? (
-          <section className="rounded-2xl bg-zinc-900 p-4 opacity-60">
-            <h2 className="text-sm font-semibold">{t("webpush.sectionShopOwner")}</h2>
-            <p className="mt-2 text-xs text-zinc-400">{t("webpush.ownerAlwaysAll")}</p>
+          <section className="rounded-2xl bg-zinc-900 p-4">
+            <h2 className="text-sm font-semibold text-zinc-100">
+              {t("webpush.sectionShopOwner")}
+            </h2>
+            <p className="mt-2 text-sm text-zinc-400">{t("webpush.ownerAlwaysAll")}</p>
             <Link
               href={shopPath("/admin/settings/notifications/barber-scope")}
-              className="mt-3 inline-block text-sm text-amber-400"
+              className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
             >
-              {t("webpush.configureBarberScope")} →
+              <span className="text-sm font-medium text-zinc-100">
+                {t("webpush.configureBarberScope")}
+              </span>
+              <span className="text-zinc-500" aria-hidden>
+                ›
+              </span>
             </Link>
           </section>
         ) : null}

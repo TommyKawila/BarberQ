@@ -364,10 +364,19 @@ async function main() {
       await shot(page, `more-menu-${vp.name}.png`);
     }
 
+    // Booking page (customer)
+    if (vp.width === 390 || vp.width === 820) {
+      await page.unroute(`**/api/${SHOP}/stats**`).catch(() => {});
+      await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle", timeout: 60000 });
+      await page.waitForTimeout(900);
+      await shot(page, `booking-${vp.name}.png`);
+    }
+
     await context.close();
   }
 
   // Summary @ 820 without stats mock (real-data path — no ?cqSample=1)
+  // + settings full page, notifications
   {
     const context = await browser.newContext({
       viewport: { width: 820, height: 1180 },
@@ -380,8 +389,24 @@ async function main() {
     });
     await page.waitForTimeout(900);
     await shot(page, "summary-ipad-820-real.png");
-    // Also overwrite summary-ipad-820 with real data (requested final set)
     await shot(page, "summary-ipad-820.png");
+
+    await page.goto(`${BASE}/${SHOP}/admin/settings`, {
+      waitUntil: "networkidle",
+      timeout: 60000,
+    });
+    await page.waitForTimeout(900);
+    await hideChrome(page);
+    const settingsBuf = await page.screenshot({ type: "png", fullPage: true });
+    await sharp(settingsBuf).png().toFile(join(OUT, "settings-ipad-820.png"));
+    console.log("wrote", join(OUT, "settings-ipad-820.png"));
+
+    await page.goto(`${BASE}/${SHOP}/admin/settings/notifications`, {
+      waitUntil: "networkidle",
+      timeout: 60000,
+    });
+    await page.waitForTimeout(900);
+    await shot(page, "notifications-ipad-820.png");
     await context.close();
   }
 

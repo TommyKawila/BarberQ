@@ -668,19 +668,19 @@ export function BookingApp() {
 
       {canShowOwnerTools(staff) ? (
         <section className="flex flex-col gap-2">
-          <p className="text-xs text-zinc-600">{t("booking.ownerToolsEyebrow")}</p>
+          <p className="text-xs text-zinc-500">{t("booking.ownerToolsEyebrow")}</p>
           <Link
             href={shopPath("/admin")}
-            className="flex min-h-12 items-center gap-3 rounded-xl border border-zinc-800/80 bg-zinc-950 px-4 py-3 transition hover:bg-zinc-900"
+            className="flex min-h-12 items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-zinc-800 text-zinc-400">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/15 text-amber-400">
               <Store className="h-[18px] w-[18px]" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-300">{t("booking.ownerToolsTitle")}</p>
-              <p className="text-xs text-zinc-600">{t("booking.ownerToolsSubtitle")}</p>
+              <p className="text-sm font-medium text-zinc-100">{t("booking.ownerToolsTitle")}</p>
+              <p className="text-xs text-zinc-400">{t("booking.ownerToolsSubtitle")}</p>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-zinc-600" aria-hidden />
+            <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
           </Link>
         </section>
       ) : null}
