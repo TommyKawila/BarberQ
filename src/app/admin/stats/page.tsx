@@ -3,6 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { addDays, addMonths, subDays, subMonths } from "date-fns";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
+import {
+  Armchair,
+  Banknote,
+  RefreshCw,
+  RotateCcw,
+  UserX,
+} from "lucide-react";
 import { BarberBars } from "@/components/admin/charts/BarberBars";
 import { BlockTimeline } from "@/components/admin/charts/BlockTimeline";
 import { HourlyBars } from "@/components/admin/charts/HourlyBars";
@@ -14,7 +21,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
-import { formatLastUpdated, useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
@@ -46,14 +53,13 @@ export default function AdminStatsPage() {
   const toast = useToast();
   const online = useOnlineStatus();
 
-  const [range, setRange] = useState<StatsRange>("day");
+  const [range, setRange] = useState<StatsRange>("week");
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
   const [report, setReport] = useState<StatsReport | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offline, setOffline] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const loadStats = useCallback(async () => {
     setLoadingStats(true);
@@ -79,7 +85,6 @@ export default function AdminStatsPage() {
       setError(null);
       setOffline(false);
       setReport(normalized);
-      setLastUpdated(new Date());
     } catch {
       setOffline(true);
       setError(t("admin.statsOffline"));
@@ -117,11 +122,17 @@ export default function AdminStatsPage() {
   const isEmpty = totals != null && totals.completed === 0 && totals.booked === 0;
   const title = isOperator ? t("admin.stats") : t("admin.statsMySummary");
 
-  function insightText(): string {
-    const insight = report?.insight;
-    if (!insight) return t("admin.statsInsightEmpty");
+  function peakLine(): string {
+    const insight = report?.insight as
+      | (NonNullable<StatsReport["insight"]> & { label?: string })
+      | undefined;
+    if (!insight || insight.kind === "empty") return t("admin.statsInsightEmpty");
+    if (insight.label) {
+      return t("admin.statsPeakLabel").replace("{hint}", insight.label);
+    }
     if (insight.kind === "peak_hour" && insight.hour != null) {
-      return t("admin.statsInsightPeak").replace("{hour}", String(insight.hour));
+      const hh = String(insight.hour).padStart(2, "0");
+      return t("admin.statsPeakLabel").replace("{hint}", `${hh}:00`);
     }
     if (insight.kind === "quiet_hour" && insight.hour != null) {
       return t("admin.statsInsightQuiet").replace("{hour}", String(insight.hour));
@@ -131,25 +142,25 @@ export default function AdminStatsPage() {
     return t("admin.statsInsightEmpty");
   }
 
+  const rangeSubtitle = report?.range.displayLabel ?? dateISO;
+
   return (
     <AdminShell role={profile.role}>
       <div className="flex flex-col gap-4 px-3 py-4">
         <header className="flex items-start justify-between gap-2">
-          <div>
+          <div className="min-w-0">
             <h1 className="font-heading text-2xl font-semibold">{title}</h1>
             <p className="mt-0.5 text-xs text-zinc-500">
-              {t("admin.statsSampleLabel")} · {report?.range.displayLabel ?? dateISO}
-              {lastUpdated
-                ? ` · ${formatLastUpdated(lastUpdated, locale === "th" ? "th" : "en")}`
-                : ""}
+              {t("admin.statsSampleLabel")} · {rangeSubtitle}
             </p>
           </div>
           <button
             type="button"
+            aria-label={t("admin.refresh")}
             onClick={() => void loadStats()}
-            className="min-h-11 min-w-11 rounded-xl border border-zinc-700 px-3 text-xs text-zinc-200"
+            className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl border border-zinc-700 text-zinc-200"
           >
-            {t("admin.refresh")}
+            <RefreshCw size={18} className={loadingStats ? "animate-spin" : undefined} />
           </button>
         </header>
 
@@ -175,7 +186,7 @@ export default function AdminStatsPage() {
             ‹
           </button>
           <p className="min-w-0 flex-1 text-center text-sm font-medium text-zinc-200">
-            {report?.range.displayLabel ?? dateISO}
+            {rangeSubtitle}
           </p>
           <button
             type="button"
@@ -194,11 +205,10 @@ export default function AdminStatsPage() {
 
         {totals && !isEmpty ? (
           <>
-            {/* Results: hero + secondary KPIs */}
             <section className="flex flex-col gap-3">
               <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
                 <p className="text-xs text-zinc-400">{t("admin.statsCompletedHero")}</p>
-                <div className="mt-1 flex items-end gap-3">
+                <div className="mt-1 flex flex-wrap items-end gap-2">
                   <p className="font-heading text-4xl font-semibold tabular-nums text-zinc-100">
                     {totals.completed}
                     <span className="ml-1 text-lg font-medium text-zinc-400">
@@ -207,7 +217,7 @@ export default function AdminStatsPage() {
                   </p>
                   {comparison ? (
                     <p
-                      className={`mb-1 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs tabular-nums ${
+                      className={`mb-1 inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs tabular-nums ${
                         comparison.completedDelta > 0
                           ? "border-emerald-500/50 text-emerald-400"
                           : comparison.completedDelta < 0
@@ -223,113 +233,57 @@ export default function AdminStatsPage() {
                     </p>
                   ) : null}
                 </div>
-                <p className="mt-2 text-sm text-zinc-300">{insightText()}</p>
-                <p className="mt-1 text-xs text-zinc-500">{t("admin.statsPrevPeriod")}</p>
+                <p className="mt-3 text-sm text-zinc-300">{peakLine()}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-2">
                 <StatCard
                   label={t("admin.statsRevenue")}
                   value={t("admin.statsBaht").replace("{amount}", String(totals.revenueBaht ?? 0))}
-                  accent="amber"
-                  delta={comparison?.revenueDelta}
+                  hint={t("admin.statsRevenueHint")}
+                  icon={<Banknote size={14} aria-hidden />}
                 />
                 <StatCard
                   label={t("admin.statsUtilization")}
                   value={`${totals.utilizationPct ?? 0}%`}
-                  accent="zinc"
                   hint={t("admin.statsUtilizationHint")}
+                  icon={<Armchair size={14} aria-hidden />}
                 />
                 <StatCard
                   label={t("admin.statsCancelNoShowRate")}
                   value={totals.cancelNoShowRatePct != null ? `${totals.cancelNoShowRatePct}%` : "—"}
-                  accent="red"
+                  hint={t("admin.statsCancelHint")}
+                  icon={<UserX size={14} aria-hidden />}
                 />
                 <StatCard
                   label={t("admin.statsReturningRate")}
                   value={totals.returningRatePct != null ? `${totals.returningRatePct}%` : "—"}
-                  accent="emerald"
                   hint={t("admin.statsReturningHint")}
-                  delta={comparison?.returningRateDeltaPct}
-                />
-                <StatCard
-                  label={t("admin.statsWaitTime")}
-                  value={
-                    totals.waitMinutesAvg != null
-                      ? t("admin.statsMinutesShort").replace("{n}", String(totals.waitMinutesAvg))
-                      : "—"
-                  }
-                  accent="sky"
-                  delta={comparison?.waitMinutesDelta}
-                />
-                <StatCard
-                  label={t("admin.statsWalkIns")}
-                  value={totals.walkIns ?? 0}
-                  accent="amber"
+                  icon={<RotateCcw size={14} aria-hidden />}
                 />
               </div>
             </section>
 
-            {/* Trend */}
-            {report?.trend.length ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
-                <h2 className="mb-2 text-sm font-semibold">{t("admin.statsTrend")}</h2>
-                <TrendBars rows={report.trend} />
-              </section>
-            ) : null}
-
-            {/* Barbers */}
-            {isOperator && report?.byBarber.length ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
-                <h2 className="mb-2 text-sm font-semibold">{t("admin.statsByBarber")}</h2>
-                <BarberBars
-                  rows={report.byBarber}
-                  locale={locale}
-                  minuteLabel={t("common.minutes")}
-                />
-              </section>
-            ) : null}
-
-            {/* Busy hours */}
-            {report?.byHour.length ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
-                <h2 className="mb-2 text-sm font-semibold">{t("admin.statsByHour")}</h2>
-                <HourlyBars
-                  rows={report.byHour}
-                  labels={{
-                    busy: t("admin.statsBusyChair"),
-                    blocked: t("admin.statsBlockedTime"),
-                    free: t("admin.statsNotYet"),
-                  }}
-                />
-              </section>
-            ) : null}
-
-            {/* Sources */}
             {totals.bySource ? (
-              <section className="rounded-xl border border-zinc-800 bg-zinc-900 p-3">
-                <h2 className="mb-3 text-sm font-semibold">{t("admin.statsBySource")}</h2>
+              <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-3">
+                <h2 className="mb-3 text-sm font-semibold text-zinc-200">{t("admin.statsBySource")}</h2>
                 {(() => {
                   const rows = [
-                    {
-                      label: t("admin.sourceLine"),
-                      value: totals.bySource.line,
-                      bar: "bg-sky-600",
-                    },
+                    { label: t("admin.sourceLine"), value: totals.bySource.line, bar: "bg-sky-500" },
                     {
                       label: t("admin.sourceWalkIn"),
                       value: totals.bySource.walk_in,
-                      bar: "bg-teal-600",
+                      bar: "bg-sky-600",
                     },
                     {
                       label: t("admin.sourcePhone"),
                       value: totals.bySource.phone,
-                      bar: "bg-stone-400",
+                      bar: "bg-amber-400/80",
                     },
                     {
                       label: t("admin.sourceChat"),
                       value: totals.bySource.chat,
-                      bar: "bg-zinc-500",
+                      bar: "bg-stone-400",
                     },
                   ];
                   const max = Math.max(1, ...rows.map((r) => r.value));
@@ -355,8 +309,59 @@ export default function AdminStatsPage() {
               </section>
             ) : null}
 
-            <section className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-3">
-              <h2 className="mb-2 text-sm font-semibold">{t("admin.statsBlocks")}</h2>
+            <section className="flex flex-col gap-2">
+              <h2 className="text-xs font-medium uppercase tracking-wide text-zinc-500">
+                {t("admin.statsMoreSection")}
+              </h2>
+              <div className="grid grid-cols-2 gap-2">
+                <StatCard
+                  quiet
+                  label={t("admin.statsWaitTime")}
+                  value={
+                    totals.waitMinutesAvg != null
+                      ? t("admin.statsMinutesShort").replace("{n}", String(totals.waitMinutesAvg))
+                      : "—"
+                  }
+                  delta={comparison?.waitMinutesDelta}
+                />
+                <StatCard quiet label={t("admin.statsWalkIns")} value={totals.walkIns ?? 0} />
+              </div>
+            </section>
+
+            {report?.trend.length ? (
+              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                <h2 className="mb-2 text-sm font-medium text-zinc-400">{t("admin.statsTrend")}</h2>
+                <TrendBars rows={report.trend} />
+              </section>
+            ) : null}
+
+            {isOperator && report?.byBarber.length ? (
+              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                <h2 className="mb-2 text-sm font-medium text-zinc-400">{t("admin.statsByBarber")}</h2>
+                <BarberBars
+                  rows={report.byBarber}
+                  locale={locale}
+                  minuteLabel={t("common.minutes")}
+                />
+              </section>
+            ) : null}
+
+            {report?.byHour.length ? (
+              <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+                <h2 className="mb-2 text-sm font-medium text-zinc-400">{t("admin.statsByHour")}</h2>
+                <HourlyBars
+                  rows={report.byHour}
+                  labels={{
+                    busy: t("admin.statsBusyChair"),
+                    blocked: t("admin.statsBlockedTime"),
+                    free: t("admin.statsNotYet"),
+                  }}
+                />
+              </section>
+            ) : null}
+
+            <section className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-3">
+              <h2 className="mb-2 text-sm font-medium text-zinc-400">{t("admin.statsBlocks")}</h2>
               <BlockTimeline
                 rows={report?.blocks ?? []}
                 locale={locale}

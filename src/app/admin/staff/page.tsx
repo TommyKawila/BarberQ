@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { Link2 } from "lucide-react";
 import { AddBarberSheet } from "@/components/admin/AddBarberSheet";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { StaffActionsSheet } from "@/components/admin/StaffActionsSheet";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { useToast } from "@/components/ui/ToastProvider";
-import { shortBookingUrl } from "@/lib/admin/short-url";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import {
@@ -35,6 +36,7 @@ type ConfirmAction = { type: "remove"; barber: Barber } | { type: "unlink"; barb
 
 export default function AdminStaffPage() {
   const { t, locale } = useI18n();
+  const router = useRouter();
   const { ready, profile, authHeaders } = useAdminPageAuth();
   const { shopApi, shopPath, shopSlug } = useShopSlug();
   const toast = useToast();
@@ -297,9 +299,19 @@ export default function AdminStaffPage() {
     );
   }
 
+  const thumbBar = (
+    <button
+      type="button"
+      onClick={() => setShowForm(true)}
+      className="flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+    >
+      {t("admin.addBarberSheet")}
+    </button>
+  );
+
   return (
-    <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-5 px-4 py-5">
+    <AdminShell role={profile.role} thumbBar={thumbBar}>
+      <div className="flex flex-col gap-5 px-4 py-5 pb-28 lg:pb-4">
         <header>
           <h1 className="font-heading text-2xl font-semibold">{t("admin.staffManagement")}</h1>
           <p className="mt-1 text-sm text-zinc-400">{t("admin.teamSubtitle")}</p>
@@ -307,19 +319,22 @@ export default function AdminStaffPage() {
 
         <OfflineBanner message={t("admin.offlineBanner")} visible={!online} />
 
-        <section className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium text-zinc-400">{t("admin.bookingLinkShortLabel")}</p>
-            <p className="mt-0.5 truncate text-sm text-zinc-200">
-              {shortBookingUrl(bookingUrl || `/${shopSlug}`)}
-            </p>
-          </div>
+        <section className="flex items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-3 py-2.5">
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-300"
+            aria-hidden
+          >
+            <Link2 size={16} />
+          </span>
+          <p className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-100">
+            {t("admin.bookingLinkShortLabel")}
+          </p>
           <button
             type="button"
             onClick={() => void copyBookingLink()}
-            className="min-h-11 shrink-0 rounded-xl border border-zinc-600 px-3 text-sm text-zinc-100"
+            className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-600 px-3 text-sm text-zinc-100"
           >
-            {copied ? t("admin.bookingLinkCopied") : t("admin.copyBookingLink")}
+            {copied ? t("admin.bookingLinkCopied") : t("admin.copyShort")}
           </button>
         </section>
 
@@ -461,44 +476,34 @@ export default function AdminStaffPage() {
                     </p>
                     {cardError ? <p className="mt-1 text-xs text-red-400">{cardError}</p> : null}
                     <p className="sr-only">{t(statusHintKey).replace("{name}", displayName)}</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Link
-                        href={shopPath(`/admin/staff/${barber.id}`)}
-                        className="min-h-11 rounded-lg border border-zinc-700 px-3 py-2 text-xs text-zinc-200"
-                      >
-                        {t("admin.editBarber")}
-                      </Link>
-                    </div>
                   </div>
-                  {shouldShowRemoveMenu(barber.role) ? (
-                    <button
-                      type="button"
-                      aria-label={t("admin.nav.more")}
-                      onClick={() => setMenuBarber(barber)}
-                      className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-lg text-zinc-400"
-                    >
-                      ⋯
-                    </button>
-                  ) : null}
+                  <button
+                    type="button"
+                    aria-label={t("admin.barberOptions")}
+                    onClick={() => setMenuBarber(barber)}
+                    className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-xl text-lg text-zinc-400"
+                  >
+                    ⋯
+                  </button>
                 </div>
               );
             })}
           </section>
 
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="min-h-12 rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
-          >
-            {t("admin.addBarberSheet")}
-          </button>
           </>
         )}
 
         {removedBarbers.length > 0 ? (
           <details className="rounded-2xl border border-zinc-800 bg-zinc-900/50">
-            <summary className="cursor-pointer px-4 py-3 text-sm font-medium text-zinc-400">
-              {t("admin.removedBarbersTitle")} ({removedBarbers.length})
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-zinc-400 marker:content-none [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center justify-between gap-2">
+                <span>
+                  {t("admin.removedBarbersRow").replace("{n}", String(removedBarbers.length))}
+                </span>
+                <span aria-hidden className="text-zinc-500">
+                  ▾
+                </span>
+              </span>
             </summary>
             <div className="flex flex-col gap-2 px-4 pb-4">
               {removedBarbers.map((barber) => (
@@ -529,7 +534,14 @@ export default function AdminStaffPage() {
 
         <StaffActionsSheet
           barber={menuBarber}
+          canRemove={menuBarber ? shouldShowRemoveMenu(menuBarber.role) : false}
           onClose={() => setMenuBarber(null)}
+          onEdit={() => {
+            if (!menuBarber) return;
+            const id = menuBarber.id;
+            setMenuBarber(null);
+            router.push(shopPath(`/admin/staff/${id}`));
+          }}
           onUnlink={() => {
             if (!menuBarber) return;
             setConfirmAction({ type: "unlink", barber: menuBarber });

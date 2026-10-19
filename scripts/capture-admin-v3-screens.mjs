@@ -142,6 +142,93 @@ async function seedSampleBookings(base) {
       console.log("Seeded", body.customerName, "→", body.barberId.slice(0, 8));
     }
   }
+
+  // Soft-remove one extra barber so Team shows "ช่างที่เอาออกแล้ว" (local/mock only)
+  const inactive = (barbersJson.barbers ?? []).find(
+    (b) => b.is_active === false || b.is_active === 0,
+  );
+  if (!inactive) {
+    const create = await fetch(`${base}/api/${SHOP}/barbers`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ name: "ช่างเก่า (ตัวอย่าง)", slotDuration: 30 }),
+    });
+    if (create.ok) {
+      const created = await create.json();
+      const id = created.barber?.id ?? created.id;
+      if (id) {
+        const del = await fetch(`${base}/api/barbers/${id}/deactivate`, {
+          method: "POST",
+          headers,
+        });
+        if (!del.ok) console.warn("Soft-remove sample barber:", del.status, await del.text());
+        else console.log("Seeded removed barber for Team row");
+      }
+    } else {
+      console.warn("Create sample barber:", create.status, await create.text());
+    }
+  }
+}
+
+/** Figma-like Summary sample (screenshot run only — does not affect empty-state logic). */
+function sampleStatsReport() {
+  return {
+    range: {
+      from: "2026-10-12",
+      to: "2026-10-18",
+      label: "week",
+      kind: "week",
+      displayLabel: "สัปดาห์นี้ 12–18 ต.ค. 2026",
+    },
+    totals: {
+      uniqueCustomers: 38,
+      booked: 48,
+      cancelled: 2,
+      completed: 42,
+      noShow: 0,
+      left: 0,
+      walkIns: 12,
+      qrWalkIns: 4,
+      newCustomers: 17,
+      returningCustomers: 21,
+      returningRatePct: 55,
+      cancelNoShowRatePct: 4,
+      noShowRatePct: 0,
+      utilizationPct: 68,
+      revenueBaht: 8400,
+      waitMinutesAvg: 8,
+      bySource: { line: 26, walk_in: 12, phone: 3, chat: 1 },
+    },
+    comparison: {
+      completedDelta: 6,
+      completedDeltaPct: 17,
+      revenueDelta: 900,
+      returningRateDeltaPct: 3,
+      waitMinutesDelta: -1,
+      cutoffApplied: false,
+      previous: {
+        from: "2026-10-05",
+        to: "2026-10-11",
+        completed: 36,
+        revenueBaht: 7500,
+        returningRatePct: 52,
+        waitMinutesAvg: 9,
+      },
+    },
+    byHour: [],
+    byBarber: [],
+    trend: [
+      { dateISO: "2026-10-12", booked: 6, completed: 5, cancelled: 0 },
+      { dateISO: "2026-10-13", booked: 8, completed: 7, cancelled: 1 },
+      { dateISO: "2026-10-14", booked: 5, completed: 5, cancelled: 0 },
+      { dateISO: "2026-10-15", booked: 7, completed: 6, cancelled: 0 },
+      { dateISO: "2026-10-16", booked: 9, completed: 8, cancelled: 1 },
+      { dateISO: "2026-10-17", booked: 8, completed: 7, cancelled: 0 },
+      { dateISO: "2026-10-18", booked: 5, completed: 4, cancelled: 0 },
+    ],
+    blocks: [],
+    insight: { kind: "peak_hour", hour: 13, label: "เสาร์ 13:00–16:00" },
+  };
 }
 
 async function hideChrome(page) {
@@ -236,6 +323,15 @@ async function main() {
       deviceScaleFactor: 2,
     });
     const page = await context.newPage();
+
+    // Screenshot-only mock so Summary matches Figma sample numbers (empty states still real in app)
+    await page.route(`**/api/${SHOP}/stats**`, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(sampleStatsReport()),
+      });
+    });
 
     for (const route of PAGES) {
       await page.goto(`${BASE}${route.path}`, { waitUntil: "networkidle", timeout: 60000 });

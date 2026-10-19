@@ -125,9 +125,7 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                   aria-hidden
                 />
                 <p className="truncate text-sm">
-                  <span className="font-heading font-semibold text-zinc-100 underline decoration-zinc-600 underline-offset-2">
-                    {displayName}
-                  </span>{" "}
+                  <span className="font-heading font-semibold text-zinc-100">{displayName}</span>{" "}
                   <span className="text-zinc-400">
                     {card.state === "cutting"
                       ? t("admin.cuttingNow")
