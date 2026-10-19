@@ -2,16 +2,6 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
-import {
-  Bell,
-  ChevronRight,
-  Link2,
-  MessageSquare,
-  QrCode,
-  Receipt,
-  Scissors,
-  Users,
-} from "lucide-react";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ShopNameLockup } from "@/components/layout/ShopNameLockup";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
@@ -32,58 +22,6 @@ import {
   normalizeShopLineUrl,
   normalizeShopPhone,
 } from "@/lib/shop/shop-contact";
-
-const BTN_PRIMARY =
-  "mt-3 min-h-11 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50";
-const BTN_SECONDARY =
-  "min-h-11 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200 disabled:opacity-40";
-
-function SettingsNavRow({
-  href,
-  title,
-  subtitle,
-  icon,
-}: {
-  href: string;
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-}) {
-  return (
-    <Link
-      href={href}
-      className="flex min-h-14 items-center gap-3 border-b border-zinc-800 px-3 py-3 last:border-b-0"
-    >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-950 text-amber-400">
-        {icon}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className="block text-sm font-semibold text-zinc-100">{title}</span>
-        <span className="mt-0.5 block text-xs text-zinc-400">{subtitle}</span>
-      </span>
-      <ChevronRight size={18} className="shrink-0 text-zinc-500" aria-hidden />
-    </Link>
-  );
-}
-
-function SettingsSection({
-  id,
-  title,
-  children,
-}: {
-  id?: string;
-  title: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section id={id} className="scroll-mt-24">
-      <h2 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-        {title}
-      </h2>
-      <div className="flex flex-col gap-3">{children}</div>
-    </section>
-  );
-}
 
 const WEEKDAYS: { value: number; key: MessageKey }[] = [
   { value: 0, key: "common.sunday" },
@@ -400,11 +338,9 @@ export default function AdminSettingsPage() {
     );
   }
 
-  const iconProps = { size: 20, strokeWidth: 2 } as const;
-
   return (
     <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-8 px-4 py-5 lg:mx-auto lg:max-w-5xl">
+      <div className="flex flex-col gap-5 px-4 py-5">
         <header className="flex items-start justify-between gap-2">
           <div>
             {mockMode ? (
@@ -417,303 +353,311 @@ export default function AdminSettingsPage() {
           </div>
         </header>
 
-        <div className="flex flex-col gap-8 lg:grid lg:grid-cols-2 lg:items-start lg:gap-6">
-          <SettingsSection title={t("admin.settingsSectionShop")}>
-            <div className="rounded-2xl bg-zinc-900 p-4">
-              <h3 className="text-sm font-semibold">{t("admin.shopName")}</h3>
-              <p className="mt-1 text-sm text-zinc-400">{t("admin.shopNameHint")}</p>
-              <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
-                <BrandMark size={36} />
-                <ShopNameLockup shopName={previewShopName} />
-              </div>
-              <label className="mt-4 flex flex-col gap-1 text-sm">
-                {t("admin.shopName")}
-                <input
-                  value={shopNameInput}
-                  onChange={(event) => {
-                    setShopNameDirty(true);
-                    setShopNameDraft(event.target.value);
-                  }}
-                  placeholder={t("admin.shopNamePlaceholder")}
-                  maxLength={40}
-                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-                />
-              </label>
-              <button
-                type="button"
-                disabled={savingName}
-                onClick={() => void saveShopName()}
-                className={BTN_PRIMARY}
-              >
-                {t("admin.saveShopName")}
-              </button>
-              {nameMessage ? <p className="mt-3 text-sm text-emerald-400">{nameMessage}</p> : null}
-              {nameError ? <p className="mt-3 text-sm text-red-400">{nameError}</p> : null}
-            </div>
-
-            <div className="rounded-2xl bg-zinc-900 p-4">
-              <h3 className="text-sm font-semibold">{t("admin.logoTitle")}</h3>
-              <p className="mt-1 text-sm text-zinc-400">{t("admin.logoHint")}</p>
-              <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
-                {displayUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- data URL from admin upload
-                  <img
-                    src={displayUrl}
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="shrink-0 rounded-lg object-contain"
-                    style={{ width: 36, height: 36 }}
-                  />
-                ) : (
-                  <BrandMark size={36} />
-                )}
-                <ShopNameLockup shopName={previewShopName} />
-              </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                className="hidden"
-                onChange={(event) => void onFileChange(event)}
-              />
-              <div className="mt-4 flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={savingLogo}
-                  onClick={() => inputRef.current?.click()}
-                  className={BTN_SECONDARY}
-                >
-                  {t("admin.uploadLogo")}
-                </button>
-                <button
-                  type="button"
-                  disabled={savingLogo || !displayUrl}
-                  onClick={() => void saveLogo(null)}
-                  className={BTN_SECONDARY}
-                >
-                  {t("admin.resetLogo")}
-                </button>
-              </div>
-              {logoMessage ? <p className="mt-3 text-sm text-emerald-400">{logoMessage}</p> : null}
-              {logoError ? <p className="mt-3 text-sm text-red-400">{logoError}</p> : null}
-            </div>
-
-            <div className="rounded-2xl bg-zinc-900 p-4">
-              <h3 className="text-sm font-semibold">{t("admin.coverTitle")}</h3>
-              <p className="mt-1 text-sm text-zinc-400">{t("admin.coverHint")}</p>
-              <p className="mt-1 text-xs text-zinc-500">{t("admin.coverAspectHint")}</p>
-              <p className="mt-0.5 text-xs text-zinc-500">{t("admin.coverFormatHint")}</p>
-              <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-                {displayCoverUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element -- shop cover preview
-                  <img
-                    src={displayCoverUrl}
-                    alt=""
-                    className="aspect-video w-full object-cover object-center"
-                  />
-                ) : (
-                  <div
-                    className="flex aspect-video items-center justify-center bg-[radial-gradient(ellipse_at_top,_#3f3f46_0%,_#18181b_45%,_#09090b_100%)] text-xs text-zinc-500"
-                    aria-hidden
-                  >
-                    <span className="rounded-full border border-amber-400/30 px-3 py-1 text-amber-400/80">
-                      ClipperQ
-                    </span>
-                  </div>
-                )}
-              </div>
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="hidden"
-                onChange={(event) => void onCoverFileChange(event)}
-              />
-              <div className="mt-4 flex flex-col gap-2">
-                <button
-                  type="button"
-                  disabled={savingCover}
-                  onClick={() => coverInputRef.current?.click()}
-                  className={BTN_SECONDARY}
-                >
-                  {savingCover
-                    ? t("admin.coverUploading")
-                    : displayCoverUrl
-                      ? t("admin.changeCover")
-                      : t("admin.uploadCover")}
-                </button>
-                {displayCoverUrl ? (
-                  <button
-                    type="button"
-                    disabled={savingCover}
-                    onClick={() => void deleteCover()}
-                    className={BTN_SECONDARY}
-                  >
-                    {t("admin.deleteCover")}
-                  </button>
-                ) : null}
-              </div>
-              {coverMessage ? <p className="mt-3 text-sm text-emerald-400">{coverMessage}</p> : null}
-              {coverError ? <p className="mt-3 text-sm text-red-400">{coverError}</p> : null}
-            </div>
-
-            <div className="rounded-2xl bg-zinc-900 p-4">
-              <h3 className="text-sm font-semibold">{t("admin.contactTitle")}</h3>
-              <p className="mt-1 text-sm text-zinc-400">{t("admin.contactHint")}</p>
-              <label className="mt-4 flex flex-col gap-1 text-sm">
-                {t("admin.shopLineUrl")}
-                <input
-                  value={lineUrlInput}
-                  onChange={(event) => {
-                    setContactDirty(true);
-                    setLineUrlDraft(event.target.value);
-                  }}
-                  placeholder={t("admin.shopLinePlaceholder")}
-                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-                />
-              </label>
-              <label className="mt-3 flex flex-col gap-1 text-sm">
-                {t("admin.shopPhone")}
-                <input
-                  value={phoneInput}
-                  onChange={(event) => {
-                    setContactDirty(true);
-                    setPhoneDraft(event.target.value);
-                  }}
-                  inputMode="tel"
-                  placeholder={t("booking.phonePlaceholder")}
-                  className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-                />
-              </label>
-              <button
-                type="button"
-                disabled={savingContact}
-                onClick={() => void saveContact()}
-                className={BTN_PRIMARY}
-              >
-                {t("admin.saveContact")}
-              </button>
-              {contactMessage ? <p className="mt-3 text-sm text-emerald-400">{contactMessage}</p> : null}
-              {contactError ? <p className="mt-3 text-sm text-red-400">{contactError}</p> : null}
-            </div>
-          </SettingsSection>
-
-          <div className="flex flex-col gap-8">
-            <SettingsSection id="shop-hours" title={t("admin.settingsSectionHours")}>
-              <div className="rounded-2xl bg-zinc-900 p-4">
-                <h3 className="text-sm font-semibold">{t("admin.shopHours")}</h3>
-                <p className="mt-1 text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
-                <div className="mt-4 flex flex-col gap-3">
-                  {WEEKDAYS.map((day) => {
-                    const row = hours[day.value];
-                    return (
-                      <div key={day.value} className="rounded-lg bg-zinc-950 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium">{t(day.key)}</span>
-                          <label className="flex items-center gap-2 text-xs text-zinc-400">
-                            <input
-                              type="checkbox"
-                              checked={row.closed}
-                              onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
-                            />
-                            {t("admin.shopClosed")}
-                          </label>
-                        </div>
-                        {!row.closed ? (
-                          <div className="mt-2 flex gap-2">
-                            <label className="flex flex-1 flex-col gap-1 text-xs">
-                              {t("admin.shopOpenTime")}
-                              <input
-                                type="time"
-                                value={row.open}
-                                onChange={(e) => updateHour(day.value, { open: e.target.value })}
-                                className="min-h-10 rounded-lg bg-zinc-800 px-2"
-                              />
-                            </label>
-                            <label className="flex flex-1 flex-col gap-1 text-xs">
-                              {t("admin.shopCloseTime")}
-                              <input
-                                type="time"
-                                value={row.close}
-                                onChange={(e) => updateHour(day.value, { close: e.target.value })}
-                                className="min-h-10 rounded-lg bg-zinc-800 px-2"
-                              />
-                            </label>
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-                <button
-                  type="button"
-                  disabled={savingHours}
-                  onClick={() => void saveHours()}
-                  className={BTN_PRIMARY}
-                >
-                  {t("admin.saveShopHours")}
-                </button>
-                {hoursMessage ? <p className="mt-3 text-sm text-emerald-400">{hoursMessage}</p> : null}
-                {hoursError ? <p className="mt-3 text-sm text-red-400">{hoursError}</p> : null}
-              </div>
-            </SettingsSection>
-
-            <SettingsSection title={t("admin.settingsSectionLine")}>
-              <div className="overflow-hidden rounded-2xl bg-zinc-900">
-                <SettingsNavRow
-                  href={shopPath("/admin/settings/line")}
-                  title={t("admin.settingsLine")}
-                  subtitle={t("admin.settingsLineHint")}
-                  icon={<Link2 {...iconProps} />}
-                />
-                <SettingsNavRow
-                  href={shopPath("/admin/settings/notifications")}
-                  title={t("admin.settingsNotifications")}
-                  subtitle={t("admin.settingsNotificationsHint")}
-                  icon={<Bell {...iconProps} />}
-                />
-                <SettingsNavRow
-                  href={shopPath("/admin/settings/reminders")}
-                  title={t("admin.settingsReminders")}
-                  subtitle={t("admin.settingsRemindersHint")}
-                  icon={<MessageSquare {...iconProps} />}
-                />
-                <SettingsNavRow
-                  href={shopPath("/admin/settings/message-cost")}
-                  title={t("admin.settingsMessageCost")}
-                  subtitle={t("admin.settingsMessageCostHint")}
-                  icon={<Receipt {...iconProps} />}
-                />
-              </div>
-            </SettingsSection>
-
-            <SettingsSection title={t("admin.settingsSectionQueue")}>
-              <div className="overflow-hidden rounded-2xl bg-zinc-900">
-                <SettingsNavRow
-                  href={shopPath("/admin/settings/services")}
-                  title={t("admin.servicesTitle")}
-                  subtitle={t("admin.servicesHint")}
-                  icon={<Scissors {...iconProps} />}
-                />
-                <SettingsNavRow
-                  href={shopPath("/admin/settings/qr-queue")}
-                  title={t("admin.settingsQrQueue")}
-                  subtitle={t("admin.settingsQrQueueHint")}
-                  icon={<QrCode {...iconProps} />}
-                />
-                {profile.role === "owner" ? (
-                  <SettingsNavRow
-                    href={shopPath("/admin/settings/managers")}
-                    title={t("admin.managersTitle")}
-                    subtitle={t("admin.managersHint")}
-                    icon={<Users {...iconProps} />}
-                  />
-                ) : null}
-              </div>
-            </SettingsSection>
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.shopName")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.shopNameHint")}</p>
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+            <BrandMark size={36} />
+            <ShopNameLockup shopName={previewShopName} />
           </div>
-        </div>
+          <label className="mt-4 flex flex-col gap-1 text-sm">
+            {t("admin.shopName")}
+            <input
+              value={shopNameInput}
+              onChange={(event) => {
+                setShopNameDirty(true);
+                setShopNameDraft(event.target.value);
+              }}
+              placeholder={t("admin.shopNamePlaceholder")}
+              maxLength={40}
+              className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={savingName}
+            onClick={() => void saveShopName()}
+            className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+          >
+            {t("admin.saveShopName")}
+          </button>
+          {nameMessage ? <p className="mt-3 text-sm text-emerald-400">{nameMessage}</p> : null}
+          {nameError ? <p className="mt-3 text-sm text-red-400">{nameError}</p> : null}
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.coverTitle")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.coverHint")}</p>
+          <p className="mt-1 text-xs text-zinc-500">{t("admin.coverAspectHint")}</p>
+          <p className="mt-0.5 text-xs text-zinc-500">{t("admin.coverFormatHint")}</p>
+          <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+            {displayCoverUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- shop cover preview
+              <img
+                src={displayCoverUrl}
+                alt=""
+                className="aspect-video w-full object-cover object-center"
+              />
+            ) : (
+              <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-xs text-zinc-500">
+                {t("admin.coverTitle")}
+              </div>
+            )}
+          </div>
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(event) => void onCoverFileChange(event)}
+          />
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={savingCover}
+              onClick={() => coverInputRef.current?.click()}
+              className="min-h-11 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200 disabled:opacity-50"
+            >
+              {savingCover
+                ? t("admin.coverUploading")
+                : displayCoverUrl
+                  ? t("admin.changeCover")
+                  : t("admin.uploadCover")}
+            </button>
+            {displayCoverUrl ? (
+              <button
+                type="button"
+                disabled={savingCover}
+                onClick={() => void deleteCover()}
+                className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300 disabled:opacity-40"
+              >
+                {t("admin.deleteCover")}
+              </button>
+            ) : null}
+          </div>
+          {coverMessage ? <p className="mt-3 text-sm text-emerald-400">{coverMessage}</p> : null}
+          {coverError ? <p className="mt-3 text-sm text-red-400">{coverError}</p> : null}
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.contactTitle")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.contactHint")}</p>
+          <label className="mt-4 flex flex-col gap-1 text-sm">
+            {t("admin.shopLineUrl")}
+            <input
+              value={lineUrlInput}
+              onChange={(event) => {
+                setContactDirty(true);
+                setLineUrlDraft(event.target.value);
+              }}
+              placeholder={t("admin.shopLinePlaceholder")}
+              className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+            />
+          </label>
+          <label className="mt-3 flex flex-col gap-1 text-sm">
+            {t("admin.shopPhone")}
+            <input
+              value={phoneInput}
+              onChange={(event) => {
+                setContactDirty(true);
+                setPhoneDraft(event.target.value);
+              }}
+              inputMode="tel"
+              placeholder={t("booking.phonePlaceholder")}
+              className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+            />
+          </label>
+          <button
+            type="button"
+            disabled={savingContact}
+            onClick={() => void saveContact()}
+            className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+          >
+            {t("admin.saveContact")}
+          </button>
+          {contactMessage ? <p className="mt-3 text-sm text-emerald-400">{contactMessage}</p> : null}
+          {contactError ? <p className="mt-3 text-sm text-red-400">{contactError}</p> : null}
+        </section>
+
+        <section id="shop-hours" className="scroll-mt-24 rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.shopHours")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
+          <div className="mt-4 flex flex-col gap-3">
+            {WEEKDAYS.map((day) => {
+              const row = hours[day.value];
+              return (
+                <div key={day.value} className="rounded-lg bg-zinc-950 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">{t(day.key)}</span>
+                    <label className="flex items-center gap-2 text-xs text-zinc-400">
+                      <input
+                        type="checkbox"
+                        checked={row.closed}
+                        onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
+                      />
+                      {t("admin.shopClosed")}
+                    </label>
+                  </div>
+                  {!row.closed ? (
+                    <div className="mt-2 flex gap-2">
+                      <label className="flex flex-1 flex-col gap-1 text-xs">
+                        {t("admin.shopOpenTime")}
+                        <input
+                          type="time"
+                          value={row.open}
+                          onChange={(e) => updateHour(day.value, { open: e.target.value })}
+                          className="min-h-10 rounded-lg bg-zinc-800 px-2"
+                        />
+                      </label>
+                      <label className="flex flex-1 flex-col gap-1 text-xs">
+                        {t("admin.shopCloseTime")}
+                        <input
+                          type="time"
+                          value={row.close}
+                          onChange={(e) => updateHour(day.value, { close: e.target.value })}
+                          className="min-h-10 rounded-lg bg-zinc-800 px-2"
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </div>
+          <button
+            type="button"
+            disabled={savingHours}
+            onClick={() => void saveHours()}
+            className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+          >
+            {t("admin.saveShopHours")}
+          </button>
+          {hoursMessage ? <p className="mt-3 text-sm text-emerald-400">{hoursMessage}</p> : null}
+          {hoursError ? <p className="mt-3 text-sm text-red-400">{hoursError}</p> : null}
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.logoTitle")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.logoHint")}</p>
+          <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+            {displayUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element -- data URL from admin upload
+              <img
+                src={displayUrl}
+                alt=""
+                width={36}
+                height={36}
+                className="shrink-0 rounded-lg object-contain"
+                style={{ width: 36, height: 36 }}
+              />
+            ) : (
+              <BrandMark size={36} />
+            )}
+            <ShopNameLockup shopName={previewShopName} />
+          </div>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            className="hidden"
+            onChange={(event) => void onFileChange(event)}
+          />
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={savingLogo}
+              onClick={() => inputRef.current?.click()}
+              className="min-h-11 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200 disabled:opacity-50"
+            >
+              {t("admin.uploadLogo")}
+            </button>
+            <button
+              type="button"
+              disabled={savingLogo || !displayUrl}
+              onClick={() => void saveLogo(null)}
+              className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300 disabled:opacity-40"
+            >
+              {t("admin.resetLogo")}
+            </button>
+          </div>
+          {logoMessage ? <p className="mt-3 text-sm text-emerald-400">{logoMessage}</p> : null}
+          {logoError ? <p className="mt-3 text-sm text-red-400">{logoError}</p> : null}
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.servicesTitle")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.servicesHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/services")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.servicesTitle")}
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsLine")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsLineHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/line")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.settingsLine")}
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsNotifications")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsNotificationsHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/notifications")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.settingsNotifications")}
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsQrQueue")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsQrQueueHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/qr-queue")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.settingsQrQueue")}
+          </Link>
+        </section>
+
+        <section className="rounded-2xl bg-zinc-900 p-4">
+          <h2 className="text-sm font-semibold">{t("admin.settingsReminders")}</h2>
+          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsRemindersHint")}</p>
+          <Link
+            href={shopPath("/admin/settings/reminders")}
+            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+          >
+            {t("admin.settingsReminders")}
+          </Link>
+          <Link
+            href={shopPath("/admin/settings/message-cost")}
+            className="mt-2 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700/80 text-sm font-medium text-amber-300"
+          >
+            {t("admin.settingsMessageCost")}
+          </Link>
+          <p className="mt-2 text-xs text-zinc-500">{t("admin.settingsMessageCostHint")}</p>
+        </section>
+
+        {profile.role === "owner" ? (
+          <section className="rounded-2xl bg-zinc-900 p-4">
+            <h2 className="text-sm font-semibold">{t("admin.managersTitle")}</h2>
+            <p className="mt-1 text-sm text-zinc-400">{t("admin.managersHint")}</p>
+            <Link
+              href={shopPath("/admin/settings/managers")}
+              className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
+            >
+              {t("admin.managersTitle")}
+            </Link>
+          </section>
+        ) : null}
       </div>
     </AdminShell>
   );

@@ -324,21 +324,14 @@ export default function NotificationsSettingsPage() {
         </section>
 
         {isOperator ? (
-          <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="text-sm font-semibold text-zinc-100">
-              {t("webpush.sectionShopOwner")}
-            </h2>
-            <p className="mt-2 text-sm text-zinc-400">{t("webpush.ownerAlwaysAll")}</p>
+          <section className="rounded-2xl bg-zinc-900 p-4 opacity-60">
+            <h2 className="text-sm font-semibold">{t("webpush.sectionShopOwner")}</h2>
+            <p className="mt-2 text-xs text-zinc-400">{t("webpush.ownerAlwaysAll")}</p>
             <Link
               href={shopPath("/admin/settings/notifications/barber-scope")}
-              className="mt-3 flex min-h-11 items-center justify-between gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-2"
+              className="mt-3 inline-block text-sm text-amber-400"
             >
-              <span className="text-sm font-medium text-zinc-100">
-                {t("webpush.configureBarberScope")}
-              </span>
-              <span className="text-zinc-500" aria-hidden>
-                ›
-              </span>
+              {t("webpush.configureBarberScope")} →
             </Link>
           </section>
         ) : null}
