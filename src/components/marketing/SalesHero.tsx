@@ -116,6 +116,7 @@ export function SalesHero({
             alt=""
             priority
             sizes="(max-width: 1023px) 100vw, 0px"
+            objectPosition="center center"
             className="w-full rounded-2xl"
           />
         </div>

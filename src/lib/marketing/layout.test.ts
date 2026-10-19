@@ -191,9 +191,10 @@ describe("marketing layout split", () => {
       marketingPhotoSlots.heroMobile.fallbackSrc,
       "/marketing/photos/hero-mobile.png",
     );
-    assert.equal(marketingPhotoSlots.heroMobile.width, 940);
-    assert.equal(marketingPhotoSlots.heroMobile.height, 627);
-    assert.match(marketingPhotoSlots.heroMobile.artNote, /3:2 crop|770|11:30/);
+    assert.equal(marketingPhotoSlots.heroMobile.width, 1080);
+    assert.equal(marketingPhotoSlots.heroMobile.height, 1350);
+    assert.equal(marketingPhotoSlots.heroMobile.ratio, "4:5");
+    assert.match(marketingPhotoSlots.heroMobile.artNote, /4:5|design C|1080/);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/photos/hero-mobile.webp")),
       "hero-mobile.webp missing",

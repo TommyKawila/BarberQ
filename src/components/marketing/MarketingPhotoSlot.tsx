@@ -44,6 +44,7 @@ function aspectClass(meta: MarketingPhotoSlot): string {
   if (Math.abs(ratio - 4 / 3) < 0.02) return "aspect-[4/3]";
   if (Math.abs(ratio - 1) < 0.02) return "aspect-square";
   if (Math.abs(ratio - 3 / 4) < 0.02) return "aspect-[3/4]";
+  if (Math.abs(ratio - 4 / 5) < 0.02) return "aspect-[4/5]";
   return "aspect-[4/5]";
 }
 

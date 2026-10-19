@@ -62,12 +62,12 @@ export const marketingPhotoSlots: Record<MarketingPhotoSlotId, MarketingPhotoSlo
     src: "/marketing/photos/hero-mobile.webp",
     fallbackSrc: "/marketing/photos/hero-mobile.png",
     swapPath: "/marketing/photos/hero-mobile.webp",
-    width: 940,
-    height: 627,
-    ratio: "3:2",
-    labelTh: "รูปฮีโร่มือถือ 3:2 940×627",
+    width: 1080,
+    height: 1350,
+    ratio: "4:5",
+    labelTh: "รูปฮีโร่มือถือ 4:5 1080×1350",
     artNote:
-      "940×627 · 3:2 crop of hero-desktop.png (x770–1710, y120–747) · phone 11:30 visible · sits below copy (design C) · PNG fallback /marketing/photos/hero-mobile.png",
+      "1080×1350 · 4:5 Tommy ClipperQ Demo hero plate (cover-crop from 1122×1402) · phone+hand fully visible · sits below copy (design C) · PNG fallback /marketing/photos/hero-mobile.png",
   },
   barberDesktop: {
     id: "barberDesktop",
