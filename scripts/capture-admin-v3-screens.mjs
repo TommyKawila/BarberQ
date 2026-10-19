@@ -364,18 +364,38 @@ async function main() {
       await shot(page, `more-menu-${vp.name}.png`);
     }
 
-    // Booking page (customer)
+    // Booking + notifications at 390/820
     if (vp.width === 390 || vp.width === 820) {
       await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle", timeout: 60000 });
       await page.waitForTimeout(900);
       await shot(page, `booking-${vp.name}.png`);
+
+      await page.goto(`${BASE}/${SHOP}/admin/settings/notifications`, {
+        waitUntil: "networkidle",
+        timeout: 60000,
+      });
+      await page.waitForTimeout(900);
+      await shot(page, `notifications-${vp.name}.png`);
+    }
+
+    // Settings full-page @ 390
+    if (vp.width === 390) {
+      await page.goto(`${BASE}/${SHOP}/admin/settings`, {
+        waitUntil: "networkidle",
+        timeout: 60000,
+      });
+      await page.waitForTimeout(900);
+      await hideChrome(page);
+      const buf = await page.screenshot({ type: "png", fullPage: true });
+      await sharp(buf).png().toFile(join(OUT, "settings-mobile-390.png"));
+      console.log("wrote", join(OUT, "settings-mobile-390.png"));
     }
 
     await context.close();
   }
 
   // Summary @ 820 without stats mock (real-data path — no ?cqSample=1)
-  // + settings full page, notifications
+  // + settings full page + dirty state + booking past-expanded
   {
     const context = await browser.newContext({
       viewport: { width: 820, height: 1180 },
@@ -396,9 +416,19 @@ async function main() {
     });
     await page.waitForTimeout(900);
     await hideChrome(page);
-    const settingsBuf = await page.screenshot({ type: "png", fullPage: true });
+    let settingsBuf = await page.screenshot({ type: "png", fullPage: true });
     await sharp(settingsBuf).png().toFile(join(OUT, "settings-ipad-820.png"));
     console.log("wrote", join(OUT, "settings-ipad-820.png"));
+
+    // Dirty state: type into shop name without saving
+    const nameInput = page.locator('input').first();
+    await nameInput.click();
+    await nameInput.fill("ClipperQ Demo · dirty");
+    await page.waitForTimeout(300);
+    await hideChrome(page);
+    settingsBuf = await page.screenshot({ type: "png", fullPage: true });
+    await sharp(settingsBuf).png().toFile(join(OUT, "settings-ipad-820-dirty.png"));
+    console.log("wrote", join(OUT, "settings-ipad-820-dirty.png"));
 
     await page.goto(`${BASE}/${SHOP}/admin/settings/notifications`, {
       waitUntil: "networkidle",
@@ -406,6 +436,32 @@ async function main() {
     });
     await page.waitForTimeout(900);
     await shot(page, "notifications-ipad-820.png");
+    await context.close();
+  }
+
+  // Booking past-expanded @ 390
+  {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      deviceScaleFactor: 2,
+    });
+    const page = await context.newPage();
+    await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle", timeout: 60000 });
+    await page.waitForTimeout(1200);
+    // Pick first barber + first date if needed, then expand past slots
+    const barberBtn = page.locator('button').filter({ hasText: /.+/ }).first();
+    try {
+      const pastToggle = page.getByRole("button", {
+        name: /เวลาที่ผ่านไปแล้ว|past times/i,
+      });
+      if (await pastToggle.count()) {
+        await pastToggle.first().click();
+        await page.waitForTimeout(400);
+      }
+    } catch {
+      /* optional */
+    }
+    await shot(page, "booking-mobile-390-past-expanded.png");
     await context.close();
   }
 
