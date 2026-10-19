@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Bell, Check, ChevronRight, Send, Shield, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
@@ -215,7 +216,7 @@ export default function NotificationsSettingsPage() {
       <AdminShell role={profile.role}>
         <div className="flex flex-col gap-5 px-4 py-5">
           <Link href={shopPath("/admin/settings")} className="text-sm text-zinc-400">
-            ← {t("common.back")}
+            {"<"} {t("admin.settings")}
           </Link>
           <h1 className="text-xl font-semibold">{t("webpush.title")}</h1>
           <p className="text-sm text-zinc-400">
@@ -260,7 +261,7 @@ export default function NotificationsSettingsPage() {
       <div className="flex flex-col gap-5 px-4 py-5">
         <header>
           <Link href={shopPath("/admin/settings")} className="text-sm text-zinc-400">
-            ← {t("common.back")}
+            {"<"} {t("admin.settings")}
           </Link>
           <h1 className="mt-2 text-xl font-semibold">{t("webpush.title")}</h1>
           <p className="mt-1 text-sm text-zinc-400">
@@ -274,10 +275,13 @@ export default function NotificationsSettingsPage() {
           </p>
         ) : null}
 
-        <div className="flex items-center justify-between rounded-2xl bg-zinc-900 px-4 py-3">
-          <span className="text-sm text-zinc-300">{t("webpush.status")}</span>
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-zinc-900 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <Bell className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={2} aria-hidden />
+            <span className="text-sm text-zinc-100">{t("webpush.status")}</span>
+          </div>
           {perm === "granted" && subscription ? (
-            <span className="rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
+            <span className="shrink-0 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-medium text-emerald-300">
               ✓ {t("webpush.allowed")}
             </span>
           ) : (
@@ -285,7 +289,7 @@ export default function NotificationsSettingsPage() {
               type="button"
               disabled={busy || !configured}
               onClick={() => setShowPreprompt(true)}
-              className="rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-zinc-950 disabled:opacity-50"
+              className="shrink-0 rounded-full bg-amber-400 px-3 py-1 text-xs font-semibold text-zinc-950 disabled:opacity-50"
             >
               {t("webpush.enable")}
             </button>
@@ -324,14 +328,30 @@ export default function NotificationsSettingsPage() {
         </section>
 
         {isOperator ? (
-          <section className="rounded-2xl bg-zinc-900 p-4 opacity-60">
-            <h2 className="text-sm font-semibold">{t("webpush.sectionShopOwner")}</h2>
-            <p className="mt-2 text-xs text-zinc-400">{t("webpush.ownerAlwaysAll")}</p>
+          <section className="rounded-2xl bg-zinc-900 p-4">
+            <h2 className="text-sm font-semibold text-zinc-100">{t("webpush.sectionShopOwner")}</h2>
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-zinc-800 pt-3">
+              <div className="flex min-w-0 items-start gap-3">
+                <Shield className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" strokeWidth={2} aria-hidden />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-zinc-100">{t("webpush.ownerAlwaysOnTitle")}</p>
+                  <p className="mt-0.5 text-xs text-zinc-400">{t("webpush.ownerAlwaysAll")}</p>
+                </div>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-emerald-300">
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden />
+                {t("webpush.alwaysOn")}
+              </span>
+            </div>
             <Link
               href={shopPath("/admin/settings/notifications/barber-scope")}
-              className="mt-3 inline-block text-sm text-amber-400"
+              className="mt-1 flex min-h-11 items-center justify-between gap-3 border-t border-zinc-800 text-sm text-zinc-100"
             >
-              {t("webpush.configureBarberScope")} →
+              <span className="flex min-w-0 items-center gap-3">
+                <Users className="h-5 w-5 shrink-0 text-amber-400" strokeWidth={2} aria-hidden />
+                <span className="font-medium">{t("webpush.configureBarberScope")}</span>
+              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-zinc-500" strokeWidth={2} aria-hidden />
             </Link>
           </section>
         ) : null}
@@ -344,8 +364,9 @@ export default function NotificationsSettingsPage() {
           type="button"
           disabled={busy || !subscription}
           onClick={() => void sendTest()}
-          className="min-h-12 rounded-xl border border-zinc-700 font-semibold disabled:opacity-40"
+          className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-zinc-700 text-sm font-semibold text-zinc-100 disabled:opacity-40"
         >
+          <Send className="h-4 w-4" strokeWidth={2} aria-hidden />
           {t("webpush.sendTest")}
         </button>
       </div>
