@@ -11,6 +11,7 @@ import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
+import { barberAvatarInitial } from "@/lib/barber/barber-avatar";
 import {
   applyOptimisticBookable,
   canToggleBookable,
@@ -437,7 +438,7 @@ export default function AdminStaffPage() {
                     className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-zinc-800 font-heading text-sm font-semibold text-zinc-200"
                     aria-hidden
                   >
-                    {(displayName.trim()[0] || "?").toUpperCase()}
+                    {barberAvatarInitial(displayName)}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-heading font-semibold text-zinc-50">

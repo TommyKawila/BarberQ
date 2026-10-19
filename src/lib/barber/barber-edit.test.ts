@@ -1,6 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { barberInitials, customerBarberPhotoUrl } from "@/lib/barber/barber-avatar";
+import {
+  barberAvatarInitial,
+  barberInitials,
+  customerBarberPhotoUrl,
+} from "@/lib/barber/barber-avatar";
 import { formatOffDaysSummary } from "@/lib/barber/schedule-summary";
 import { dictionary } from "@/lib/i18n/dictionary";
 import { memoryStore } from "@/lib/data/memory-store";
@@ -11,6 +15,17 @@ describe("barber edit profile", () => {
     assert.equal(barberInitials("Somchai Jaidee"), "SJ");
     assert.equal(barberInitials("Ann"), "AN");
     assert.equal(barberInitials(""), "?");
+  });
+
+  it("barberAvatarInitial prefers Latin nickname and skips Thai leading vowels", () => {
+    assert.equal(barberAvatarInitial("นัด · Nat"), "N");
+    assert.equal(barberAvatarInitial("แสบ · Saeb"), "S");
+    assert.equal(barberAvatarInitial("ไทด์ · Tide"), "T");
+    assert.equal(barberAvatarInitial("Ken"), "K");
+    assert.equal(barberAvatarInitial("แสบ"), "ส");
+    assert.equal(barberAvatarInitial("ไทด์"), "ท");
+    assert.equal(barberAvatarInitial("นัด"), "น");
+    assert.equal(barberAvatarInitial(""), "?");
   });
 
   it("customer hides photo when show_profile_in_booking is false", () => {
