@@ -100,23 +100,6 @@ export function SlotPicker({
     );
   }
 
-  if (slots.length === 0 || !summary) {
-    return (
-      <div className="flex flex-col items-center gap-3 py-8 text-center">
-        <p className="text-sm text-zinc-400">{t("booking.noSlots")}</p>
-        {onViewNextDay ? (
-          <button
-            type="button"
-            onClick={onViewNextDay}
-            className="min-h-11 rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-100"
-          >
-            {t("booking.viewNextDay")}
-          </button>
-        ) : null}
-      </div>
-    );
-  }
-
   function renderFutureSlot(slot: Slot) {
     const selected = slot.startTime === value;
     const disabled = !slot.available;
@@ -157,6 +140,23 @@ export function SlotPicker({
     );
   }
 
+  if (slots.length === 0) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <p className="text-sm text-zinc-400">{t("booking.noSlots")}</p>
+        {onViewNextDay ? (
+          <button
+            type="button"
+            onClick={onViewNextDay}
+            className="min-h-11 rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-100"
+          >
+            {t("booking.viewNextDay")}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       {summary ? (
@@ -165,11 +165,26 @@ export function SlotPicker({
             .replace("{n}", String(summary.availableCount))
             .replace("{time}", formatSlotTime(summary.earliestStartTime))}
         </p>
-      ) : null}
+      ) : (
+        <div className="flex flex-col items-center gap-3 py-4 text-center">
+          <p className="text-sm text-zinc-400">{t("booking.noSlots")}</p>
+          {onViewNextDay ? (
+            <button
+              type="button"
+              onClick={onViewNextDay}
+              className="min-h-11 rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-100"
+            >
+              {t("booking.viewNextDay")}
+            </button>
+          ) : null}
+        </div>
+      )}
 
-      <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
-        {future.map((slot) => renderFutureSlot(slot))}
-      </div>
+      {future.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
+          {future.map((slot) => renderFutureSlot(slot))}
+        </div>
+      ) : null}
 
       {past.length > 0 ? (
         <div className="flex flex-col gap-2">
