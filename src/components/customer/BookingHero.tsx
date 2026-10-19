@@ -3,6 +3,8 @@
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { bookingShopTitle } from "@/lib/booking/customer-flow";
 
+const DEFAULT_COVER = "/brand/cover-default.svg";
+
 interface BookingHeroProps {
   shopName: string | null;
   coverImageUrl: string | null;
@@ -13,23 +15,17 @@ export function BookingHero({ shopName, coverImageUrl, prototypeMode }: BookingH
   const { t } = useI18n();
   const resolvedShopName = bookingShopTitle(shopName);
   const displayName = resolvedShopName ?? t("booking.title");
+  const coverSrc = coverImageUrl ?? DEFAULT_COVER;
 
   return (
     <header className="relative overflow-hidden rounded-2xl">
       <div className="relative h-40 w-full sm:h-44">
-        {coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- shop cover from storage
-          <img
-            src={coverImageUrl}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover object-center"
-          />
-        ) : (
-          <div
-            className="absolute inset-0 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black"
-            aria-hidden
-          />
-        )}
+        {/* eslint-disable-next-line @next/next/no-img-element -- shop cover from storage or brand default */}
+        <img
+          src={coverSrc}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover object-center"
+        />
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/25"
           aria-hidden

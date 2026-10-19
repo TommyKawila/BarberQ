@@ -710,7 +710,7 @@ export function BookingApp() {
             <p className="mt-0.5 text-sm text-zinc-400">{t("booking.selectTimeHint")}</p>
           </div>
           {lastUpdated && !displaySlotsLoading ? (
-            <p className="shrink-0 text-[10px] text-zinc-600">
+            <p className="shrink-0 text-[10px] text-zinc-500">
               {t("booking.lastUpdated")}{" "}
               {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm:ss")}
             </p>
