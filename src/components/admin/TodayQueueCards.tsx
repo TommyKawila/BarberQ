@@ -9,11 +9,13 @@ import {
   type TodayQueueCardModel,
 } from "@/lib/admin/today-queue-cards";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import type { ShopHours } from "@/lib/shop/shop-hours";
 import { formatSlotTime } from "@/lib/services/slot-service";
 import { barberLabel, type AdminColumn, type AdminSlot } from "@/types/booking";
 
 interface TodayQueueCardsProps {
   columns: AdminColumn[];
+  shopHours?: ShopHours | null;
   editableBarberId?: string | null;
   outcomePendingKey?: string | null;
   latePendingKey?: string | null;
@@ -22,6 +24,14 @@ interface TodayQueueCardsProps {
   onLateOrNoShow: (barberId: string, slot: AdminSlot) => void;
   onOpenNext?: (barberId: string, slot: AdminSlot) => void;
   onBarberMenu?: (barberId: string) => void;
+}
+
+function stateLabelKey(state: TodayQueueCardModel["state"]) {
+  if (state === "cutting") return "admin.cuttingNow" as const;
+  if (state === "free") return "admin.freeNow" as const;
+  if (state === "off") return "admin.offToday" as const;
+  if (state === "done") return "admin.shiftEnded" as const;
+  return "admin.idleNow" as const;
 }
 
 function CardActions({
@@ -81,7 +91,7 @@ function CardActions({
 
 export function TodayQueueCards(props: TodayQueueCardsProps) {
   const { locale, t } = useI18n();
-  const cards = deriveTodayQueueCards(props.columns);
+  const cards = deriveTodayQueueCards(props.columns, new Date(), props.shopHours);
   const sourceLabels = {
     line: t("admin.sourceLine"),
     walkIn: t("admin.sourceWalkIn"),
@@ -108,11 +118,14 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
           : "";
         const pending =
           props.outcomePendingKey === currentKey || props.latePendingKey === currentKey;
+        const muted = card.state === "off" || card.state === "done";
 
         return (
           <article
             key={card.barberId}
-            className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4"
+            className={`rounded-2xl border border-zinc-800 bg-zinc-900 p-4 ${
+              muted ? "opacity-70" : ""
+            }`}
           >
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 items-center gap-2">
@@ -122,18 +135,20 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                       ? "bg-amber-400"
                       : card.state === "free"
                         ? "bg-emerald-400"
-                        : "bg-zinc-500"
+                        : "bg-zinc-600"
                   }`}
                   aria-hidden
                 />
                 <p className="truncate text-sm">
-                  <span className="font-heading font-semibold text-zinc-100">{displayName}</span>{" "}
-                  <span className="text-zinc-400">
-                    {card.state === "cutting"
-                      ? t("admin.cuttingNow")
-                      : card.state === "free"
-                        ? t("admin.freeNow")
-                        : t("admin.idleNow")}
+                  <span
+                    className={`font-heading font-semibold ${
+                      muted ? "text-zinc-400" : "text-zinc-100"
+                    }`}
+                  >
+                    {displayName}
+                  </span>{" "}
+                  <span className={muted ? "text-zinc-500" : "text-zinc-400"}>
+                    {t(stateLabelKey(card.state))}
                   </span>
                 </p>
               </div>
@@ -193,6 +208,14 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
 
             {card.state === "idle" ? (
               <p className="mt-3 text-sm text-zinc-500">{t("admin.noActiveSlot")}</p>
+            ) : null}
+
+            {card.state === "off" ? (
+              <p className="mt-3 text-sm text-zinc-500">{t("admin.offTodayDetail")}</p>
+            ) : null}
+
+            {card.state === "done" ? (
+              <p className="mt-3 text-sm text-zinc-500">{t("admin.shiftEndedDetail")}</p>
             ) : null}
 
             <CardActions

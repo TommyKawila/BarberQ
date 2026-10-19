@@ -1,7 +1,16 @@
 import { getBarberFreeNow } from "@/lib/admin/free-barbers";
-import type { AdminColumn, AdminSlot, AppointmentSource } from "@/types/booking";
+import {
+  dateISOFromInstant,
+  getBangkokWeekday,
+  resolveShopHoursForDate,
+  SHOP_TIMEZONE,
+} from "@/lib/services/slot-service";
+import type { ShopHours } from "@/lib/shop/shop-hours";
+import type { AdminColumn, AdminSlot, AppointmentSource, Barber } from "@/types/booking";
+import { fromZonedTime } from "date-fns-tz";
 
-export type TodayBarberState = "cutting" | "free" | "idle";
+/** cutting / free / idle (waiting) / off (day off) / done (shift or shop closed) */
+export type TodayBarberState = "cutting" | "free" | "idle" | "off" | "done";
 
 export interface TodayQueueCardModel {
   barberId: string;
@@ -19,6 +28,39 @@ export interface TodayQueueCardModel {
   freeMinutes: number | null;
   /** Next upcoming confirmed booking (distinct appointment) */
   next: AdminSlot | null;
+}
+
+export function isBarberOffToday(
+  barber: Pick<Barber, "off_days">,
+  now: Date = new Date(),
+): boolean {
+  const weekday = getBangkokWeekday(dateISOFromInstant(now));
+  return (barber.off_days ?? []).includes(weekday);
+}
+
+/** After shop close today, or shop closed all day (not before open). */
+export function isShopShiftEnded(
+  hours: ShopHours | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  const dateISO = dateISOFromInstant(now);
+  const shopDay = resolveShopHoursForDate(hours, dateISO);
+  if (!shopDay) return true;
+  const openAt = fromZonedTime(`${dateISO}T${shopDay.open}:00`, SHOP_TIMEZONE);
+  const closeAt = fromZonedTime(`${dateISO}T${shopDay.close}:00`, SHOP_TIMEZONE);
+  if (now.getTime() < openAt.getTime()) return false;
+  return now.getTime() >= closeAt.getTime();
+}
+
+/** All generated slots for the barber have already ended. */
+export function isBarberDayExhausted(column: AdminColumn, now: Date = new Date()): boolean {
+  const slots = safeSlots(column);
+  if (slots.length === 0) return false;
+  const nowMs = now.getTime();
+  return slots.every((s) => {
+    const end = new Date(s.endTime).getTime();
+    return Number.isFinite(end) && end <= nowMs;
+  });
 }
 
 function safeSlots(column: AdminColumn): AdminSlot[] {
@@ -64,10 +106,29 @@ export function nextUpcoming(
   return upcoming[0] ?? null;
 }
 
+function idleCard(
+  column: AdminColumn,
+  state: Exclude<TodayBarberState, "cutting" | "free">,
+  next: AdminSlot | null,
+): TodayQueueCardModel {
+  return {
+    barberId: column.barber.id,
+    barberName: column.barber.name ?? "",
+    state,
+    current: null,
+    progress: 0,
+    remainingMinutes: null,
+    freeUntil: null,
+    freeMinutes: null,
+    next,
+  };
+}
+
 /** Derive per-barber Now cards for Today คิว tab (real board data only). */
 export function deriveTodayQueueCards(
   columns: AdminColumn[] | null | undefined,
   now: Date = new Date(),
+  shopHours?: ShopHours | null,
 ): TodayQueueCardModel[] {
   const nowMs = now.getTime();
   const cards: TodayQueueCardModel[] = [];
@@ -104,8 +165,21 @@ export function deriveTodayQueueCards(
       continue;
     }
 
-    const free = getBarberFreeNow(column, now);
     const next = nextUpcoming(column, nowMs);
+
+    // Day off (e.g. Nick off_days includes Monday) — before free/idle messaging
+    if (isBarberOffToday(column.barber, now)) {
+      cards.push(idleCard(column, "off", next));
+      continue;
+    }
+
+    // Shop closed for the day / after close, or this barber's slots are all past
+    if (isShopShiftEnded(shopHours, now) || isBarberDayExhausted(column, now)) {
+      cards.push(idleCard(column, "done", next));
+      continue;
+    }
+
+    const free = getBarberFreeNow(column, now);
     if (free) {
       const untilMs = new Date(free.freeUntil).getTime();
       const freeMinutes = Math.max(0, Math.round((untilMs - nowMs) / 60_000));
@@ -123,20 +197,11 @@ export function deriveTodayQueueCards(
       continue;
     }
 
-    cards.push({
-      barberId: column.barber.id,
-      barberName: column.barber.name ?? "",
-      state: "idle",
-      current: null,
-      progress: 0,
-      remainingMinutes: null,
-      freeUntil: null,
-      freeMinutes: null,
-      next,
-    });
+    cards.push(idleCard(column, "idle", next));
   }
 
-  const rank = { cutting: 0, free: 1, idle: 2 } as const;
+  // Off / done last so working cards stay on top
+  const rank = { cutting: 0, free: 1, idle: 2, done: 3, off: 4 } as const;
   return cards.sort((a, b) => rank[a.state] - rank[b.state] || a.barberName.localeCompare(b.barberName));
 }
 

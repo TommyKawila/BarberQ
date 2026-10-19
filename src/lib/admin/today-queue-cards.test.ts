@@ -1,17 +1,43 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { fromZonedTime } from "date-fns-tz";
 import {
   deriveTodayQueueCards,
   nextRowCustomerLabel,
 } from "@/lib/admin/today-queue-cards";
+import { getBangkokWeekday, SHOP_TIMEZONE } from "@/lib/services/slot-service";
+import type { ShopHours } from "@/lib/shop/shop-hours";
 import type { AdminColumn, AdminSlot } from "@/types/booking";
 
 const labels = { line: "LINE", walkIn: "Walk-in", phone: "โทร", chat: "แชท" };
+
+const OPEN: ShopHours = Array.from({ length: 7 }, () => ({
+  closed: false,
+  open: "10:00",
+  close: "20:00",
+}));
 
 function iso(h: number, m = 0) {
   const d = new Date();
   d.setHours(h, m, 0, 0);
   return d.toISOString();
+}
+
+function barber(
+  id: string,
+  name: string,
+  offDays: number[] = [],
+): AdminColumn["barber"] {
+  return {
+    id,
+    name,
+    slot_duration_minutes: 30,
+    off_days: offDays,
+    created_at: "",
+    is_bookable: true,
+    is_active: true,
+    role: "barber",
+  };
 }
 
 describe("deriveTodayQueueCards", () => {
@@ -211,5 +237,53 @@ describe("deriveTodayQueueCards", () => {
       ),
       "สมชาย (โทร)",
     );
+  });
+
+  it("marks off_days barber as off and sorts last", () => {
+    // Monday 2026-10-19 in Bangkok
+    const monday = fromZonedTime("2026-10-19T14:00:00", SHOP_TIMEZONE);
+    assert.equal(getBangkokWeekday("2026-10-19"), 1);
+    const columns: AdminColumn[] = [
+      {
+        barber: barber("nick", "Nick", [1]),
+        slots: [],
+      },
+      {
+        barber: barber("ken", "Ken", []),
+        slots: [
+          {
+            startTime: fromZonedTime("2026-10-19T14:00:00", SHOP_TIMEZONE).toISOString(),
+            endTime: fromZonedTime("2026-10-19T14:30:00", SHOP_TIMEZONE).toISOString(),
+            available: true,
+            kind: "free",
+          },
+        ],
+      },
+    ];
+    const cards = deriveTodayQueueCards(columns, monday, OPEN);
+    assert.equal(cards.length, 2);
+    assert.equal(cards[0].barberName, "Ken");
+    assert.equal(cards[0].state, "free");
+    assert.equal(cards[1].barberName, "Nick");
+    assert.equal(cards[1].state, "off");
+  });
+
+  it("marks after shop close as done (เลิกงานแล้ว)", () => {
+    const afterClose = fromZonedTime("2026-10-19T21:00:00", SHOP_TIMEZONE);
+    const columns: AdminColumn[] = [
+      {
+        barber: barber("ken", "Ken", []),
+        slots: [
+          {
+            startTime: fromZonedTime("2026-10-19T18:00:00", SHOP_TIMEZONE).toISOString(),
+            endTime: fromZonedTime("2026-10-19T18:30:00", SHOP_TIMEZONE).toISOString(),
+            available: false,
+            kind: "free",
+          },
+        ],
+      },
+    ];
+    const cards = deriveTodayQueueCards(columns, afterClose, OPEN);
+    assert.equal(cards[0].state, "done");
   });
 });

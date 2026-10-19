@@ -699,6 +699,7 @@ export default function AdminPage() {
           <>
             <TodayQueueCards
               columns={columns}
+              shopHours={shopHours}
               editableBarberId={editableBarberId}
               outcomePendingKey={outcomePendingKey}
               latePendingKey={latePendingKey}
