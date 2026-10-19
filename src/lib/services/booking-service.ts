@@ -306,7 +306,8 @@ function roundDownToFiveMinutes(date: Date): Date {
   return new Date(Math.floor(date.getTime() / ms) * ms);
 }
 
-async function nextWalkInLabel(shopId: string, dayISO: string): Promise<string> {
+/** Unique Walk-in #N per shop per Asia/Bangkok day (creation order via max existing #). */
+export async function nextWalkInLabel(shopId: string, dayISO: string): Promise<string> {
   const range = dayRangeUtc(dayISO);
   const barbers = await getStore().listBarbersByShop(shopId);
   const barberIds = new Set(barbers.map((b) => b.id));
@@ -314,7 +315,14 @@ async function nextWalkInLabel(shopId: string, dayISO: string): Promise<string> 
   const walkIns = dayAppointments.filter(
     (a) => barberIds.has(a.barber_id) && a.source === "walk_in",
   );
-  return `Walk-in #${walkIns.length + 1}`;
+  let maxN = 0;
+  for (const row of walkIns) {
+    const match = /^Walk-in #(\d+)$/i.exec((row.customer_name ?? "").trim());
+    if (match) maxN = Math.max(maxN, Number(match[1]));
+  }
+  // Also advance past unlabeled walk-ins so gaps stay monotonic
+  const next = Math.max(maxN, walkIns.length) + 1;
+  return `Walk-in #${next}`;
 }
 
 export async function createStaffBooking(
@@ -340,13 +348,17 @@ export async function createStaffBooking(
     throw new BookingError("INVALID_TIME", "Invalid start time", 400);
   }
 
-  // Walk-in "start now" may land mid-slot; allow up to 30 minutes in the past for forgotten taps
-  if (source === "walk_in" && Math.abs(start.getTime() - now.getTime()) < 2 * 60_000) {
-    start = roundDownToFiveMinutes(now);
-  }
   const earliest = addMinutes(now, -30);
   if (start.getTime() < earliest.getTime()) {
     throw new BookingError("SLOT_PAST", "Cannot book a past slot", 400);
+  }
+  // Walk-in "start now": never keep a past grid-cell start (e.g. covering free
+  // cell that began 20:30 when tapping at 20:54). Snap to the current 5-min bucket.
+  if (source === "walk_in") {
+    const deltaMs = start.getTime() - now.getTime();
+    if (deltaMs <= 0 || deltaMs < 2 * 60_000) {
+      start = roundDownToFiveMinutes(now);
+    }
   }
 
   let name = (input.customerName ?? "").trim();
@@ -846,6 +858,8 @@ export async function getAdminDay(
             customerPhone: appointment.customer_phone,
             customerLineId: appointment.customer_line_id ?? null,
             appointmentId: appointment.id,
+            appointmentStart: appointment.start_time,
+            appointmentEnd: appointment.end_time,
             status: appointment.status,
             source: appointment.source ?? "line",
             viaQr: Boolean(appointment.via_qr),

@@ -54,6 +54,41 @@ describe("staff booking + source (P3)", () => {
     assert.equal(apt.status, "confirmed");
   });
 
+  it("walk-in numbers are unique per shop per Bangkok day", async () => {
+    const shop = await memoryStore.createShop({
+      name: "Walk-in Number Shop",
+      subscriptionMonths: 1,
+    });
+    const a = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "A",
+      slotDuration: 30,
+    });
+    const b = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "B",
+      slotDuration: 30,
+    });
+    // Past covering-slot start must snap to now (not keep 25 min ago)
+    const pastSlotStart = new Date(Date.now() - 25 * 60_000).toISOString();
+    const first = await createStaffBooking(shop.id, {
+      barberId: a.id,
+      startTime: pastSlotStart,
+      source: "walk_in",
+    });
+    const second = await createStaffBooking(shop.id, {
+      barberId: b.id,
+      startTime: new Date().toISOString(),
+      source: "walk_in",
+    });
+    assert.equal(first.customer_name, "Walk-in #1");
+    assert.equal(second.customer_name, "Walk-in #2");
+    assert.ok(
+      new Date(first.start_time).getTime() >= Date.now() - 6 * 60_000,
+      "walk-in from past cell start snaps to ~now",
+    );
+  });
+
   it("phone staff booking requires name and locks slot against LINE booking", async () => {
     const slot = await firstFutureSlot(TIDE_ID);
     assert.ok(slot);

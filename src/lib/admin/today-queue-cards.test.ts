@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { deriveTodayQueueCards } from "@/lib/admin/today-queue-cards";
-import type { AdminColumn } from "@/types/booking";
+import {
+  deriveTodayQueueCards,
+  nextRowCustomerLabel,
+} from "@/lib/admin/today-queue-cards";
+import type { AdminColumn, AdminSlot } from "@/types/booking";
+
+const labels = { line: "LINE", walkIn: "Walk-in", phone: "โทร", chat: "แชท" };
 
 function iso(h: number, m = 0) {
   const d = new Date();
@@ -126,5 +131,85 @@ describe("deriveTodayQueueCards", () => {
     const cards = deriveTodayQueueCards(columns, now);
     assert.equal(cards[0].state, "free");
     assert.equal(cards[0].next?.customerName, "Peter K.");
+  });
+
+  it("does not treat the same walk-in spanning two grid cells as ถัดไป", () => {
+    const now = new Date();
+    now.setHours(20, 54, 0, 0);
+    const aptStart = iso(20, 50);
+    const aptEnd = iso(21, 20);
+    const columns: AdminColumn[] = [
+      {
+        barber: {
+          id: "ken",
+          name: "Ken",
+          slot_duration_minutes: 30,
+          off_days: [],
+          created_at: "",
+        },
+        slots: [
+          {
+            startTime: iso(20, 30),
+            endTime: iso(21, 0),
+            available: false,
+            kind: "booked",
+            customerName: "Walk-in #1",
+            status: "confirmed",
+            source: "walk_in",
+            appointmentId: "same-apt",
+            appointmentStart: aptStart,
+            appointmentEnd: aptEnd,
+          },
+          {
+            startTime: iso(21, 0),
+            endTime: iso(21, 30),
+            available: false,
+            kind: "booked",
+            customerName: "Walk-in #1",
+            status: "confirmed",
+            source: "walk_in",
+            appointmentId: "same-apt",
+            appointmentStart: aptStart,
+            appointmentEnd: aptEnd,
+          },
+          {
+            startTime: iso(21, 30),
+            endTime: iso(22, 0),
+            available: false,
+            kind: "booked",
+            customerName: "Walk-in #2",
+            status: "confirmed",
+            source: "walk_in",
+            appointmentId: "next-apt",
+            appointmentStart: iso(21, 30),
+            appointmentEnd: iso(22, 0),
+          },
+        ],
+      },
+    ];
+    const cards = deriveTodayQueueCards(columns, now);
+    assert.equal(cards[0].state, "cutting");
+    assert.equal(cards[0].current?.customerName, "Walk-in #1");
+    assert.equal(cards[0].next?.customerName, "Walk-in #2");
+    assert.equal(cards[0].next?.appointmentId, "next-apt");
+  });
+
+  it("nextRowCustomerLabel avoids Walk-in #N (Walk-in)", () => {
+    const slot = {
+      startTime: "",
+      endTime: "",
+      available: false,
+      kind: "booked",
+      customerName: "Walk-in #1",
+      source: "walk_in",
+    } as AdminSlot;
+    assert.equal(nextRowCustomerLabel(slot, labels), "Walk-in #1");
+    assert.equal(
+      nextRowCustomerLabel(
+        { ...slot, customerName: "สมชาย", source: "phone" },
+        labels,
+      ),
+      "สมชาย (โทร)",
+    );
   });
 });

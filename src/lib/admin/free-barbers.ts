@@ -25,8 +25,8 @@ function isActiveBooked(slot: AdminSlot, nowMs: number): boolean {
   if (slot.status === "completed" || slot.status === "no_show" || slot.status === "left") {
     return false;
   }
-  const start = new Date(slot.startTime).getTime();
-  const end = new Date(slot.endTime).getTime();
+  const start = new Date(slot.appointmentStart ?? slot.startTime).getTime();
+  const end = new Date(slot.appointmentEnd ?? slot.endTime).getTime();
   if (!Number.isFinite(start) || !Number.isFinite(end)) return false;
   return start <= nowMs && nowMs < end;
 }

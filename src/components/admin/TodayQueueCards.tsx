@@ -2,7 +2,9 @@
 
 import { MoreHorizontal } from "lucide-react";
 import {
+  bookedDisplayTimes,
   deriveTodayQueueCards,
+  nextRowCustomerLabel,
   sourceLabel,
   type TodayQueueCardModel,
 } from "@/lib/admin/today-queue-cards";
@@ -155,8 +157,8 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                   {card.current.customerName}
                 </p>
                 <p className="mt-1 text-xs text-zinc-400">
-                  {formatSlotTime(card.current.startTime)}–
-                  {formatSlotTime(card.current.endTime)} ·{" "}
+                  {formatSlotTime(bookedDisplayTimes(card.current).start)}–
+                  {formatSlotTime(bookedDisplayTimes(card.current).end)} ·{" "}
                   {sourceLabel(card.current.source, card.current.viaQr, sourceLabels)} ·{" "}
                   {t("admin.remainingMinutes").replace(
                     "{n}",
@@ -209,9 +211,9 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                 className="mt-3 flex min-h-11 w-full items-center justify-between border-t border-zinc-800 pt-3 text-left text-sm text-zinc-300"
               >
                 <span>
-                  {t("admin.nextUp")} {formatSlotTime(card.next.startTime)}{" "}
-                  {card.next.customerName} (
-                  {sourceLabel(card.next.source, card.next.viaQr, sourceLabels)})
+                  {t("admin.nextUp")}{" "}
+                  {formatSlotTime(bookedDisplayTimes(card.next).start)}{" "}
+                  {nextRowCustomerLabel(card.next, sourceLabels)}
                 </span>
                 <span className="text-zinc-500" aria-hidden>
                   ›

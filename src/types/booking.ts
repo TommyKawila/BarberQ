@@ -109,6 +109,12 @@ export interface AdminSlot extends Slot {
   customerPhone?: string | null;
   customerLineId?: string | null;
   appointmentId?: string;
+  /**
+   * Real appointment bounds (may differ from grid cell start/end when a
+   * walk-in starts mid-slot and spans the next cell).
+   */
+  appointmentStart?: string;
+  appointmentEnd?: string;
   status?: AppointmentStatus;
   source?: AppointmentSource;
   /** P8: walk-in from QR queue */
