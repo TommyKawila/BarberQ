@@ -10,7 +10,7 @@ import sharp from "sharp";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
-const OUT = join(ROOT, "/opt/cursor/artifacts/admin-v3");
+const OUT = "/opt/cursor/artifacts/admin-v3";
 const SHOP = "phinxstudio";
 const OWNER = "mock-owner-line-id";
 const DEMO_SHOP = "ClipperQ Demo";
