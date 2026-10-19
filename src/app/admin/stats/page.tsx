@@ -226,10 +226,13 @@ export default function AdminStatsPage() {
                       }`}
                     >
                       {comparison.completedDelta > 0 ? "✓ +" : comparison.completedDelta < 0 ? "▼ " : "— "}
-                      {t("admin.statsDeltaQueues").replace(
-                        "{n}",
-                        String(Math.abs(comparison.completedDelta)),
-                      )}
+                      {t(
+                        range === "week"
+                          ? "admin.statsDeltaQueuesWeek"
+                          : range === "month"
+                            ? "admin.statsDeltaQueuesMonth"
+                            : "admin.statsDeltaQueuesDay",
+                      ).replace("{n}", String(Math.abs(comparison.completedDelta)))}
                     </p>
                   ) : null}
                 </div>
@@ -239,7 +242,10 @@ export default function AdminStatsPage() {
               <div className="grid grid-cols-2 gap-2">
                 <StatCard
                   label={t("admin.statsRevenue")}
-                  value={t("admin.statsBaht").replace("{amount}", String(totals.revenueBaht ?? 0))}
+                  value={t("admin.statsBaht").replace(
+                    "{amount}",
+                    (totals.revenueBaht ?? 0).toLocaleString(locale === "th" ? "th-TH" : "en-US"),
+                  )}
                   hint={t("admin.statsRevenueHint")}
                   icon={<Banknote size={14} aria-hidden />}
                 />
@@ -278,12 +284,12 @@ export default function AdminStatsPage() {
                     {
                       label: t("admin.sourcePhone"),
                       value: totals.bySource.phone,
-                      bar: "bg-amber-400/80",
+                      bar: "bg-stone-500",
                     },
                     {
                       label: t("admin.sourceChat"),
                       value: totals.bySource.chat,
-                      bar: "bg-stone-400",
+                      bar: "bg-stone-600",
                     },
                   ];
                   const max = Math.max(1, ...rows.map((r) => r.value));

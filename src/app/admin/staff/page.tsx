@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { Link2 } from "lucide-react";
+import { Copy, Link2 } from "lucide-react";
 import { AddBarberSheet } from "@/components/admin/AddBarberSheet";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { StaffActionsSheet } from "@/components/admin/StaffActionsSheet";
@@ -334,6 +334,7 @@ export default function AdminStaffPage() {
             onClick={() => void copyBookingLink()}
             className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-600 px-3 text-sm text-zinc-100"
           >
+            <Copy size={14} aria-hidden />
             {copied ? t("admin.bookingLinkCopied") : t("admin.copyShort")}
           </button>
         </section>
