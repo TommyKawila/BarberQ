@@ -439,7 +439,7 @@ async function main() {
     await context.close();
   }
 
-  // Booking past-expanded @ 390
+  // Booking past-expanded @ 390 — scroll to time step and expand past slots
   {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
@@ -447,19 +447,39 @@ async function main() {
     });
     const page = await context.newPage();
     await page.goto(`${BASE}/${SHOP}`, { waitUntil: "networkidle", timeout: 60000 });
-    await page.waitForTimeout(1200);
-    // Pick first barber + first date if needed, then expand past slots
-    const barberBtn = page.locator('button').filter({ hasText: /.+/ }).first();
-    try {
-      const pastToggle = page.getByRole("button", {
-        name: /เวลาที่ผ่านไปแล้ว|past times/i,
-      });
-      if (await pastToggle.count()) {
-        await pastToggle.first().click();
-        await page.waitForTimeout(400);
-      }
-    } catch {
-      /* optional */
+    await page.waitForTimeout(1500);
+    // Prefer an active bookable barber (skip soft-removed sample)
+    const barbers = page.locator("button").filter({ hasText: /นาทีต่อคิว|min per/i });
+    const count = await barbers.count();
+    for (let i = 0; i < count; i += 1) {
+      const label = (await barbers.nth(i).innerText()).trim();
+      if (/ช่างเก่า|ตัวอย่าง|removed/i.test(label)) continue;
+      await barbers.nth(i).click();
+      break;
+    }
+    await page.waitForTimeout(800);
+    // Click today's date chip if present
+    const dateBtns = page.locator("button").filter({ hasText: /^\d{1,2}/ });
+    if (await dateBtns.count()) {
+      await dateBtns.first().click();
+      await page.waitForTimeout(1000);
+    }
+    // Scroll toward time section
+    await page.evaluate(() => {
+      const el = [...document.querySelectorAll("h2, h3, p")].find((n) =>
+        /เลือกเวลา|Select time|stepTime/i.test(n.textContent || ""),
+      );
+      el?.scrollIntoView({ block: "start" });
+    });
+    await page.waitForTimeout(600);
+    const pastToggle = page.getByRole("button", {
+      name: /เวลาที่ผ่านไปแล้ว|past times/i,
+    });
+    if (await pastToggle.count()) {
+      await pastToggle.first().scrollIntoViewIfNeeded();
+      await pastToggle.first().click();
+      await page.waitForTimeout(500);
+      await pastToggle.first().scrollIntoViewIfNeeded();
     }
     await shot(page, "booking-mobile-390-past-expanded.png");
     await context.close();
