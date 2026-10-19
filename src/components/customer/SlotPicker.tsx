@@ -5,6 +5,7 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 import {
   firstAvailableStartTime,
   partitionPastFutureSlots,
+  slotTimeRangeLabel,
   summarizeAvailableSlots,
 } from "@/lib/booking/slot-picker-ui";
 import { formatSlotTime } from "@/lib/services/slot-service";
@@ -15,7 +16,10 @@ interface SlotPickerProps {
   value: string | null;
   loading?: boolean;
   shopClosed?: boolean;
+  dateKey?: string | null;
+  skipAutoScroll?: boolean;
   onChange: (startTime: string) => void;
+  onViewNextDay?: () => void;
 }
 
 function slotButtonClass(opts: {
@@ -33,29 +37,58 @@ function slotButtonClass(opts: {
   return "bg-zinc-900 text-white hover:bg-zinc-800";
 }
 
-export function SlotPicker({ slots, value, loading, shopClosed, onChange }: SlotPickerProps) {
+export function SlotPicker({
+  slots,
+  value,
+  loading,
+  shopClosed,
+  dateKey,
+  skipAutoScroll = false,
+  onChange,
+  onViewNextDay,
+}: SlotPickerProps) {
   const { t } = useI18n();
-  const [showPast, setShowPast] = useState(false);
+  const [expandedPastKey, setExpandedPastKey] = useState<string | null>(null);
   const scrolledKeyRef = useRef<string | null>(null);
+  const userScrolledRef = useRef(false);
   const firstAvailableRef = useRef<HTMLButtonElement | null>(null);
 
   const { past, future } = partitionPastFutureSlots(slots);
   const summary = summarizeAvailableSlots(future);
   const firstAvailable = firstAvailableStartTime(future);
-  const slotsKey = slots.map((s) => `${s.startTime}:${s.available ? 1 : 0}`).join("|");
+  const pastRange = slotTimeRangeLabel(past, formatSlotTime);
+  const slotsKey = `${dateKey ?? ""}|${slots.map((s) => `${s.startTime}:${s.available ? 1 : 0}`).join("|")}`;
+  const showPast = expandedPastKey === slotsKey;
 
   useEffect(() => {
-    setShowPast(false);
-  }, [slotsKey]);
+    userScrolledRef.current = false;
+    const onScroll = () => {
+      userScrolledRef.current = true;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [dateKey]);
 
   useEffect(() => {
-    if (!firstAvailable || loading) return;
+    if (!firstAvailable || loading || skipAutoScroll) return;
+    if (value) return;
+    if (userScrolledRef.current) return;
     if (scrolledKeyRef.current === slotsKey) return;
     scrolledKeyRef.current = slotsKey;
     const el = firstAvailableRef.current;
     if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
-  }, [firstAvailable, loading, slotsKey]);
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({
+      behavior: reduceMotion ? "auto" : "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+    requestAnimationFrame(() => {
+      el.focus({ preventScroll: true });
+    });
+  }, [firstAvailable, loading, skipAutoScroll, slotsKey, value]);
 
   if (loading) {
     return <p className="py-8 text-center text-sm text-zinc-400">{t("booking.slotsLoading")}</p>;
@@ -67,14 +100,27 @@ export function SlotPicker({ slots, value, loading, shopClosed, onChange }: Slot
     );
   }
 
-  if (slots.length === 0 || future.length === 0) {
-    return <p className="py-8 text-center text-sm text-zinc-400">{t("booking.noSlots")}</p>;
+  if (slots.length === 0 || !summary) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <p className="text-sm text-zinc-400">{t("booking.noSlots")}</p>
+        {onViewNextDay ? (
+          <button
+            type="button"
+            onClick={onViewNextDay}
+            className="min-h-11 rounded-xl border border-zinc-700 px-4 text-sm font-medium text-zinc-100"
+          >
+            {t("booking.viewNextDay")}
+          </button>
+        ) : null}
+      </div>
+    );
   }
 
-  function renderSlot(slot: Slot, past: boolean) {
+  function renderFutureSlot(slot: Slot) {
     const selected = slot.startTime === value;
-    const disabled = !slot.available || past;
-    const isFirstAvailable = !past && slot.startTime === firstAvailable;
+    const disabled = !slot.available;
+    const isFirstAvailable = slot.startTime === firstAvailable;
     return (
       <button
         key={slot.startTime}
@@ -82,10 +128,28 @@ export function SlotPicker({ slots, value, loading, shopClosed, onChange }: Slot
         type="button"
         disabled={disabled}
         onClick={() => onChange(slot.startTime)}
-        className={`min-h-12 rounded-lg px-2 py-3 text-sm font-semibold transition ${slotButtonClass({
+        className={`h-12 rounded-lg px-2 text-sm font-semibold transition ${slotButtonClass({
           selected,
           disabled,
-          past,
+          past: false,
+        })}`}
+      >
+        {formatSlotTime(slot.startTime)}
+      </button>
+    );
+  }
+
+  function renderPastSlot(slot: Slot) {
+    return (
+      <button
+        key={slot.startTime}
+        type="button"
+        tabIndex={-1}
+        aria-disabled
+        className={`h-12 rounded-lg px-2 text-sm font-semibold transition ${slotButtonClass({
+          selected: false,
+          disabled: true,
+          past: true,
         })}`}
       >
         {formatSlotTime(slot.startTime)}
@@ -96,15 +160,15 @@ export function SlotPicker({ slots, value, loading, shopClosed, onChange }: Slot
   return (
     <div className="flex flex-col gap-3">
       {summary ? (
-        <p className="text-sm text-zinc-500">
-          {t("booking.slotsSummary")
+        <p className="text-sm text-zinc-400" aria-live="polite">
+          {t("booking.availableSummary")
             .replace("{n}", String(summary.availableCount))
             .replace("{time}", formatSlotTime(summary.earliestStartTime))}
         </p>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-2">
-        {future.map((slot) => renderSlot(slot, false))}
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
+        {future.map((slot) => renderFutureSlot(slot))}
       </div>
 
       {past.length > 0 ? (
@@ -112,25 +176,28 @@ export function SlotPicker({ slots, value, loading, shopClosed, onChange }: Slot
           <button
             type="button"
             aria-expanded={showPast}
-            onClick={() => setShowPast((v) => !v)}
+            onClick={() => setExpandedPastKey(showPast ? null : slotsKey)}
             className="flex min-h-11 w-full items-center gap-2 rounded-xl border border-zinc-700 px-3 text-left text-sm text-zinc-300"
           >
             <span className="text-zinc-500" aria-hidden>
               {showPast ? "⌃" : "⌄"}
             </span>
             <span className="min-w-0 flex-1">
-              {(showPast ? t("booking.hidePastSlots") : t("booking.showPastSlots")).replace(
+              {(showPast ? t("booking.hidePastTimes") : t("booking.showPastTimes")).replace(
                 "{count}",
                 String(past.length),
               )}
             </span>
+            {!showPast && pastRange ? (
+              <span className="shrink-0 text-xs text-zinc-500">{pastRange}</span>
+            ) : null}
           </button>
 
           {showPast ? (
             <div className="flex flex-col gap-2">
-              <p className="text-xs font-medium text-zinc-500">{t("booking.pastSlotsLabel")}</p>
-              <div className="grid grid-cols-3 gap-2">
-                {past.map((slot) => renderSlot(slot, true))}
+              <p className="text-xs font-medium text-zinc-500">{t("booking.pastUnavailable")}</p>
+              <div className="grid grid-cols-3 gap-2 md:grid-cols-4">
+                {past.map((slot) => renderPastSlot(slot))}
               </div>
             </div>
           ) : null}

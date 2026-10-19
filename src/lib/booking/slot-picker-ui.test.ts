@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   firstAvailableStartTime,
   partitionPastFutureSlots,
+  slotTimeRangeLabel,
   summarizeAvailableSlots,
 } from "@/lib/booking/slot-picker-ui";
 import type { Slot } from "@/types/booking";
@@ -95,5 +96,19 @@ describe("firstAvailableStartTime", () => {
       firstAvailableStartTime([slot("2026-10-19T06:00:00.000Z", false)]),
       null,
     );
+  });
+});
+
+describe("slotTimeRangeLabel", () => {
+  it("formats first–last HH:mm range", () => {
+    const label = slotTimeRangeLabel(
+      [slot("2026-10-19T03:30:00.000Z"), slot("2026-10-19T14:00:00.000Z")],
+      (iso) => iso.slice(11, 16),
+    );
+    assert.equal(label, "03:30–14:00");
+  });
+
+  it("returns null for empty list", () => {
+    assert.equal(slotTimeRangeLabel([], (iso) => iso), null);
   });
 });

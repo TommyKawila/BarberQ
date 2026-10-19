@@ -45,3 +45,14 @@ export function firstAvailableStartTime(futureSlots: Slot[]): string | null {
   const hit = futureSlots.find((slot) => slot.available);
   return hit?.startTime ?? null;
 }
+
+/** HH:mm–HH:mm range for a past (or any) slot list, or null when empty. */
+export function slotTimeRangeLabel(
+  slots: Slot[],
+  formatTime: (iso: string) => string,
+): string | null {
+  if (slots.length === 0) return null;
+  const first = slots[0]!;
+  const last = slots[slots.length - 1]!;
+  return `${formatTime(first.startTime)}–${formatTime(last.startTime)}`;
+}

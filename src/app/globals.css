@@ -7,7 +7,8 @@
   --cq-charcoal: #2a2622;
   --cq-border: #2e2a25;
   --cq-border-strong: #3a342e;
-  --cq-outline: #857c70;
+  /* AA text on ink (#111): #8a8174 ≈ 4.92:1 */
+  --cq-outline: #8a8174;
   --cq-cream: #f3eee3;
   --cq-muted: #b9b0a2;
   --cq-subtle: #a39a8c;
@@ -36,7 +37,7 @@
   --color-zinc-900: var(--cq-surface);
   --color-zinc-800: var(--cq-charcoal);
   --color-zinc-700: var(--cq-border-strong);
-  /* Was #4a433c (~fail AA as text on surface); use outline-tier for borders/muted UI */
+  /* Was #4a433c (~1.94:1 on ink); remap to AA outline-tier for muted text */
   --color-zinc-600: var(--cq-outline);
   --color-zinc-500: var(--cq-subtle);
   --color-zinc-400: var(--cq-muted);

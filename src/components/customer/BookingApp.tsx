@@ -314,8 +314,18 @@ export function BookingApp() {
     await loadSlots(barberId, activeDate, true);
   }, [barberId, activeDate, selectedBarber, loadSlots, hours]);
 
+  const [skipSlotAutoScroll, setSkipSlotAutoScroll] = useState(false);
+
+  const manualRefreshSlots = useCallback(async () => {
+    if (!barberId || !activeDate) return;
+    if (isCustomerDateDisabled(activeDate, hours, selectedBarber?.off_days ?? [])) return;
+    setSkipSlotAutoScroll(true);
+    await loadSlots(barberId, activeDate, false);
+  }, [barberId, activeDate, selectedBarber, loadSlots, hours]);
+
   function handleBarberChange(nextId: string) {
     if (nextId === barberId) return;
+    setSkipSlotAutoScroll(false);
     setBarberId(nextId);
     setSelectedStart(null);
     setMessage(null);
@@ -323,9 +333,17 @@ export function BookingApp() {
 
   function handleDateChange(nextDate: string) {
     if (nextDate === dateISO) return;
+    setSkipSlotAutoScroll(false);
     setDateISO(nextDate);
     setSelectedStart(null);
     setMessage(null);
+  }
+
+  function handleViewNextDay() {
+    if (!activeDate) return;
+    const idx = dates.indexOf(activeDate);
+    const next = dates[idx + 1];
+    if (next) handleDateChange(next);
   }
 
   useEffect(() => {
@@ -631,30 +649,22 @@ export function BookingApp() {
       />
 
       <div className="flex items-center gap-3">
-        {profile.pictureUrl ? (
-          <img
-            src={profile.pictureUrl}
-            alt=""
-            className="h-11 w-11 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-sm font-semibold text-amber-400">
-            {(profile.displayName ?? "?").charAt(0)}
-          </span>
-        )}
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-400 text-sm font-semibold text-zinc-950">
+          {(profile.displayName ?? "?").charAt(0)}
+        </span>
         <div className="min-w-0">
           <p className="truncate text-sm font-medium text-zinc-100">
             {profile.displayName
               ? t("booking.hello").replace("{name}", profile.displayName)
               : t("booking.hello").replace("{name}", "—")}
           </p>
-          <p className="text-xs text-zinc-500">{t(staffIdentityKey(staff))}</p>
+          <p className="text-xs text-zinc-400">{t(staffIdentityKey(staff))}</p>
         </div>
       </div>
 
       <Link
         href={shopPath("/bookings")}
-        className="flex min-h-14 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800/80"
+        className="flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800/80"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
           <CalendarDays className="h-5 w-5" aria-hidden />
@@ -668,19 +678,19 @@ export function BookingApp() {
 
       {canShowOwnerTools(staff) ? (
         <section className="flex flex-col gap-2">
-          <p className="text-xs text-zinc-500">{t("booking.ownerToolsEyebrow")}</p>
+          <p className="text-xs text-zinc-400">{t("booking.ownerToolsEyebrow")}</p>
           <Link
             href={shopPath("/admin")}
-            className="flex min-h-12 items-center gap-3 rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800"
+            className="flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800/80"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-400/15 text-amber-400">
-              <Store className="h-[18px] w-[18px]" aria-hidden />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
+              <Store className="h-5 w-5" aria-hidden />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-zinc-100">{t("booking.ownerToolsTitle")}</p>
-              <p className="text-xs text-zinc-400">{t("booking.ownerToolsSubtitle")}</p>
+              <p className="text-sm font-semibold text-zinc-100">{t("booking.ownerToolsTitle")}</p>
+              <p className="text-xs text-zinc-500">{t("booking.ownerToolsSubtitle")}</p>
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" aria-hidden />
+            <ChevronRight className="h-5 w-5 shrink-0 text-zinc-500" aria-hidden />
           </Link>
         </section>
       ) : null}
@@ -704,16 +714,23 @@ export function BookingApp() {
       </section>
 
       <section className="flex flex-col gap-2">
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex items-start justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold text-zinc-100">{t("booking.stepTime")}</h2>
             <p className="mt-0.5 text-sm text-zinc-400">{t("booking.selectTimeHint")}</p>
           </div>
           {lastUpdated && !displaySlotsLoading ? (
-            <p className="shrink-0 text-[10px] text-zinc-500">
-              {t("booking.lastUpdated")}{" "}
-              {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm:ss")}
-            </p>
+            <button
+              type="button"
+              onClick={() => void manualRefreshSlots()}
+              aria-label={t("booking.refreshSlotsAria")}
+              className="inline-flex h-11 shrink-0 items-center rounded-xl border border-zinc-700 px-3 text-xs font-medium text-zinc-300"
+            >
+              {t("booking.refreshSlots").replace(
+                "{time}",
+                formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm"),
+              )}
+            </button>
           ) : null}
         </div>
         <SlotPicker
@@ -721,6 +738,9 @@ export function BookingApp() {
           value={selectedStart}
           loading={displaySlotsLoading}
           shopClosed={shopClosedToday}
+          dateKey={activeDate}
+          skipAutoScroll={skipSlotAutoScroll}
+          onViewNextDay={handleViewNextDay}
           onChange={(start) => {
             setSelectedStart(start);
             setMessage(null);
@@ -741,25 +761,25 @@ export function BookingApp() {
             </div>
             <div className="rounded-2xl bg-zinc-900 p-4">
               <dl className="space-y-3 text-sm">
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-zinc-500">{t("booking.barber")}</dt>
-                  <dd className="text-right font-medium text-zinc-100">
+                <div className="flex items-start gap-3">
+                  <dt className="w-[120px] shrink-0 text-zinc-500">{t("booking.barber")}</dt>
+                  <dd className="min-w-0 flex-1 text-right font-medium text-zinc-100">
                     {selectedBarber ? barberLabel(selectedBarber.name, locale) : "—"}
                   </dd>
                 </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-zinc-500">{t("booking.date")}</dt>
-                  <dd className="text-right text-zinc-200">{summaryDate ?? "—"}</dd>
+                <div className="flex items-start gap-3">
+                  <dt className="w-[120px] shrink-0 text-zinc-500">{t("booking.date")}</dt>
+                  <dd className="min-w-0 flex-1 text-right text-zinc-200">{summaryDate ?? "—"}</dd>
                 </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-zinc-500">{t("booking.time")}</dt>
-                  <dd className="text-right font-medium text-zinc-100">
+                <div className="flex items-start gap-3">
+                  <dt className="w-[120px] shrink-0 text-zinc-500">{t("booking.time")}</dt>
+                  <dd className="min-w-0 flex-1 text-right font-medium text-zinc-100">
                     {formatSlotTime(selectedSlot.startTime)}
                   </dd>
                 </div>
-                <div className="flex items-start justify-between gap-3">
-                  <dt className="text-zinc-500">{t("booking.duration")}</dt>
-                  <dd className="text-right text-zinc-200">
+                <div className="flex items-start gap-3">
+                  <dt className="w-[120px] shrink-0 text-zinc-500">{t("booking.duration")}</dt>
+                  <dd className="min-w-0 flex-1 text-right text-zinc-200">
                     {selectedBarber
                       ? `${selectedBarber.slot_duration_minutes} ${t("common.minutes")}`
                       : "—"}
@@ -823,7 +843,7 @@ export function BookingApp() {
               type="button"
               disabled={submitting || !profile}
               onClick={() => void submitBooking()}
-              className="min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+              className="min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 shadow-[0_0_24px_rgba(246,173,52,0.35)] disabled:opacity-50"
             >
               {submitting ? t("booking.booking") : t("booking.confirmBooking")}
             </button>

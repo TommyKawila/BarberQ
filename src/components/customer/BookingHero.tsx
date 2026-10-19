@@ -19,7 +19,7 @@ export function BookingHero({ shopName, coverImageUrl, prototypeMode }: BookingH
 
   return (
     <header className="relative overflow-hidden rounded-2xl">
-      <div className="relative h-40 w-full sm:h-44">
+      <div className="relative h-40 w-full md:h-60">
         {/* eslint-disable-next-line @next/next/no-img-element -- shop cover from storage or brand default */}
         <img
           src={coverSrc}
@@ -30,7 +30,7 @@ export function BookingHero({ shopName, coverImageUrl, prototypeMode }: BookingH
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/25"
           aria-hidden
         />
-        <div className="relative flex h-full flex-col justify-end p-4">
+        <div className="relative flex h-full max-w-[60%] flex-col justify-end p-4">
           {prototypeMode ? (
             <span className="mb-2 inline-block w-fit rounded bg-zinc-800/80 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
               {t("common.prototypeMode")}
@@ -39,7 +39,7 @@ export function BookingHero({ shopName, coverImageUrl, prototypeMode }: BookingH
           <p className="text-xs font-medium uppercase tracking-wide text-zinc-300">
             {t("booking.shopTitleEyebrow")}
           </p>
-          <h1 className="mt-0.5 text-2xl font-semibold leading-tight text-white break-words">
+          <h1 className="mt-0.5 text-2xl font-semibold leading-tight break-words text-white">
             {displayName}
           </h1>
           <p className="mt-1 text-sm text-zinc-300">{t("booking.shopSubtitle")}</p>
