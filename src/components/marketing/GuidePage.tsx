@@ -81,7 +81,7 @@ export function GuidePage() {
             <a
               key={href}
               href={href}
-              className="min-h-10 rounded-lg border border-zinc-700 px-3 py-2 text-zinc-300 hover:border-[#F6AD34]/50"
+              className="inline-flex min-h-11 items-center rounded-lg border border-zinc-700 px-3 py-2 text-zinc-300 hover:border-[#F6AD34]/50"
             >
               {label}
             </a>

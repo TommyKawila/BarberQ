@@ -30,6 +30,78 @@ const baseUrl = (process.env.QA_BASE_URL || DEFAULT_BASE_URL).replace(/\/$/, "")
 const shopSlug = process.env.QA_SHOP_SLUG || SHOP_SLUG;
 const e2eSecret = process.env.QA_E2E_SECRET?.trim() || "";
 const locale = process.env.QA_LOCALE || "th";
+/** Max wait after /qa/e2e for redirect + authenticated admin UI / session. */
+const QA_AUTH_TIMEOUT_MS = 45_000;
+
+/**
+ * Establish QA E2E session in this browser context.
+ * Waits for admin board (or session cookie + sessionStorage) — not a fixed sleep.
+ * @param {import('playwright').BrowserContext} context
+ * @param {string} viewportId
+ * @returns {Promise<{ ok: boolean; detail: string }>}
+ */
+async function establishQaE2eAuth(context, viewportId) {
+  const page = await context.newPage();
+  const loginUrl = `${baseUrl}/qa/e2e?secret=${encodeURIComponent(e2eSecret)}&redirect=${encodeURIComponent(`/${shopSlug}/admin`)}`;
+  try {
+    await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+
+    await page.waitForURL(
+      (url) => {
+        const p = url.pathname;
+        return p.includes("/admin") && !p.includes("/login") && !p.includes("/qa/e2e");
+      },
+      { timeout: QA_AUTH_TIMEOUT_MS },
+    );
+
+    // Prefer admin chrome; fall back to session signals if chrome is slow.
+    const deadline = Date.now() + QA_AUTH_TIMEOUT_MS;
+    let hasChrome = false;
+    let hasStorage = false;
+    let hasCookie = false;
+    while (Date.now() < deadline) {
+      hasChrome =
+        (await page
+          .locator('[data-testid="admin-chrome"], [data-testid="admin-nav-board"]')
+          .count()) > 0;
+      hasStorage = await page.evaluate(() => {
+        try {
+          const raw = sessionStorage.getItem("barberq_qa_e2e_token");
+          if (!raw) return false;
+          const parsed = JSON.parse(raw);
+          return Boolean(parsed?.token);
+        } catch {
+          return false;
+        }
+      });
+      const cookies = await context.cookies();
+      hasCookie = cookies.some((c) => c.name === "barberq_qa_e2e" && Boolean(c.value));
+      if (hasChrome || (hasStorage && hasCookie)) break;
+      await page.waitForTimeout(250);
+    }
+
+    const onAdmin =
+      page.url().includes("/admin") &&
+      !page.url().includes("/login") &&
+      !page.url().includes("/qa/e2e");
+    const ok = onAdmin && (hasChrome || (hasStorage && hasCookie));
+    const detail = ok
+      ? `chrome=${hasChrome} cookie=${hasCookie} storage=${hasStorage}`
+      : `timeout path=${new URL(page.url()).pathname} chrome=${hasChrome} cookie=${hasCookie} storage=${hasStorage}`;
+    if (!ok) {
+      console.error(`QA E2E auth failed (${viewportId}): ${detail}`);
+    } else {
+      console.log(`QA E2E auth ok (${viewportId}): ${detail}`);
+    }
+    return { ok, detail };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`QA E2E auth error (${viewportId}): ${msg}`);
+    return { ok: false, detail: msg };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
 
 async function main() {
   assertSafeBaseUrl(baseUrl);
@@ -42,7 +114,11 @@ async function main() {
   const issues = [];
   /** @type {any[]} */
   const pages = [];
+  /** @type {{ viewportId: string; routeId: string }[]} */
+  const skippedAuth = [];
   let authMode = "public-only";
+  /** @type {Record<string, string>} */
+  const authByViewport = {};
 
   const browser = await chromium.launch({ headless: true });
 
@@ -80,27 +156,28 @@ async function main() {
       }
     }, locale);
 
+    /** @type {boolean} */
+    let viewportAuthed = false;
     if (e2eReady && e2eSecret) {
-      const page = await context.newPage();
-      const loginUrl = `${baseUrl}/qa/e2e?secret=${encodeURIComponent(e2eSecret)}&redirect=${encodeURIComponent(`/${shopSlug}/admin`)}`;
-      await page.goto(loginUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
-      await page.waitForTimeout(2500);
-      const url = page.url();
-      if (url.includes("/admin") && !url.includes("/login")) {
+      const result = await establishQaE2eAuth(context, viewportId);
+      viewportAuthed = result.ok;
+      authByViewport[viewportId] = result.detail;
+      if (viewportAuthed) {
         authMode = "qa-e2e";
+      } else {
+        issues.push({
+          severity: "fail",
+          code: "qa_e2e_auth_failed",
+          pageId: "admin-today",
+          viewport: viewportId,
+          message: `QA E2E login ไม่สำเร็จ: ${result.detail}`,
+        });
       }
-      await page.close();
     }
 
     for (const route of routes) {
-      if (route.auth && authMode !== "qa-e2e") {
-        pages.push({
-          id: route.id,
-          path: route.path,
-          viewportId,
-          skipped: "needs_qa_e2e_auth",
-          screenshots: [],
-        });
+      if (route.auth && !viewportAuthed) {
+        skippedAuth.push({ viewportId, routeId: route.id });
         continue;
       }
 
@@ -258,13 +335,15 @@ async function main() {
     startedAt,
     finishedAt: new Date().toISOString(),
     authMode,
+    authByViewport,
     locale,
     viewportCount: Object.keys(VIEWPORTS).length,
     counts,
     verdict,
     issues,
     pages: pages.filter((p) => p.screenshots?.length),
-    skippedAuthRoutes: routes.filter((r) => r.auth && authMode !== "qa-e2e").map((r) => r.id),
+    skippedAuth,
+    skippedAuthRoutes: [...new Set(skippedAuth.map((s) => s.routeId))],
     envVarsForTommy: [
       "QA_E2E_SECRET",
       "BARBERQ_ENV",

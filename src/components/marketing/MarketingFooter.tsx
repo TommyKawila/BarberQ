@@ -23,17 +23,26 @@ export function MarketingFooter({ variant = "sales" }: { variant?: "sales" | "tr
     <footer className="border-t border-zinc-800 bg-zinc-950 py-12">
       <div className="mx-auto flex max-w-[1280px] flex-col gap-8 px-4 md:px-6">
         <BarberQxLogo href={undefined} />
-        <nav className="flex flex-wrap gap-4 text-sm text-zinc-400">
-          <a href="#how-it-works" className="hover:text-amber-400">{t("marketing.nav.how")}</a>
-          <a href="#pricing" className="hover:text-amber-400">{t("marketing.nav.pricing")}</a>
-          <a href="#faq" className="hover:text-amber-400">{t("marketing.nav.faq")}</a>
+        <nav className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-zinc-400">
+          <a
+            href="#how-it-works"
+            className="inline-flex min-h-11 items-center hover:text-amber-400"
+          >
+            {t("marketing.nav.how")}
+          </a>
+          <a href="#pricing" className="inline-flex min-h-11 items-center hover:text-amber-400">
+            {t("marketing.nav.pricing")}
+          </a>
+          <a href="#faq" className="inline-flex min-h-11 items-center hover:text-amber-400">
+            {t("marketing.nav.faq")}
+          </a>
           {supportUrl ? (
             <a
               href={supportUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackMarketingEvent("support_line_click")}
-              className="hover:text-amber-400"
+              className="inline-flex min-h-11 items-center hover:text-amber-400"
             >
               {t("marketing.footer.contact")}
             </a>
