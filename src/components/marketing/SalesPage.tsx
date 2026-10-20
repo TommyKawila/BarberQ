@@ -247,7 +247,7 @@ export function SalesPage() {
         </section>
       ) : null}
 
-      {/* Pricing: 2 tiers + contact row */}
+      {/* Pricing: 3 tiers + contact row */}
       <section id="pricing" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
           <p className="text-sm font-medium text-amber-400/90">
@@ -258,7 +258,7 @@ export function SalesPage() {
           </h2>
           <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
 
-          <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
             {marketingOffer.tiers.map((tier) => (
               <div
                 key={tier.id}

@@ -3,8 +3,9 @@ export const marketingOffer = {
   trialDays: 30,
   lineFreePushQuota: 300,
   tiers: [
-    { id: "tier1", minBarbers: 1, maxBarbers: 5, monthlyPriceThb: 599 },
-    { id: "tier2", minBarbers: 6, maxBarbers: 10, monthlyPriceThb: 999 },
+    { id: "tier1", minBarbers: 1, maxBarbers: 2, monthlyPriceThb: 399 },
+    { id: "tier2", minBarbers: 3, maxBarbers: 5, monthlyPriceThb: 599 },
+    { id: "tier3", minBarbers: 6, maxBarbers: 10, monthlyPriceThb: 999 },
   ],
   /** Shops with this many barbers or more use contact CTA. */
   contactFromBarbers: 11,
@@ -51,11 +52,13 @@ export function resolveMarketingTierForBarberCount(
   return null;
 }
 
-/** Fill `{days}` / `{quota}` / `{price}` placeholders from marketingOffer. */
+/** Fill `{days}` / `{quota}` / `{price}` / `{priceMid}` / `{priceLarge}` from marketingOffer. */
 export function fillOfferCopy(template: string): string {
-  const starter = formatBaht(marketingOffer.tiers[0].monthlyPriceThb);
+  const [t1, t2, t3] = marketingOffer.tiers;
   return template
     .replaceAll("{days}", String(marketingOffer.trialDays))
     .replaceAll("{quota}", String(marketingOffer.lineFreePushQuota))
-    .replaceAll("{price}", starter);
+    .replaceAll("{price}", formatBaht(t1.monthlyPriceThb))
+    .replaceAll("{priceMid}", formatBaht(t2.monthlyPriceThb))
+    .replaceAll("{priceLarge}", formatBaht(t3.monthlyPriceThb));
 }
