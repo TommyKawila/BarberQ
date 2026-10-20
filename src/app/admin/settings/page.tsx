@@ -34,14 +34,14 @@ import {
   normalizeShopPhone,
 } from "@/lib/shop/shop-contact";
 
-const WEEKDAYS: { value: number; key: MessageKey }[] = [
-  { value: 0, key: "common.sunday" },
-  { value: 1, key: "common.monday" },
-  { value: 2, key: "common.tuesday" },
-  { value: 3, key: "common.wednesday" },
-  { value: 4, key: "common.thursday" },
-  { value: 5, key: "common.friday" },
-  { value: 6, key: "common.saturday" },
+const WEEKDAYS: { value: number; key: MessageKey; shortTh: string; shortEn: string }[] = [
+  { value: 0, key: "common.sunday", shortTh: "อา", shortEn: "Sun" },
+  { value: 1, key: "common.monday", shortTh: "จ", shortEn: "Mon" },
+  { value: 2, key: "common.tuesday", shortTh: "อ", shortEn: "Tue" },
+  { value: 3, key: "common.wednesday", shortTh: "พ", shortEn: "Wed" },
+  { value: 4, key: "common.thursday", shortTh: "พฤ", shortEn: "Thu" },
+  { value: 5, key: "common.friday", shortTh: "ศ", shortEn: "Fri" },
+  { value: 6, key: "common.saturday", shortTh: "ส", shortEn: "Sat" },
 ];
 
 const COVER_DEFAULT_SRC = "/brand/cover-default.svg";
@@ -161,8 +161,15 @@ function hoursEqual(a: ShopDayHours[], b: ShopDayHours[]) {
   return JSON.stringify(normalizeShopHours(a)) === JSON.stringify(normalizeShopHours(b));
 }
 
+/** Keep HH:mm for 24h display (never AM/PM). */
+function normalizeClock(value: string): string | null {
+  const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
+  if (!match) return null;
+  return `${match[1]!.padStart(2, "0")}:${match[2]}`;
+}
+
 export default function AdminSettingsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
   const { shopApi, shopPath } = useShopSlug();
   const {
@@ -772,51 +779,90 @@ export default function AdminSettingsPage() {
               </div>
             </section>
 
-            <section id="shop-hours" className={`${SECTION_SCROLL} flex flex-col gap-2`}>
+            <section id="shop-hours" className={`${SECTION_SCROLL} flex flex-col gap-2`} lang="th">
               <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionHours")}</h2>
               <div className={CARD}>
                 <p className="text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
-                <div className="mt-4 flex flex-col gap-3">
-                  {WEEKDAYS.map((day) => {
+                <div className="mt-4 overflow-hidden rounded-xl bg-zinc-950">
+                  {WEEKDAYS.map((day, index) => {
                     const row = hours[day.value];
                     return (
-                      <div key={day.value} className="rounded-lg bg-zinc-950 p-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="w-7 shrink-0 text-sm font-medium md:w-9">{t(day.key)}</span>
-                          <label className="flex min-h-11 items-center gap-2 text-xs text-zinc-400">
-                            <input
-                              type="checkbox"
-                              checked={row.closed}
-                              onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
-                              className="h-5 w-5"
-                            />
-                            {t("admin.shopClosed")}
-                          </label>
-                        </div>
+                      <div
+                        key={day.value}
+                        className={`flex min-h-11 items-center gap-2 px-3 py-2 ${
+                          index > 0 ? "border-t border-zinc-800" : ""
+                        }`}
+                      >
+                        <span
+                          className="inline-flex w-7 shrink-0 justify-center text-sm font-medium md:w-9"
+                          title={t(day.key)}
+                        >
+                          {locale === "th" ? day.shortTh : day.shortEn}
+                        </span>
                         {row.closed ? (
-                          <p className="mt-2 text-sm text-zinc-400">{t("admin.shopClosedDayHint")}</p>
+                          <p className="min-w-0 flex-1 text-sm text-zinc-400">
+                            {t("admin.shopClosedDayHint")}
+                          </p>
                         ) : (
-                          <div className="mt-2 flex gap-2">
-                            <label className="flex flex-col gap-1 text-xs">
-                              {t("admin.shopOpenTime")}
-                              <input
-                                type="time"
-                                value={row.open}
-                                onChange={(e) => updateHour(day.value, { open: e.target.value })}
-                                className="h-11 w-[76px] rounded-lg bg-zinc-800 px-2 md:w-[120px]"
-                              />
-                            </label>
-                            <label className="flex flex-col gap-1 text-xs">
-                              {t("admin.shopCloseTime")}
-                              <input
-                                type="time"
-                                value={row.close}
-                                onChange={(e) => updateHour(day.value, { close: e.target.value })}
-                                className="h-11 w-[76px] rounded-lg bg-zinc-800 px-2 md:w-[120px]"
-                              />
-                            </label>
+                          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              placeholder="HH:mm"
+                              maxLength={5}
+                              value={row.open}
+                              aria-label={`${t(day.key)} ${t("admin.shopOpenTime")}`}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                if (/^\d{0,2}(:\d{0,2})?$/.test(next)) {
+                                  updateHour(day.value, { open: next });
+                                }
+                              }}
+                              onBlur={() => {
+                                const normalized = normalizeClock(row.open);
+                                if (normalized && normalized !== row.open) {
+                                  updateHour(day.value, { open: normalized });
+                                }
+                              }}
+                              className="h-11 w-[76px] rounded-lg bg-zinc-800 px-1 text-center text-sm tabular-nums md:w-[120px] md:px-2"
+                            />
+                            <span className="shrink-0 text-zinc-500" aria-hidden>
+                              –
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              placeholder="HH:mm"
+                              maxLength={5}
+                              value={row.close}
+                              aria-label={`${t(day.key)} ${t("admin.shopCloseTime")}`}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                if (/^\d{0,2}(:\d{0,2})?$/.test(next)) {
+                                  updateHour(day.value, { close: next });
+                                }
+                              }}
+                              onBlur={() => {
+                                const normalized = normalizeClock(row.close);
+                                if (normalized && normalized !== row.close) {
+                                  updateHour(day.value, { close: normalized });
+                                }
+                              }}
+                              className="h-11 w-[76px] rounded-lg bg-zinc-800 px-1 text-center text-sm tabular-nums md:w-[120px] md:px-2"
+                            />
                           </div>
                         )}
+                        <label className="flex min-h-11 shrink-0 items-center gap-2 text-xs text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={row.closed}
+                            onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
+                            className="h-5 w-5"
+                          />
+                          {t("admin.shopClosed")}
+                        </label>
                       </div>
                     );
                   })}

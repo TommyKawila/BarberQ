@@ -639,6 +639,7 @@ export function BookingApp() {
       ? format(parseISO(`${activeDate}T00:00:00`), "EEEE d MMMM yyyy", { locale: dateLocale })
       : null;
   const showSummary = bookingSummaryReady(barberId, activeDate, selectedStart) && selectedSlot;
+  const greetingName = profile.displayName?.trim() ?? "";
 
   return (
     <div className="flex flex-col gap-8 px-4 pb-[min(52vh,28rem)] pt-5">
@@ -648,19 +649,24 @@ export function BookingApp() {
         prototypeMode={prototypeMode}
       />
 
-      <div className="flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-400 text-sm font-semibold text-zinc-950">
-          {(profile.displayName ?? "?").charAt(0)}
-        </span>
+      {greetingName ? (
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-400 text-sm font-semibold text-zinc-950">
+            {greetingName.charAt(0)}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium text-zinc-100">
+              {t("booking.hello").replace("{name}", greetingName)}
+            </p>
+            <p className="text-xs text-zinc-400">{t(staffIdentityKey(staff))}</p>
+          </div>
+        </div>
+      ) : (
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-zinc-100">
-            {profile.displayName
-              ? t("booking.hello").replace("{name}", profile.displayName)
-              : t("booking.hello").replace("{name}", "—")}
-          </p>
+          <p className="text-sm font-medium text-zinc-100">{t("booking.helloGuest")}</p>
           <p className="text-xs text-zinc-400">{t(staffIdentityKey(staff))}</p>
         </div>
-      </div>
+      )}
 
       <Link
         href={shopPath("/bookings")}
