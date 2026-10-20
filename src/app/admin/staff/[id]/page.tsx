@@ -15,7 +15,10 @@ import { formatBreaksSummary, formatOffDaysSummary } from "@/lib/barber/schedule
 import { fitLogoFile } from "@/lib/image/fit-logo";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
-import { ADMIN_NAV_STICKY_BOTTOM_CLASS } from "@/lib/admin/admin-nav-items";
+import {
+  ADMIN_STICKY_SAVE_BAR_CLASS,
+  ADMIN_THUMB_BAR_OFFSET_CLASS,
+} from "@/lib/admin/admin-nav-items";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { barberLabel, type Barber } from "@/types/booking";
 
@@ -233,7 +236,7 @@ export default function EditBarberPage() {
 
   return (
     <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-5 px-4 py-5 pb-28">
+      <div className={`flex flex-col gap-5 px-4 py-5 ${ADMIN_THUMB_BAR_OFFSET_CLASS}`}>
         <Link href={shopPath("/admin/staff")} className="text-sm text-amber-400">
           ← {t("admin.backToBoard")}
         </Link>
@@ -447,8 +450,11 @@ export default function EditBarberPage() {
           </section>
         ) : null}
 
-        <div className={`fixed inset-x-0 z-10 border-t border-zinc-800 bg-zinc-950/95 px-4 py-3 backdrop-blur ${ADMIN_NAV_STICKY_BOTTOM_CLASS}`}>
-          <div className="flex gap-2">
+        <div
+          className={ADMIN_STICKY_SAVE_BAR_CLASS}
+          data-testid="admin-sticky-save-bar"
+        >
+          <div className="mx-auto flex max-w-7xl gap-2 lg:px-4 xl:px-6">
             <button
               type="button"
               disabled={saving}

@@ -23,7 +23,10 @@ export function AdminShell({
         >
           {children}
           {thumbBar ? (
-            <div className="fixed inset-x-0 z-30 border-t border-zinc-800 bg-zinc-950/95 px-3 py-2 backdrop-blur bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:mx-auto md:max-w-[640px] lg:static lg:mx-0 lg:mt-4 lg:flex lg:max-w-none lg:justify-end lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+            <div
+              className="fixed inset-x-0 z-30 border-t border-zinc-800 bg-zinc-950 px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:mx-auto md:max-w-[640px] lg:static lg:mx-0 lg:mt-4 lg:flex lg:max-w-none lg:justify-end lg:border-0 lg:bg-transparent lg:p-0"
+              data-testid="admin-thumb-bar"
+            >
               <div className="w-full lg:w-auto lg:min-w-[20rem] lg:max-w-md">{thumbBar}</div>
             </div>
           ) : null}
