@@ -2,10 +2,13 @@
 -- NOT an auto migration — Tommy runs this in the prod SQL editor.
 -- Slug matches create_shop naming: lower(replace('ClipperQ Demo',' ','')) = clipperqdemo
 -- PR #20 used display name "ClipperQ Demo" only (no shop row).
+--
+-- Pre-check (expect 0 rows before first seed; see docs/line-rich-menu.md):
+--   select id, name, slug, is_demo from shops where slug = 'clipperqdemo';
 
 begin;
 
--- Demo flag: skip LINE pushes / treat as non-billable in app code.
+-- Keep add-if-not-exists even though migration 0040 adds the column (safe on older DBs).
 alter table shops
   add column if not exists is_demo boolean not null default false;
 
@@ -17,6 +20,24 @@ comment on column shops.is_demo is
 -- barbers …011 …014
 -- services …021 …022
 
+-- Abort if slug clipperqdemo already belongs to a different shop id.
+do $$
+declare
+  v_existing_id uuid;
+  v_demo_id constant uuid := 'c1a55e00-d300-4000-a000-000000000001';
+begin
+  select id into v_existing_id
+  from shops
+  where slug = 'clipperqdemo';
+
+  if v_existing_id is not null and v_existing_id <> v_demo_id then
+    raise exception
+      'ABORT: slug clipperqdemo already belongs to shop id % (expected %). Refusing to overwrite. Resolve the conflict or pick another slug before re-running this seed.',
+      v_existing_id,
+      v_demo_id;
+  end if;
+end $$;
+
 insert into shops (id, name, slug, status, subscribed_until, is_demo)
 values (
   'c1a55e00-d300-4000-a000-000000000001',
@@ -26,16 +47,17 @@ values (
   null,
   true
 )
-on conflict (slug) do nothing;
+on conflict (id) do nothing;
 
--- Ensure flag/name if row already existed from a partial run
+-- Only touch the fixed demo row (never update by slug alone).
 update shops
 set
   is_demo = true,
   name = 'ClipperQ Demo',
+  slug = 'clipperqdemo',
   status = 'active',
   updated_at = now()
-where slug = 'clipperqdemo';
+where id = 'c1a55e00-d300-4000-a000-000000000001';
 
 insert into shop_settings (shop_id, shop_name, hours, shop_line_url, shop_phone)
 values (
@@ -147,16 +169,16 @@ select
   (select count(*) from shop_line_channels c where c.shop_id = s.id) as line_channel_count,
   (select count(*) from barbers b where b.shop_id = s.id and b.line_id is not null) as barbers_with_line
 from shops s
-where s.slug = 'clipperqdemo';
+where s.id = 'c1a55e00-d300-4000-a000-000000000001'
+  and s.slug = 'clipperqdemo'
+  and s.is_demo = true;
 
 select b.id, b.name, b.role, b.line_id, b.slot_duration_minutes, b.is_bookable
 from barbers b
-join shops s on s.id = b.shop_id
-where s.slug = 'clipperqdemo'
+where b.shop_id = 'c1a55e00-d300-4000-a000-000000000001'
 order by b.name;
 
 select sv.name, sv.price_baht, sv.is_default, sv.is_active
 from shop_services sv
-join shops s on s.id = sv.shop_id
-where s.slug = 'clipperqdemo'
+where sv.shop_id = 'c1a55e00-d300-4000-a000-000000000001'
 order by sv.sort_order;

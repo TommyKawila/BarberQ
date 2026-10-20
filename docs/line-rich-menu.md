@@ -10,12 +10,26 @@ Set `NEXT_PUBLIC_APP_URL` (no trailing slash).
 | --- | --- |
 | Display name | ClipperQ Demo |
 | Slug | **`clipperqdemo`** (default `NEXT_PUBLIC_DEMO_SHOP_SLUG`) |
+| Fixed shop id | `c1a55e00-d300-4000-a000-000000000001` |
 | Seed (prod, manual) | `supabase/scripts/seed_clipperq_demo_prod.sql` |
 | Rollback | `supabase/scripts/rollback_clipperq_demo_prod.sql` |
-| Flag | `shops.is_demo = true` (script adds column if missing) — app skips LINE pushes; not billed |
+| Migration | `supabase/migrations/0040_shops_is_demo.sql` (`shops.is_demo`) |
+| Flag | `shops.is_demo = true` (migration + seed add-if-not-exists) — app skips LINE pushes; not billed |
 | Not included | LINE OA credentials, owner LINE user id, real customers |
 
 Tommy runs the seed SQL in production (not an auto migration). Until the row exists, `/demo` and `/demo/board` show a Thai “ยังไม่พร้อม” fallback (never falls back to `phinxstudio` / `testshop` / `barberqpilottest`).
+
+### Pre-check (slug free)
+
+Run before the first seed. Expect **0 rows**. If a row appears with a different `id`, do **not** run the seed — it will abort rather than overwrite.
+
+```sql
+select id, name, slug, is_demo
+from shops
+where slug = 'clipperqdemo';
+```
+
+The seed also aborts with a clear error if `clipperqdemo` already belongs to another shop id. Rollback deletes only `where id = 'c1a55e00-d300-4000-a000-000000000001' and is_demo = true`.
 
 ## Button URLs
 

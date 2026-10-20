@@ -67,8 +67,28 @@ describe("demo shop + ClipperQ OA constants", () => {
     assert.match(seed, /ON CONFLICT/i);
     assert.match(seed, /begin;/i);
     assert.match(seed, /ตัดผม \+ เฟด/);
+    assert.match(seed, /ABORT: slug clipperqdemo already belongs/);
+    assert.match(seed, /on conflict \(id\) do nothing/i);
+    assert.match(
+      seed,
+      /update shops[\s\S]*?where id = 'c1a55e00-d300-4000-a000-000000000001'/i,
+    );
+    assert.doesNotMatch(
+      seed,
+      /update shops[\s\S]*?where slug = 'clipperqdemo'/i,
+    );
     assert.match(rollback, /delete from shops/i);
-    assert.match(rollback, /clipperqdemo/);
+    assert.match(
+      rollback,
+      /id = 'c1a55e00-d300-4000-a000-000000000001'\s+and is_demo = true/i,
+    );
+    assert.doesNotMatch(rollback, /where slug = 'clipperqdemo'/);
+    const migration = readFileSync(
+      resolve(root, "supabase/migrations/0040_shops_is_demo.sql"),
+      "utf8",
+    );
+    assert.match(migration, /add column if not exists is_demo/i);
+    assert.match(migration, /comment on column shops\.is_demo/i);
   });
 
   it("memory store has demo shop; public board strips PII", async () => {
