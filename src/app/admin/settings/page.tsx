@@ -33,6 +33,13 @@ import {
   normalizeShopLineUrl,
   normalizeShopPhone,
 } from "@/lib/shop/shop-contact";
+import {
+  SETTINGS_SPY_HEADER_OFFSET_PX,
+  findVerticalScrollRoot,
+  getScrollTop,
+  measureSectionTops,
+  resolveActiveSettingsSection,
+} from "@/lib/admin/settings-section-spy";
 
 const WEEKDAYS: { value: number; key: MessageKey; shortTh: string; shortEn: string }[] = [
   { value: 0, key: "common.sunday", shortTh: "อา", shortEn: "Sun" },
@@ -272,7 +279,14 @@ export default function AdminSettingsPage() {
     if (!el) return;
     scrollingToRef.current = id;
     setActiveSection(id);
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const root = findVerticalScrollRoot(el);
+    const [sectionTop] = measureSectionTops([el], root);
+    const target = Math.max(0, (sectionTop ?? 0) - SETTINGS_SPY_HEADER_OFFSET_PX);
+    if (root === window) {
+      window.scrollTo({ top: target, behavior: "smooth" });
+    } else {
+      root.scrollTo({ top: target, behavior: "smooth" });
+    }
     history.replaceState(null, "", `#${id}`);
     window.setTimeout(() => {
       if (scrollingToRef.current === id) scrollingToRef.current = null;
@@ -290,26 +304,41 @@ export default function AdminSettingsPage() {
 
   useEffect(() => {
     if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
-    const elements = sectionTabs
-      .map((tab) => document.getElementById(tab.id))
+    const ids = sectionTabs.map((tab) => tab.id);
+    const elements = ids
+      .map((id) => document.getElementById(id))
       .filter((el): el is HTMLElement => Boolean(el));
     if (elements.length === 0) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (scrollingToRef.current) return;
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        const top = visible[0];
-        if (top?.target.id) {
-          setActiveSection(top.target.id as SettingsSectionId);
-        }
-      },
-      { rootMargin: "-40% 0px -55% 0px", threshold: [0.1, 0.25, 0.5] },
-    );
-    for (const el of elements) observer.observe(el);
-    return () => observer.disconnect();
+    const root = findVerticalScrollRoot(elements[0]!);
+
+    const syncActive = () => {
+      if (scrollingToRef.current) return;
+      const next = resolveActiveSettingsSection({
+        sectionIds: ids,
+        sectionTops: measureSectionTops(elements, root),
+        scrollTop: getScrollTop(root),
+      });
+      if (next) setActiveSection(next as SettingsSectionId);
+    };
+
+    syncActive();
+    const onScroll = () => syncActive();
+    const onResize = () => syncActive();
+    if (root === window) {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    } else {
+      root.addEventListener("scroll", onScroll, { passive: true });
+    }
+    window.addEventListener("resize", onResize);
+    return () => {
+      if (root === window) {
+        window.removeEventListener("scroll", onScroll);
+      } else {
+        root.removeEventListener("scroll", onScroll);
+      }
+      window.removeEventListener("resize", onResize);
+    };
   }, [profile, ready, sectionTabs]);
 
   const putSettings = useCallback(
@@ -527,8 +556,8 @@ export default function AdminSettingsPage() {
 
   const previewShopName = normalizeShopName(shopNameInput);
 
-  const sectionIndexLinks = (
-    <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] lg:flex-col lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+  const sectionIndexLinksMobile = (
+    <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
       {sectionTabs.map((tab) => {
         const active = activeSection === tab.id;
         return (
@@ -540,10 +569,36 @@ export default function AdminSettingsPage() {
               event.preventDefault();
               scrollToSection(tab.id);
             }}
-            className={`inline-flex h-11 shrink-0 snap-start items-center rounded-full px-4 text-sm font-medium transition lg:w-full lg:justify-start ${
+            className={`inline-flex h-11 shrink-0 snap-start items-center rounded-full px-4 text-sm font-medium transition ${
               active
                 ? "bg-amber-400/15 text-amber-400"
                 : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {t(tab.labelKey)}
+          </a>
+        );
+      })}
+    </div>
+  );
+
+  const sectionIndexLinksDesktop = (
+    <div className="flex flex-col">
+      {sectionTabs.map((tab) => {
+        const active = activeSection === tab.id;
+        return (
+          <a
+            key={tab.id}
+            href={`#${tab.id}`}
+            aria-current={active ? "true" : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              scrollToSection(tab.id);
+            }}
+            className={`flex min-h-11 items-center border-l-2 px-3 text-sm transition ${
+              active
+                ? "border-amber-400 font-medium text-amber-400"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
             }`}
           >
             {t(tab.labelKey)}
@@ -593,7 +648,7 @@ export default function AdminSettingsPage() {
             aria-label={t("admin.settings")}
             className="sticky top-4 z-20 mb-4 hidden lg:block"
           >
-            {sectionIndexLinks}
+            {sectionIndexLinksDesktop}
           </nav>
 
           <div className="mx-auto flex w-full max-w-[640px] flex-col gap-6">
@@ -601,7 +656,7 @@ export default function AdminSettingsPage() {
               aria-label={t("admin.settings")}
               className="sticky top-0 z-20 -mx-4 border-b border-zinc-800 bg-zinc-950/95 px-4 py-2 backdrop-blur lg:hidden"
             >
-              {sectionIndexLinks}
+              {sectionIndexLinksMobile}
             </nav>
 
             <section id="shop-info" className={`${SECTION_SCROLL} flex flex-col gap-2`}>
