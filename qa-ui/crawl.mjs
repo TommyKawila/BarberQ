@@ -90,10 +90,34 @@ async function establishQaE2eAuth(context, viewportId) {
       : `timeout path=${new URL(page.url()).pathname} chrome=${hasChrome} cookie=${hasCookie} storage=${hasStorage}`;
     if (!ok) {
       console.error(`QA E2E auth failed (${viewportId}): ${detail}`);
-    } else {
-      console.log(`QA E2E auth ok (${viewportId}): ${detail}`);
+      return { ok, detail };
     }
-    return { ok, detail };
+
+    // Chromium drops sessionStorage when the last page of an origin closes.
+    // Re-inject the QA client session for subsequent pages in this context.
+    const session = await page.evaluate(() => {
+      try {
+        const raw = sessionStorage.getItem("barberq_qa_e2e_token");
+        return raw ? JSON.parse(raw) : null;
+      } catch {
+        return null;
+      }
+    });
+    if (!session?.token) {
+      const msg = "sessionStorage empty after auth signal";
+      console.error(`QA E2E auth failed (${viewportId}): ${msg}`);
+      return { ok: false, detail: msg };
+    }
+    await context.addInitScript((payload) => {
+      try {
+        sessionStorage.setItem("barberq_qa_e2e_token", JSON.stringify(payload));
+      } catch {
+        /* ignore */
+      }
+    }, session);
+
+    console.log(`QA E2E auth ok (${viewportId}): ${detail}`);
+    return { ok: true, detail };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`QA E2E auth error (${viewportId}): ${msg}`);
