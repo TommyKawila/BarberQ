@@ -1,6 +1,12 @@
 import liff from "@line/liff";
+import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
 
 export function getLineAuthHeaders(userId?: string | null): HeadersInit {
+  const qa = readQaE2eClientSession();
+  if (qa?.token) {
+    return { Authorization: `Bearer ${qa.token}` };
+  }
+
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
   if (!liffId) {
     if (!userId) return {};

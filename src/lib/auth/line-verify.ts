@@ -1,4 +1,5 @@
 import { assertProductionConfig, isProductionRuntime } from "@/lib/env";
+import { isQaE2eBearerToken, verifyQaE2eToken } from "@/lib/qa-e2e/session";
 
 export interface VerifiedLineUser {
   userId: string;
@@ -28,6 +29,13 @@ export async function verifyLineAccessToken(
 ): Promise<VerifiedLineUser | null> {
   const token = accessToken.trim();
   if (!token) return null;
+
+  // QA-only signed bearer (barberq-qa + QA_E2E_SECRET). Never verifies on Production.
+  if (isQaE2eBearerToken(token)) {
+    const payload = verifyQaE2eToken(token);
+    if (!payload) return null;
+    return { userId: payload.lineUserId, displayName: "QA E2E" };
+  }
 
   if (isLineAuthMockMode()) {
     return { userId: token };

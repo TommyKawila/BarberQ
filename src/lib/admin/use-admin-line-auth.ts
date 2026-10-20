@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import liff from "@line/liff";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
+import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
 import { saveLiffReturnPath } from "@/lib/line/liff-return";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
@@ -24,6 +25,7 @@ export function useAdminLineAuth() {
   const [ready, setReady] = useState(false);
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [qaE2eMode, setQaE2eMode] = useState(false);
 
   const loadProfile = useCallback(
     async (lineId: string, displayName = "", pictureUrl?: string) => {
@@ -53,6 +55,17 @@ export function useAdminLineAuth() {
   );
 
   useEffect(() => {
+    const qa = readQaE2eClientSession();
+    if (qa?.token) {
+      setQaE2eMode(true);
+      void loadProfile(qa.lineUserId || "qa-e2e", "QA E2E")
+        .catch((err: unknown) => {
+          setError(err instanceof Error ? err.message : "Auth failed");
+        })
+        .finally(() => setReady(true));
+      return;
+    }
+
     if (mockMode) {
       void loadProfile(MOCK_OWNER_LINE_ID, "Owner (Mock)")
         .catch((err: unknown) => {
@@ -87,17 +100,24 @@ export function useAdminLineAuth() {
   }, [liffId, loadProfile, mockMode]);
 
   const login = useCallback(() => {
-    if (!ready || mockMode) return;
+    if (!ready || mockMode || qaE2eMode) return;
     saveLiffReturnPath(window.location.pathname);
     liff.login({ redirectUri: window.location.origin });
-  }, [mockMode, ready]);
+  }, [mockMode, qaE2eMode, ready]);
 
   const authHeaders = useMemo(
     () => getLineAuthHeaders(mockMode ? profile?.lineId : profile?.lineId),
     [mockMode, profile?.lineId],
   );
 
-  return { ready, profile, error, login, authHeaders, mockMode };
+  return {
+    ready,
+    profile,
+    error,
+    login,
+    authHeaders,
+    mockMode: mockMode || qaE2eMode,
+  };
 }
 
 /** Redirects to shop login when LINE session is missing (non-mock). */
