@@ -22,9 +22,6 @@ export const ADMIN_NAV_PATHS: Record<AdminNavDestinationId, string> = {
   booking: "/",
 };
 
-/** Desktop side rail width (`AdminNav` aside is `w-56`). */
-export const ADMIN_SIDEBAR_WIDTH_REM = 14; // 3.5rem * 4 = 14rem → Tailwind `w-56`
-
 /** Content bottom padding so sticky thumb bar + bottom nav (~154px) don't cover content (AD-16). */
 export const ADMIN_NAV_OFFSET_CLASS =
   "pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:pb-6";
