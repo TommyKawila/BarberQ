@@ -78,11 +78,21 @@ export async function collectAnomalies(page, ctx) {
         return x * y;
       }
 
+      function stickyChrome(el) {
+        return Boolean(
+          el.closest('[data-testid="admin-thumb-bar"]') ||
+            el.closest("nav.fixed") ||
+            el.closest('[data-testid="admin-nav-more"]')?.closest("nav"),
+        );
+      }
+
       for (let i = 0; i < inView.length; i++) {
         for (let j = i + 1; j < inView.length; j++) {
           const a = inView[i];
           const b = inView[j];
           if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+          // Sticky thumb bar / bottom nav intentionally overlays scrollable content.
+          if (stickyChrome(a.el) !== stickyChrome(b.el)) continue;
           const area = overlapArea(a.r, b.r);
           if (area > 80) {
             out.overlaps.push({

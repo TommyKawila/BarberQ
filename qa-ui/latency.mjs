@@ -21,10 +21,23 @@ export async function measureNavLatency(page, shopSlug) {
     const t0 = Date.now();
     await moreBtn.first().click({ timeout: 2000 }).catch(() => {});
     await page
-      .waitForSelector(
-        '[role="dialog"][aria-modal="true"], #admin-more-rail, [data-testid="admin-nav-more"][aria-expanded="true"][data-state="open"]',
-        { timeout: 2000 },
-      )
+      .waitForFunction(() => {
+        const rail = document.querySelector("#admin-more-rail");
+        if (rail) {
+          const r = rail.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return true;
+        }
+        const dialog = document.querySelector('[role="dialog"][aria-modal="true"]');
+        if (dialog) {
+          const r = dialog.getBoundingClientRect();
+          if (r.width > 0 && r.height > 0) return true;
+        }
+        return Boolean(
+          document.querySelector(
+            '[data-testid="admin-nav-more"][aria-expanded="true"][data-state="open"]',
+          ),
+        );
+      }, { timeout: 2000 })
       .catch(() => {});
     const ms = Date.now() - t0;
     results.push(latencyIssue("More menu", ms));
