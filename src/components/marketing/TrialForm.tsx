@@ -16,6 +16,7 @@ import {
   type TrialFormField,
 } from "@/lib/marketing/trial-form-ux";
 import { fillOfferCopy } from "@/lib/marketing/offer";
+import { resolveClipperqSupportLineUrl } from "@/lib/marketing/clipperq-oa";
 
 const TRUST = [1, 2, 3, 4] as const;
 const ERROR_KEY: Record<TrialFormField, MessageKey> = {
@@ -25,11 +26,8 @@ const ERROR_KEY: Record<TrialFormField, MessageKey> = {
   barberCount: "marketing.trial.err.barberCount",
 };
 
-function getSupportLineUrl(): string | undefined {
-  if (typeof process !== "undefined" && process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL) {
-    return process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
-  }
-  return undefined;
+function getSupportLineUrl(): string {
+  return resolveClipperqSupportLineUrl();
 }
 
 function fieldClass(invalid: boolean): string {
@@ -172,17 +170,15 @@ export function TrialForm() {
             <p className="mt-3 text-[15px] leading-relaxed text-zinc-300">
               {t("marketing.trial.successBody")}
             </p>
-            {supportUrl ? (
-              <a
-                href={supportUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackMarketingEvent("support_line_click")}
-                className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950"
-              >
-                {t("marketing.trial.line")}
-              </a>
-            ) : null}
+            <a
+              href={supportUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => trackMarketingEvent("support_line_click")}
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950"
+            >
+              {t("marketing.trial.line")}
+            </a>
             <Link
               href="/"
               className="mt-4 inline-flex min-h-11 items-center justify-center text-sm text-zinc-400 underline underline-offset-4 hover:text-zinc-200"
@@ -217,6 +213,18 @@ export function TrialForm() {
               </li>
             ))}
           </ul>
+          <a
+            href={supportUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => trackMarketingEvent("support_line_click")}
+            className="mt-6 inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-xl border border-[#F6AD34]/60 bg-transparent px-6 py-3 text-[15px] font-semibold text-[#F6AD34] hover:bg-[#F6AD34]/10"
+          >
+            {t("marketing.trial.lineSignup")}
+          </a>
+          <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+            {t("marketing.trial.lineSignupHint")}
+          </p>
           <p className="mt-6 text-sm leading-relaxed text-zinc-400">
             {td("marketing.trial.afterSubmit")}
           </p>

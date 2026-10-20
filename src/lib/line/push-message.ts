@@ -1,3 +1,4 @@
+import { isDemoShopId } from "@/lib/demo/demo-shop-guards";
 import { getOptionalLinePushToken } from "@/lib/env";
 import { recordLineMessage, type LineMessageKind } from "@/lib/line/message-log";
 import { pushMessages } from "@/lib/line/messaging-api";
@@ -75,6 +76,18 @@ export async function pushMessagesForShop(
   const to = lineUserId.trim();
   if (!to || messages.length === 0) {
     return { sent: false, skippedReason: "invalid_input" };
+  }
+
+  if (await isDemoShopId(shopId)) {
+    console.warn(
+      JSON.stringify({
+        event: "line_push_skipped",
+        reason: "demo_shop",
+        shopId,
+        kind,
+      }),
+    );
+    return { sent: false, skippedReason: "disabled" };
   }
 
   const quota = await getShopPushQuota(shopId);

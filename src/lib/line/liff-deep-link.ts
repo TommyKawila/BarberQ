@@ -16,6 +16,8 @@ const RESERVED_FIRST_SEGMENTS = new Set([
   "superadmin",
   "api",
   "c",
+  "demo",
+  "pricing",
   "_next",
   "favicon.ico",
 ]);
