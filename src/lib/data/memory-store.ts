@@ -50,6 +50,8 @@ import { slugifyShopName } from "@/lib/shop/slug";
 const GLOBAL_KEY = "__barberq_memory_store__";
 
 const DEFAULT_SHOP_ID = "00000000-0000-0000-0000-000000000001";
+/** Matches supabase/scripts/seed_clipperq_demo_prod.sql */
+const DEMO_SHOP_ID = "c1a55e00-d300-4000-a000-000000000001";
 const MOCK_OWNER_LINE_ID = "mock-owner-line-id";
 
 interface MemoryState {
@@ -87,7 +89,6 @@ function getState(): MemoryState {
         createdAt: new Date(),
       })),
       recurringBreaks: [],
-      shopServices: [],
       lineOaInstallRequests: [],
       trialLeads: [],
       trialLeadNotes: [],
@@ -101,6 +102,41 @@ function getState(): MemoryState {
           slug: "phinxstudio",
           status: "active",
           subscribed_until: null,
+          is_demo: false,
+          created_at: nowIso(),
+          updated_at: nowIso(),
+        },
+        {
+          id: DEMO_SHOP_ID,
+          name: "ClipperQ Demo",
+          slug: "clipperqdemo",
+          status: "active",
+          subscribed_until: null,
+          is_demo: true,
+          created_at: nowIso(),
+          updated_at: nowIso(),
+        },
+      ],
+      shopServices: [
+        {
+          id: "c1a55e00-d300-4000-a000-000000000021",
+          shop_id: DEMO_SHOP_ID,
+          name: "ตัดผม + เฟด",
+          price_baht: 200,
+          is_default: true,
+          is_active: true,
+          sort_order: 0,
+          created_at: nowIso(),
+          updated_at: nowIso(),
+        },
+        {
+          id: "c1a55e00-d300-4000-a000-000000000022",
+          shop_id: DEMO_SHOP_ID,
+          name: "ตัด + เฟด + โกนหนวด",
+          price_baht: 250,
+          is_default: false,
+          is_active: true,
+          sort_order: 1,
           created_at: nowIso(),
           updated_at: nowIso(),
         },
@@ -120,6 +156,20 @@ function getState(): MemoryState {
       queueAheadPushEnabled: true,
       showFlexBrandFooter: true,
     };
+    g[GLOBAL_KEY].shopSettings[DEMO_SHOP_ID] = {
+      shopId: DEMO_SHOP_ID,
+      logoDataUrl: null,
+      coverImageUrl: null,
+      shopName: "ClipperQ Demo",
+      lineUrl: null,
+      phone: null,
+      hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+      remindersEnabled: false,
+      reminderLeadMinutes: 120,
+      bookingConfirmPushEnabled: false,
+      queueAheadPushEnabled: false,
+      showFlexBrandFooter: true,
+    };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
     g[GLOBAL_KEY].recurringBreaks = [];
@@ -132,10 +182,32 @@ function getState(): MemoryState {
         slug: "phinxstudio",
         status: "active",
         subscribed_until: null,
+        is_demo: false,
+        created_at: nowIso(),
+        updated_at: nowIso(),
+      },
+      {
+        id: DEMO_SHOP_ID,
+        name: "ClipperQ Demo",
+        slug: "clipperqdemo",
+        status: "active",
+        subscribed_until: null,
+        is_demo: true,
         created_at: nowIso(),
         updated_at: nowIso(),
       },
     ];
+  } else if (!g[GLOBAL_KEY].shops.some((s) => s.slug === "clipperqdemo")) {
+    g[GLOBAL_KEY].shops.push({
+      id: DEMO_SHOP_ID,
+      name: "ClipperQ Demo",
+      slug: "clipperqdemo",
+      status: "active",
+      subscribed_until: null,
+      is_demo: true,
+      created_at: nowIso(),
+      updated_at: nowIso(),
+    });
   }
   if (!g[GLOBAL_KEY].lineOaInstallRequests) {
     g[GLOBAL_KEY].lineOaInstallRequests = [];
@@ -218,16 +290,66 @@ function inviteToken(): string {
   return crypto.randomUUID().replace(/-/g, "");
 }
 
-const barbers: Barber[] = BARBER_SEED.map((b, index) => ({
-  ...b,
-  off_days: [...b.off_days],
-  created_at: nowIso(),
-  shop_id: DEFAULT_SHOP_ID,
-  role: index === 0 ? "owner" : "barber",
-  line_id: index === 0 ? MOCK_OWNER_LINE_ID : null,
-  is_bookable: true,
-  is_active: true,
-}));
+const barbers: Barber[] = [
+  ...BARBER_SEED.map((b, index) => ({
+    ...b,
+    off_days: [...b.off_days],
+    created_at: nowIso(),
+    shop_id: DEFAULT_SHOP_ID,
+    role: (index === 0 ? "owner" : "barber") as Barber["role"],
+    line_id: index === 0 ? MOCK_OWNER_LINE_ID : null,
+    is_bookable: true,
+    is_active: true,
+  })),
+  {
+    id: "c1a55e00-d300-4000-a000-000000000011",
+    name: "มิกซ์ (ตัวอย่าง)",
+    slot_duration_minutes: 30,
+    off_days: [],
+    created_at: nowIso(),
+    shop_id: DEMO_SHOP_ID,
+    role: "owner",
+    line_id: null,
+    is_bookable: true,
+    is_active: true,
+  },
+  {
+    id: "c1a55e00-d300-4000-a000-000000000012",
+    name: "โอ๊ต (ตัวอย่าง)",
+    slot_duration_minutes: 45,
+    off_days: [],
+    created_at: nowIso(),
+    shop_id: DEMO_SHOP_ID,
+    role: "barber",
+    line_id: null,
+    is_bookable: true,
+    is_active: true,
+  },
+  {
+    id: "c1a55e00-d300-4000-a000-000000000013",
+    name: "เจ (ตัวอย่าง)",
+    slot_duration_minutes: 30,
+    off_days: [3],
+    created_at: nowIso(),
+    shop_id: DEMO_SHOP_ID,
+    role: "barber",
+    line_id: null,
+    is_bookable: true,
+    is_active: true,
+  },
+  {
+    id: "c1a55e00-d300-4000-a000-000000000014",
+    name: "นนท์ (ตัวอย่าง)",
+    slot_duration_minutes: 60,
+    off_days: [],
+    created_at: nowIso(),
+    shop_id: DEMO_SHOP_ID,
+    role: "barber",
+    line_id: null,
+    is_bookable: true,
+    is_active: true,
+  },
+];
 
 function countFutureConfirmedAppointments(barberId: string): number {
   const now = Date.now();
