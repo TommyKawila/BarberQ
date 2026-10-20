@@ -459,7 +459,7 @@ export default function AdminStaffPage() {
                         type="button"
                         disabled={isPending}
                         onClick={() => void toggleBookable(barber)}
-                        className={`inline-flex min-h-8 items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${
+                        className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-full border px-3 py-0.5 text-xs ${
                           bookable
                             ? "border-emerald-500/50 text-emerald-300"
                             : "border-zinc-600 text-zinc-300"

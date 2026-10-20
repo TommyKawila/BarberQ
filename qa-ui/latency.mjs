@@ -15,17 +15,16 @@ export async function measureNavLatency(page, shopSlug) {
     { name: "Summary", sel: `a[href*="/${shopSlug}/admin/stats"]` },
   ];
 
-  // Try open More sheet first if present
-  const moreBtn = page.locator(
-    'button:has-text("เพิ่มเติม"), button:has-text("More"), [aria-label*="เพิ่มเติม"], [aria-label*="More"]',
-  );
+  // Visible More only — hidden lg:flex side button would burn ~30s actionability wait.
+  const moreBtn = page.locator('[data-testid="admin-nav-more"]').filter({ visible: true });
   if ((await moreBtn.count()) > 0) {
     const t0 = Date.now();
-    await moreBtn.first().click({ trial: false }).catch(() => {});
+    await moreBtn.first().click({ timeout: 2000 }).catch(() => {});
     await page
-      .waitForSelector('[role="dialog"], [data-state="open"], nav [role="menu"]', {
-        timeout: 4000,
-      })
+      .waitForSelector(
+        '[role="dialog"][aria-modal="true"], #admin-more-rail, [data-testid="admin-nav-more"][aria-expanded="true"][data-state="open"]',
+        { timeout: 2000 },
+      )
       .catch(() => {});
     const ms = Date.now() - t0;
     results.push(latencyIssue("More menu", ms));

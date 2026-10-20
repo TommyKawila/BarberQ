@@ -248,9 +248,28 @@ function MyScheduleContent() {
     );
   }
 
+  const breakThumbBar = showBreakForm ? (
+    <button
+      type="button"
+      disabled={creatingBreak || breakWeekday === null}
+      onClick={() => void createBreak()}
+      className="min-h-11 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+    >
+      {t("admin.addBreak")}
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setShowBreakForm(true)}
+      className="min-h-11 w-full rounded-xl border border-zinc-700 text-sm text-zinc-200"
+    >
+      {t("admin.addBreak")}
+    </button>
+  );
+
   return (
-    <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-5 px-4 py-5">
+    <AdminShell role={profile.role} thumbBar={breakThumbBar}>
+      <div className="flex flex-col gap-5 px-4 py-5 pb-28 lg:pb-4">
         <header>
           {mockMode ? (
             <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
@@ -452,24 +471,8 @@ function MyScheduleContent() {
                   className="min-h-11 rounded-lg bg-zinc-800 px-3"
                 />
               </label>
-              <button
-                type="button"
-                disabled={creatingBreak || breakWeekday === null}
-                onClick={() => void createBreak()}
-                className="min-h-11 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-              >
-                {t("admin.addBreak")}
-              </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowBreakForm(true)}
-              className="mt-3 min-h-11 w-full rounded-xl border border-zinc-700 text-sm text-zinc-200"
-            >
-              {t("admin.addBreak")}
-            </button>
-          )}
+          ) : null}
           {breakMessage ? (
             <p className={`mt-2 text-sm ${breakMessageIsError ? "text-red-400" : "text-emerald-400"}`}>
               {breakMessage}

@@ -109,8 +109,20 @@ export default function AdminServicesPage() {
   }
 
   return (
-    <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-4 px-4 py-5">
+    <AdminShell
+      role={profile.role}
+      thumbBar={
+        <button
+          type="button"
+          disabled={saving || !name.trim()}
+          onClick={() => void addService()}
+          className="min-h-11 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+        >
+          {t("admin.servicesAdd")}
+        </button>
+      }
+    >
+      <div className="flex flex-col gap-4 px-4 py-5 pb-28 lg:pb-4">
         <header>
           <Link href={shopPath("/admin/settings")} className="text-[11px] text-amber-400 underline">
             {t("common.back")}
@@ -203,14 +215,6 @@ export default function AdminServicesPage() {
               className="min-h-11 rounded-lg bg-zinc-800 px-3"
             />
           </label>
-          <button
-            type="button"
-            disabled={saving || !name.trim()}
-            onClick={() => void addService()}
-            className="mt-3 min-h-11 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-          >
-            {t("admin.servicesAdd")}
-          </button>
         </section>
       </div>
     </AdminShell>

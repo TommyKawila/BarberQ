@@ -191,6 +191,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             aria-haspopup={side ? "true" : "dialog"}
             aria-controls={side ? "admin-more-rail" : titleId}
             aria-label={t("admin.nav.more")}
+            data-state={moreOpen ? "open" : "closed"}
             onClick={() => setMoreOpen((open) => !open)}
             className={className}
             data-testid="admin-nav-more"
@@ -328,6 +329,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             ref={railMoreRef}
             className="mt-3 border-t border-zinc-800 pt-3"
             role="group"
+            data-state="open"
             aria-label={t("admin.moreMenuTitle")}
           >
             <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
