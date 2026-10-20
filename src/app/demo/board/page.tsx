@@ -1,10 +1,14 @@
-import { redirect } from "next/navigation";
-import { demoShopBoardPath } from "@/lib/marketing/demo-shop";
+import { DemoBoard } from "@/components/demo/DemoBoard";
+
+export const metadata = {
+  title: "บอร์ดตัวอย่าง · ClipperQ Demo",
+  description: "บอร์ดคิวตัวอย่าง ClipperQ แบบอ่านอย่างเดียว",
+};
 
 /**
- * Stable entry to the demo shop queue board.
- * Board requires staff LINE login (no separate public read-only board).
+ * Public read-only demo board (no staff login).
+ * Mutations stay on /{slug}/admin which requires LINE staff auth.
  */
-export default function DemoBoardRedirectPage() {
-  redirect(demoShopBoardPath());
+export default function DemoBoardPage() {
+  return <DemoBoard />;
 }

@@ -2,14 +2,20 @@
 
 Owner-facing Official Account rich menu (ชุดที่ 2). Chat bar text: `เมนู ClipperQ`.
 
-Set `NEXT_PUBLIC_APP_URL` (no trailing slash). Demo shop slug: `NEXT_PUBLIC_DEMO_SHOP_SLUG` (default `phinxstudio`).
+Set `NEXT_PUBLIC_APP_URL` (no trailing slash).
 
-Reference PNGs (upload in LINE OA Manager):
+## ClipperQ Demo shop
 
-- Large: `/public/rich-menu/clipperq-oa-large.png`
-- Compact: `/public/rich-menu/clipperq-oa-compact.png`
+| | |
+| --- | --- |
+| Display name | ClipperQ Demo |
+| Slug | **`clipperqdemo`** (default `NEXT_PUBLIC_DEMO_SHOP_SLUG`) |
+| Seed (prod, manual) | `supabase/scripts/seed_clipperq_demo_prod.sql` |
+| Rollback | `supabase/scripts/rollback_clipperq_demo_prod.sql` |
+| Flag | `shops.is_demo = true` (script adds column if missing) — app skips LINE pushes; not billed |
+| Not included | LINE OA credentials, owner LINE user id, real customers |
 
-Shop optional templates (for tenant OAs): `/public/rich-menu/shop-large.png`, `shop-compact.png`.
+Tommy runs the seed SQL in production (not an auto migration). Until the row exists, `/demo` and `/demo/board` show a Thai “ยังไม่พร้อม” fallback (never falls back to `phinxstudio` / `testshop` / `barberqpilottest`).
 
 ## Button URLs
 
@@ -17,11 +23,18 @@ Shop optional templates (for tenant OAs): `/public/rich-menu/shop-large.png`, `s
 | --- | --- | --- |
 | A0 | Header lockup | `{NEXT_PUBLIC_APP_URL}/` |
 | 1 | ทดลองใช้ฟรี 30 วัน | `{NEXT_PUBLIC_APP_URL}/trial` |
-| 2 | ดูตัวอย่างระบบ | `{NEXT_PUBLIC_APP_URL}/demo` → `/{DEMO_SLUG}` booking; board: `/demo/board` → `/{DEMO_SLUG}/admin` (staff login) |
+| 2 | ดูตัวอย่างระบบ | `{NEXT_PUBLIC_APP_URL}/demo` → `/{DEMO_SLUG}` booking when seeded; board: `{APP_URL}/demo/board` (public **read-only**, no staff login) |
 | 3 | ราคา | `{NEXT_PUBLIC_APP_URL}/#pricing` (alias `{NEXT_PUBLIC_APP_URL}/pricing`) |
 | 4 | เข้าหน้าร้านของฉัน | `{NEXT_PUBLIC_APP_URL}/owner` |
 | 5 | คู่มือ & FAQ | `{NEXT_PUBLIC_APP_URL}/guide` |
 | 6 | คุยกับทีมงาน | message `คุยกับทีมงาน` (chat mode — no URL) |
+
+Reference PNGs (upload in LINE OA Manager):
+
+- Large: `/public/rich-menu/clipperq-oa-large.png`
+- Compact: `/public/rich-menu/clipperq-oa-compact.png`
+
+Shop optional templates (for tenant OAs): `/public/rich-menu/shop-large.png`, `shop-compact.png`.
 
 Compact layout maps buttons 1–2 + chat; pricing / owner / guide live on the large menu (and can be linked from chat replies).
 

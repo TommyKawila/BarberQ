@@ -230,6 +230,10 @@ describe("marketing layout split", () => {
     assert.match(docs, /#pricing/);
     assert.match(docs, /\/owner/);
     assert.match(docs, /\/guide/);
+    assert.match(docs, /clipperqdemo/);
+    assert.match(docs, /seed_clipperq_demo_prod\.sql/);
+    assert.match(docs, /read-only|อ่านอย่างเดียว/i);
+    assert.doesNotMatch(docs, /default `phinxstudio`/);
   });
 });
 

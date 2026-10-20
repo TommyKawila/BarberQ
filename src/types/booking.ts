@@ -32,6 +32,8 @@ export interface Shop {
   slug: string;
   status: "pending" | "active" | "suspended" | "cancelled";
   subscribed_until: string | null;
+  /** Marketing/demo tenant — no LINE pushes, not billed. */
+  is_demo?: boolean;
   invite_token?: string | null;
   invite_expires_at?: string | null;
   created_at: string;

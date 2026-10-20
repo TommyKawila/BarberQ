@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   DEFAULT_DEMO_SHOP_SLUG,
@@ -8,21 +8,29 @@ import {
   demoShopBookingPath,
   demoShopBookingsPath,
   getDemoShopSlug,
+  isDemoShopSlug,
 } from "@/lib/marketing/demo-shop";
 import { CLIPPERQ_OA_LINE_URL, resolveClipperqSupportLineUrl } from "@/lib/marketing/clipperq-oa";
+import { findDemoShop, shopIsDemo } from "@/lib/demo/demo-shop-guards";
+import { loadPublicDemoBoard, sanitizeDemoColumns } from "@/lib/demo/public-board";
+import type { AdminColumn } from "@/types/booking";
+import { pushMessagesForShop } from "@/lib/line/push-message";
 
 const root = resolve(import.meta.dirname, "../../..");
 
 describe("demo shop + ClipperQ OA constants", () => {
-  it("defaults demo slug and stable paths", () => {
+  it("defaults to clipperqdemo (never phinxstudio)", () => {
     const prev = process.env.NEXT_PUBLIC_DEMO_SHOP_SLUG;
     delete process.env.NEXT_PUBLIC_DEMO_SHOP_SLUG;
-    assert.equal(getDemoShopSlug(), DEFAULT_DEMO_SHOP_SLUG);
-    assert.equal(demoShopBookingPath(), `/${DEFAULT_DEMO_SHOP_SLUG}`);
-    assert.equal(demoShopBoardPath(), `/${DEFAULT_DEMO_SHOP_SLUG}/admin`);
-    assert.equal(demoShopBookingsPath(), `/${DEFAULT_DEMO_SHOP_SLUG}/bookings`);
-    process.env.NEXT_PUBLIC_DEMO_SHOP_SLUG = "clipperq-demo";
-    assert.equal(getDemoShopSlug(), "clipperq-demo");
+    assert.equal(DEFAULT_DEMO_SHOP_SLUG, "clipperqdemo");
+    assert.equal(getDemoShopSlug(), "clipperqdemo");
+    assert.equal(demoShopBookingPath(), "/clipperqdemo");
+    assert.equal(demoShopBoardPath(), "/demo/board");
+    assert.equal(demoShopBookingsPath(), "/clipperqdemo/bookings");
+    assert.equal(isDemoShopSlug("clipperqdemo"), true);
+    assert.equal(isDemoShopSlug("phinxstudio"), false);
+    process.env.NEXT_PUBLIC_DEMO_SHOP_SLUG = "other-demo";
+    assert.equal(getDemoShopSlug(), "other-demo");
     if (prev === undefined) delete process.env.NEXT_PUBLIC_DEMO_SHOP_SLUG;
     else process.env.NEXT_PUBLIC_DEMO_SHOP_SLUG = prev;
   });
@@ -37,7 +45,7 @@ describe("demo shop + ClipperQ OA constants", () => {
     else process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL = prev;
   });
 
-  it("ships rich-menu PNG assets", () => {
+  it("ships rich-menu PNG assets and seed SQL", () => {
     for (const name of [
       "shop-large.png",
       "shop-compact.png",
@@ -46,5 +54,75 @@ describe("demo shop + ClipperQ OA constants", () => {
     ]) {
       assert.equal(existsSync(resolve(root, "public/rich-menu", name)), true, name);
     }
+    const seed = readFileSync(
+      resolve(root, "supabase/scripts/seed_clipperq_demo_prod.sql"),
+      "utf8",
+    );
+    const rollback = readFileSync(
+      resolve(root, "supabase/scripts/rollback_clipperq_demo_prod.sql"),
+      "utf8",
+    );
+    assert.match(seed, /clipperqdemo/);
+    assert.match(seed, /is_demo/);
+    assert.match(seed, /ON CONFLICT/i);
+    assert.match(seed, /begin;/i);
+    assert.match(seed, /ตัดผม \+ เฟด/);
+    assert.match(rollback, /delete from shops/i);
+    assert.match(rollback, /clipperqdemo/);
+  });
+
+  it("memory store has demo shop; public board strips PII", async () => {
+    const shop = await findDemoShop();
+    assert.ok(shop);
+    assert.equal(shop.slug, "clipperqdemo");
+    assert.equal(shopIsDemo(shop), true);
+    const board = await loadPublicDemoBoard(shop);
+    assert.ok(board.columns.length >= 1);
+    for (const col of board.columns) {
+      for (const slot of col.slots) {
+        assert.equal("customerPhone" in slot, false);
+        assert.equal("customerLineId" in slot, false);
+        assert.equal("customerName" in slot, false);
+      }
+    }
+
+    const dirty: AdminColumn[] = [
+      {
+        barber: {
+          id: "b1",
+          name: "Test",
+          slot_duration_minutes: 30,
+          off_days: [],
+          created_at: new Date().toISOString(),
+        },
+        slots: [
+          {
+            startTime: "2026-01-01T03:00:00.000Z",
+            endTime: "2026-01-01T03:30:00.000Z",
+            available: false,
+            kind: "booked",
+            customerName: "SECRET",
+            customerPhone: "0812345678",
+            customerLineId: "Usecret",
+          },
+        ],
+      },
+    ];
+    const clean = sanitizeDemoColumns(dirty);
+    assert.equal(clean[0].slots[0].label, "จองแล้ว");
+    assert.equal("customerPhone" in clean[0].slots[0], false);
+  });
+
+  it("skips LINE push for demo shop id", async () => {
+    const shop = await findDemoShop();
+    assert.ok(shop);
+    const result = await pushMessagesForShop(
+      shop.id,
+      "Udemo",
+      [{ type: "text", text: "hi" }],
+      "push_other",
+    );
+    assert.equal(result.sent, false);
+    assert.equal(result.skippedReason, "disabled");
   });
 });

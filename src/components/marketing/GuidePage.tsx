@@ -222,11 +222,11 @@ export function GuidePage() {
                   <Link href="/demo" className="text-[#F6AD34] underline">
                     /demo
                   </Link>{" "}
-                  (บอร์ด demo ต้องล็อกอินช่าง:{" "}
+                  · บอร์ดอ่านอย่างเดียว{" "}
                   <Link href="/demo/board" className="text-[#F6AD34] underline">
                     /demo/board
-                  </Link>
-                  )
+                  </Link>{" "}
+                  (slug <code className="text-[#F6AD34]">clipperqdemo</code>)
                 </dd>
               </div>
               <div>
