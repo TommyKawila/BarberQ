@@ -1,8 +1,15 @@
 # LINE Rich Menu · ClipperQ OA (@404qsemd)
 
-Owner-facing Official Account rich menu (ชุดที่ 2). Chat bar text: `เมนู ClipperQ`.
+Owner-facing Official Account rich menu (ชุดที่ 2). Chat bar text: `เมนู ClipperQ` (≤14 chars).
 
-Set `NEXT_PUBLIC_APP_URL` (no trailing slash).
+Set `NEXT_PUBLIC_APP_URL` (no trailing slash) and `NEXT_PUBLIC_LIFF_ID`.
+
+Grid matches **LINE OA Manager standard templates** (no header strip):
+
+| Size | Image | Columns | Rows |
+| --- | --- | --- | --- |
+| Large | 2500×1686 | 833 / 834 / 833 | 843 / 843 |
+| Compact | 2500×843 | 833 / 834 / 833 | 843 |
 
 ## ClipperQ Demo shop
 
@@ -14,14 +21,12 @@ Set `NEXT_PUBLIC_APP_URL` (no trailing slash).
 | Seed (prod, manual) | `supabase/scripts/seed_clipperq_demo_prod.sql` |
 | Rollback | `supabase/scripts/rollback_clipperq_demo_prod.sql` |
 | Migration | `supabase/migrations/0042_shops_is_demo.sql` (`shops.is_demo`) |
-| Flag | `shops.is_demo = true` (migration + seed add-if-not-exists) — app skips LINE pushes; not billed |
+| Flag | `shops.is_demo = true` — app skips LINE pushes; not billed |
 | Not included | LINE OA credentials, owner LINE user id, real customers |
 
 Tommy runs the seed SQL in production (not an auto migration). Until the row exists, `/demo` and `/demo/board` show a Thai “ยังไม่พร้อม” fallback (never falls back to `phinxstudio` / `testshop` / `barberqpilottest`).
 
 ### Pre-check (slug free)
-
-Run before the first seed. Expect **0 rows**. If a row appears with a different `id`, do **not** run the seed — it will abort rather than overwrite.
 
 ```sql
 select id, name, slug, is_demo
@@ -29,28 +34,101 @@ from shops
 where slug = 'clipperqdemo';
 ```
 
-The seed also aborts with a clear error if `clipperqdemo` already belongs to another shop id. Rollback deletes only `where id = 'c1a55e00-d300-4000-a000-000000000001' and is_demo = true`.
+## ClipperQ OA — FINAL tap areas & URIs
 
-## Button URLs
+Verified app routes: `/trial`, `/demo`, `/#pricing` (alias `/pricing`), `/owner`, `/guide`. Cell F is a LINE **message** action (no URL).
 
-| # | Label (TH) | Action |
-| --- | --- | --- |
-| A0 | Header lockup | `{NEXT_PUBLIC_APP_URL}/` |
-| 1 | ทดลองใช้ฟรี 30 วัน | `{NEXT_PUBLIC_APP_URL}/trial` |
-| 2 | ดูตัวอย่างระบบ | `{NEXT_PUBLIC_APP_URL}/demo` → `/{DEMO_SLUG}` booking when seeded; board: `{APP_URL}/demo/board` (public **read-only**, no staff login) |
-| 3 | ราคา | `{NEXT_PUBLIC_APP_URL}/#pricing` (alias `{NEXT_PUBLIC_APP_URL}/pricing`) |
-| 4 | เข้าหน้าร้านของฉัน | `{NEXT_PUBLIC_APP_URL}/owner` |
-| 5 | คู่มือ & FAQ | `{NEXT_PUBLIC_APP_URL}/guide` |
-| 6 | คุยกับทีมงาน | message `คุยกับทีมงาน` (chat mode — no URL) |
+### Large 2500×1686
 
-Reference PNGs (upload in LINE OA Manager):
+| Cell | Label (TH) | x | y | w | h | Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | ทดลองใช้ฟรี 30 วัน | 0 | 0 | 833 | 843 | uri `{APP_URL}/trial` |
+| B | ดูตัวอย่างระบบ | 833 | 0 | 834 | 843 | uri `{APP_URL}/demo` → `/{DEMO_SLUG}` when seeded (`clipperqdemo`); board `{APP_URL}/demo/board` (public **read-only**, no staff login) |
+| C | ราคา | 1667 | 0 | 833 | 843 | uri `{APP_URL}/#pricing` |
+| D | เข้าหน้าร้านของฉัน | 0 | 843 | 833 | 843 | uri `{APP_URL}/owner` |
+| E | คู่มือ & FAQ | 833 | 843 | 834 | 843 | uri `{APP_URL}/guide` |
+| F | คุยกับทีมงาน | 1667 | 843 | 833 | 843 | message `คุยกับทีมงาน` |
+
+### Compact 2500×843
+
+| Cell | Label (TH) | x | y | w | h | Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | ทดลองใช้ฟรี 30 วัน | 0 | 0 | 833 | 843 | uri `{APP_URL}/trial` |
+| B | ดูตัวอย่างระบบ | 833 | 0 | 834 | 843 | uri `{APP_URL}/demo` |
+| C | คุยกับทีมงาน | 1667 | 0 | 833 | 843 | message `คุยกับทีมงาน` |
+
+Pricing / owner / guide live on the large menu (and can be linked from chat replies).
+
+Reference PNGs (upload in LINE OA Manager or Messaging API):
 
 - Large: `/public/rich-menu/clipperq-oa-large.png`
 - Compact: `/public/rich-menu/clipperq-oa-compact.png`
 
-Shop optional templates (for tenant OAs): `/public/rich-menu/shop-large.png`, `shop-compact.png`.
+## Messaging API — ClipperQ OA rich menu objects
 
-Compact layout maps buttons 1–2 + chat; pricing / owner / guide live on the large menu (and can be linked from chat replies).
+Replace `{APP_URL}` with `NEXT_PUBLIC_APP_URL` (no trailing slash). Create via `POST https://api.line.me/v2/bot/richmenu`, then upload the matching PNG to `/v2/bot/richmenu/{richMenuId}/content`.
+
+### Large
+
+```json
+{
+  "size": { "width": 2500, "height": 1686 },
+  "selected": true,
+  "name": "ClipperQ OA large",
+  "chatBarText": "เมนู ClipperQ",
+  "areas": [
+    {
+      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "uri", "label": "ทดลองใช้ฟรี 30 วัน", "uri": "{APP_URL}/trial" }
+    },
+    {
+      "bounds": { "x": 833, "y": 0, "width": 834, "height": 843 },
+      "action": { "type": "uri", "label": "ดูตัวอย่างระบบ", "uri": "{APP_URL}/demo" }
+    },
+    {
+      "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "uri", "label": "ราคา", "uri": "{APP_URL}/#pricing" }
+    },
+    {
+      "bounds": { "x": 0, "y": 843, "width": 833, "height": 843 },
+      "action": { "type": "uri", "label": "เข้าหน้าร้านของฉัน", "uri": "{APP_URL}/owner" }
+    },
+    {
+      "bounds": { "x": 833, "y": 843, "width": 834, "height": 843 },
+      "action": { "type": "uri", "label": "คู่มือ & FAQ", "uri": "{APP_URL}/guide" }
+    },
+    {
+      "bounds": { "x": 1667, "y": 843, "width": 833, "height": 843 },
+      "action": { "type": "message", "label": "คุยกับทีมงาน", "text": "คุยกับทีมงาน" }
+    }
+  ]
+}
+```
+
+### Compact
+
+```json
+{
+  "size": { "width": 2500, "height": 843 },
+  "selected": true,
+  "name": "ClipperQ OA compact",
+  "chatBarText": "เมนู ClipperQ",
+  "areas": [
+    {
+      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "uri", "label": "ทดลองใช้ฟรี 30 วัน", "uri": "{APP_URL}/trial" }
+    },
+    {
+      "bounds": { "x": 833, "y": 0, "width": 834, "height": 843 },
+      "action": { "type": "uri", "label": "ดูตัวอย่างระบบ", "uri": "{APP_URL}/demo" }
+    },
+    {
+      "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "message", "label": "คุยกับทีมงาน", "text": "คุยกับทีมงาน" }
+    }
+  ]
+}
+```
 
 ## Pricing (approved)
 
@@ -65,12 +143,86 @@ Same features all tiers · 30-day free trial · no card · cancel anytime. Sourc
 
 ## Shop OA rich menu (tenants)
 
-Shops configure their own rich menu in LINE OA Manager. Suggested links:
+Shops configure their own rich menu in LINE OA Manager. Prefer LIFF so taps stay in LINE (`buildShopLiffUrl` in `src/lib/line/liff-url.ts`).
 
-- จองคิว → `{APP_URL}/{slug}` (prefer LIFF: `https://liff.line.me/{LIFF_ID}/{slug}`)
-- คิวของฉัน → `{APP_URL}/{slug}/bookings`
+### Large 2500×1686
 
-Owner guide + template downloads: `/guide#shop-rich-menu`. Admin settings copy card deferred (PR #21 admin redesign) — links documented on `/guide` for now.
+| Cell | Label (TH) | x | y | w | h | Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | จองคิว | 0 | 0 | 833 | 843 | uri `https://liff.line.me/{LIFF_ID}/{slug}` |
+| B | คิวของฉัน | 833 | 0 | 834 | 843 | uri `https://liff.line.me/{LIFF_ID}/{slug}/bookings` |
+| C | บริการ & ราคา | 1667 | 0 | 833 | 843 | uri shop services (or message) — optional |
+| D | ช่างของเรา | 0 | 843 | 833 | 843 | uri shop barbers (or booking) — optional |
+| E | ที่ตั้ง & เวลาเปิด | 833 | 843 | 834 | 843 | uri Maps / shop info — optional |
+| F | ติดต่อร้าน | 1667 | 843 | 833 | 843 | message `ติดต่อร้าน` (or `tel:`) |
+
+### Compact 2500×843
+
+| Cell | Label (TH) | x | y | w | h | Action |
+| --- | --- | --- | --- | --- | --- | --- |
+| A | จองคิว | 0 | 0 | 833 | 843 | uri `https://liff.line.me/{LIFF_ID}/{slug}` |
+| B | คิวของฉัน | 833 | 0 | 834 | 843 | uri `https://liff.line.me/{LIFF_ID}/{slug}/bookings` |
+| C | ติดต่อร้าน | 1667 | 0 | 833 | 843 | message `ติดต่อร้าน` |
+
+Web fallbacks when LIFF unset: `{APP_URL}/{slug}`, `{APP_URL}/{slug}/bookings`.
+
+### Template downloads
+
+| File | Use |
+| --- | --- |
+| `/public/rich-menu/shop-large.png` | Sample with ClipperQ Demo branding |
+| `/public/rich-menu/shop-compact.png` | Compact sample |
+| `/public/rich-menu/variants/shop-large-nologo.png` | Initial-letter logo fallback |
+| `/public/rich-menu/variants/shop-compact-nologo.png` | Compact no-logo |
+| `/public/rich-menu/variants/shop-large-longname.png` | Long Thai name truncation sample |
+| `/public/rich-menu/variants/shop-compact-longname.png` | Compact long-name |
+
+Owner guide: `/guide#shop-rich-menu`.
+
+### Example shop Messaging API areas (Demo slug)
+
+```json
+{
+  "size": { "width": 2500, "height": 1686 },
+  "selected": true,
+  "name": "Shop rich menu large",
+  "chatBarText": "จองคิว / เมนู",
+  "areas": [
+    {
+      "bounds": { "x": 0, "y": 0, "width": 833, "height": 843 },
+      "action": {
+        "type": "uri",
+        "label": "จองคิว",
+        "uri": "https://liff.line.me/{LIFF_ID}/clipperqdemo"
+      }
+    },
+    {
+      "bounds": { "x": 833, "y": 0, "width": 834, "height": 843 },
+      "action": {
+        "type": "uri",
+        "label": "คิวของฉัน",
+        "uri": "https://liff.line.me/{LIFF_ID}/clipperqdemo/bookings"
+      }
+    },
+    {
+      "bounds": { "x": 1667, "y": 0, "width": 833, "height": 843 },
+      "action": { "type": "message", "label": "บริการ & ราคา", "text": "บริการ & ราคา" }
+    },
+    {
+      "bounds": { "x": 0, "y": 843, "width": 833, "height": 843 },
+      "action": { "type": "message", "label": "ช่างของเรา", "text": "ช่างของเรา" }
+    },
+    {
+      "bounds": { "x": 833, "y": 843, "width": 834, "height": 843 },
+      "action": { "type": "message", "label": "ที่ตั้ง & เวลาเปิด", "text": "ที่ตั้ง & เวลาเปิด" }
+    },
+    {
+      "bounds": { "x": 1667, "y": 843, "width": 833, "height": 843 },
+      "action": { "type": "message", "label": "ติดต่อร้าน", "text": "ติดต่อร้าน" }
+    }
+  ]
+}
+```
 
 ## ClipperQ OA chat handoff
 

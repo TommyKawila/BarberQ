@@ -9,6 +9,7 @@ import {
   getDemoShopSlug,
 } from "@/lib/marketing/demo-shop";
 import { CLIPPERQ_OA_LINE_URL } from "@/lib/marketing/clipperq-oa";
+import { buildShopCustomerUrl } from "@/lib/line/liff-url";
 
 const APP_BASE =
   typeof process !== "undefined"
@@ -51,6 +52,8 @@ export function GuidePage() {
   const slug = getDemoShopSlug();
   const bookPath = demoShopBookingPath();
   const myQueuePath = demoShopBookingsPath();
+  const bookUrl = buildShopCustomerUrl(slug) || abs(bookPath);
+  const myQueueUrl = buildShopCustomerUrl(slug, "/bookings") || abs(myQueuePath);
 
   return (
     <div className="flex min-h-dvh flex-col bg-zinc-950 text-zinc-50">
@@ -171,8 +174,8 @@ export function GuidePage() {
                 ร้านจริง: แทน slug ด้วย slug ของคุณ — หรือดูในหน้า Admin หลังเข้าสู่ระบบ
                 (การ์ดลิงก์ใน settings จะตามมาในรอบ redesign admin · PR #21)
               </p>
-              <CopyField label="จองคิว" value={abs(bookPath)} />
-              <CopyField label="คิวของฉัน" value={abs(myQueuePath)} />
+              <CopyField label="จองคิว (LIFF ถ้าตั้งค่าแล้ว)" value={bookUrl} />
+              <CopyField label="คิวของฉัน (LIFF ถ้าตั้งค่าแล้ว)" value={myQueueUrl} />
             </div>
 
             <div className="mt-6">
@@ -200,7 +203,49 @@ export function GuidePage() {
                   </a>
                   <span className="text-zinc-500"> · Compact 2500×843</span>
                 </li>
+                <li>
+                  <a
+                    href="/rich-menu/variants/shop-large-nologo.png"
+                    download
+                    className="text-[#F6AD34] underline underline-offset-2"
+                  >
+                    shop-large-nologo.png
+                  </a>
+                  <span className="text-zinc-500"> · ไม่มีโลโก้ (ตัวอักษรแรก)</span>
+                </li>
+                <li>
+                  <a
+                    href="/rich-menu/variants/shop-compact-nologo.png"
+                    download
+                    className="text-[#F6AD34] underline underline-offset-2"
+                  >
+                    shop-compact-nologo.png
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="/rich-menu/variants/shop-large-longname.png"
+                    download
+                    className="text-[#F6AD34] underline underline-offset-2"
+                  >
+                    shop-large-longname.png
+                  </a>
+                  <span className="text-zinc-500"> · ชื่อร้านยาว</span>
+                </li>
+                <li>
+                  <a
+                    href="/rich-menu/variants/shop-compact-longname.png"
+                    download
+                    className="text-[#F6AD34] underline underline-offset-2"
+                  >
+                    shop-compact-longname.png
+                  </a>
+                </li>
               </ul>
+              <p className="mt-2 text-xs text-zinc-500">
+                กริดมาตรฐาน LINE: คอลัมน์ 833/834/833 · แถว 843 — พิกัดและ JSON ใน{" "}
+                <code className="text-zinc-400">docs/line-rich-menu.md</code>
+              </p>
             </div>
           </Section>
 
