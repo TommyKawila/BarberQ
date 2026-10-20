@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
-import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  buildLiffLoginRedirectUri,
+  saveLiffReturnPath,
+} from "@/lib/line/liff-return";
 import {
   BARBER_LINE_JOIN_PATH,
   clearBarberLineInviteCode,
@@ -11,7 +14,6 @@ import {
   saveBarberLineInviteCode,
 } from "@/lib/barber/line-invite-session";
 import {
-  buildBarberLineLiffLoginRedirectUri,
   canStartBarberLineLogin,
   LIFF_INIT_TIMEOUT_MS,
   resolveBarberLineAuthPhaseAfterLiffInit,
@@ -136,14 +138,11 @@ export function useBarberLineClaim({ inviteCode }: UseBarberLineClaimOptions) {
     ) {
       return;
     }
+    // Invite + return path in cookie/session — redirect_uri must be the
+    // registered origin (same as admin login). Do not put /barber/join in it.
     saveBarberLineInviteCode(inviteCode!);
     saveLiffReturnPath(BARBER_LINE_JOIN_PATH);
-    const redirectUri = buildBarberLineLiffLoginRedirectUri({
-      pageOrigin: window.location.origin,
-      appUrl: process.env.NEXT_PUBLIC_APP_URL,
-      inviteCode: inviteCode!,
-    });
-    liff.login({ redirectUri });
+    liff.login({ redirectUri: buildLiffLoginRedirectUri() });
   }, [authPhase, inviteCode, mockMode]);
 
   const retryInit = useCallback(() => {

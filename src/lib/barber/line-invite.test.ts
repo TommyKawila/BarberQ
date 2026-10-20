@@ -182,13 +182,31 @@ describe("barber line invite session + status", () => {
     );
   });
 
-  it("LIFF redirect uses /barber/join", () => {
+  it("LIFF redirect_uri is registered origin only (invite in cookie/session)", () => {
     const uri = buildBarberLineLiffLoginRedirectUri({
       pageOrigin: "https://app.example.com",
       appUrl: "https://app.example.com",
       inviteCode: "tok",
     });
-    assert.match(uri, /\/barber\/join\?invite=tok/);
+    assert.equal(uri, "https://app.example.com");
+    assert.doesNotMatch(uri, /barber\/join|invite=/);
+  });
+
+  it("barber login hook uses shared origin redirect_uri like admin", () => {
+    const hook = readFileSync(
+      resolve(process.cwd(), "src/lib/barber/use-barber-line-claim.ts"),
+      "utf8",
+    );
+    const admin = readFileSync(
+      resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.ts"),
+      "utf8",
+    );
+    assert.match(hook, /buildLiffLoginRedirectUri\(\)/);
+    assert.match(admin, /buildLiffLoginRedirectUri\(\)/);
+    assert.match(hook, /saveBarberLineInviteCode/);
+    assert.match(hook, /saveLiffReturnPath\(BARBER_LINE_JOIN_PATH\)/);
+    assert.doesNotMatch(hook, /buildBarberLineLiffLoginRedirectUri/);
+    assert.doesNotMatch(hook, /\/barber\/join\?invite=/);
   });
 });
 

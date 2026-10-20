@@ -3,7 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import liff from "@line/liff";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
-import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  buildLiffLoginRedirectUri,
+  saveLiffReturnPath,
+} from "@/lib/line/liff-return";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -89,7 +92,7 @@ export function useAdminLineAuth() {
   const login = useCallback(() => {
     if (!ready || mockMode) return;
     saveLiffReturnPath(window.location.pathname);
-    liff.login({ redirectUri: window.location.origin });
+    liff.login({ redirectUri: buildLiffLoginRedirectUri() });
   }, [mockMode, ready]);
 
   const authHeaders = useMemo(

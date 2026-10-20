@@ -1,3 +1,5 @@
+import { buildLiffLoginRedirectUri } from "@/lib/line/liff-return";
+
 export type BarberLineAuthPhase =
   | "initializing"
   | "needs_login"
@@ -43,23 +45,16 @@ export function canStartBarberLineLogin(input: {
   return input.authPhase === "needs_login";
 }
 
+/**
+ * Registered LIFF callback = site origin (same as admin login).
+ * Invite token is carried in cookie/session, not in redirect_uri.
+ */
 export function buildBarberLineLiffLoginRedirectUri(input: {
   pageOrigin: string;
-  appUrl: string | undefined;
-  inviteCode: string;
+  appUrl?: string | undefined;
+  inviteCode?: string;
 }): string {
-  const invite = encodeURIComponent(input.inviteCode.trim());
-  const app = input.appUrl?.replace(/\/$/, "") ?? "";
-  let origin = input.pageOrigin.replace(/\/$/, "");
-  try {
-    origin = new URL(input.pageOrigin).origin;
-  } catch {
-    /* keep origin */
-  }
-  const httpsOrigin = origin.startsWith("https://")
-    ? origin
-    : app.startsWith("https://")
-      ? app
-      : origin;
-  return `${httpsOrigin}/barber/join?invite=${invite}`;
+  void input.appUrl;
+  void input.inviteCode;
+  return buildLiffLoginRedirectUri(input.pageOrigin);
 }
