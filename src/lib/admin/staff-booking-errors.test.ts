@@ -4,7 +4,10 @@ import { dictionary } from "@/lib/i18n/dictionary";
 import {
   staffBookingErrorMessage,
   walkInAssessmentMessage,
+  walkInDisabledLabel,
+  walkInShopBannerLabel,
 } from "@/lib/admin/staff-booking-errors";
+import type { WalkInAssessment } from "@/lib/admin/walk-in-quick";
 
 const t = (key: keyof typeof dictionary.th) => dictionary.th[key];
 
@@ -55,5 +58,89 @@ describe("staffBookingErrorMessage", () => {
     assert.match(msg, /Ken/);
     assert.match(msg, /11:30/);
     assert.doesNotMatch(msg, /This slot/i);
+  });
+});
+
+describe("walkInDisabledLabel (grid / iPad visible reasons)", () => {
+  it("before open shows short Thai with open time", () => {
+    assert.equal(
+      walkInDisabledLabel(
+        {
+          kind: "shop_before_open",
+          barberId: "ken",
+          barberName: "Ken",
+          openLabel: "10:30",
+        },
+        t,
+      ),
+      "ร้านยังไม่เปิด (เปิด 10:30)",
+    );
+  });
+
+  it("after close / off day use short grid copy", () => {
+    assert.equal(
+      walkInDisabledLabel(
+        {
+          kind: "shop_after_close",
+          barberId: "ken",
+          barberName: "Ken",
+          nextOpenLabel: "พรุ่งนี้ 10:30",
+        },
+        t,
+      ),
+      "ร้านปิดแล้ว",
+    );
+    assert.equal(
+      walkInDisabledLabel(
+        {
+          kind: "shop_closed_day",
+          barberId: "ken",
+          barberName: "Ken",
+          nextOpenLabel: "จันทร์ 10:30",
+        },
+        t,
+      ),
+      "วันนี้หยุด",
+    );
+    assert.equal(
+      walkInDisabledLabel(
+        { kind: "barber_off", barberId: "nick", barberName: "Nick" },
+        t,
+      ),
+      "วันนี้หยุด",
+    );
+  });
+
+  it("walkInShopBannerLabel prefers before-open when present", () => {
+    const assessments: WalkInAssessment[] = [
+      {
+        kind: "shop_after_close",
+        barberId: "a",
+        barberName: "A",
+        nextOpenLabel: "x",
+      },
+      {
+        kind: "shop_before_open",
+        barberId: "b",
+        barberName: "B",
+        openLabel: "10:30",
+      },
+    ];
+    assert.equal(walkInShopBannerLabel(assessments, t), "ร้านยังไม่เปิด (เปิด 10:30)");
+  });
+
+  it("walkInShopBannerLabel is null when nothing shop-gated", () => {
+    const assessments: WalkInAssessment[] = [
+      {
+        kind: "ok",
+        barberId: "a",
+        barberName: "A",
+        startTime: "x",
+        timeLabel: "11:00",
+        fromOffer: false,
+      },
+      { kind: "barber_off", barberId: "b", barberName: "B" },
+    ];
+    assert.equal(walkInShopBannerLabel(assessments, t), null);
   });
 });

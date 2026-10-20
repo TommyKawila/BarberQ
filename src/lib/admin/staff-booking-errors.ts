@@ -102,7 +102,7 @@ export function walkInAssessmentMessage(
   }
 }
 
-/** Short title/aria for a disabled Walk-in button. */
+/** Short visible label under a gated Walk-in button (grid / iPad — no tooltip). */
 export function walkInDisabledLabel(
   assessment: WalkInAssessment,
   t: (key: MessageKey) => string,
@@ -111,18 +111,30 @@ export function walkInDisabledLabel(
     case "shop_before_open":
       return t("admin.walkIn.shopNotOpen").replace("{time}", assessment.openLabel);
     case "shop_after_close":
-      return t("admin.walkIn.shopClosed").replace(
-        "{time}",
-        assessment.nextOpenLabel ?? "—",
-      );
+      return t("admin.walkIn.gridClosed");
     case "shop_closed_day":
-      return t("admin.walkIn.shopClosedDay").replace(
-        "{time}",
-        assessment.nextOpenLabel ?? "—",
-      );
+      return t("admin.walkIn.gridOffDay");
     case "barber_off":
-      return t("admin.walkIn.disabledBarberOff");
+      return t("admin.walkIn.gridOffDay");
     default:
       return walkInAssessmentMessage(assessment, t);
   }
+}
+
+/** Shop-level banner above the grid when every editable Walk-in is gated the same way. */
+export function walkInShopBannerLabel(
+  assessments: WalkInAssessment[],
+  t: (key: MessageKey) => string,
+): string | null {
+  const gated = assessments.filter(
+    (a) =>
+      a.kind === "shop_before_open" ||
+      a.kind === "shop_after_close" ||
+      a.kind === "shop_closed_day",
+  );
+  if (gated.length === 0) return null;
+  // Prefer before-open (includes open time) when present.
+  const before = gated.find((a) => a.kind === "shop_before_open");
+  if (before) return walkInDisabledLabel(before, t);
+  return walkInDisabledLabel(gated[0]!, t);
 }

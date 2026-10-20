@@ -30,6 +30,7 @@ import {
   staffBookingErrorMessage,
   walkInAssessmentMessage,
   walkInDisabledLabel,
+  walkInShopBannerLabel,
 } from "@/lib/admin/staff-booking-errors";
 import {
   assessWalkInQuick,
@@ -494,8 +495,8 @@ export default function AdminPage() {
     const assessment = assessWalkInQuick(column, shopHours, new Date(), walkInOffer);
 
     if (assessment.kind !== "ok") {
-      const msg = walkInAssessmentMessage(assessment, t);
       if (assessment.kind === "busy") {
+        const msg = walkInAssessmentMessage(assessment, t);
         setWalkInOffer({
           barberId: assessment.barberId,
           startTime: assessment.nextFreeStartTime,
@@ -504,6 +505,15 @@ export default function AdminPage() {
         toast.warning(msg);
         return;
       }
+      // Hours / off-day: same short Thai copy as the visible grid label (iPad).
+      const gated =
+        assessment.kind === "shop_before_open" ||
+        assessment.kind === "shop_after_close" ||
+        assessment.kind === "shop_closed_day" ||
+        assessment.kind === "barber_off";
+      const msg = gated
+        ? walkInDisabledLabel(assessment, t)
+        : walkInAssessmentMessage(assessment, t);
       setWalkInOffer(null);
       showActionError(msg);
       return;
@@ -523,6 +533,15 @@ export default function AdminPage() {
     if (!gate) return null;
     return walkInDisabledLabel(gate, t);
   }
+
+  const walkInShopBanner = useMemo(() => {
+    if (!profile) return null;
+    const editableId = isShopOperatorRole(profile.role) ? null : profile.barberId;
+    const assessments = columns
+      .filter((c) => editableId == null || c.barber.id === editableId)
+      .map((c) => assessWalkInQuick(c, shopHours, new Date(), null));
+    return walkInShopBannerLabel(assessments, t);
+  }, [columns, shopHours, lastUpdated, t, profile]);
 
   function onWhoIsFree() {
     setWhoFreeOpen(true);
@@ -804,6 +823,7 @@ export default function AdminPage() {
             onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
             onWalkInQuick={(id) => onWalkInQuick(id)}
             walkInDisabledReason={walkInButtonDisabledReason}
+            walkInShopBanner={walkInShopBanner}
             onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
             onLateCalled={(id, slot) => void onLateCalled(id, slot)}
             onCancel={(id, slot) => void onCancel(id, slot)}

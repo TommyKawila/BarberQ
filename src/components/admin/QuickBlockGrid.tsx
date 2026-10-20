@@ -26,8 +26,13 @@ interface QuickBlockGridProps {
   editableBarberId?: string | null;
   onFreeSlot: (barberId: string, slot: AdminSlot) => void;
   onWalkInQuick?: (barberId: string) => void;
-  /** When set, disables + Walk-in and shows the reason as title/aria. */
+  /**
+   * When set, Walk-in is gated: visible reason under the button + tap still
+   * fires onWalkInQuick (iPad — no tooltip). Return null when Walk-in is allowed.
+   */
   walkInDisabledReason?: (barberId: string) => string | null;
+  /** Optional shop-level banner shown once above the grid (e.g. before open). */
+  walkInShopBanner?: string | null;
   onOutcome?: (
     barberId: string,
     slot: AdminSlot,
@@ -87,6 +92,7 @@ export function QuickBlockGrid({
   onFreeSlot,
   onWalkInQuick,
   walkInDisabledReason,
+  walkInShopBanner = null,
   onOutcome,
   onLateCalled,
   onCancel,
@@ -156,6 +162,15 @@ export function QuickBlockGrid({
 
   return (
     <>
+    {walkInShopBanner ? (
+      <p
+        className="mb-2 rounded-lg border border-amber-500/50 bg-amber-950 px-3 py-2 text-center text-sm font-medium text-amber-50"
+        data-testid="walk-in-shop-banner"
+        role="status"
+      >
+        {walkInShopBanner}
+      </p>
+    ) : null}
     <div
       className="grid gap-1.5 pb-1"
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -175,24 +190,35 @@ export function QuickBlockGrid({
               {canEdit && onWalkInQuick ? (
                 (() => {
                   const disabledReason = walkInDisabledReason?.(column.barber.id) ?? null;
+                  const gated = Boolean(disabledReason);
                   return (
-                    <button
-                      type="button"
-                      disabled={Boolean(disabledReason)}
-                      title={disabledReason ?? undefined}
-                      aria-label={
-                        disabledReason
-                          ? `${t("admin.addWalkIn")} — ${disabledReason}`
-                          : t("admin.addWalkIn")
-                      }
-                      onClick={() => {
-                        if (disabledReason) return;
-                        onWalkInQuick(column.barber.id);
-                      }}
-                      className="mt-1 min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-500"
-                    >
-                      {t("admin.addWalkIn")}
-                    </button>
+                    <div className="mt-1 flex flex-col items-stretch gap-1">
+                      <button
+                        type="button"
+                        aria-disabled={gated}
+                        aria-label={
+                          gated
+                            ? `${t("admin.addWalkIn")} — ${disabledReason}`
+                            : t("admin.addWalkIn")
+                        }
+                        onClick={() => onWalkInQuick(column.barber.id)}
+                        className={
+                          gated
+                            ? "min-h-11 w-full rounded-md border border-zinc-600 bg-zinc-950/80 px-1 py-1 text-xs font-semibold text-zinc-300"
+                            : "min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
+                        }
+                      >
+                        {t("admin.addWalkIn")}
+                      </button>
+                      {gated ? (
+                        <p
+                          className="px-0.5 text-[11px] font-medium leading-snug text-amber-200 sm:text-xs"
+                          data-testid={`walk-in-reason-${column.barber.id}`}
+                        >
+                          {disabledReason}
+                        </p>
+                      ) : null}
+                    </div>
                   );
                 })()
               ) : null}
