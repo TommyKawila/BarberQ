@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   BarChart3,
@@ -62,13 +62,13 @@ function NavIcon({ id }: { id: AdminNavItemId }) {
 
 function navItemClass(active: boolean, side: boolean) {
   if (side) {
-    return `flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium ${
+    return `cq-press flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium ${
       active
         ? "bg-zinc-800 text-amber-400"
         : "bg-transparent text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
     }`;
   }
-  return `flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl mx-1 my-1.5 px-1 text-xs font-medium leading-tight ${
+  return `cq-press flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl mx-1 my-1.5 px-1 text-xs font-medium leading-tight ${
     active ? "bg-zinc-800 text-amber-400" : "bg-transparent text-zinc-400"
   }`;
 }
@@ -76,11 +76,12 @@ function navItemClass(active: boolean, side: boolean) {
 export function AdminNav({ role }: { role: ShopStaffRole }) {
   const { t } = useI18n();
   const { shopPath } = useShopSlug();
-  const pathname = usePathname();
-  const router = useRouter();
+  const pathname = usePathname() ?? "";
   const items = primaryAdminNavItems(role);
   const moreItems = moreAdminNavItems(role);
   const [moreOpen, setMoreOpen] = useState(false);
+  /** Optimistic path so the tapped tab highlights before the route finishes. */
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
   const moreButtonMobileRef = useRef<HTMLButtonElement>(null);
   const moreButtonSideRef = useRef<HTMLButtonElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -97,6 +98,12 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     notifications: shopPath(ADMIN_NAV_PATHS.notifications),
     booking: shopPath(ADMIN_NAV_PATHS.booking),
   };
+
+  const activePath = pendingPath ?? pathname;
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
 
   function closeMore(returnFocus: "mobile" | "side" | "auto" = "auto") {
     setMoreOpen(false);
@@ -172,7 +179,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
 
   function renderPrimaryItems(side: boolean) {
     return items.map((item) => {
-      const active = isPrimaryNavActive(item, pathname, hrefs, moreOpen, moreItems);
+      const active = isPrimaryNavActive(item, activePath, hrefs, moreOpen, moreItems);
       const className = navItemClass(active, side);
       if (item === "more") {
         return (
@@ -186,6 +193,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             aria-label={t("admin.nav.more")}
             onClick={() => setMoreOpen((open) => !open)}
             className={className}
+            data-testid="admin-nav-more"
           >
             <NavIcon id={item} />
             <span>{t(NAV_LABELS[item])}</span>
@@ -196,7 +204,18 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
       const labelKey =
         item === "stats" && role === "barber" ? "admin.statsMySummary" : NAV_LABELS[item];
       return (
-        <Link key={item} href={href} className={className} aria-current={active ? "page" : undefined}>
+        <Link
+          key={item}
+          href={href}
+          prefetch
+          onClick={() => {
+            setPendingPath(href);
+            setMoreOpen(false);
+          }}
+          className={className}
+          aria-current={active ? "page" : undefined}
+          data-testid={`admin-nav-${item}`}
+        >
           <NavIcon id={item} />
           <span>{t(labelKey)}</span>
         </Link>
@@ -208,15 +227,19 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     return moreItems.map((item) => {
       const href = hrefs[item];
       const hintKey = MORE_HINTS[item];
-      const active = isMoreDestinationPath(pathname, item, hrefs);
+      const active = isMoreDestinationPath(activePath, item, hrefs);
       if (compact) {
         return (
           <Link
             key={item}
             href={href}
-            onClick={() => closeMore("side")}
+            prefetch
+            onClick={() => {
+              setPendingPath(href);
+              closeMore("side");
+            }}
             aria-current={active ? "page" : undefined}
-            className={`flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-sm ${
+            className={`cq-press flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-sm ${
               active ? "bg-zinc-800 text-amber-400" : "text-zinc-300 hover:bg-zinc-900"
             }`}
           >
@@ -228,14 +251,15 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
         );
       }
       return (
-        <button
+        <Link
           key={item}
-          type="button"
+          href={href}
+          prefetch
           onClick={() => {
+            setPendingPath(href);
             closeMore("mobile");
-            router.push(href);
           }}
-          className="flex min-h-14 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-3 text-left"
+          className="cq-press flex min-h-14 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-3 text-left"
         >
           <span className="text-amber-400">
             <NavIcon id={item} />
@@ -247,7 +271,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             ) : null}
           </span>
           <ChevronRight size={18} className="shrink-0 text-zinc-500" />
-        </button>
+        </Link>
       );
     });
   }

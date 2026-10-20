@@ -15,6 +15,7 @@ import { BlockTimeline } from "@/components/admin/charts/BlockTimeline";
 import { HourlyBars } from "@/components/admin/charts/HourlyBars";
 import { StatCard } from "@/components/admin/charts/StatCard";
 import { TrendBars } from "@/components/admin/charts/TrendBars";
+import { AdminContentSkeleton } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -116,9 +117,9 @@ export default function AdminStatsPage() {
 
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-[11px] text-zinc-400 sm:text-sm">{t("common.loading")}</p>
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+      </AdminShell>
     );
   }
 

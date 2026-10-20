@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
+import { AdminContentSkeleton } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
@@ -229,9 +230,9 @@ function MyScheduleContent() {
 
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+      </AdminShell>
     );
   }
 

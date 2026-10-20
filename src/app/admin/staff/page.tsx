@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { Copy, Link2 } from "lucide-react";
 import { AddBarberSheet } from "@/components/admin/AddBarberSheet";
+import {
+  AdminContentSkeleton,
+  TeamListSkeleton,
+} from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { StaffActionsSheet } from "@/components/admin/StaffActionsSheet";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
@@ -43,7 +47,7 @@ export default function AdminStaffPage() {
   const toast = useToast();
   const online = useOnlineStatus();
   const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [loadingBarbers, setLoadingBarbers] = useState(false);
+  const [loadingBarbers, setLoadingBarbers] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const bookingUrl = buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug);
@@ -282,21 +286,23 @@ export default function AdminStaffPage() {
 
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+      </AdminShell>
     );
   }
 
   if (!isShopOperatorRole(profile.role)) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <h1 className="text-2xl font-semibold">{t("admin.staffManagement")}</h1>
-        <p className="text-sm text-red-400">{t("admin.forbiddenOwnerOnly")}</p>
-        <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
-          {t("admin.backToBoard")}
-        </Link>
-      </section>
+      <AdminShell role={profile.role}>
+        <section className="flex min-h-full flex-col gap-4 px-4 py-10">
+          <h1 className="text-2xl font-semibold">{t("admin.staffManagement")}</h1>
+          <p className="text-sm text-red-400">{t("admin.forbiddenOwnerOnly")}</p>
+          <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
+            {t("admin.backToBoard")}
+          </Link>
+        </section>
+      </AdminShell>
     );
   }
 
@@ -341,7 +347,6 @@ export default function AdminStaffPage() {
         </section>
 
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
-        {loadingBarbers ? <p className="text-sm text-zinc-400">{t("common.loading")}</p> : null}
         <AddBarberSheet
           open={showForm}
           name={name}
@@ -402,7 +407,9 @@ export default function AdminStaffPage() {
           </section>
         ) : null}
 
-        {bookableBarbers.length === 0 && !loadingBarbers && !showForm && activeBarbers.length === 0 ? (
+        {loadingBarbers ? (
+          <TeamListSkeleton />
+        ) : bookableBarbers.length === 0 && !showForm && activeBarbers.length === 0 ? (
           <section className="flex flex-col items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-10 text-center">
             <p className="text-sm text-zinc-400">{t("admin.teamEmpty")}</p>
             <button

@@ -6,6 +6,7 @@ import { addDays } from "date-fns";
 import { enUS, th } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { RefreshCw } from "lucide-react";
+import { AdminContentSkeleton } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   BookedSlotActionsSheet,
@@ -749,10 +750,12 @@ export default function AdminPage() {
 
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-        {authError ? <p className="text-sm text-red-400">{authError}</p> : null}
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+        {authError ? (
+          <p className="px-4 text-sm text-red-400">{authError}</p>
+        ) : null}
+      </AdminShell>
     );
   }
 
