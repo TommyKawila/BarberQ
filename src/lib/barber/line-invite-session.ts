@@ -1,0 +1,95 @@
+import { isLiffOAuthCallback } from "@/lib/line/liff-return";
+
+export const BARBER_LINE_INVITE_KEY = "barberq_barber_line_invite";
+export const BARBER_LINE_JOIN_PATH = "/barber/join";
+
+export function isInviteOnlyQuery(search: string): boolean {
+  const normalized = search.startsWith("?") ? search.slice(1) : search;
+  const params = new URLSearchParams(normalized);
+  const code = params.get("code")?.trim();
+  return Boolean(code && !params.get("liffClientId"));
+}
+
+export function resolveInviteCode(
+  search: string,
+  storedInvite: string | null | undefined,
+): string | null {
+  const normalized = search.startsWith("?") ? search.slice(1) : search;
+  const params = new URLSearchParams(normalized);
+  const inviteParam = params.get("invite")?.trim() || null;
+  if (isLiffOAuthCallback(search)) {
+    return storedInvite?.trim() || inviteParam || null;
+  }
+  const urlCode = params.get("code")?.trim();
+  if (urlCode) return urlCode;
+  return inviteParam || storedInvite?.trim() || null;
+}
+
+export function readStoredBarberLineInvite(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const fromSession = sessionStorage.getItem(BARBER_LINE_INVITE_KEY);
+    if (fromSession?.trim()) return fromSession.trim();
+  } catch {
+    /* ignore */
+  }
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${BARBER_LINE_INVITE_KEY}=([^;]*)`),
+  );
+  if (!match?.[1]) return null;
+  try {
+    return decodeURIComponent(match[1]).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveBarberLineInviteCode(code: string): void {
+  if (typeof window === "undefined") return;
+  const trimmed = code.trim();
+  if (!trimmed) return;
+  try {
+    sessionStorage.setItem(BARBER_LINE_INVITE_KEY, trimmed);
+  } catch {
+    /* ignore */
+  }
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${BARBER_LINE_INVITE_KEY}=${encodeURIComponent(trimmed)}; Path=/; Max-Age=604800; SameSite=Lax${secure}`;
+}
+
+export function clearBarberLineInviteCode(): void {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.removeItem(BARBER_LINE_INVITE_KEY);
+  } catch {
+    /* ignore */
+  }
+  document.cookie = `${BARBER_LINE_INVITE_KEY}=; Path=/; Max-Age=0`;
+}
+
+export function stripInviteFromUrl(): void {
+  if (typeof window === "undefined") return;
+  if (!isInviteOnlyQuery(window.location.search)) return;
+  window.history.replaceState(null, "", BARBER_LINE_JOIN_PATH);
+}
+
+export function restoreBarberLineInviteUrl(inviteCode: string): void {
+  if (typeof window === "undefined") return;
+  const trimmed = inviteCode.trim();
+  if (!trimmed) return;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("liffClientId") || params.get("liffState")) return;
+  const target = `${BARBER_LINE_JOIN_PATH}?code=${encodeURIComponent(trimmed)}`;
+  const current = `${window.location.pathname}${window.location.search}`;
+  if (current !== target) {
+    window.history.replaceState(null, "", target);
+  }
+}
+
+export function prepareBarberLineJoinForLiff(): void {
+  if (typeof window === "undefined") return;
+  if (!isInviteOnlyQuery(window.location.search)) return;
+  const invite = new URLSearchParams(window.location.search).get("code");
+  if (invite) saveBarberLineInviteCode(invite);
+  stripInviteFromUrl();
+}

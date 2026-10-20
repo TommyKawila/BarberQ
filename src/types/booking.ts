@@ -18,6 +18,8 @@ export interface Barber {
   off_days: number[];
   created_at: string;
   line_id?: string | null;
+  /** LINE display name captured when the barber claims a link-invite (optional). */
+  line_display_name?: string | null;
   role?: BarberRole;
   shop_id?: string | null;
   is_bookable?: boolean;

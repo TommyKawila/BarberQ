@@ -882,6 +882,10 @@ export const supabaseStore: BookingStore = {
         if (existing && existing.id !== barberId) throw new StoreConflict("LINE_ID_TAKEN");
       }
       update.line_id = lineId;
+      if (!lineId) update.line_display_name = null;
+    }
+    if (input.lineDisplayName !== undefined) {
+      update.line_display_name = input.lineDisplayName?.trim() || null;
     }
     if (input.isBookable !== undefined) {
       update.is_bookable = input.isBookable;
@@ -1396,13 +1400,169 @@ export const supabaseStore: BookingStore = {
 
     const { data, error } = await supabase
       .from("barbers")
-      .update({ line_id: null })
+      .update({ line_id: null, line_display_name: null })
       .eq("id", barberId)
       .eq("shop_id", shopId)
       .select("*")
       .single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Migration 0041 not applied yet — clear line_id only.
+      if (/line_display_name|42703/i.test(error.message ?? "")) {
+        const fallback = await supabase
+          .from("barbers")
+          .update({ line_id: null })
+          .eq("id", barberId)
+          .eq("shop_id", shopId)
+          .select("*")
+          .single();
+        if (fallback.error) throw new Error(fallback.error.message);
+        return fallback.data as Barber;
+      }
+      throw new Error(error.message);
+    }
     return data as Barber;
+  },
+
+  async createBarberLineInvite(shopId, barberId, createdByBarberId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("create_barber_line_invite", {
+      p_shop_id: shopId,
+      p_barber_id: barberId,
+      p_created_by_barber_id: createdByBarberId,
+    });
+    if (error) mapRpcError(error);
+    const row = data as {
+      id?: string;
+      token?: string;
+      expires_at?: string;
+      barber_id?: string;
+    } | null;
+    if (!row?.id || !row.token) throw new StoreConflict("NOT_FOUND");
+    return {
+      id: row.id,
+      shopId,
+      barberId,
+      token: row.token,
+      expiresAt: row.expires_at ?? new Date().toISOString(),
+      consumedAt: null,
+      revokedAt: null,
+      createdAt: new Date().toISOString(),
+      createdByBarberId,
+    };
+  },
+
+  async getPendingBarberLineInvite(shopId, barberId) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("barber_line_invites")
+      .select("*")
+      .eq("shop_id", shopId)
+      .eq("barber_id", barberId)
+      .is("consumed_at", null)
+      .is("revoked_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      if (/barber_line_invites|does not exist|42P01/i.test(error.message ?? "")) {
+        return null;
+      }
+      throw new Error(error.message);
+    }
+    if (!data) return null;
+    return {
+      id: data.id as string,
+      shopId: data.shop_id as string,
+      barberId: data.barber_id as string,
+      token: data.token as string,
+      expiresAt: data.expires_at as string,
+      consumedAt: (data.consumed_at as string | null) ?? null,
+      revokedAt: (data.revoked_at as string | null) ?? null,
+      createdAt: data.created_at as string,
+      createdByBarberId: (data.created_by_barber_id as string | null) ?? null,
+    };
+  },
+
+  async getBarberLineInvitePreview(token) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("get_barber_line_invite_preview", {
+      p_invite_token: token.trim(),
+    });
+    if (error) throw new Error(error.message);
+    const result = data as {
+      found?: boolean;
+      shop_name?: string;
+      shop_slug?: string;
+      barber_name?: string;
+      expired?: boolean;
+      consumed?: boolean;
+      revoked?: boolean;
+    } | null;
+    if (!result?.found) return null;
+    return {
+      shopName: result.shop_name ?? "",
+      shopSlug: result.shop_slug ?? "",
+      barberName: result.barber_name ?? "",
+      expired: Boolean(result.expired),
+      consumed: Boolean(result.consumed),
+      revoked: Boolean(result.revoked),
+    };
+  },
+
+  async claimBarberLineInvite(input) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase.rpc("claim_barber_line_invite", {
+      p_invite_token: input.inviteToken.trim(),
+      p_line_id: input.lineId.trim(),
+      p_display_name: input.displayName.trim() || "",
+    });
+    if (error) mapRpcError(error);
+    const result = data as {
+      shop_id?: string;
+      shop_slug?: string;
+      barber_id?: string;
+      barber_name?: string;
+    } | null;
+    if (!result?.shop_id || !result.barber_id) {
+      throw new StoreConflict("INVITE_NOT_FOUND");
+    }
+    return {
+      shopId: result.shop_id,
+      shopSlug: result.shop_slug ?? "",
+      barberId: result.barber_id,
+      barberName: result.barber_name ?? "",
+    };
+  },
+
+  async cancelBarberLineInvite(shopId, barberId, inviteId) {
+    const supabase = createServiceClient();
+    const { error } = await supabase.rpc("cancel_barber_line_invite", {
+      p_shop_id: shopId,
+      p_barber_id: barberId,
+      p_invite_id: inviteId,
+    });
+    if (error) mapRpcError(error);
+    const { data, error: readError } = await supabase
+      .from("barber_line_invites")
+      .select("*")
+      .eq("id", inviteId)
+      .eq("shop_id", shopId)
+      .eq("barber_id", barberId)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!data) throw new StoreConflict("INVITE_NOT_FOUND");
+    return {
+      id: data.id as string,
+      shopId: data.shop_id as string,
+      barberId: data.barber_id as string,
+      token: data.token as string,
+      expiresAt: data.expires_at as string,
+      consumedAt: (data.consumed_at as string | null) ?? null,
+      revokedAt: (data.revoked_at as string | null) ?? null,
+      createdAt: data.created_at as string,
+      createdByBarberId: (data.created_by_barber_id as string | null) ?? null,
+    };
   },
 
   async getLatestLineOaInstallRequest(shopId) {

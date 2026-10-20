@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BarberAvatar } from "@/components/barber/BarberAvatar";
+import {
+  BarberLineLinkCard,
+  validateBarberLineIdDraft,
+} from "@/components/admin/BarberLineLinkCard";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
@@ -91,34 +95,14 @@ export default function EditBarberPage() {
     void load();
   }, [load, profile, ready]);
 
-  async function unlinkLine() {
-    setSaving(true);
-    setError(null);
-    setMessage(null);
-    try {
-      const res = await fetch(`/api/barbers/${barberId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ lineId: null }),
-      });
-      const json = (await res.json()) as { barber?: Barber } & ApiError;
-      if (!res.ok) {
-        setError(json.error?.message ?? t("admin.updateFailed"));
-        return;
-      }
-      setBarber(json.barber ?? null);
-      setLineId("");
-      setMessage(t("admin.barberSaved"));
-    } catch {
-      setError(t("admin.networkError"));
-    } finally {
-      setSaving(false);
-    }
-  }
-
   async function save() {
     const trimmed = name.trim();
     if (!trimmed) return;
+    const canEditLine = profile?.role === "owner" || barber?.role !== "owner";
+    if (canEditLine && !validateBarberLineIdDraft(lineId)) {
+      setError(t("barberLine.invalidLineId"));
+      return;
+    }
     setSaving(true);
     setError(null);
     setMessage(null);
@@ -127,9 +111,7 @@ export default function EditBarberPage() {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({
-          ...(profile?.role === "owner" || barber?.role !== "owner"
-            ? { name: trimmed, lineId: lineId.trim() || null }
-            : {}),
+          ...(canEditLine ? { name: trimmed, lineId: lineId.trim() || null } : {}),
           isBookable,
           slotDuration: isBookable ? slotDuration : undefined,
           showProfileInBooking,
@@ -141,6 +123,7 @@ export default function EditBarberPage() {
         return;
       }
       setBarber(json.barber ?? null);
+      if (json.barber) setLineId(json.barber.line_id ?? "");
       setMessage(t("admin.barberSaved"));
     } catch {
       setError(t("admin.networkError"));
@@ -393,38 +376,17 @@ export default function EditBarberPage() {
         </section>
 
         {canEditOwnerIdentity ? (
-        <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
-          <h2 className="font-semibold">{t("admin.lineAdminSection")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.lineAdminHint")}</p>
-          <p className="mt-3 text-sm">
-            {barber.line_id ? t("admin.barberLineLinked") : t("admin.barberLineNotLinked")}
-          </p>
-          {!barber.line_id ? (
-            <>
-              <label className="mt-3 flex flex-col gap-1 text-sm">
-                LINE User ID
-                <input
-                  value={lineId}
-                  onChange={(e) => setLineId(e.target.value)}
-                  className="min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3"
-                />
-              </label>
-              <p className="mt-1 text-xs text-zinc-500">{t("admin.barberLineHint")}</p>
-            </>
-          ) : (
-            <>
-              <p className="mt-2 text-xs text-zinc-500">{t("admin.unlinkLineWarning")}</p>
-              <button
-                type="button"
-                disabled={saving}
-                onClick={() => void unlinkLine()}
-                className="mt-3 min-h-11 rounded-lg border border-zinc-700 px-3 py-2 text-sm text-zinc-300 disabled:opacity-50"
-              >
-                {t("admin.unlinkLine")}
-              </button>
-            </>
-          )}
-        </section>
+          <BarberLineLinkCard
+            barber={barber}
+            authHeaders={authHeaders}
+            saving={saving}
+            lineIdDraft={lineId}
+            onLineIdDraftChange={setLineId}
+            onBarberUpdated={(next) => {
+              setBarber(next);
+              setLineId(next.line_id ?? "");
+            }}
+          />
         ) : null}
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">

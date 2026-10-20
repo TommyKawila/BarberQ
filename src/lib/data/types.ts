@@ -30,7 +30,8 @@ export type StoreErrorCode =
   | "LINE_ID_TAKEN"
   | "IDENTITY_INCOMPATIBLE"
   | "MANAGER_ALREADY_ACTIVE"
-  | "HAS_FUTURE_BOOKINGS";
+  | "HAS_FUTURE_BOOKINGS"
+  | "INVALID_LINE_ID";
 
 export interface MarkOutcomeOptions {
   serviceId?: string | null;
@@ -155,9 +156,44 @@ export interface UpdateBarberInput {
   slotDuration?: number;
   name?: string;
   lineId?: string | null;
+  lineDisplayName?: string | null;
   isBookable?: boolean;
   profileImageUrl?: string | null;
   showProfileInBooking?: boolean;
+}
+
+export interface BarberLineInvite {
+  id: string;
+  shopId: string;
+  barberId: string;
+  token: string;
+  expiresAt: string;
+  consumedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+  createdByBarberId: string | null;
+}
+
+export interface BarberLineInvitePreview {
+  shopName: string;
+  shopSlug: string;
+  barberName: string;
+  expired: boolean;
+  consumed: boolean;
+  revoked: boolean;
+}
+
+export interface ClaimBarberLineInviteInput {
+  inviteToken: string;
+  lineId: string;
+  displayName: string;
+}
+
+export interface ClaimBarberLineResult {
+  shopId: string;
+  shopSlug: string;
+  barberId: string;
+  barberName: string;
 }
 
 export interface CreateBarberInput {
@@ -334,6 +370,22 @@ export interface BookingStore {
   getBarberByLineId(lineId: string): Promise<Barber | null>;
   getBarberByLineIdInShop(lineId: string, shopId: string): Promise<Barber | null>;
   unlinkBarberLine(shopId: string, barberId: string): Promise<Barber>;
+  createBarberLineInvite(
+    shopId: string,
+    barberId: string,
+    createdByBarberId: string | null,
+  ): Promise<BarberLineInvite>;
+  getPendingBarberLineInvite(
+    shopId: string,
+    barberId: string,
+  ): Promise<BarberLineInvite | null>;
+  getBarberLineInvitePreview(token: string): Promise<BarberLineInvitePreview | null>;
+  claimBarberLineInvite(input: ClaimBarberLineInviteInput): Promise<ClaimBarberLineResult>;
+  cancelBarberLineInvite(
+    shopId: string,
+    barberId: string,
+    inviteId: string,
+  ): Promise<BarberLineInvite>;
   deactivateBarber(shopId: string, barberId: string): Promise<Barber>;
   reactivateBarber(shopId: string, barberId: string): Promise<Barber>;
   getLatestLineOaInstallRequest(shopId: string): Promise<LineOaInstallRequest | null>;
