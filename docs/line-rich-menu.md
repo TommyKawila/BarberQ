@@ -13,7 +13,7 @@ Set `NEXT_PUBLIC_APP_URL` (no trailing slash).
 | Fixed shop id | `c1a55e00-d300-4000-a000-000000000001` |
 | Seed (prod, manual) | `supabase/scripts/seed_clipperq_demo_prod.sql` |
 | Rollback | `supabase/scripts/rollback_clipperq_demo_prod.sql` |
-| Migration | `supabase/migrations/0040_shops_is_demo.sql` (`shops.is_demo`) |
+| Migration | `supabase/migrations/0042_shops_is_demo.sql` (`shops.is_demo`) |
 | Flag | `shops.is_demo = true` (migration + seed add-if-not-exists) — app skips LINE pushes; not billed |
 | Not included | LINE OA credentials, owner LINE user id, real customers |
 

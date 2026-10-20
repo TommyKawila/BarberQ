@@ -84,7 +84,7 @@ describe("demo shop + ClipperQ OA constants", () => {
     );
     assert.doesNotMatch(rollback, /where slug = 'clipperqdemo'/);
     const migration = readFileSync(
-      resolve(root, "supabase/migrations/0040_shops_is_demo.sql"),
+      resolve(root, "supabase/migrations/0042_shops_is_demo.sql"),
       "utf8",
     );
     assert.match(migration, /add column if not exists is_demo/i);

@@ -232,7 +232,7 @@ describe("marketing layout split", () => {
     assert.match(docs, /\/guide/);
     assert.match(docs, /clipperqdemo/);
     assert.match(docs, /seed_clipperq_demo_prod\.sql/);
-    assert.match(docs, /0040_shops_is_demo\.sql/);
+    assert.match(docs, /0042_shops_is_demo\.sql/);
     assert.match(docs, /Pre-check \(slug free\)/);
     assert.match(docs, /where slug = 'clipperqdemo'/);
     assert.match(docs, /read-only|อ่านอย่างเดียว/i);

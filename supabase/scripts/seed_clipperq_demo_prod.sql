@@ -8,7 +8,7 @@
 
 begin;
 
--- Keep add-if-not-exists even though migration 0040 adds the column (safe on older DBs).
+-- Keep add-if-not-exists even though migration 0042 adds the column (safe on older DBs).
 alter table shops
   add column if not exists is_demo boolean not null default false;
 
