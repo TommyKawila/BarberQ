@@ -9,8 +9,15 @@ import {
   formatServicePriceBaht,
   shouldPromptServicePicker,
 } from "@/lib/admin/complete-service-picker";
+import { memoryStore } from "@/lib/data/memory-store";
+import {
+  createStaffBooking,
+  getAvailableSlots,
+  markAppointmentOutcome,
+} from "@/lib/services/booking-service";
+import { getBookableDates } from "@/lib/services/slot-service";
 import { dictionary } from "@/lib/i18n/dictionary";
-import type { ShopService } from "@/types/booking";
+import type { ShopService, Slot } from "@/types/booking";
 
 function svc(
   partial: Partial<ShopService> & Pick<ShopService, "id" | "name" | "price_baht">,
@@ -24,6 +31,16 @@ function svc(
     updated_at: "2026-01-01T00:00:00.000Z",
     ...partial,
   };
+}
+
+async function firstFutureSlot(barberId: string) {
+  const dates = getBookableDates();
+  for (const dateISO of dates) {
+    const slots = await getAvailableSlots(barberId, dateISO);
+    const available = slots.find((s: Slot) => s.available);
+    if (available) return available;
+  }
+  return null;
 }
 
 describe("complete service picker helpers", () => {
@@ -84,5 +101,72 @@ describe("complete service picker helpers", () => {
     );
     assert.match(actions, /canChangeService/);
     assert.match(actions, /status === "completed"/);
+  });
+
+  it("picker init effect does not depend on unstable active[] (tap must stick)", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/components/admin/CompleteServicePicker.tsx"),
+      "utf8",
+    );
+    // Regression: including `active` in deps reset selection to default after every tap.
+    assert.match(src, /\[open, initialServiceId\]/);
+    assert.doesNotMatch(src, /\[open, initialServiceId, fallback\?\.id, active\]/);
+    assert.match(src, /type="radio"/);
+    assert.match(src, /stopPropagation/);
+    assert.match(src, /onPointerDown/);
+    assert.match(src, /min-h-14/);
+    assert.match(src, /touch-manipulation/);
+  });
+
+  it("selecting non-default service on complete persists price_baht 250", async () => {
+    const shop = await memoryStore.createShop({
+      name: `PickerTap ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: `PickerBarber${Date.now()}`,
+      slotDuration: 30,
+    });
+    await memoryStore.createShopService({
+      shopId: shop.id,
+      name: "ตัดผม + เฟด",
+      priceBaht: 200,
+      isDefault: true,
+    });
+    const shave = await memoryStore.createShopService({
+      shopId: shop.id,
+      name: "ตัด + เฟด + โกนหนวด",
+      priceBaht: 250,
+      isDefault: false,
+    });
+
+    const slot = await firstFutureSlot(barber.id);
+    assert.ok(slot, "need a free slot");
+
+    const booking = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: slot!.startTime,
+      source: "walk_in",
+      customerName: "Walk-in #4",
+      customerPhone: "0897553004",
+    });
+
+    // Simulate picker confirm of the non-default ฿250 row (not shop default ฿200).
+    const choice = {
+      serviceId: shave.id,
+      priceBaht: shave.price_baht,
+      serviceName: shave.name,
+    };
+    assert.equal(choice.priceBaht, 250);
+
+    const done = await markAppointmentOutcome(booking.id, "completed", {
+      serviceId: choice.serviceId,
+      priceBaht: choice.priceBaht,
+    });
+    assert.equal(done.service_id, shave.id);
+    assert.equal(done.price_baht, 250);
+    // Ensure we did not silently fall back to the default ฿200.
+    assert.notEqual(done.price_baht, 200);
   });
 });

@@ -1,10 +1,10 @@
 /**
- * Capture multi-service complete picker at 390 + 1024.
+ * Capture multi-service complete picker at 390 + 1024 with ฿250 selected.
  * Memory-mode. Usage: node scripts/capture-complete-service-picker.mjs [baseUrl]
  */
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { chromium } from "playwright";
+import { chromium, devices } from "playwright";
 import sharp from "sharp";
 
 const OUT = "/opt/cursor/artifacts/complete-service-picker";
@@ -70,8 +70,8 @@ async function seed(base) {
       startTime: start.toISOString(),
       endTime: end.toISOString(),
       source: "walk_in",
-      customerName: "ทดสอบปิดคิว",
-      customerPhone: "0890000001",
+      customerName: "Walk-in #4",
+      customerPhone: "0897553004",
     }),
   });
   if (!book.ok) {
@@ -80,42 +80,93 @@ async function seed(base) {
   return { barber, services };
 }
 
+async function openPickerAndSelect250(page) {
+  await page.waitForTimeout(800);
+
+  const doneBtn = page.getByRole("button", { name: /เสร็จ/ }).first();
+  if (await doneBtn.count()) {
+    await doneBtn.click({ force: true });
+  } else {
+    await page.getByRole("button", { name: /ตาราง|Schedule/i }).first().click().catch(() => {});
+    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: /ตัวเลือกคิว|แตะเพื่อจัดการ/ }).first().click();
+    await page.getByRole("button", { name: /เสร็จ/ }).first().click();
+  }
+
+  await page.waitForSelector('[data-testid="complete-service-picker"]', { timeout: 15000 });
+  await page.waitForTimeout(200);
+
+  // Tap non-default ฿250 row (whole row is the hit target).
+  const option250 = page.locator('[data-testid^="complete-service-option-"][data-price-baht="250"]').first();
+  if ((await option250.count()) === 0) {
+    // Fallback: second option or text match
+    const byText = page.getByText(/฿250/).first();
+    await byText.tap().catch(async () => {
+      await byText.click({ force: true });
+    });
+  } else {
+    await option250.tap().catch(async () => {
+      await option250.click({ force: true });
+    });
+  }
+
+  await page.waitForTimeout(300);
+
+  // Assert selection stuck on ฿250 and CTA updated.
+  const selected = page.locator('[data-testid^="complete-service-option-"][data-selected="true"]');
+  const selectedPrice = await selected.getAttribute("data-price-baht");
+  if (selectedPrice !== "250") {
+    throw new Error(`Expected selected price 250, got ${selectedPrice}`);
+  }
+  const confirm = page.getByTestId("complete-service-confirm");
+  const confirmText = await confirm.innerText();
+  if (!/฿250/.test(confirmText)) {
+    throw new Error(`Expected confirm CTA with ฿250, got: ${confirmText}`);
+  }
+}
+
 async function main() {
   await mkdir(OUT, { recursive: true });
   await waitForServer(BASE);
   await seed(BASE);
 
   const browser = await chromium.launch({ headless: true });
-  for (const vp of [
-    { name: "mobile-390", width: 390, height: 844 },
-    { name: "ipad-1024", width: 1024, height: 768 },
-  ]) {
-    const context = await browser.newContext({
-      viewport: { width: vp.width, height: vp.height },
-      deviceScaleFactor: 2,
-    });
+  const viewports = [
+    {
+      name: "mobile-390",
+      // Touch-emulated iPhone-ish viewport (LINE / Safari style)
+      context: {
+        ...devices["iPhone 12"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+    {
+      name: "ipad-1024",
+      context: {
+        ...devices["iPad Pro 11"],
+        viewport: { width: 1024, height: 768 },
+        deviceScaleFactor: 2,
+        hasTouch: true,
+        isMobile: true,
+      },
+    },
+  ];
+
+  for (const vp of viewports) {
+    // Fresh seed per viewport so each has an in-progress walk-in to complete.
+    await seed(BASE);
+    const context = await browser.newContext(vp.context);
     const page = await context.newPage();
     await page.goto(`${BASE}/${SHOP}/admin`, { waitUntil: "networkidle", timeout: 60000 });
-    await page.waitForTimeout(800);
+    await openPickerAndSelect250(page);
 
-    // Prefer Today queue "เสร็จแล้ว" / "เสร็จ"
-    const doneBtn = page.getByRole("button", { name: /เสร็จ/ }).first();
-    if (await doneBtn.count()) {
-      await doneBtn.click();
-    } else {
-      // Schedule tab fallback: open a booked cell
-      await page.getByRole("button", { name: /ตาราง|Schedule/i }).first().click().catch(() => {});
-      await page.waitForTimeout(400);
-      await page.getByRole("button", { name: /ตัวเลือกคิว|แตะเพื่อจัดการ/ }).first().click();
-      await page.getByRole("button", { name: /เสร็จ/ }).first().click();
-    }
-
-    await page.waitForSelector('[data-testid="complete-service-picker"]', { timeout: 15000 });
-    await page.waitForTimeout(300);
     const buf = await page.screenshot({ type: "png" });
     const outPath = join(OUT, `complete-service-picker-${vp.name}.png`);
     await sharp(buf).png().toFile(outPath);
-    console.log("wrote", outPath);
+    console.log("wrote", outPath, "(฿250 selected)");
     await context.close();
   }
   await browser.close();

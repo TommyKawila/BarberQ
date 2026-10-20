@@ -85,6 +85,7 @@ export default function AdminPage() {
   const [thumbIntent, setThumbIntent] = useState<ThumbIntent>("walk_in");
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [pendingKind, setPendingKind] = useState<"walk_in" | "booking" | "block" | null>(null);
   const [actionsSheet, setActionsSheet] = useState<{
     barberId: string;
     barberName: string;
@@ -272,16 +273,29 @@ export default function AdminPage() {
     toast.error(msg);
   }
 
-  async function createStaffBooking(input: {
-    barberId: string;
-    startTime: string;
-    endTime?: string;
-    source: StaffBookingSource;
-    customerName?: string;
-    customerPhone?: string;
-  }) {
-    const key = `${input.barberId}:${input.startTime}`;
-    setPendingKey(key);
+  async function createStaffBooking(
+    input: {
+      barberId: string;
+      startTime: string;
+      endTime?: string;
+      source: StaffBookingSource;
+      customerName?: string;
+      customerPhone?: string;
+    },
+    opts?: {
+      /** UI pending key (sheet slot may differ from snapped walk-in startTime). */
+      uiKey?: string;
+      kind?: "walk_in" | "booking";
+      /** Parent already set pendingKey (e.g. before walk-in gate). */
+      alreadyPending?: boolean;
+    },
+  ) {
+    const key = opts?.uiKey ?? `${input.barberId}:${input.startTime}`;
+    const kind = opts?.kind ?? (input.source === "walk_in" ? "walk_in" : "booking");
+    if (!opts?.alreadyPending) {
+      setPendingKey(key);
+      setPendingKind(kind);
+    }
     setError(null);
     const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
     try {
@@ -319,12 +333,16 @@ export default function AdminPage() {
       }
       setSheet(null);
       setWalkInOffer(null);
-      toast.success(t("admin.toast.success"));
-      await loadDay();
+      toast.success(
+        input.source === "walk_in" ? t("admin.toast.walkInQueued") : t("admin.toast.success"),
+      );
+      // Don't await board refetch — clear pending immediately so tap feels snappy.
+      void loadDay();
     } catch {
       showActionError(t("admin.networkError"));
     } finally {
       setPendingKey(null);
+      setPendingKind(null);
     }
   }
 
@@ -335,6 +353,7 @@ export default function AdminPage() {
   async function onBlockSlot(barberId: string, slot: AdminSlot) {
     const key = `${barberId}:${slot.startTime}`;
     setPendingKey(key);
+    setPendingKind("block");
     setError(null);
     setWalkInOffer(null);
     const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
@@ -355,11 +374,13 @@ export default function AdminPage() {
         return;
       }
       setSheet(null);
-      await loadDay();
+      toast.success(t("admin.toast.success"));
+      void loadDay();
     } catch {
       setError(t("admin.updateFailed"));
     } finally {
       setPendingKey(null);
+      setPendingKind(null);
     }
   }
 
@@ -976,12 +997,23 @@ export default function AdminPage() {
             barberName={sheet.barberName}
             slot={sheet.slot}
             pending={pendingKey === `${sheet.barberId}:${sheet.slot.startTime}`}
+            pendingKind={
+              pendingKey === `${sheet.barberId}:${sheet.slot.startTime}` ? pendingKind : null
+            }
             shortenUntil={sheet.shortenUntil}
-            onClose={() => setSheet(null)}
+            onClose={() => {
+              if (!pendingKey) setSheet(null);
+            }}
             onWalkInNow={() => {
+              const uiKey = `${sheet.barberId}:${sheet.slot.startTime}`;
+              // Immediate feedback before gate / network (iOS / LINE feel laggy otherwise).
+              setPendingKey(uiKey);
+              setPendingKind("walk_in");
               const column = columns.find((c) => c.barber.id === sheet.barberId);
               const assessment = assessWalkInQuick(column, shopHours, new Date(), null);
               if (assessment.kind !== "ok") {
+                setPendingKey(null);
+                setPendingKind(null);
                 const msg = walkInAssessmentMessage(assessment, t);
                 if (assessment.kind === "busy") {
                   setWalkInOffer({
@@ -995,21 +1027,30 @@ export default function AdminPage() {
                 showActionError(msg);
                 return;
               }
-              void createStaffBooking({
-                barberId: assessment.barberId,
-                startTime: assessment.startTime,
-                source: "walk_in",
-              });
+              void createStaffBooking(
+                {
+                  barberId: assessment.barberId,
+                  startTime: assessment.startTime,
+                  source: "walk_in",
+                },
+                { uiKey, kind: "walk_in", alreadyPending: true },
+              );
             }}
             onStaffBooking={(input) =>
-              void createStaffBooking({
-                barberId: sheet.barberId,
-                startTime: sheet.slot.startTime,
-                endTime: input.endTime,
-                source: input.source,
-                customerName: input.customerName,
-                customerPhone: input.customerPhone,
-              })
+              void createStaffBooking(
+                {
+                  barberId: sheet.barberId,
+                  startTime: sheet.slot.startTime,
+                  endTime: input.endTime,
+                  source: input.source,
+                  customerName: input.customerName,
+                  customerPhone: input.customerPhone,
+                },
+                {
+                  uiKey: `${sheet.barberId}:${sheet.slot.startTime}`,
+                  kind: input.source === "walk_in" ? "walk_in" : "booking",
+                },
+              )
             }
             onBlock={() => void onBlockSlot(sheet.barberId, sheet.slot)}
           />

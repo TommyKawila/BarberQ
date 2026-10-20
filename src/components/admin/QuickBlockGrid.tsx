@@ -213,8 +213,8 @@ export function QuickBlockGrid({
                         onClick={() => onWalkInQuick(column.barber.id)}
                         className={
                           gated
-                            ? "min-h-11 w-full rounded-md border border-zinc-600 bg-zinc-950/80 px-1 py-1 text-xs font-semibold text-zinc-300"
-                            : "min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
+                            ? "cq-press min-h-11 w-full rounded-md border border-zinc-600 bg-zinc-950/80 px-1 py-1 text-xs font-semibold text-zinc-300"
+                            : "cq-press min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
                         }
                       >
                         {t("admin.addWalkIn")}

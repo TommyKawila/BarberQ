@@ -79,7 +79,7 @@ function CardActions({
       <button
         type="button"
         onClick={() => onWalkInBarber(card.barberId)}
-        className="mt-3 flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+        className="cq-press mt-3 flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
       >
         + {t("admin.queueWithBarber").replace("{name}", card.barberName)}
       </button>

@@ -78,6 +78,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // iOS Safari / LINE: :active only fires reliably after a touchstart listener exists.
+  useEffect(() => {
+    const noop = () => {};
+    document.addEventListener("touchstart", noop, { passive: true });
+    return () => document.removeEventListener("touchstart", noop);
+  }, []);
+
   const value = useMemo<ToastContextValue>(
     () => ({
       toast,

@@ -103,7 +103,7 @@ export function BookedSlotActionsSheet({
               type="button"
               disabled={pending}
               onClick={() => onAction("cancel")}
-              className="min-h-12 rounded-xl bg-rose-600 font-semibold text-white disabled:opacity-50"
+              className="cq-press min-h-12 rounded-xl bg-rose-600 font-semibold text-white disabled:opacity-50"
             >
               {t("admin.confirmCancelAction")}
             </button>
@@ -111,7 +111,7 @@ export function BookedSlotActionsSheet({
               type="button"
               disabled={pending}
               onClick={() => setConfirmCancel(false)}
-              className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-200 disabled:opacity-50"
+              className="cq-press min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-200 disabled:opacity-50"
             >
               {t("common.back")}
             </button>
@@ -154,7 +154,7 @@ export function BookedSlotActionsSheet({
             {flags.canCall && slot.customerPhone ? (
               <a
                 href={`tel:${slot.customerPhone}`}
-                className="flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 text-sm font-semibold text-zinc-100"
+                className="cq-press flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 text-sm font-semibold text-zinc-100"
               >
                 📞 {t("admin.callCustomer")} {slot.customerPhone}
               </a>
@@ -202,10 +202,10 @@ function ActionButton({
   danger?: boolean;
 }) {
   const className = primary
-    ? "min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+    ? "cq-press min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
     : danger
-      ? "min-h-12 rounded-xl border border-rose-500/60 font-semibold text-rose-300 disabled:opacity-50"
-      : "min-h-12 rounded-xl border border-zinc-700 font-semibold text-zinc-100 disabled:opacity-50";
+      ? "cq-press min-h-12 rounded-xl border border-rose-500/60 font-semibold text-rose-300 disabled:opacity-50"
+      : "cq-press min-h-12 rounded-xl border border-zinc-700 font-semibold text-zinc-100 disabled:opacity-50";
   return (
     <button type="button" disabled={disabled} onClick={onClick} className={className}>
       {children}

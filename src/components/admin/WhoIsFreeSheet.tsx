@@ -85,7 +85,7 @@ export function WhoIsFreeSheet({
                   <button
                     type="button"
                     onClick={() => onWalkIn(row)}
-                    className="min-h-11 shrink-0 rounded-xl bg-amber-400 px-3 text-[11px] font-semibold text-zinc-950 sm:text-sm"
+                    className="cq-press min-h-11 shrink-0 rounded-xl bg-amber-400 px-3 text-[11px] font-semibold text-zinc-950 sm:text-sm"
                   >
                     {t("admin.whoIsFreeWalkIn")}
                   </button>

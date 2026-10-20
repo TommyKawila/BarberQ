@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   activeShopServices,
   closeQueueConfirmLabel,
@@ -40,42 +40,51 @@ export function CompleteServicePicker({
   onConfirm,
 }: CompleteServicePickerProps) {
   const { t } = useI18n();
+  const radioName = useId();
   const active = activeShopServices(services);
   const fallback = defaultActiveService(services);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  // Init selection only when the sheet opens (or initial id changes) —
+  // never on every render, or taps get wiped back to the default.
   useEffect(() => {
     if (!open) return;
+    const list = activeShopServices(services);
     const preferred =
-      (initialServiceId && active.find((s) => s.id === initialServiceId)?.id) ||
-      fallback?.id ||
+      (initialServiceId && list.find((s) => s.id === initialServiceId)?.id) ||
+      defaultActiveService(services)?.id ||
       null;
     setSelectedId(preferred);
-  }, [open, initialServiceId, fallback?.id, active]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: open-edge only
+  }, [open, initialServiceId]);
 
   if (!open) return null;
 
-  const selected = active.find((s) => s.id === selectedId) ?? fallback;
+  const selected =
+    active.find((s) => s.id === selectedId) ??
+    (selectedId ? null : fallback) ??
+    fallback;
   const title =
     mode === "change" ? t("admin.changeServiceTitle") : t("admin.pickServiceTitle");
   const confirmTemplate =
     mode === "change" ? t("admin.saveServicePrice") : t("admin.closeQueueConfirm");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
-      <button
-        type="button"
-        aria-label={t("common.cancel")}
-        className="absolute inset-0"
-        onClick={onClose}
-        disabled={pending}
-      />
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4"
+      data-testid="complete-service-picker-backdrop"
+      onClick={() => {
+        if (!pending) onClose();
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="complete-service-picker-title"
         data-testid="complete-service-picker"
         className="relative z-10 flex max-h-[min(90vh,40rem)] w-full max-w-md flex-col rounded-t-2xl border border-zinc-800 bg-zinc-950 shadow-xl sm:rounded-2xl"
+        onClick={(e) => e.stopPropagation()}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-zinc-700 sm:hidden" />
         <header className="shrink-0 border-b border-zinc-800 px-4 py-3">
@@ -92,43 +101,65 @@ export function CompleteServicePicker({
           </p>
         </header>
 
-        <ul
+        <div
           className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-3"
-          role="listbox"
+          role="radiogroup"
           aria-label={title}
         >
           {active.map((service) => {
             const selectedRow = selected?.id === service.id;
+            const inputId = `${radioName}-${service.id}`;
+            const selectRow = () => {
+              if (!pending) setSelectedId(service.id);
+            };
             return (
-              <li key={service.id}>
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={selectedRow}
+              <label
+                key={service.id}
+                htmlFor={inputId}
+                data-testid={`complete-service-option-${service.id}`}
+                data-selected={selectedRow ? "true" : "false"}
+                data-price-baht={service.price_baht}
+                onPointerDown={(e) => {
+                  // Select on touch/press start so iOS / LINE WebView taps stick
+                  // before any backdrop or re-render can reset state.
+                  e.stopPropagation();
+                  selectRow();
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  selectRow();
+                }}
+                className={`flex min-h-14 w-full touch-manipulation cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition ${
+                  selectedRow
+                    ? "border-amber-400 bg-amber-400/15 text-zinc-50"
+                    : "border-zinc-700 bg-zinc-900 text-zinc-100"
+                } ${pending ? "pointer-events-none opacity-50" : ""}`}
+              >
+                <input
+                  id={inputId}
+                  type="radio"
+                  name={radioName}
+                  value={service.id}
+                  checked={selectedRow}
                   disabled={pending}
-                  onClick={() => setSelectedId(service.id)}
-                  className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition disabled:opacity-50 ${
-                    selectedRow
-                      ? "border-amber-400 bg-amber-400/15 text-zinc-50"
-                      : "border-zinc-700 bg-zinc-900 text-zinc-100"
-                  }`}
-                >
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold sm:text-base">
-                    {service.name}
-                    {service.is_default ? (
-                      <span className="ml-2 text-xs font-medium text-zinc-400">
-                        {t("admin.servicesDefault")}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="shrink-0 text-base font-semibold tabular-nums text-amber-200">
-                    {formatServicePriceBaht(service.price_baht)}
-                  </span>
-                </button>
-              </li>
+                  onChange={selectRow}
+                  className="sr-only"
+                />
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold sm:text-base">
+                  {service.name}
+                  {service.is_default ? (
+                    <span className="ml-2 text-xs font-medium text-zinc-400">
+                      {t("admin.servicesDefault")}
+                    </span>
+                  ) : null}
+                </span>
+                <span className="shrink-0 text-base font-semibold tabular-nums text-amber-200">
+                  {formatServicePriceBaht(service.price_baht)}
+                </span>
+              </label>
             );
           })}
-        </ul>
+        </div>
 
         <div className="shrink-0 space-y-2 border-t border-zinc-800 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3">
           <button
@@ -143,8 +174,9 @@ export function CompleteServicePicker({
                 serviceName: selected.name,
               });
             }}
-            className="flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 text-base font-semibold text-zinc-950 disabled:opacity-50"
+            className="cq-press flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-amber-400 text-base font-semibold text-zinc-950 disabled:opacity-50"
           >
+            {pending ? <span className="cq-btn-spinner" aria-hidden /> : null}
             {selected
               ? closeQueueConfirmLabel(confirmTemplate, selected.price_baht)
               : t("common.save")}
@@ -153,7 +185,7 @@ export function CompleteServicePicker({
             type="button"
             disabled={pending}
             onClick={onClose}
-            className="flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-medium text-zinc-300 disabled:opacity-50"
+            className="cq-press flex min-h-11 w-full items-center justify-center rounded-xl text-sm font-medium text-zinc-300 disabled:opacity-50"
           >
             {t("common.cancel")}
           </button>
