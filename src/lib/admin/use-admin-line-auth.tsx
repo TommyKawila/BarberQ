@@ -1,9 +1,21 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import liff from "@line/liff";
+import type { ShopStaffRole } from "@/lib/admin-auth";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
-import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  buildLiffLoginRedirectUri,
+  saveLiffReturnPath,
+} from "@/lib/line/liff-return";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -89,7 +101,7 @@ export function useAdminLineAuth() {
   const login = useCallback(() => {
     if (!ready || mockMode) return;
     saveLiffReturnPath(window.location.pathname);
-    liff.login({ redirectUri: window.location.origin });
+    liff.login({ redirectUri: buildLiffLoginRedirectUri() });
   }, [mockMode, ready]);
 
   const authHeaders = useMemo(
@@ -100,10 +112,28 @@ export function useAdminLineAuth() {
   return { ready, profile, error, login, authHeaders, mockMode };
 }
 
-/** Redirects to shop login when LINE session is missing (non-mock). */
-export function useAdminPageAuth() {
-  const { shopPath } = useShopSlug();
+export type AdminAuthValue = ReturnType<typeof useAdminLineAuth>;
+
+const AdminAuthContext = createContext<AdminAuthValue | null>(null);
+
+/** Single auth session for all admin pages — keeps nav mounted across route changes. */
+export function AdminAuthProvider({ children }: { children: ReactNode }) {
   const auth = useAdminLineAuth();
+  return <AdminAuthContext.Provider value={auth}>{children}</AdminAuthContext.Provider>;
+}
+
+export function useAdminAuth(): AdminAuthValue {
+  const ctx = useContext(AdminAuthContext);
+  if (!ctx) {
+    throw new Error("useAdminAuth must be used within AdminAuthProvider");
+  }
+  return ctx;
+}
+
+/** Auth + redirect to login when session is missing (non-mock). */
+export function useAdminPageAuth(): AdminAuthValue {
+  const { shopPath } = useShopSlug();
+  const auth = useAdminAuth();
 
   useEffect(() => {
     if (!auth.ready || auth.profile || auth.mockMode) return;
@@ -111,4 +141,8 @@ export function useAdminPageAuth() {
   }, [auth.mockMode, auth.profile, auth.ready, shopPath]);
 
   return auth;
+}
+
+export function adminNavRole(profile: AdminProfile | null): ShopStaffRole {
+  return profile?.role ?? "owner";
 }

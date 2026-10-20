@@ -4,27 +4,75 @@ import { formatInTimeZone } from "date-fns-tz";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import { barberLabel } from "@/types/booking";
-import type { FreeBarberNow } from "@/lib/admin/free-barbers";
+import type { FreeBarberNow, WhoIsFreeEmptyState } from "@/lib/admin/free-barbers";
 
 interface WhoIsFreeSheetProps {
   open: boolean;
   rows: FreeBarberNow[];
+  emptyState?: WhoIsFreeEmptyState | null;
+  /** walk_in (default) or block — changes title + CTA */
+  intent?: "walk_in" | "block";
   onClose: () => void;
   onWalkIn: (row: FreeBarberNow) => void;
+  onOpenSchedule?: () => void;
 }
 
-export function WhoIsFreeSheet({ open, rows, onClose, onWalkIn }: WhoIsFreeSheetProps) {
+export function WhoIsFreeSheet({
+  open,
+  rows,
+  emptyState,
+  intent = "walk_in",
+  onClose,
+  onWalkIn,
+  onOpenSchedule,
+}: WhoIsFreeSheetProps) {
   const { t, locale } = useI18n();
   if (!open) return null;
+  const isBlock = intent === "block";
+  const title = isBlock ? t("admin.blockSheetTitle") : t("admin.whoIsFreeSheetTitle");
+  const cta = isBlock ? t("admin.whoIsFreeBlock") : t("admin.whoIsFreeWalkIn");
+
+  function emptyCopy(): { body: string; showSchedule: boolean } {
+    if (emptyState?.kind === "closed") {
+      const when = emptyState.nextOpenLabel ?? "—";
+      return {
+        body: t("admin.whoIsFreeShopClosed").replace("{time}", when),
+        showSchedule: true,
+      };
+    }
+    if (emptyState?.kind === "busy" && emptyState.nextFreeLabel) {
+      return {
+        body: t("admin.whoIsFreeAllBusy").replace("{time}", emptyState.nextFreeLabel),
+        showSchedule: true,
+      };
+    }
+    return { body: t("admin.whoIsFreeEmpty"), showSchedule: Boolean(onOpenSchedule) };
+  }
+
+  const empty = emptyCopy();
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg rounded-t-2xl bg-zinc-950 p-4 pb-8 sm:rounded-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
-        <h2 className="text-base font-semibold">{t("admin.whoIsFreeSheetTitle")}</h2>
+        <h2 className="font-heading text-base font-semibold">{title}</h2>
         {rows.length === 0 ? (
-          <p className="mt-4 text-sm text-zinc-400">{t("admin.whoIsFreeEmpty")}</p>
+          <div className="mt-4 flex flex-col gap-3">
+            <p className="text-sm text-zinc-400">{empty.body}</p>
+            {empty.showSchedule && onOpenSchedule ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSchedule();
+                }}
+                className="min-h-11 w-full rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+              >
+                {t("admin.whoIsFreeOpenSchedule")}
+              </button>
+            ) : null}
+          </div>
         ) : (
           <ul className="mt-4 flex flex-col gap-2">
             {rows.map((row) => {
@@ -43,9 +91,13 @@ export function WhoIsFreeSheet({ open, rows, onClose, onWalkIn }: WhoIsFreeSheet
                   <button
                     type="button"
                     onClick={() => onWalkIn(row)}
-                    className="min-h-11 shrink-0 rounded-xl bg-rose-700 px-3 text-[11px] font-semibold text-white sm:text-sm"
+                    className={`cq-press min-h-11 shrink-0 rounded-xl px-3 text-[11px] font-semibold sm:text-sm ${
+                      isBlock
+                        ? "bg-rose-600 text-white"
+                        : "bg-amber-400 text-zinc-950"
+                    }`}
                   >
-                    {t("admin.whoIsFreeWalkIn")}
+                    {cta}
                   </button>
                 </li>
               );

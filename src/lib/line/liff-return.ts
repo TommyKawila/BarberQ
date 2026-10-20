@@ -6,6 +6,26 @@ export function isSafeReturnPath(path: string): boolean {
   return path.startsWith("/") && !path.startsWith("//") && !path.includes("://");
 }
 
+/**
+ * LINE Login / LIFF authorize `redirect_uri` — must match the registered
+ * callback (site origin only). Carry return path + invite tokens in
+ * cookie/session via {@link saveLiffReturnPath}, not in this URL.
+ * Same builder admin + customer login use (`window.location.origin`).
+ */
+export function buildLiffLoginRedirectUri(pageOrigin?: string): string {
+  if (pageOrigin) {
+    try {
+      return new URL(pageOrigin).origin;
+    } catch {
+      return pageOrigin.replace(/\/$/, "");
+    }
+  }
+  if (typeof window !== "undefined") {
+    return window.location.origin;
+  }
+  return "";
+}
+
 export function saveLiffReturnPath(pathname: string) {
   if (!isSafeReturnPath(pathname)) return;
   try {

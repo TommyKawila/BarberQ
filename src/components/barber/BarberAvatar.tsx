@@ -1,6 +1,6 @@
 "use client";
 
-import { barberInitials } from "@/lib/barber/barber-avatar";
+import { barberAvatarInitial } from "@/lib/barber/barber-avatar";
 
 const SIZES = {
   sm: "h-10 w-10 text-xs",
@@ -32,7 +32,7 @@ export function BarberAvatar({
       className={`${sizeClass} flex shrink-0 items-center justify-center rounded-full bg-zinc-800 font-semibold text-amber-300`}
       aria-hidden
     >
-      {barberInitials(name)}
+      {barberAvatarInitial(name)}
     </div>
   );
 }

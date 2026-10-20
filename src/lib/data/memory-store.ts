@@ -17,6 +17,7 @@ import {
   type LineOaInstallRequest,
   type MarkOutcomeOptions,
   type RecurringBreak,
+  type BarberLineInvite,
   type ShopManager,
   type ShopManagerInvite,
   type Staff,
@@ -66,6 +67,7 @@ interface MemoryState {
   trialLeadNotes: TrialLeadNote[];
   shopManagers: ShopManager[];
   shopManagerInvites: ShopManagerInvite[];
+  barberLineInvites: BarberLineInvite[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -92,10 +94,11 @@ function getState(): MemoryState {
       trialLeadNotes: [],
       shopManagers: [],
       shopManagerInvites: [],
+      barberLineInvites: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
-          name: "PHINX STUDIO",
+          name: "ClipperQ Demo",
           slug: "phinxstudio",
           status: "active",
           subscribed_until: null,
@@ -143,7 +146,7 @@ function getState(): MemoryState {
       shopId: DEFAULT_SHOP_ID,
       logoDataUrl: null,
       coverImageUrl: null,
-      shopName: "PHINX STUDIO",
+      shopName: "ClipperQ Demo",
       lineUrl: null,
       phone: null,
       hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
@@ -175,7 +178,7 @@ function getState(): MemoryState {
     g[GLOBAL_KEY].shops = [
       {
         id: DEFAULT_SHOP_ID,
-        name: "PHINX STUDIO",
+        name: "ClipperQ Demo",
         slug: "phinxstudio",
         status: "active",
         subscribed_until: null,
@@ -218,13 +221,16 @@ function getState(): MemoryState {
   if (!g[GLOBAL_KEY].shopManagerInvites) {
     g[GLOBAL_KEY].shopManagerInvites = [];
   }
+  if (!g[GLOBAL_KEY].barberLineInvites) {
+    g[GLOBAL_KEY].barberLineInvites = [];
+  }
   if (!g[GLOBAL_KEY].shopSettings) {
     g[GLOBAL_KEY].shopSettings = {
       [DEFAULT_SHOP_ID]: {
         shopId: DEFAULT_SHOP_ID,
         logoDataUrl: null,
         coverImageUrl: null,
-        shopName: "PHINX STUDIO",
+        shopName: "ClipperQ Demo",
         lineUrl: null,
         phone: null,
         hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
@@ -716,6 +722,30 @@ export const memoryStore: BookingStore = {
     return updated;
   },
 
+  async updateCompletedAppointmentService(appointmentId, options) {
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.id === appointmentId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "completed") throw new StoreConflict("INVALID_OUTCOME");
+    if (options.priceBaht != null && options.priceBaht < 0) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    const barber = getBarberSync(row.barber_id);
+    const shopId = barber?.shop_id ?? null;
+    const service = state.shopServices.find(
+      (s) => s.id === options.serviceId && s.shop_id === shopId && s.is_active,
+    );
+    if (!service) throw new StoreConflict("SERVICE_NOT_FOUND");
+    const updated = {
+      ...row,
+      service_id: service.id,
+      price_baht: options.priceBaht ?? service.price_baht,
+    };
+    state.appointments[idx] = updated;
+    return updated;
+  },
+
   async listShopServices(shopId, opts) {
     return getState()
       .shopServices.filter(
@@ -900,6 +930,10 @@ export const memoryStore: BookingStore = {
         throw new StoreConflict("LINE_ID_TAKEN");
       }
       barber.line_id = lineId;
+      if (!lineId) barber.line_display_name = null;
+    }
+    if (input.lineDisplayName !== undefined) {
+      barber.line_display_name = input.lineDisplayName?.trim() || null;
     }
     if (input.isBookable !== undefined) {
       barber.is_bookable = input.isBookable;
@@ -1346,7 +1380,139 @@ export const memoryStore: BookingStore = {
       return { ...barber, off_days: [...barber.off_days] };
     }
     barber.line_id = null;
+    barber.line_display_name = null;
     return { ...barber, off_days: [...barber.off_days] };
+  },
+
+  async createBarberLineInvite(shopId, barberId, createdByBarberId) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const barber = getBarberSync(barberId);
+    if (!barber || barber.shop_id !== shopId || barber.is_active === false) {
+      throw new StoreConflict("BARBER_NOT_FOUND");
+    }
+    const now = nowIso();
+    const state = getState();
+    for (const row of state.barberLineInvites) {
+      if (
+        row.barberId === barberId &&
+        row.shopId === shopId &&
+        !row.consumedAt &&
+        !row.revokedAt
+      ) {
+        row.revokedAt = now;
+      }
+    }
+    const invite: BarberLineInvite = {
+      id: uuid(),
+      shopId,
+      barberId,
+      token: inviteToken(),
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      consumedAt: null,
+      revokedAt: null,
+      createdAt: now,
+      createdByBarberId,
+    };
+    state.barberLineInvites.push(invite);
+    return { ...invite };
+  },
+
+  async getPendingBarberLineInvite(shopId, barberId) {
+    const now = Date.now();
+    const pending = getState()
+      .barberLineInvites.filter(
+        (i) =>
+          i.shopId === shopId &&
+          i.barberId === barberId &&
+          !i.consumedAt &&
+          !i.revokedAt &&
+          new Date(i.expiresAt).getTime() >= now,
+      )
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return pending[0] ? { ...pending[0] } : null;
+  },
+
+  async getBarberLineInvitePreview(token) {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    const invite = getState().barberLineInvites.find((i) => i.token === trimmed);
+    if (!invite) return null;
+    const shop = getState().shops.find((s) => s.id === invite.shopId);
+    const barber = getBarberSync(invite.barberId);
+    const expired =
+      !invite.consumedAt &&
+      !invite.revokedAt &&
+      new Date(invite.expiresAt).getTime() < Date.now();
+    return {
+      shopName: shop?.name ?? "",
+      shopSlug: shop?.slug ?? "",
+      barberName: barber?.name ?? "",
+      expired,
+      consumed: Boolean(invite.consumedAt),
+      revoked: Boolean(invite.revokedAt),
+    };
+  },
+
+  async claimBarberLineInvite(input) {
+    const token = input.inviteToken.trim();
+    const lineId = input.lineId.trim();
+    if (!token || !lineId) throw new StoreConflict("INVALID_RANGE");
+
+    const state = getState();
+    const invite = state.barberLineInvites.find((i) => i.token === token);
+    if (!invite) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (invite.revokedAt) throw new StoreConflict("INVITE_REVOKED");
+    if (invite.consumedAt) throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+    if (new Date(invite.expiresAt).getTime() < Date.now()) {
+      throw new StoreConflict("INVITE_EXPIRED");
+    }
+
+    const barber = getBarberSync(invite.barberId);
+    if (!barber || barber.shop_id !== invite.shopId || barber.is_active === false) {
+      throw new StoreConflict("BARBER_NOT_FOUND");
+    }
+
+    const other = barbers.find((b) => b.line_id === lineId && b.id !== barber.id);
+    if (other) throw new StoreConflict("LINE_ID_TAKEN");
+
+    if (
+      state.shopManagers.some((m) => m.lineId === lineId && !m.revokedAt)
+    ) {
+      throw new StoreConflict("IDENTITY_INCOMPATIBLE");
+    }
+
+    const now = nowIso();
+    barber.line_id = lineId;
+    barber.line_display_name = input.displayName.trim() || null;
+    invite.consumedAt = now;
+    for (const row of state.barberLineInvites) {
+      if (
+        row.barberId === barber.id &&
+        row.id !== invite.id &&
+        !row.consumedAt &&
+        !row.revokedAt
+      ) {
+        row.revokedAt = now;
+      }
+    }
+    const shop = state.shops.find((s) => s.id === invite.shopId);
+    return {
+      shopId: invite.shopId,
+      shopSlug: shop?.slug ?? "",
+      barberId: barber.id,
+      barberName: barber.name,
+    };
+  },
+
+  async cancelBarberLineInvite(shopId, barberId, inviteId) {
+    const invite = getState().barberLineInvites.find(
+      (i) => i.id === inviteId && i.shopId === shopId && i.barberId === barberId,
+    );
+    if (!invite) throw new StoreConflict("INVITE_NOT_FOUND");
+    if (invite.consumedAt) throw new StoreConflict("INVITE_ALREADY_CLAIMED");
+    if (!invite.revokedAt) invite.revokedAt = nowIso();
+    return { ...invite };
   },
 
   async getLatestLineOaInstallRequest(shopId) {
