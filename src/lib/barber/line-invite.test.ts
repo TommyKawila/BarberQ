@@ -198,7 +198,7 @@ describe("barber line invite session + status", () => {
       "utf8",
     );
     const admin = readFileSync(
-      resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.ts"),
+      resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.tsx"),
       "utf8",
     );
     assert.match(hook, /buildLiffLoginRedirectUri\(\)/);
