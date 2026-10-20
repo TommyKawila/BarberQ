@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { POST as claimBarberLine } from "@/app/api/barber-line-invite/claim/route";
 import {
   GET as getInvite,
@@ -22,6 +24,11 @@ import {
 import { StoreConflict } from "@/lib/data";
 import { memoryStore } from "@/lib/data/memory-store";
 import { dictionary } from "@/lib/i18n/dictionary";
+
+const MIGRATION_0041 = resolve(
+  process.cwd(),
+  "supabase/migrations/0041_barber_line_invites.sql",
+);
 
 const INVITE = "9d921e956e864f26826e81f28d066365";
 const OAUTH = "oauth-line-auth-code-abc";
@@ -299,5 +306,77 @@ describe("barber line invite store + claim", () => {
     assert.match(dictionary.th["barberLine.inviteClaimed"], /ใช้ไปแล้ว/);
     assert.match(dictionary.th["barberLine.lineTaken"], /ผูกกับช่างอื่น/);
     assert.match(dictionary.th["barberLine.invalidLineId"], /ไม่ถูกต้อง/);
+  });
+});
+
+describe("0041 barber_line_invites privileges", () => {
+  const sql = readFileSync(MIGRATION_0041, "utf8");
+
+  it("revokes SECURITY DEFINER execute from public, anon, authenticated", () => {
+    const fns = [
+      "create_barber_line_invite(uuid, uuid, uuid)",
+      "cancel_barber_line_invite(uuid, uuid, uuid)",
+      "get_barber_line_invite_preview(text)",
+      "claim_barber_line_invite(text, text, text)",
+    ];
+    for (const fn of fns) {
+      const escaped = fn.replace(/[()]/g, "\\$&");
+      assert.match(
+        sql,
+        new RegExp(
+          `revoke all on function ${escaped} from public, anon, authenticated;`,
+          "i",
+        ),
+        `missing revoke for ${fn}`,
+      );
+      assert.match(
+        sql,
+        new RegExp(`grant execute on function ${escaped} to service_role;`, "i"),
+        `missing service_role grant for ${fn}`,
+      );
+    }
+  });
+
+  it("enables RLS on barber_line_invites with no anon/authenticated policies", () => {
+    assert.match(sql, /alter table barber_line_invites enable row level security;/i);
+    assert.doesNotMatch(
+      sql,
+      /create policy[\s\S]*barber_line_invites[\s\S]*(anon|authenticated)/i,
+    );
+    assert.doesNotMatch(
+      sql,
+      /grant\s+(select|insert|update|delete|all)\b[\s\S]*on\s+barber_line_invites[\s\S]*to\s+(anon|authenticated|public)/i,
+    );
+  });
+
+  it("preview returns names/flags only — no shop_id / barber_id / invite id", () => {
+    const previewFn = sql.slice(
+      sql.indexOf("create or replace function get_barber_line_invite_preview"),
+      sql.indexOf("create or replace function claim_barber_line_invite"),
+    );
+    assert.match(previewFn, /'shop_name'/);
+    assert.match(previewFn, /'barber_name'/);
+    assert.doesNotMatch(previewFn, /'shop_id'/);
+    assert.doesNotMatch(previewFn, /'barber_id'/);
+    assert.doesNotMatch(previewFn, /'id',\s*v_invite/);
+  });
+
+  it("supabase-store RPCs use createServiceClient after route auth", () => {
+    const store = readFileSync(
+      resolve(process.cwd(), "src/lib/data/supabase-store.ts"),
+      "utf8",
+    );
+    for (const method of [
+      "createBarberLineInvite",
+      "getBarberLineInvitePreview",
+      "claimBarberLineInvite",
+      "cancelBarberLineInvite",
+      "getPendingBarberLineInvite",
+    ]) {
+      const start = store.indexOf(`async ${method}`);
+      assert.ok(start >= 0, method);
+      const chunk = store.slice(start, start + 600);
+      assert.match(chunk, /createServiceClient\(\)/, method);
+    }
   });
 });
