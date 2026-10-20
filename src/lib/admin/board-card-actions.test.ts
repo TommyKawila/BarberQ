@@ -89,6 +89,22 @@ describe("board card cancel for every source", () => {
     assert.equal(flags.canOpenSheet, false);
     assert.equal(flags.canCancel, false);
   });
+
+  it("completed booking opens sheet to change service/price", () => {
+    const flags = getBookedCardActions(
+      bookedSlot({
+        status: "completed",
+        priceBaht: 200,
+        serviceId: "svc-1",
+        serviceName: "ตัดผม + เฟด",
+      }),
+      { canEdit: true },
+    );
+    assert.equal(flags.canOpenSheet, true);
+    assert.equal(flags.canChangeService, true);
+    assert.equal(flags.canComplete, false);
+    assert.equal(flags.canCancel, false);
+  });
 });
 
 describe("LINE cancel push gating", () => {

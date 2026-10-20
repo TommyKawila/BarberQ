@@ -60,6 +60,8 @@ function mapStoreError(error: unknown): BookingError {
       NOT_FOUND: ["Appointment not found", 404],
       INVALID_RANGE: ["Invalid time range", 400],
       INVALID_OUTCOME: ["Cannot mark outcome yet", 400],
+      INVALID_PRICE: ["Invalid price", 400],
+      SERVICE_NOT_FOUND: ["Service not found", 404],
       INVALID_SOURCE: ["Invalid booking source", 400],
       LINE_ID_TAKEN: ["This LINE account is already linked", 409],
       HAS_FUTURE_BOOKINGS: ["Barber has future bookings", 409],
@@ -787,6 +789,25 @@ export async function markAppointmentOutcome(
   }
 }
 
+/** Change snapshot service/price on an already-completed appointment. */
+export async function updateCompletedAppointmentService(
+  appointmentId: string,
+  options: { serviceId: string; priceBaht?: number | null },
+): Promise<Appointment> {
+  if (!isUuid(appointmentId) || !isUuid(options.serviceId)) {
+    throw new BookingError("INVALID_ID", "Invalid id", 400);
+  }
+  if (options.priceBaht != null && (!Number.isFinite(options.priceBaht) || options.priceBaht < 0)) {
+    throw new BookingError("INVALID_PRICE", "Invalid price", 400);
+  }
+  try {
+    return await getStore().updateCompletedAppointmentService(appointmentId, options);
+  } catch (error) {
+    if (error instanceof BookingError) throw error;
+    throw mapStoreError(error);
+  }
+}
+
 export async function getAdminDay(
   dateISO: string,
   shopId: string,
@@ -807,6 +828,8 @@ export async function getAdminDay(
         : allBarbers.filter((b) => b.id === staff.barberId);
     const settings = await store.getShopSettings(shopId);
     const shopHours = normalizeShopHours(settings.hours);
+    const shopServices = await store.listShopServices(shopId, { includeInactive: true });
+    const serviceNameById = new Map(shopServices.map((s) => [s.id, s.name]));
     const range = dayRangeUtc(dateISO);
     const barberIds = new Set(barbers.map((b) => b.id));
     const [allBooked, allBlocked, allBreaks, history] = await Promise.all([
@@ -868,6 +891,7 @@ export async function getAdminDay(
             customerLineId: appointment.customer_line_id,
             customerPhone: appointment.customer_phone,
           });
+          const serviceId = appointment.service_id ?? null;
           return {
             ...slot,
             kind: "booked",
@@ -883,6 +907,9 @@ export async function getAdminDay(
             isLate: appointment.status === "confirmed" && isLate(appointment.start_time, now),
             lateCalledAt: appointment.late_called_at ?? null,
             noShowCount,
+            serviceId,
+            serviceName: serviceId ? (serviceNameById.get(serviceId) ?? null) : null,
+            priceBaht: appointment.price_baht ?? null,
           };
         }
         const onBreak = breakRanges.some((item) =>

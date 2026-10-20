@@ -127,6 +127,10 @@ export interface AdminSlot extends Slot {
   reason?: string;
   /** Lifetime no-show count for this customer (LINE id or phone) in the shop. */
   noShowCount?: number;
+  /** Snapshot when completed (for card + edit price). */
+  serviceId?: string | null;
+  serviceName?: string | null;
+  priceBaht?: number | null;
 }
 
 export interface AdminColumn {

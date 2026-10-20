@@ -27,6 +27,8 @@ export interface BoardCardActionFlags {
   canCancel: boolean;
   canReschedule: boolean;
   canCall: boolean;
+  /** Completed booking: staff can change snapshot service/price. */
+  canChangeService: boolean;
   /** True when cancel confirm should mention LINE push (customer has LINE id). */
   cancelNotifiesLine: boolean;
   /** True when shop reschedule LINE push would be sent (customer has LINE id). */
@@ -45,7 +47,13 @@ export function getBookedCardActions(
     Boolean(slot.appointmentId) &&
     opts.canEdit;
 
-  if (!confirmedBooked) {
+  const completedBooked =
+    slot.kind === "booked" &&
+    slot.status === "completed" &&
+    Boolean(slot.appointmentId) &&
+    opts.canEdit;
+
+  if (!confirmedBooked && !completedBooked) {
     return {
       canOpenSheet: false,
       canComplete: false,
@@ -55,6 +63,23 @@ export function getBookedCardActions(
       canCancel: false,
       canReschedule: false,
       canCall: false,
+      canChangeService: false,
+      cancelNotifiesLine: false,
+      rescheduleNotifiesLine: false,
+    };
+  }
+
+  if (completedBooked) {
+    return {
+      canOpenSheet: true,
+      canComplete: false,
+      canLeft: false,
+      canNoShow: false,
+      canLateCalled: false,
+      canCancel: false,
+      canReschedule: false,
+      canCall: Boolean(slot.customerPhone?.trim()),
+      canChangeService: true,
       cancelNotifiesLine: false,
       rescheduleNotifiesLine: false,
     };
@@ -78,6 +103,7 @@ export function getBookedCardActions(
     canCancel: sourceAllowsCancel,
     canReschedule: sourceAllowsCancel,
     canCall: Boolean(slot.customerPhone?.trim()),
+    canChangeService: false,
     cancelNotifiesLine: hasLine,
     rescheduleNotifiesLine: hasLine,
   };

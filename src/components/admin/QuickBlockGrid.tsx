@@ -38,6 +38,7 @@ interface QuickBlockGridProps {
     slot: AdminSlot,
     outcome: "completed" | "no_show" | "left",
   ) => void;
+  onChangeService?: (barberId: string, slot: AdminSlot) => void;
   onLateCalled?: (barberId: string, slot: AdminSlot) => void;
   onCancel?: (barberId: string, slot: AdminSlot) => void;
   onRescheduleStart?: (barberId: string, slot: AdminSlot) => void;
@@ -94,6 +95,7 @@ export function QuickBlockGrid({
   walkInDisabledReason,
   walkInShopBanner = null,
   onOutcome,
+  onChangeService,
   onLateCalled,
   onCancel,
   onRescheduleStart,
@@ -131,8 +133,15 @@ export function QuickBlockGrid({
       setSheet(null);
       return;
     }
-    onOutcome?.(barberId, slot, action);
-    setSheet(null);
+    if (action === "change_service") {
+      onChangeService?.(barberId, slot);
+      setSheet(null);
+      return;
+    }
+    if (action === "completed" || action === "no_show" || action === "left") {
+      onOutcome?.(barberId, slot, action);
+      setSheet(null);
+    }
   }
 
   if (columns.length === 0) {
@@ -238,11 +247,14 @@ export function QuickBlockGrid({
                 const blockedManual = slot.kind === "blocked" && slot.reason !== "break";
                 const actions = getBookedCardActions(slot, { canEdit, nowMs: now });
                 const sheetOpenable =
-                  actions.canOpenSheet && Boolean(onOutcome || onCancel || onLateCalled);
+                  actions.canOpenSheet &&
+                  Boolean(onOutcome || onCancel || onLateCalled || onChangeService);
                 const label =
                   slot.kind === "booked"
                     ? slot.status === "completed"
-                      ? `${slot.customerName} · ${t("admin.completed")}`
+                      ? slot.priceBaht != null
+                        ? `${slot.customerName} · ${t("admin.completedWithPrice").replace("{price}", String(slot.priceBaht))}`
+                        : `${slot.customerName} · ${t("admin.completed")}`
                       : slot.status === "no_show"
                         ? `${slot.customerName} · ${t("admin.noShow")}`
                         : slot.status === "left"
@@ -301,6 +313,14 @@ export function QuickBlockGrid({
                       {slot.customerPhone ? (
                         <div className="mt-0.5 truncate text-[9px] font-semibold underline">
                           {slot.customerPhone}
+                        </div>
+                      ) : null}
+                      {slot.status === "completed" && slot.priceBaht != null ? (
+                        <div className="mt-0.5 truncate text-[9px] font-semibold text-amber-100">
+                          {t("admin.completedWithPrice").replace(
+                            "{price}",
+                            String(slot.priceBaht),
+                          )}
                         </div>
                       ) : null}
                       <div className="mt-1 rounded bg-zinc-950/40 px-1 py-1 text-center text-[9px] font-semibold">

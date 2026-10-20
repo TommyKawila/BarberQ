@@ -11,11 +11,16 @@ import {
   BookedSlotActionsSheet,
   type BookedSlotSheetAction,
 } from "@/components/admin/BookedSlotActionsSheet";
+import {
+  CompleteServicePicker,
+  type CompleteServiceChoice,
+} from "@/components/admin/CompleteServicePicker";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { QrWaitingRow } from "@/components/admin/QrWaitingRow";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
 import { TodayQueueCards } from "@/components/admin/TodayQueueCards";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
+import { shouldPromptServicePicker } from "@/lib/admin/complete-service-picker";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useToast } from "@/components/ui/ToastProvider";
@@ -50,7 +55,12 @@ import {
   formatSlotTime,
   SHOP_TIMEZONE,
 } from "@/lib/services/slot-service";
-import type { AdminColumn, AdminSlot, StaffBookingSource } from "@/types/booking";
+import type {
+  AdminColumn,
+  AdminSlot,
+  ShopService,
+  StaffBookingSource,
+} from "@/types/booking";
 
 type BoardTab = "queue" | "schedule";
 type ThumbIntent = "walk_in" | "block";
@@ -78,6 +88,12 @@ export default function AdminPage() {
   const [actionsSheet, setActionsSheet] = useState<{
     barberId: string;
     barberName: string;
+    slot: AdminSlot;
+  } | null>(null);
+  const [shopServices, setShopServices] = useState<ShopService[]>([]);
+  const [servicePicker, setServicePicker] = useState<{
+    mode: "complete" | "change";
+    barberId: string;
     slot: AdminSlot;
   } | null>(null);
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
@@ -165,6 +181,17 @@ export default function AdminPage() {
       toast.error(t("admin.toast.refreshFailed"));
     }
   }, [authHeaders, dateISO, shopApi, showClosedQueue, t, toast]);
+
+  useEffect(() => {
+    if (!ready || !profile) return;
+    void fetch(shopApi("/services"), { headers: authHeaders })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const json = (await res.json()) as { services?: ShopService[] };
+        setShopServices(json.services ?? []);
+      })
+      .catch(() => {});
+  }, [authHeaders, profile, ready, shopApi]);
 
   useEffect(() => {
     if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
@@ -364,8 +391,9 @@ export default function AdminPage() {
     _barberId: string,
     slot: AdminSlot,
     outcome: "completed" | "no_show" | "left",
-  ) {
-    if (!profile || !slot.appointmentId) return;
+    options?: { serviceId?: string; priceBaht?: number },
+  ): Promise<boolean> {
+    if (!profile || !slot.appointmentId) return false;
     const key = `${_barberId}:${slot.startTime}`;
     setOutcomePendingKey(key);
     setError(null);
@@ -373,16 +401,63 @@ export default function AdminPage() {
       const res = await fetch(`/api/appointments/${slot.appointmentId}/outcome`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ outcome }),
+        body: JSON.stringify({
+          outcome,
+          serviceId: options?.serviceId,
+          priceBaht: options?.priceBaht,
+        }),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
         if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
         else if (json.error?.code?.includes("LINE")) toast.error(t("admin.toast.lineSendFailed"));
+        return false;
+      }
+      toast.success(t("admin.toast.success"));
+      await loadDay();
+      return true;
+    } catch {
+      setError(t("admin.networkError"));
+      return false;
+    } finally {
+      setOutcomePendingKey(null);
+    }
+  }
+
+  function requestComplete(barberId: string, slot: AdminSlot) {
+    if (shouldPromptServicePicker(shopServices)) {
+      setServicePicker({ mode: "complete", barberId, slot });
+      return;
+    }
+    void onOutcome(barberId, slot, "completed");
+  }
+
+  async function onChangeCompletedService(
+    slot: AdminSlot,
+    choice: CompleteServiceChoice,
+  ) {
+    if (!profile || !slot.appointmentId) return;
+    const key = `${slot.appointmentId}:service`;
+    setOutcomePendingKey(key);
+    setError(null);
+    try {
+      const res = await fetch(`/api/appointments/${slot.appointmentId}/service`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          serviceId: choice.serviceId,
+          priceBaht: choice.priceBaht,
+        }),
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        toast.error(t("admin.updateFailed"));
         return;
       }
       toast.success(t("admin.toast.success"));
+      setServicePicker(null);
       await loadDay();
     } catch {
       setError(t("admin.networkError"));
@@ -579,7 +654,17 @@ export default function AdminPage() {
       setActionsSheet(null);
       return;
     }
-    if (action === "completed" || action === "no_show" || action === "left") {
+    if (action === "change_service") {
+      setActionsSheet(null);
+      setServicePicker({ mode: "change", barberId, slot });
+      return;
+    }
+    if (action === "completed") {
+      setActionsSheet(null);
+      requestComplete(barberId, slot);
+      return;
+    }
+    if (action === "no_show" || action === "left") {
       void onOutcome(barberId, slot, action);
       setActionsSheet(null);
     }
@@ -785,7 +870,10 @@ export default function AdminPage() {
               outcomePendingKey={outcomePendingKey}
               latePendingKey={latePendingKey}
               onWalkInBarber={(id) => onWalkInQuick(id)}
-              onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
+              onOutcome={(id, slot, outcome) => {
+                if (outcome === "completed") requestComplete(id, slot);
+                else void onOutcome(id, slot, outcome);
+              }}
               onLateOrNoShow={(id, slot) => {
                 const col = columns.find((c) => c.barber.id === id);
                 setActionsSheet({
@@ -824,7 +912,13 @@ export default function AdminPage() {
             onWalkInQuick={(id) => onWalkInQuick(id)}
             walkInDisabledReason={walkInButtonDisabledReason}
             walkInShopBanner={walkInShopBanner}
-            onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
+            onOutcome={(id, slot, outcome) => {
+              if (outcome === "completed") requestComplete(id, slot);
+              else void onOutcome(id, slot, outcome);
+            }}
+            onChangeService={(id, slot) =>
+              setServicePicker({ mode: "change", barberId: id, slot })
+            }
             onLateCalled={(id, slot) => void onLateCalled(id, slot)}
             onCancel={(id, slot) => void onCancel(id, slot)}
             onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
@@ -951,6 +1045,33 @@ export default function AdminPage() {
           )}
           onClose={() => setActionsSheet(null)}
           onAction={handleBookedSheetAction}
+        />
+        <CompleteServicePicker
+          open={Boolean(servicePicker)}
+          services={shopServices}
+          mode={servicePicker?.mode ?? "complete"}
+          initialServiceId={servicePicker?.slot.serviceId ?? null}
+          customerLabel={servicePicker?.slot.customerName ?? null}
+          pending={Boolean(
+            servicePicker &&
+              (outcomePendingKey ===
+                `${servicePicker.barberId}:${servicePicker.slot.startTime}` ||
+                outcomePendingKey === `${servicePicker.slot.appointmentId}:service`),
+          )}
+          onClose={() => setServicePicker(null)}
+          onConfirm={(choice) => {
+            if (!servicePicker) return;
+            if (servicePicker.mode === "change") {
+              void onChangeCompletedService(servicePicker.slot, choice);
+              return;
+            }
+            void onOutcome(servicePicker.barberId, servicePicker.slot, "completed", {
+              serviceId: choice.serviceId,
+              priceBaht: choice.priceBaht,
+            }).then((ok) => {
+              if (ok) setServicePicker(null);
+            });
+          }}
         />
       </div>
     </AdminShell>

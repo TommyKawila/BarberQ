@@ -321,6 +321,10 @@ export interface BookingStore {
     outcome: AppointmentOutcome,
     options?: MarkOutcomeOptions,
   ): Promise<Appointment>;
+  updateCompletedAppointmentService(
+    appointmentId: string,
+    options: { serviceId: string; priceBaht?: number | null },
+  ): Promise<Appointment>;
   cancelAppointmentByToken(token: string): Promise<Appointment>;
   getAppointmentByCancelToken(token: string): Promise<Appointment | null>;
   rescheduleAppointmentByToken(

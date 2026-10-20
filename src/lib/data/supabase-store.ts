@@ -506,6 +506,44 @@ export const supabaseStore: BookingStore = {
     mapRpcError(withPrice.error);
   },
 
+  async updateCompletedAppointmentService(appointmentId, options) {
+    const supabase = createServiceClient();
+    const existing = await this.getAppointment(appointmentId);
+    if (!existing) throw new StoreConflict("NOT_FOUND");
+    if (existing.status !== "completed") throw new StoreConflict("INVALID_OUTCOME");
+    if (options.priceBaht != null && options.priceBaht < 0) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    const barber = await this.getBarber(existing.barber_id);
+    const shopId = barber?.shop_id ?? null;
+    if (!shopId) throw new StoreConflict("NOT_FOUND");
+
+    const { data: service, error: serviceError } = await supabase
+      .from("shop_services")
+      .select("id, price_baht")
+      .eq("id", options.serviceId)
+      .eq("shop_id", shopId)
+      .eq("is_active", true)
+      .maybeSingle();
+    if (serviceError) throw new Error(serviceError.message);
+    if (!service) throw new StoreConflict("SERVICE_NOT_FOUND");
+
+    const priceBaht =
+      options.priceBaht != null ? Math.round(options.priceBaht) : Number(service.price_baht);
+    const { data, error } = await supabase
+      .from("appointments")
+      .update({
+        service_id: service.id,
+        price_baht: priceBaht,
+      })
+      .eq("id", appointmentId)
+      .eq("status", "completed")
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Appointment;
+  },
+
   async listShopServices(shopId, opts) {
     const supabase = createServiceClient();
     let query = supabase

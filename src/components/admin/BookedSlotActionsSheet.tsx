@@ -16,7 +16,8 @@ export type BookedSlotSheetAction =
   | "no_show"
   | "late_called"
   | "cancel"
-  | "reschedule";
+  | "reschedule"
+  | "change_service";
 
 interface BookedSlotActionsSheetProps {
   open: boolean;
@@ -69,6 +70,12 @@ export function BookedSlotActionsSheet({
           <p className="mt-1 text-xs text-zinc-400">
             {barberLabel(barberName, locale)} · {formatSlotTime(slot.startTime)}
             {slot.customerName ? ` · ${slot.customerName}` : ""}
+            {slot.status === "completed" && slot.priceBaht != null
+              ? ` · ${t("admin.completedPrice").replace("{price}", String(slot.priceBaht))}`
+              : ""}
+            {slot.status === "completed" && slot.serviceName
+              ? ` · ${slot.serviceName}`
+              : ""}
           </p>
           {(slot.noShowCount ?? 0) > 0 ? (
             <p
@@ -118,6 +125,15 @@ export function BookedSlotActionsSheet({
                 primary
               >
                 ✓ {t("admin.markDone")}
+              </ActionButton>
+            ) : null}
+            {flags.canChangeService ? (
+              <ActionButton
+                disabled={pending}
+                onClick={() => onAction("change_service")}
+                primary
+              >
+                {t("admin.changeServiceAction")}
               </ActionButton>
             ) : null}
             {flags.canLeft ? (

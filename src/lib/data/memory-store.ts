@@ -600,6 +600,30 @@ export const memoryStore: BookingStore = {
     return updated;
   },
 
+  async updateCompletedAppointmentService(appointmentId, options) {
+    const state = getState();
+    const idx = state.appointments.findIndex((a) => a.id === appointmentId);
+    if (idx === -1) throw new StoreConflict("NOT_FOUND");
+    const row = state.appointments[idx];
+    if (row.status !== "completed") throw new StoreConflict("INVALID_OUTCOME");
+    if (options.priceBaht != null && options.priceBaht < 0) {
+      throw new StoreConflict("INVALID_PRICE");
+    }
+    const barber = getBarberSync(row.barber_id);
+    const shopId = barber?.shop_id ?? null;
+    const service = state.shopServices.find(
+      (s) => s.id === options.serviceId && s.shop_id === shopId && s.is_active,
+    );
+    if (!service) throw new StoreConflict("SERVICE_NOT_FOUND");
+    const updated = {
+      ...row,
+      service_id: service.id,
+      price_baht: options.priceBaht ?? service.price_baht,
+    };
+    state.appointments[idx] = updated;
+    return updated;
+  },
+
   async listShopServices(shopId, opts) {
     return getState()
       .shopServices.filter(
