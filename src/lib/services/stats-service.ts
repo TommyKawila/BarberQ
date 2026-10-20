@@ -394,7 +394,8 @@ function buildInsight(
   trend: StatsTrendRow[],
   totals: StatsTotals,
 ): StatsInsight {
-  if (totals.completed === 0 && totals.booked === 0) return { kind: "empty" };
+  // Peak/quiet follow the hero metric (ตัดเสร็จ). No completed → no peak hour.
+  if (totals.completed === 0) return { kind: "empty" };
   if (byHour.length) {
     const peak = [...byHour].sort((a, b) => b.booked + b.walkIn - (a.booked + a.walkIn))[0];
     const quiet = [...byHour].sort((a, b) => a.booked + a.walkIn - (b.booked + b.walkIn))[0];

@@ -89,6 +89,65 @@ describe("stats-service D5 KPIs", () => {
     assert.ok(report.insight);
   });
 
+  it("explicit service on complete + update after complete changes revenue", async () => {
+    const { updateCompletedAppointmentService } = await import(
+      "@/lib/services/booking-service"
+    );
+    const shop = await memoryStore.createShop({
+      name: `MultiSvc ${Date.now()}`,
+      subscriptionMonths: 1,
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: `MultiBarber${Date.now()}`,
+      slotDuration: 30,
+    });
+    const fade = await memoryStore.createShopService({
+      shopId: shop.id,
+      name: "ตัดผม + เฟด",
+      priceBaht: 200,
+      isDefault: true,
+    });
+    const shave = await memoryStore.createShopService({
+      shopId: shop.id,
+      name: "ตัด + เฟด + โกนหนวด",
+      priceBaht: 250,
+      isDefault: false,
+    });
+    const staff: StaffAuth = {
+      staffId: "owner-ms",
+      name: "Owner",
+      role: "owner",
+      barberId: barber.id,
+      shopId: shop.id,
+      lineId: "owner-ms",
+    };
+    const slot = await firstFutureSlot(barber.id);
+    assert.ok(slot);
+    const booking = await createStaffBooking(shop.id, {
+      barberId: barber.id,
+      startTime: slot!.startTime,
+      source: "walk_in",
+      customerName: "Walk",
+      customerPhone: "0822222222",
+    });
+    const done = await markAppointmentOutcome(booking.id, "completed", {
+      serviceId: shave.id,
+    });
+    assert.equal(done.service_id, shave.id);
+    assert.equal(done.price_baht, 250);
+
+    const changed = await updateCompletedAppointmentService(booking.id, {
+      serviceId: fade.id,
+    });
+    assert.equal(changed.service_id, fade.id);
+    assert.equal(changed.price_baht, 200);
+
+    const dateISO = dateISOFromInstant(new Date(slot!.startTime));
+    const report = await getStatsReport("week", dateISO, staff);
+    assert.ok(report.totals.revenueBaht >= 200);
+  });
+
   it("walkIns count source walk_in plus legacy walk-in blocks only", async () => {
     const shop = await memoryStore.createShop({
       name: `P7 WalkIn ${Date.now()}`,

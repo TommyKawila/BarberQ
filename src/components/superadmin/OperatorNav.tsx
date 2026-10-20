@@ -19,6 +19,9 @@ export function OperatorNav() {
     <header className="sticky top-0 z-40 border-b border-zinc-800 bg-zinc-950/95 backdrop-blur">
       <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-4 py-2.5 md:px-6">
         <PlatformBrandHeader />
+        <span className="hidden font-heading text-sm font-semibold text-zinc-200 sm:inline">
+          ClipperQ
+        </span>
         <nav className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
           {LINKS.map((link) => {
             const active = link.exact

@@ -5,29 +5,42 @@ import { useShopBrand } from "@/lib/brand/shop-brand";
 
 interface BrandMarkProps {
   size?: number;
+  /** When false, no tile/frame (ClipperQ small mark on dark). Default true for legacy. */
+  framed?: boolean;
 }
 
-function DefaultMark({ size }: { size: number }) {
+function DefaultMark({ size, framed }: { size: number; framed: boolean }) {
+  const icon = Math.round(framed ? size * 0.72 : size);
+  const img = (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={clipperqIconSrc("dark", size)}
+      alt=""
+      width={icon}
+      height={icon}
+      className="object-contain"
+      decoding="async"
+    />
+  );
+  if (!framed) {
+    return (
+      <span className="inline-flex shrink-0" style={{ width: size, height: size }} aria-hidden="true">
+        {img}
+      </span>
+    );
+  }
   return (
     <span
       className="inline-flex shrink-0 items-center justify-center rounded-lg bg-zinc-900"
       style={{ width: size, height: size }}
       aria-hidden="true"
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={clipperqIconSrc("dark", Math.round(size * 0.72))}
-        alt=""
-        width={Math.round(size * 0.72)}
-        height={Math.round(size * 0.72)}
-        className="object-contain"
-        decoding="async"
-      />
+      {img}
     </span>
   );
 }
 
-export function BrandMark({ size = 32 }: BrandMarkProps) {
+export function BrandMark({ size = 32, framed = true }: BrandMarkProps) {
   const { logoDataUrl } = useShopBrand();
 
   if (logoDataUrl) {
@@ -44,5 +57,5 @@ export function BrandMark({ size = 32 }: BrandMarkProps) {
     );
   }
 
-  return <DefaultMark size={size} />;
+  return <DefaultMark size={size} framed={framed} />;
 }

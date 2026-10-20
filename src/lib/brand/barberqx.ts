@@ -3,8 +3,21 @@ export const BARBERQX_BRAND = {
   pronunciation: "คลิปเปอร์คิว",
   /** Approved ClipperQ amber */
   gold: "#F6AD34",
+  amber: "#F6AD34",
   ink: "#111111",
   cream: "#F3EEE3",
+  /** Raised surface on Ink (cards, secondary buttons) */
+  charcoal: "#2A2622",
+  /** Cards / nav bar between Ink and Charcoal */
+  surface: "#1F1C19",
+  muted: "#B9B0A2",
+  subtle: "#A39A8C",
+  outline: "#857C70",
+  destructive: "#B42318",
+  /** Error text on dark surfaces */
+  danger: "#F97066",
+  /** LINE-not-linked chip (Tommy-approved orange, not Amber) */
+  warningChip: "#FB923C",
   /** Amber Deep — text on light backgrounds (never amber #F6AD34 text on light). */
   amberDeep: "#8A5300",
   assets: {

@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
-import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  buildLiffLoginRedirectUri,
+  saveLiffReturnPath,
+} from "@/lib/line/liff-return";
 
 const REF_KEY = "barberq_customer_ref";
 
@@ -25,7 +28,7 @@ function loadMockProfile(): LineProfile {
 
 function startLiffLogin() {
   saveLiffReturnPath(window.location.pathname);
-  liff.login({ redirectUri: window.location.origin });
+  liff.login({ redirectUri: buildLiffLoginRedirectUri() });
 }
 
 export function useLineAuth() {

@@ -40,9 +40,9 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
             type="button"
             disabled={disabled}
             onClick={() => onChange(dateISO)}
-            className={`flex min-h-11 min-w-[3.75rem] flex-col items-center rounded-xl px-3 py-2.5 transition ${
+            className={`flex h-[72px] w-16 shrink-0 flex-col items-center justify-center rounded-xl px-2 transition ${
               disabled
-                ? "cursor-not-allowed bg-zinc-900 text-zinc-600"
+                ? "cursor-not-allowed bg-zinc-900 text-zinc-500"
                 : selected
                   ? "bg-amber-400 text-zinc-950"
                   : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
@@ -52,7 +52,7 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
               {isToday ? t("booking.today") : weekdays[weekday]}
             </span>
             <span className="text-lg font-semibold leading-none">{format(day, "d")}</span>
-            <span className="text-[10px]">{format(day, "MMM", { locale: dateLocale })}</span>
+            <span className="text-xs">{format(day, "MMM", { locale: dateLocale })}</span>
           </button>
         );
       })}

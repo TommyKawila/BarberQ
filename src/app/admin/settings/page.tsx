@@ -1,10 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Bell,
+  ChevronRight,
+  CircleDollarSign,
+  Clock3,
+  MessageCircle,
+  QrCode,
+  Scissors,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { BrandMark } from "@/components/layout/BrandMark";
 import { ShopNameLockup } from "@/components/layout/ShopNameLockup";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
+import { AdminContentSkeleton } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
@@ -22,16 +34,32 @@ import {
   normalizeShopLineUrl,
   normalizeShopPhone,
 } from "@/lib/shop/shop-contact";
+import {
+  SETTINGS_SPY_HEADER_OFFSET_PX,
+  findVerticalScrollRoot,
+  getScrollTop,
+  measureSectionTops,
+  resolveActiveSettingsSection,
+} from "@/lib/admin/settings-section-spy";
 
-const WEEKDAYS: { value: number; key: MessageKey }[] = [
-  { value: 0, key: "common.sunday" },
-  { value: 1, key: "common.monday" },
-  { value: 2, key: "common.tuesday" },
-  { value: 3, key: "common.wednesday" },
-  { value: 4, key: "common.thursday" },
-  { value: 5, key: "common.friday" },
-  { value: 6, key: "common.saturday" },
+const WEEKDAYS: { value: number; key: MessageKey; shortTh: string; shortEn: string }[] = [
+  { value: 0, key: "common.sunday", shortTh: "อา", shortEn: "Sun" },
+  { value: 1, key: "common.monday", shortTh: "จ", shortEn: "Mon" },
+  { value: 2, key: "common.tuesday", shortTh: "อ", shortEn: "Tue" },
+  { value: 3, key: "common.wednesday", shortTh: "พ", shortEn: "Wed" },
+  { value: 4, key: "common.thursday", shortTh: "พฤ", shortEn: "Thu" },
+  { value: 5, key: "common.friday", shortTh: "ศ", shortEn: "Fri" },
+  { value: 6, key: "common.saturday", shortTh: "ส", shortEn: "Sat" },
 ];
+
+const COVER_DEFAULT_SRC = "/brand/cover-default.svg";
+
+type SettingsSectionId =
+  | "shop-info"
+  | "shop-hours"
+  | "line-notify"
+  | "queue-pricing"
+  | "managers";
 
 interface ApiError {
   error?: { code?: string; message?: string };
@@ -51,8 +79,105 @@ interface CoverImageResponse {
   error?: { code?: string; message?: string };
 }
 
+function SettingsRow({
+  href,
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <Link href={href} className="flex min-h-16 items-center gap-3 px-4 py-3 transition hover:bg-zinc-800/60">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-zinc-100">{title}</span>
+        <span className="mt-0.5 block text-xs text-zinc-400">{subtitle}</span>
+      </span>
+      <ChevronRight className="h-5 w-5 shrink-0 text-zinc-500" aria-hidden />
+    </Link>
+  );
+}
+
+function SettingsRowGroup({ children }: { children: React.ReactNode }) {
+  const items = React.Children.toArray(children).filter(Boolean);
+  return (
+    <div className="overflow-hidden rounded-2xl bg-zinc-900">
+      {items.map((child, index) => (
+        <div key={index} className={index > 0 ? "mx-4 border-t border-zinc-800" : undefined}>
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DirtyActions({
+  dirty,
+  saving,
+  saveLabel,
+  onSave,
+  onDiscard,
+  t,
+}: {
+  dirty: boolean;
+  saving: boolean;
+  saveLabel: string;
+  onSave: () => void;
+  onDiscard: () => void;
+  t: (key: MessageKey) => string;
+}) {
+  if (!dirty) return null;
+  return (
+    <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm font-medium text-amber-400" aria-live="polite">
+        {t("admin.unsavedChanges")}
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <button
+          type="button"
+          onClick={onDiscard}
+          className="min-h-11 rounded-xl px-3 text-sm text-zinc-400 underline-offset-2 hover:text-zinc-200 hover:underline"
+        >
+          {t("admin.discardChanges")}
+        </button>
+        <button
+          type="button"
+          disabled={saving}
+          onClick={onSave}
+          className="min-h-12 w-full rounded-xl bg-amber-400 px-4 font-semibold text-zinc-950 disabled:opacity-50 sm:w-auto"
+        >
+          {saveLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const MEDIA_BTN =
+  "min-h-11 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-200 disabled:opacity-50";
+const TERTIARY_BTN = "min-h-11 rounded-xl px-3 text-sm text-zinc-400 disabled:opacity-40";
+const SECTION_SCROLL = "scroll-mt-[72px]";
+const CARD = "rounded-2xl bg-zinc-900 p-4";
+
+function hoursEqual(a: ShopDayHours[], b: ShopDayHours[]) {
+  return JSON.stringify(normalizeShopHours(a)) === JSON.stringify(normalizeShopHours(b));
+}
+
+/** Keep HH:mm for 24h display (never AM/PM). */
+function normalizeClock(value: string): string | null {
+  const match = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
+  if (!match) return null;
+  return `${match[1]!.padStart(2, "0")}:${match[2]}`;
+}
+
 export default function AdminSettingsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { ready, profile, authHeaders, mockMode } = useAdminPageAuth();
   const { shopApi, shopPath } = useShopSlug();
   const {
@@ -71,7 +196,9 @@ export default function AdminSettingsPage() {
   const [localPreview, setLocalPreview] = useState<string | null>(null);
   const displayUrl = localPreview ?? logoDataUrl;
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const displayCoverUrl = coverPreview ?? coverImageUrl;
+  const uploadedCoverUrl = coverPreview ?? coverImageUrl;
+  const hasCover = Boolean(uploadedCoverUrl);
+  const displayCoverUrl = uploadedCoverUrl || COVER_DEFAULT_SRC;
   const [shopNameDraft, setShopNameDraft] = useState("");
   const [shopNameDirty, setShopNameDirty] = useState(false);
   const shopNameInput = shopNameDirty ? shopNameDraft : (shopName ?? "");
@@ -93,11 +220,33 @@ export default function AdminSettingsPage() {
   const [nameError, setNameError] = useState<string | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
   const [hours, setHours] = useState<ShopDayHours[]>(() => DEFAULT_SHOP_HOURS.map((d) => ({ ...d })));
+  const [hoursBaseline, setHoursBaseline] = useState<ShopDayHours[]>(() =>
+    DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+  );
+  const hoursDirty = !hoursEqual(hours, hoursBaseline);
   const [savingHours, setSavingHours] = useState(false);
   const [hoursMessage, setHoursMessage] = useState<string | null>(null);
   const [hoursError, setHoursError] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>("shop-info");
   const inputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const scrollingToRef = useRef<string | null>(null);
+
+  const isOwner = profile?.role === "owner";
+
+  const sectionTabs = useMemo(
+    () =>
+      [
+        { id: "shop-info" as const, labelKey: "admin.sectionShopInfo" as MessageKey },
+        { id: "shop-hours" as const, labelKey: "admin.sectionHours" as MessageKey },
+        { id: "line-notify" as const, labelKey: "admin.sectionLineNotify" as MessageKey },
+        { id: "queue-pricing" as const, labelKey: "admin.sectionQueuePricing" as MessageKey },
+        ...(isOwner
+          ? [{ id: "managers" as const, labelKey: "admin.sectionManagers" as MessageKey }]
+          : []),
+      ] satisfies { id: SettingsSectionId; labelKey: MessageKey }[],
+    [isOwner],
+  );
 
   function coverErrorMessage(code: string | undefined): string {
     switch (code) {
@@ -118,9 +267,80 @@ export default function AdminSettingsPage() {
       const res = await fetch(shopApi("/settings"), { headers: authHeaders });
       if (!res.ok) return;
       const json = (await res.json()) as SettingsResponse;
-      if (json.hours) setHours(normalizeShopHours(json.hours));
+      if (json.hours) {
+        const next = normalizeShopHours(json.hours);
+        setHours(next);
+        setHoursBaseline(next.map((d) => ({ ...d })));
+      }
     })();
   }, [authHeaders, profile, ready, shopApi]);
+
+  const scrollToSection = useCallback((id: SettingsSectionId) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    scrollingToRef.current = id;
+    setActiveSection(id);
+    const root = findVerticalScrollRoot(el);
+    const [sectionTop] = measureSectionTops([el], root);
+    const target = Math.max(0, (sectionTop ?? 0) - SETTINGS_SPY_HEADER_OFFSET_PX);
+    if (root === window) {
+      window.scrollTo({ top: target, behavior: "smooth" });
+    } else {
+      root.scrollTo({ top: target, behavior: "smooth" });
+    }
+    history.replaceState(null, "", `#${id}`);
+    window.setTimeout(() => {
+      if (scrollingToRef.current === id) scrollingToRef.current = null;
+    }, 700);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
+    const hash = window.location.hash.replace(/^#/, "") as SettingsSectionId | "";
+    const validIds = sectionTabs.map((tab) => tab.id);
+    if (hash && validIds.includes(hash)) {
+      requestAnimationFrame(() => scrollToSection(hash));
+    }
+  }, [profile, ready, scrollToSection, sectionTabs]);
+
+  useEffect(() => {
+    if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
+    const ids = sectionTabs.map((tab) => tab.id);
+    const elements = ids
+      .map((id) => document.getElementById(id))
+      .filter((el): el is HTMLElement => Boolean(el));
+    if (elements.length === 0) return;
+
+    const root = findVerticalScrollRoot(elements[0]!);
+
+    const syncActive = () => {
+      if (scrollingToRef.current) return;
+      const next = resolveActiveSettingsSection({
+        sectionIds: ids,
+        sectionTops: measureSectionTops(elements, root),
+        scrollTop: getScrollTop(root),
+      });
+      if (next) setActiveSection(next as SettingsSectionId);
+    };
+
+    syncActive();
+    const onScroll = () => syncActive();
+    const onResize = () => syncActive();
+    if (root === window) {
+      window.addEventListener("scroll", onScroll, { passive: true });
+    } else {
+      root.addEventListener("scroll", onScroll, { passive: true });
+    }
+    window.addEventListener("resize", onResize);
+    return () => {
+      if (root === window) {
+        window.removeEventListener("scroll", onScroll);
+      } else {
+        root.removeEventListener("scroll", onScroll);
+      }
+      window.removeEventListener("resize", onResize);
+    };
+  }, [profile, ready, sectionTabs]);
 
   const putSettings = useCallback(
     async (body: {
@@ -189,6 +409,12 @@ export default function AdminSettingsPage() {
     }
   }, [putSettings, shopNameInput, t]);
 
+  const discardShopName = useCallback(() => {
+    setShopNameDirty(false);
+    setShopNameDraft("");
+    setNameError(null);
+  }, []);
+
   const saveContact = useCallback(async () => {
     setSavingContact(true);
     setContactError(null);
@@ -216,12 +442,22 @@ export default function AdminSettingsPage() {
     }
   }, [lineUrlInput, phoneInput, putSettings, t]);
 
+  const discardContact = useCallback(() => {
+    setContactDirty(false);
+    setLineUrlDraft("");
+    setPhoneDraft("");
+    setContactError(null);
+  }, []);
+
   const saveHours = useCallback(async () => {
     setSavingHours(true);
     setHoursError(null);
     setHoursMessage(null);
     try {
-      await putSettings({ hours: normalizeShopHours(hours) });
+      const next = normalizeShopHours(hours);
+      await putSettings({ hours: next });
+      setHours(next);
+      setHoursBaseline(next.map((d) => ({ ...d })));
       setHoursMessage(t("admin.shopHoursSaved"));
     } catch (err) {
       setHoursError(err instanceof Error ? err.message : t("admin.updateFailed"));
@@ -230,10 +466,13 @@ export default function AdminSettingsPage() {
     }
   }, [hours, putSettings, t]);
 
+  const discardHours = useCallback(() => {
+    setHours(hoursBaseline.map((d) => ({ ...d })));
+    setHoursError(null);
+  }, [hoursBaseline]);
+
   function updateHour(index: number, patch: Partial<ShopDayHours>) {
-    setHours((current) =>
-      current.map((day, i) => (i === index ? { ...day, ...patch } : day)),
-    );
+    setHours((current) => current.map((day, i) => (i === index ? { ...day, ...patch } : day)));
   }
 
   async function uploadCover(file: File) {
@@ -318,11 +557,63 @@ export default function AdminSettingsPage() {
 
   const previewShopName = normalizeShopName(shopNameInput);
 
+  const sectionIndexLinksMobile = (
+    <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {sectionTabs.map((tab) => {
+        const active = activeSection === tab.id;
+        return (
+          <a
+            key={tab.id}
+            href={`#${tab.id}`}
+            aria-current={active ? "true" : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              scrollToSection(tab.id);
+            }}
+            className={`inline-flex h-11 shrink-0 snap-start items-center rounded-full px-4 text-sm font-medium transition ${
+              active
+                ? "bg-amber-400/15 text-amber-400"
+                : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {t(tab.labelKey)}
+          </a>
+        );
+      })}
+    </div>
+  );
+
+  const sectionIndexLinksDesktop = (
+    <div className="flex flex-col">
+      {sectionTabs.map((tab) => {
+        const active = activeSection === tab.id;
+        return (
+          <a
+            key={tab.id}
+            href={`#${tab.id}`}
+            aria-current={active ? "true" : undefined}
+            onClick={(event) => {
+              event.preventDefault();
+              scrollToSection(tab.id);
+            }}
+            className={`flex min-h-11 items-center border-l-2 px-3 text-sm transition ${
+              active
+                ? "border-amber-400 font-medium text-amber-400"
+                : "border-transparent text-zinc-400 hover:text-zinc-200"
+            }`}
+          >
+            {t(tab.labelKey)}
+          </a>
+        );
+      })}
+    </div>
+  );
+
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+      </AdminShell>
     );
   }
 
@@ -340,8 +631,8 @@ export default function AdminSettingsPage() {
 
   return (
     <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-5 px-4 py-5">
-        <header className="flex items-start justify-between gap-2">
+      <div className="px-4 py-5">
+        <header className="mb-6 flex items-start justify-between gap-2">
           <div>
             {mockMode ? (
               <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
@@ -353,311 +644,361 @@ export default function AdminSettingsPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.shopName")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.shopNameHint")}</p>
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
-            <BrandMark size={36} />
-            <ShopNameLockup shopName={previewShopName} />
-          </div>
-          <label className="mt-4 flex flex-col gap-1 text-sm">
-            {t("admin.shopName")}
-            <input
-              value={shopNameInput}
-              onChange={(event) => {
-                setShopNameDirty(true);
-                setShopNameDraft(event.target.value);
-              }}
-              placeholder={t("admin.shopNamePlaceholder")}
-              maxLength={40}
-              className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={savingName}
-            onClick={() => void saveShopName()}
-            className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+        <div className="lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-8">
+          <nav
+            aria-label={t("admin.settings")}
+            className="sticky top-4 z-20 mb-4 hidden lg:block"
           >
-            {t("admin.saveShopName")}
-          </button>
-          {nameMessage ? <p className="mt-3 text-sm text-emerald-400">{nameMessage}</p> : null}
-          {nameError ? <p className="mt-3 text-sm text-red-400">{nameError}</p> : null}
-        </section>
+            {sectionIndexLinksDesktop}
+          </nav>
 
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.coverTitle")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.coverHint")}</p>
-          <p className="mt-1 text-xs text-zinc-500">{t("admin.coverAspectHint")}</p>
-          <p className="mt-0.5 text-xs text-zinc-500">{t("admin.coverFormatHint")}</p>
-          <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-            {displayCoverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- shop cover preview
-              <img
-                src={displayCoverUrl}
-                alt=""
-                className="aspect-video w-full object-cover object-center"
-              />
-            ) : (
-              <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-zinc-900 via-zinc-950 to-black text-xs text-zinc-500">
-                {t("admin.coverTitle")}
-              </div>
-            )}
-          </div>
-          <input
-            ref={coverInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(event) => void onCoverFileChange(event)}
-          />
-          <div className="mt-4 flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={savingCover}
-              onClick={() => coverInputRef.current?.click()}
-              className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+          <div className="mx-auto flex w-full max-w-[640px] flex-col gap-6">
+            <nav
+              aria-label={t("admin.settings")}
+              className="sticky top-0 z-20 -mx-4 border-b border-zinc-800 bg-zinc-950/95 px-4 py-2 backdrop-blur lg:hidden"
             >
-              {savingCover
-                ? t("admin.coverUploading")
-                : displayCoverUrl
-                  ? t("admin.changeCover")
-                  : t("admin.uploadCover")}
-            </button>
-            {displayCoverUrl ? (
-              <button
-                type="button"
-                disabled={savingCover}
-                onClick={() => void deleteCover()}
-                className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300 disabled:opacity-40"
-              >
-                {t("admin.deleteCover")}
-              </button>
-            ) : null}
-          </div>
-          {coverMessage ? <p className="mt-3 text-sm text-emerald-400">{coverMessage}</p> : null}
-          {coverError ? <p className="mt-3 text-sm text-red-400">{coverError}</p> : null}
-        </section>
+              {sectionIndexLinksMobile}
+            </nav>
 
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.contactTitle")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.contactHint")}</p>
-          <label className="mt-4 flex flex-col gap-1 text-sm">
-            {t("admin.shopLineUrl")}
-            <input
-              value={lineUrlInput}
-              onChange={(event) => {
-                setContactDirty(true);
-                setLineUrlDraft(event.target.value);
-              }}
-              placeholder={t("admin.shopLinePlaceholder")}
-              className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-            />
-          </label>
-          <label className="mt-3 flex flex-col gap-1 text-sm">
-            {t("admin.shopPhone")}
-            <input
-              value={phoneInput}
-              onChange={(event) => {
-                setContactDirty(true);
-                setPhoneDraft(event.target.value);
-              }}
-              inputMode="tel"
-              placeholder={t("booking.phonePlaceholder")}
-              className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
-            />
-          </label>
-          <button
-            type="button"
-            disabled={savingContact}
-            onClick={() => void saveContact()}
-            className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-          >
-            {t("admin.saveContact")}
-          </button>
-          {contactMessage ? <p className="mt-3 text-sm text-emerald-400">{contactMessage}</p> : null}
-          {contactError ? <p className="mt-3 text-sm text-red-400">{contactError}</p> : null}
-        </section>
+            <section id="shop-info" className={`${SECTION_SCROLL} flex flex-col gap-2`}>
+              <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionShopInfo")}</h2>
 
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.shopHours")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
-          <div className="mt-4 flex flex-col gap-3">
-            {WEEKDAYS.map((day) => {
-              const row = hours[day.value];
-              return (
-                <div key={day.value} className="rounded-lg bg-zinc-950 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium">{t(day.key)}</span>
-                    <label className="flex items-center gap-2 text-xs text-zinc-400">
-                      <input
-                        type="checkbox"
-                        checked={row.closed}
-                        onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
-                      />
-                      {t("admin.shopClosed")}
-                    </label>
-                  </div>
-                  {!row.closed ? (
-                    <div className="mt-2 flex gap-2">
-                      <label className="flex flex-1 flex-col gap-1 text-xs">
-                        {t("admin.shopOpenTime")}
-                        <input
-                          type="time"
-                          value={row.open}
-                          onChange={(e) => updateHour(day.value, { open: e.target.value })}
-                          className="min-h-10 rounded-lg bg-zinc-800 px-2"
-                        />
-                      </label>
-                      <label className="flex flex-1 flex-col gap-1 text-xs">
-                        {t("admin.shopCloseTime")}
-                        <input
-                          type="time"
-                          value={row.close}
-                          onChange={(e) => updateHour(day.value, { close: e.target.value })}
-                          className="min-h-10 rounded-lg bg-zinc-800 px-2"
-                        />
-                      </label>
-                    </div>
+              <div className={CARD}>
+                <h3 className="text-sm font-semibold">{t("admin.shopName")}</h3>
+                <p className="mt-1 text-sm text-zinc-400">{t("admin.shopNameHint")}</p>
+                <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+                  <BrandMark size={36} />
+                  <ShopNameLockup shopName={previewShopName} />
+                </div>
+                <label className="mt-4 flex flex-col gap-1 text-sm">
+                  {t("admin.shopName")}
+                  <input
+                    value={shopNameInput}
+                    onChange={(event) => {
+                      setShopNameDirty(true);
+                      setShopNameDraft(event.target.value);
+                    }}
+                    placeholder={t("admin.shopNamePlaceholder")}
+                    maxLength={40}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+                  />
+                </label>
+                <DirtyActions
+                  dirty={shopNameDirty}
+                  saving={savingName}
+                  saveLabel={t("admin.saveShopName")}
+                  onSave={() => void saveShopName()}
+                  onDiscard={discardShopName}
+                  t={t}
+                />
+                {nameMessage ? <p className="mt-3 text-sm text-emerald-400">{nameMessage}</p> : null}
+                {nameError ? <p className="mt-3 text-sm text-red-400">{nameError}</p> : null}
+              </div>
+
+              <div className={CARD}>
+                <h3 className="text-sm font-semibold">{t("admin.coverTitle")}</h3>
+                <p className="mt-1 text-sm text-zinc-400">{t("admin.coverHint")}</p>
+                <p className="mt-1 text-xs text-zinc-500">{t("admin.coverAspectHint")}</p>
+                <p className="mt-0.5 text-xs text-zinc-500">{t("admin.coverFormatHint")}</p>
+                {!hasCover ? (
+                  <p className="mt-2 text-sm text-zinc-400">{t("admin.coverNone")}</p>
+                ) : null}
+                <div className="mt-4 overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- shop cover preview / brand default */}
+                  <img
+                    src={displayCoverUrl}
+                    alt=""
+                    className="aspect-video w-full object-cover object-center"
+                  />
+                </div>
+                <input
+                  ref={coverInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => void onCoverFileChange(event)}
+                />
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={savingCover}
+                    onClick={() => coverInputRef.current?.click()}
+                    className={MEDIA_BTN}
+                  >
+                    {savingCover
+                      ? t("admin.coverUploading")
+                      : hasCover
+                        ? t("admin.changeCover")
+                        : t("admin.uploadCover")}
+                  </button>
+                  {hasCover ? (
+                    <button
+                      type="button"
+                      disabled={savingCover}
+                      onClick={() => void deleteCover()}
+                      className={TERTIARY_BTN}
+                    >
+                      {t("admin.deleteCover")}
+                    </button>
                   ) : null}
                 </div>
-              );
-            })}
+                {coverMessage ? <p className="mt-3 text-sm text-emerald-400">{coverMessage}</p> : null}
+                {coverError ? <p className="mt-3 text-sm text-red-400">{coverError}</p> : null}
+              </div>
+
+              <div className={CARD}>
+                <h3 className="text-sm font-semibold">{t("admin.logoTitle")}</h3>
+                <p className="mt-1 text-sm text-zinc-400">{t("admin.logoHint")}</p>
+                <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
+                  {displayUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- data URL from admin upload
+                    <img
+                      src={displayUrl}
+                      alt=""
+                      width={36}
+                      height={36}
+                      className="shrink-0 rounded-lg object-contain"
+                      style={{ width: 36, height: 36 }}
+                    />
+                  ) : (
+                    <BrandMark size={36} />
+                  )}
+                  <ShopNameLockup shopName={previewShopName} />
+                </div>
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(event) => void onFileChange(event)}
+                />
+                <div className="mt-4 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    disabled={savingLogo}
+                    onClick={() => inputRef.current?.click()}
+                    className={MEDIA_BTN}
+                  >
+                    {t("admin.uploadLogo")}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingLogo || !displayUrl}
+                    onClick={() => void saveLogo(null)}
+                    className={TERTIARY_BTN}
+                  >
+                    {t("admin.resetLogo")}
+                  </button>
+                </div>
+                {logoMessage ? <p className="mt-3 text-sm text-emerald-400">{logoMessage}</p> : null}
+                {logoError ? <p className="mt-3 text-sm text-red-400">{logoError}</p> : null}
+              </div>
+
+              <div className={CARD}>
+                <h3 className="text-sm font-semibold">{t("admin.contactTitle")}</h3>
+                <p className="mt-1 text-sm text-zinc-400">{t("admin.contactHint")}</p>
+                <label className="mt-4 flex flex-col gap-1 text-sm">
+                  {t("admin.shopLineUrl")}
+                  <input
+                    value={lineUrlInput}
+                    onChange={(event) => {
+                      setContactDirty(true);
+                      setLineUrlDraft(event.target.value);
+                    }}
+                    placeholder={t("admin.shopLinePlaceholder")}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+                  />
+                </label>
+                <label className="mt-3 flex flex-col gap-1 text-sm">
+                  {t("admin.shopPhone")}
+                  <input
+                    value={phoneInput}
+                    onChange={(event) => {
+                      setContactDirty(true);
+                      setPhoneDraft(event.target.value);
+                    }}
+                    inputMode="tel"
+                    placeholder={t("booking.phonePlaceholder")}
+                    className="min-h-11 rounded-lg bg-zinc-800 px-3 text-base outline-none ring-amber-400 focus:ring-2"
+                  />
+                </label>
+                <DirtyActions
+                  dirty={contactDirty}
+                  saving={savingContact}
+                  saveLabel={t("admin.saveContact")}
+                  onSave={() => void saveContact()}
+                  onDiscard={discardContact}
+                  t={t}
+                />
+                {contactMessage ? <p className="mt-3 text-sm text-emerald-400">{contactMessage}</p> : null}
+                {contactError ? <p className="mt-3 text-sm text-red-400">{contactError}</p> : null}
+              </div>
+            </section>
+
+            <section id="shop-hours" className={`${SECTION_SCROLL} flex flex-col gap-2`} lang="th">
+              <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionHours")}</h2>
+              <div className={CARD}>
+                <p className="text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
+                <div className="mt-4 overflow-hidden rounded-xl bg-zinc-950">
+                  {WEEKDAYS.map((day, index) => {
+                    const row = hours[day.value];
+                    return (
+                      <div
+                        key={day.value}
+                        className={`flex min-h-11 items-center gap-2 px-3 py-2 ${
+                          index > 0 ? "border-t border-zinc-800" : ""
+                        }`}
+                      >
+                        <span
+                          className="inline-flex w-7 shrink-0 justify-center text-sm font-medium md:w-9"
+                          title={t(day.key)}
+                        >
+                          {locale === "th" ? day.shortTh : day.shortEn}
+                        </span>
+                        {row.closed ? (
+                          <p className="min-w-0 flex-1 text-sm text-zinc-400">
+                            {t("admin.shopClosedDayHint")}
+                          </p>
+                        ) : (
+                          <div className="flex min-w-0 flex-1 items-center gap-1.5">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              placeholder="HH:mm"
+                              maxLength={5}
+                              value={row.open}
+                              aria-label={`${t(day.key)} ${t("admin.shopOpenTime")}`}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                if (/^\d{0,2}(:\d{0,2})?$/.test(next)) {
+                                  updateHour(day.value, { open: next });
+                                }
+                              }}
+                              onBlur={() => {
+                                const normalized = normalizeClock(row.open);
+                                if (normalized && normalized !== row.open) {
+                                  updateHour(day.value, { open: normalized });
+                                }
+                              }}
+                              className="h-11 w-[76px] rounded-lg bg-zinc-800 px-1 text-center text-sm tabular-nums md:w-[120px] md:px-2"
+                            />
+                            <span className="shrink-0 text-zinc-500" aria-hidden>
+                              –
+                            </span>
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              autoComplete="off"
+                              placeholder="HH:mm"
+                              maxLength={5}
+                              value={row.close}
+                              aria-label={`${t(day.key)} ${t("admin.shopCloseTime")}`}
+                              onChange={(e) => {
+                                const next = e.target.value;
+                                if (/^\d{0,2}(:\d{0,2})?$/.test(next)) {
+                                  updateHour(day.value, { close: next });
+                                }
+                              }}
+                              onBlur={() => {
+                                const normalized = normalizeClock(row.close);
+                                if (normalized && normalized !== row.close) {
+                                  updateHour(day.value, { close: normalized });
+                                }
+                              }}
+                              className="h-11 w-[76px] rounded-lg bg-zinc-800 px-1 text-center text-sm tabular-nums md:w-[120px] md:px-2"
+                            />
+                          </div>
+                        )}
+                        <label className="flex min-h-11 shrink-0 items-center gap-2 text-xs text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={row.closed}
+                            onChange={(e) => updateHour(day.value, { closed: e.target.checked })}
+                            className="h-5 w-5"
+                          />
+                          {t("admin.shopClosed")}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+                <DirtyActions
+                  dirty={hoursDirty}
+                  saving={savingHours}
+                  saveLabel={t("admin.saveShopHours")}
+                  onSave={() => void saveHours()}
+                  onDiscard={discardHours}
+                  t={t}
+                />
+                {hoursMessage ? <p className="mt-3 text-sm text-emerald-400">{hoursMessage}</p> : null}
+                {hoursError ? <p className="mt-3 text-sm text-red-400">{hoursError}</p> : null}
+              </div>
+            </section>
+
+            <section id="line-notify" className={`${SECTION_SCROLL} flex flex-col gap-2`}>
+              <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionLineNotify")}</h2>
+              <SettingsRowGroup>
+                <SettingsRow
+                  href={shopPath("/admin/settings/line")}
+                  icon={MessageCircle}
+                  title={t("admin.settingsLine")}
+                  subtitle={t("admin.settingsLineHint")}
+                />
+                <SettingsRow
+                  href={shopPath("/admin/settings/notifications")}
+                  icon={Bell}
+                  title={t("admin.settingsNotifications")}
+                  subtitle={t("admin.settingsNotificationsHint")}
+                />
+                <SettingsRow
+                  href={shopPath("/admin/settings/reminders")}
+                  icon={Clock3}
+                  title={t("admin.settingsReminders")}
+                  subtitle={t("admin.settingsRemindersHint")}
+                />
+                <SettingsRow
+                  href={shopPath("/admin/settings/message-cost")}
+                  icon={CircleDollarSign}
+                  title={t("admin.settingsMessageCost")}
+                  subtitle={t("admin.settingsMessageCostHint")}
+                />
+              </SettingsRowGroup>
+            </section>
+
+            <section id="queue-pricing" className={`${SECTION_SCROLL} flex flex-col gap-2`}>
+              <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionQueuePricing")}</h2>
+              <SettingsRowGroup>
+                <SettingsRow
+                  href={shopPath("/admin/settings/qr-queue")}
+                  icon={QrCode}
+                  title={t("admin.settingsQrQueue")}
+                  subtitle={t("admin.settingsQrQueueHint")}
+                />
+                <SettingsRow
+                  href={shopPath("/admin/settings/services")}
+                  icon={Scissors}
+                  title={t("admin.servicesTitle")}
+                  subtitle={t("admin.servicesHint")}
+                />
+              </SettingsRowGroup>
+            </section>
+
+            {isOwner ? (
+              <section id="managers" className={`${SECTION_SCROLL} flex flex-col gap-2`}>
+                <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionManagers")}</h2>
+                <SettingsRowGroup>
+                  <SettingsRow
+                    href={shopPath("/admin/settings/managers")}
+                    icon={Users}
+                    title={t("admin.managersTitle")}
+                    subtitle={t("admin.managersHint")}
+                  />
+                </SettingsRowGroup>
+              </section>
+            ) : null}
           </div>
-          <button
-            type="button"
-            disabled={savingHours}
-            onClick={() => void saveHours()}
-            className="mt-3 min-h-12 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-          >
-            {t("admin.saveShopHours")}
-          </button>
-          {hoursMessage ? <p className="mt-3 text-sm text-emerald-400">{hoursMessage}</p> : null}
-          {hoursError ? <p className="mt-3 text-sm text-red-400">{hoursError}</p> : null}
-        </section>
-
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.logoTitle")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.logoHint")}</p>
-          <div className="mt-4 flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 px-4 py-3">
-            {displayUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element -- data URL from admin upload
-              <img
-                src={displayUrl}
-                alt=""
-                width={36}
-                height={36}
-                className="shrink-0 rounded-lg object-contain"
-                style={{ width: 36, height: 36 }}
-              />
-            ) : (
-              <BrandMark size={36} />
-            )}
-            <ShopNameLockup shopName={previewShopName} />
-          </div>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="hidden"
-            onChange={(event) => void onFileChange(event)}
-          />
-          <div className="mt-4 flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={savingLogo}
-              onClick={() => inputRef.current?.click()}
-              className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-            >
-              {t("admin.uploadLogo")}
-            </button>
-            <button
-              type="button"
-              disabled={savingLogo || !displayUrl}
-              onClick={() => void saveLogo(null)}
-              className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-300 disabled:opacity-40"
-            >
-              {t("admin.resetLogo")}
-            </button>
-          </div>
-          {logoMessage ? <p className="mt-3 text-sm text-emerald-400">{logoMessage}</p> : null}
-          {logoError ? <p className="mt-3 text-sm text-red-400">{logoError}</p> : null}
-        </section>
-
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.servicesTitle")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.servicesHint")}</p>
-          <Link
-            href={shopPath("/admin/settings/services")}
-            className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
-          >
-            {t("admin.servicesTitle")}
-          </Link>
-        </section>
-
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.settingsLine")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsLineHint")}</p>
-          <Link
-            href={shopPath("/admin/settings/line")}
-            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
-          >
-            {t("admin.settingsLine")}
-          </Link>
-        </section>
-
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.settingsNotifications")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsNotificationsHint")}</p>
-          <Link
-            href={shopPath("/admin/settings/notifications")}
-            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
-          >
-            {t("admin.settingsNotifications")}
-          </Link>
-        </section>
-
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">QR รับคิว walk-in</h2>
-          <p className="mt-1 text-sm text-zinc-400">ดาวน์โหลด QR · เปิด/ปิดแจ้ง LINE เมื่อเหลืออีก 2 คิว</p>
-          <Link
-            href={shopPath("/admin/settings/qr-queue")}
-            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-rose-500/50 bg-rose-950/40 font-semibold text-rose-100"
-          >
-            QR รับคิว walk-in
-          </Link>
-        </section>
-
-        <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.settingsReminders")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.settingsRemindersHint")}</p>
-          <Link
-            href={shopPath("/admin/settings/reminders")}
-            className="mt-3 flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 font-semibold text-zinc-100"
-          >
-            {t("admin.settingsReminders")}
-          </Link>
-          <Link
-            href={shopPath("/admin/settings/message-cost")}
-            className="mt-2 flex min-h-11 items-center justify-center rounded-xl border border-zinc-700/80 text-sm font-medium text-amber-300"
-          >
-            {t("admin.settingsMessageCost")}
-          </Link>
-          <p className="mt-2 text-xs text-zinc-500">{t("admin.settingsMessageCostHint")}</p>
-        </section>
-
-        {profile.role === "owner" ? (
-          <section className="rounded-2xl bg-zinc-900 p-4">
-            <h2 className="text-sm font-semibold">{t("admin.managersTitle")}</h2>
-            <p className="mt-1 text-sm text-zinc-400">{t("admin.managersHint")}</p>
-            <Link
-              href={shopPath("/admin/settings/managers")}
-              className="mt-3 flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
-            >
-              {t("admin.managersTitle")}
-            </Link>
-          </section>
-        ) : null}
+        </div>
       </div>
     </AdminShell>
   );
