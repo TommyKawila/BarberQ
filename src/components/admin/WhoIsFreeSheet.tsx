@@ -10,6 +10,8 @@ interface WhoIsFreeSheetProps {
   open: boolean;
   rows: FreeBarberNow[];
   emptyState?: WhoIsFreeEmptyState | null;
+  /** walk_in (default) or block — changes title + CTA */
+  intent?: "walk_in" | "block";
   onClose: () => void;
   onWalkIn: (row: FreeBarberNow) => void;
   onOpenSchedule?: () => void;
@@ -19,12 +21,16 @@ export function WhoIsFreeSheet({
   open,
   rows,
   emptyState,
+  intent = "walk_in",
   onClose,
   onWalkIn,
   onOpenSchedule,
 }: WhoIsFreeSheetProps) {
   const { t, locale } = useI18n();
   if (!open) return null;
+  const isBlock = intent === "block";
+  const title = isBlock ? t("admin.blockSheetTitle") : t("admin.whoIsFreeSheetTitle");
+  const cta = isBlock ? t("admin.whoIsFreeBlock") : t("admin.whoIsFreeWalkIn");
 
   function emptyCopy(): { body: string; showSchedule: boolean } {
     if (emptyState?.kind === "closed") {
@@ -50,7 +56,7 @@ export function WhoIsFreeSheet({
       <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg rounded-t-2xl bg-zinc-950 p-4 pb-8 sm:rounded-2xl">
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
-        <h2 className="font-heading text-base font-semibold">{t("admin.whoIsFreeSheetTitle")}</h2>
+        <h2 className="font-heading text-base font-semibold">{title}</h2>
         {rows.length === 0 ? (
           <div className="mt-4 flex flex-col gap-3">
             <p className="text-sm text-zinc-400">{empty.body}</p>
@@ -85,9 +91,13 @@ export function WhoIsFreeSheet({
                   <button
                     type="button"
                     onClick={() => onWalkIn(row)}
-                    className="cq-press min-h-11 shrink-0 rounded-xl bg-amber-400 px-3 text-[11px] font-semibold text-zinc-950 sm:text-sm"
+                    className={`cq-press min-h-11 shrink-0 rounded-xl px-3 text-[11px] font-semibold sm:text-sm ${
+                      isBlock
+                        ? "bg-rose-600 text-white"
+                        : "bg-amber-400 text-zinc-950"
+                    }`}
                   >
-                    {t("admin.whoIsFreeWalkIn")}
+                    {cta}
                   </button>
                 </li>
               );

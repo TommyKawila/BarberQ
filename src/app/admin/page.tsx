@@ -15,11 +15,17 @@ import {
   CompleteServicePicker,
   type CompleteServiceChoice,
 } from "@/components/admin/CompleteServicePicker";
+import { BlockTimeSheet } from "@/components/admin/BlockTimeSheet";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { QrWaitingRow } from "@/components/admin/QrWaitingRow";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
 import { TodayQueueCards } from "@/components/admin/TodayQueueCards";
+import { UnblockConfirmSheet } from "@/components/admin/UnblockConfirmSheet";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
+import {
+  blockRangeFromColumn,
+  type BlockReasonCode,
+} from "@/lib/admin/block-time";
 import { shouldPromptServicePicker } from "@/lib/admin/complete-service-picker";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -126,6 +132,19 @@ export default function AdminPage() {
     shortenUntil?: string | null;
   } | null>(null);
   const [whoFreeOpen, setWhoFreeOpen] = useState(false);
+  const [blockSheet, setBlockSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    initialStartISO?: string | null;
+    freeUntilISO?: string | null;
+  } | null>(null);
+  const [unblockSheet, setUnblockSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    blockId: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
   /** Second-tap Walk-in target after a busy / next-free offer. */
   const [walkInOffer, setWalkInOffer] = useState<WalkInOffer | null>(null);
   const todayISO = dateISOFromInstant(new Date());
@@ -350,8 +369,13 @@ export default function AdminPage() {
     return nextShopOpenLabel(shopHours, new Date()) ?? undefined;
   }
 
-  async function onBlockSlot(barberId: string, slot: AdminSlot) {
-    const key = `${barberId}:${slot.startTime}`;
+  async function onBlockRange(input: {
+    barberId: string;
+    startTime: string;
+    endTime: string;
+    reason: BlockReasonCode;
+  }) {
+    const key = `${input.barberId}:${input.startTime}`;
     setPendingKey(key);
     setPendingKind("block");
     setError(null);
@@ -362,49 +386,76 @@ export default function AdminPage() {
         method: "POST",
         headers,
         body: JSON.stringify({
-          barberId,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          reason: "manual",
+          barberId: input.barberId,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          reason: input.reason,
         }),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
+        toast.error(json.error?.message ?? t("admin.updateFailed"));
         return;
       }
       setSheet(null);
-      toast.success(t("admin.toast.success"));
+      setBlockSheet(null);
+      toast.success(t("admin.toast.blocked"));
       void loadDay();
     } catch {
       setError(t("admin.updateFailed"));
+      toast.error(t("admin.updateFailed"));
     } finally {
       setPendingKey(null);
       setPendingKind(null);
     }
   }
 
-  async function onUnblock(_barberId: string, slot: AdminSlot) {
+  function requestUnblock(barberId: string, slot: AdminSlot) {
     if (!slot.blockId) return;
-    const key = `${_barberId}:${slot.startTime}`;
+    const column = columns.find((c) => c.barber.id === barberId);
+    const range = column
+      ? blockRangeFromColumn(column, slot.blockId)
+      : { startTime: slot.startTime, endTime: slot.endTime };
+    if (!range) return;
+    const barberName =
+      column?.barber.name ?? barberNameFor(barberId);
+    setUnblockSheet({
+      barberId,
+      barberName,
+      blockId: slot.blockId,
+      startTime: range.startTime,
+      endTime: range.endTime,
+    });
+  }
+
+  async function confirmUnblock() {
+    if (!unblockSheet) return;
+    const key = `${unblockSheet.barberId}:${unblockSheet.startTime}`;
     setPendingKey(key);
+    setPendingKind("block");
     setError(null);
     try {
       const res = await fetch(shopApi("/block"), {
         method: "DELETE",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ id: slot.blockId }),
+        body: JSON.stringify({ id: unblockSheet.blockId }),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
+        toast.error(json.error?.message ?? t("admin.updateFailed"));
         return;
       }
-      await loadDay();
+      setUnblockSheet(null);
+      toast.success(t("admin.toast.unblocked"));
+      void loadDay();
     } catch {
       setError(t("admin.updateFailed"));
+      toast.error(t("admin.updateFailed"));
     } finally {
       setPendingKey(null);
+      setPendingKind(null);
     }
   }
 
@@ -646,7 +697,12 @@ export default function AdminPage() {
   function onPickFreeBarber(row: FreeBarberNow, intent: ThumbIntent = thumbIntent) {
     setWhoFreeOpen(false);
     if (intent === "block") {
-      void onBlockSlot(row.barberId, row.slot);
+      setBlockSheet({
+        barberId: row.barberId,
+        barberName: row.barberName,
+        initialStartISO: row.slot.startTime,
+        freeUntilISO: row.freeUntil,
+      });
       return;
     }
     setSheet({
@@ -719,7 +775,7 @@ export default function AdminPage() {
           setThumbIntent("block");
           setWhoFreeOpen(true);
         }}
-        className="flex min-h-12 flex-1 items-center justify-center gap-1 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+        className="cq-press flex min-h-12 flex-1 items-center justify-center gap-1 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
       >
         🚫 {t("admin.staffBook.blockTime")}
       </button>
@@ -730,7 +786,7 @@ export default function AdminPage() {
           // Always open the picker so it matches Today cards (never skip when freeNow is nonempty)
           setWhoFreeOpen(true);
         }}
-        className="flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+        className="cq-press flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
       >
         + Walk-in
       </button>
@@ -943,7 +999,7 @@ export default function AdminPage() {
             onLateCalled={(id, slot) => void onLateCalled(id, slot)}
             onCancel={(id, slot) => void onCancel(id, slot)}
             onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
-            onUnblock={(id, slot) => void onUnblock(id, slot)}
+            onUnblock={(id, slot) => requestUnblock(id, slot)}
             reschedulePickMode={Boolean(rescheduleFrom)}
             bookingHref={shopPath("/")}
             onCopyBookingLink={() => void copyBookingLink()}
@@ -1052,13 +1108,22 @@ export default function AdminPage() {
                 },
               )
             }
-            onBlock={() => void onBlockSlot(sheet.barberId, sheet.slot)}
+            onBlock={() => {
+              setBlockSheet({
+                barberId: sheet.barberId,
+                barberName: sheet.barberName,
+                initialStartISO: sheet.slot.startTime,
+                freeUntilISO: sheet.slot.endTime,
+              });
+              setSheet(null);
+            }}
           />
         ) : null}
         <WhoIsFreeSheet
           open={whoFreeOpen}
           rows={freeNow}
           emptyState={whoIsFreeEmpty}
+          intent={thumbIntent}
           onClose={() => setWhoFreeOpen(false)}
           onWalkIn={(row) => onPickFreeBarber(row)}
           onOpenSchedule={() => {
@@ -1066,6 +1131,52 @@ export default function AdminPage() {
             setWhoFreeOpen(false);
           }}
         />
+        {blockSheet ? (
+          <BlockTimeSheet
+            open
+            barberId={blockSheet.barberId}
+            barberName={blockSheet.barberName}
+            column={
+              columns.find((c) => c.barber.id === blockSheet.barberId) ?? {
+                barber: {
+                  id: blockSheet.barberId,
+                  name: blockSheet.barberName,
+                  slot_duration_minutes: 30,
+                  off_days: [],
+                  created_at: "",
+                },
+                slots: [],
+              }
+            }
+            shopHours={shopHours}
+            initialStartISO={blockSheet.initialStartISO}
+            freeUntilISO={blockSheet.freeUntilISO}
+            pending={
+              pendingKind === "block" &&
+              Boolean(pendingKey?.startsWith(`${blockSheet.barberId}:`))
+            }
+            onClose={() => {
+              if (pendingKind !== "block") setBlockSheet(null);
+            }}
+            onConfirm={(input) => void onBlockRange(input)}
+          />
+        ) : null}
+        {unblockSheet ? (
+          <UnblockConfirmSheet
+            open
+            barberName={unblockSheet.barberName}
+            startTime={unblockSheet.startTime}
+            endTime={unblockSheet.endTime}
+            pending={
+              pendingKind === "block" &&
+              pendingKey === `${unblockSheet.barberId}:${unblockSheet.startTime}`
+            }
+            onClose={() => {
+              if (pendingKind !== "block") setUnblockSheet(null);
+            }}
+            onConfirm={() => void confirmUnblock()}
+          />
+        ) : null}
         <BookedSlotActionsSheet
           open={Boolean(actionsSheet)}
           barberId={actionsSheet?.barberId ?? ""}

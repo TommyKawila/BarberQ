@@ -7,6 +7,7 @@ import {
   type BookedSlotSheetAction,
 } from "@/components/admin/BookedSlotActionsSheet";
 import { getBookedCardActions } from "@/lib/admin/board-card-actions";
+import { blockedSlotLabel, isStaffBlockReason } from "@/lib/admin/block-time";
 import { NO_SHOW_WARNING_THRESHOLD } from "@/lib/admin/customer-no-show";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime } from "@/lib/services/slot-service";
@@ -244,7 +245,8 @@ export function QuickBlockGrid({
                 const pastFree = slot.kind === "free" && !slot.available;
                 const booked = slot.kind === "booked";
                 const locked = slot.kind === "blocked" && slot.reason === "break";
-                const blockedManual = slot.kind === "blocked" && slot.reason !== "break";
+                const blockedManual =
+                  slot.kind === "blocked" && isStaffBlockReason(slot.reason);
                 const actions = getBookedCardActions(slot, { canEdit, nowMs: now });
                 const sheetOpenable =
                   actions.canOpenSheet &&
@@ -263,9 +265,7 @@ export function QuickBlockGrid({
                             ? `${slot.customerName} · ${slot.lateCalledAt ? t("admin.called") : t("admin.late")}`
                             : slot.customerName
                     : slot.kind === "blocked"
-                      ? slot.reason === "break"
-                        ? t("admin.break")
-                        : slot.reason || t("admin.walkIn")
+                      ? blockedSlotLabel(slot.reason, (k) => t(k as Parameters<typeof t>[0]))
                       : t("admin.free");
 
                 if (sheetOpenable) {
@@ -336,11 +336,15 @@ export function QuickBlockGrid({
                       key={slot.startTime}
                       type="button"
                       disabled={pending}
+                      data-testid={`blocked-slot-${slot.blockId ?? slot.startTime}`}
                       onClick={() => onUnblock(column.barber.id, slot)}
-                      className={`min-h-14 rounded-lg px-1 py-1.5 text-left transition ${slotClass(slot, pending)}`}
+                      className={`cq-press min-h-14 rounded-lg px-1 py-1.5 text-left transition ${slotClass(slot, pending)}`}
                     >
                       <div className="text-[11px] font-bold sm:text-xs">{formatSlotTime(slot.startTime)}</div>
                       <div className="truncate text-[10px] leading-tight">{label}</div>
+                      <div className="mt-1 rounded bg-zinc-950/40 px-1 py-0.5 text-center text-[9px] font-semibold">
+                        {t("admin.tapForActions")}
+                      </div>
                     </button>
                   );
                 }
