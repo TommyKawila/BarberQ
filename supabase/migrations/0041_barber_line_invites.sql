@@ -26,6 +26,8 @@ create index if not exists barber_line_invites_pending_barber_idx
   on barber_line_invites (barber_id)
   where consumed_at is null and revoked_at is null;
 
+-- RLS on with no policies: anon/authenticated cannot SELECT/INSERT/UPDATE/DELETE.
+-- All access goes through SECURITY DEFINER RPCs, executable only by service_role.
 alter table barber_line_invites enable row level security;
 
 create or replace function create_barber_line_invite(
@@ -150,6 +152,7 @@ begin
   select * into v_shop from shops where id = v_invite.shop_id limit 1;
   select * into v_barber from barbers where id = v_invite.barber_id limit 1;
 
+  -- Public-facing preview via service_role only — never return shop/barber/invite IDs.
   return json_build_object(
     'found', true,
     'shop_name', coalesce(v_shop.name, ''),
@@ -264,3 +267,14 @@ begin
   );
 end;
 $$;
+
+-- SECURITY DEFINER defaults to EXECUTE for PUBLIC — lock down like manager invites (0025).
+revoke all on function create_barber_line_invite(uuid, uuid, uuid) from public, anon, authenticated;
+revoke all on function cancel_barber_line_invite(uuid, uuid, uuid) from public, anon, authenticated;
+revoke all on function get_barber_line_invite_preview(text) from public, anon, authenticated;
+revoke all on function claim_barber_line_invite(text, text, text) from public, anon, authenticated;
+
+grant execute on function create_barber_line_invite(uuid, uuid, uuid) to service_role;
+grant execute on function cancel_barber_line_invite(uuid, uuid, uuid) to service_role;
+grant execute on function get_barber_line_invite_preview(text) to service_role;
+grant execute on function claim_barber_line_invite(text, text, text) to service_role;
