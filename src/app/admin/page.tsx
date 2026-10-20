@@ -21,7 +21,22 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
-import { describeWhoIsFreeEmpty, type FreeBarberNow } from "@/lib/admin/free-barbers";
+import {
+  describeWhoIsFreeEmpty,
+  nextShopOpenLabel,
+  type FreeBarberNow,
+} from "@/lib/admin/free-barbers";
+import {
+  staffBookingErrorMessage,
+  walkInAssessmentMessage,
+  walkInDisabledLabel,
+} from "@/lib/admin/staff-booking-errors";
+import {
+  assessWalkInQuick,
+  findNextFreeBoardSlot,
+  walkInDisabledReason,
+  type WalkInOffer,
+} from "@/lib/admin/walk-in-quick";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
@@ -29,7 +44,11 @@ import type { ShopActivation } from "@/lib/onboarding/activation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
-import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
+import {
+  dateISOFromInstant,
+  formatSlotTime,
+  SHOP_TIMEZONE,
+} from "@/lib/services/slot-service";
 import type { AdminColumn, AdminSlot, StaffBookingSource } from "@/types/booking";
 
 type BoardTab = "queue" | "schedule";
@@ -89,6 +108,8 @@ export default function AdminPage() {
     shortenUntil?: string | null;
   } | null>(null);
   const [whoFreeOpen, setWhoFreeOpen] = useState(false);
+  /** Second-tap Walk-in target after a busy / next-free offer. */
+  const [walkInOffer, setWalkInOffer] = useState<WalkInOffer | null>(null);
   const todayISO = dateISOFromInstant(new Date());
   const isToday = dateISO === todayISO;
   const dateLocale = locale === "th" ? th : enUS;
@@ -214,17 +235,13 @@ export default function AdminPage() {
     });
   }
 
-  function findNextFreeSlot(barberId: string): AdminSlot | null {
-    const column = columns.find((c) => c.barber.id === barberId);
-    if (!column) return null;
-    const now = Date.now();
-    return (
-      column.slots.find(
-        (s) => s.kind === "free" && s.available && new Date(s.startTime).getTime() >= now - 5 * 60_000,
-      ) ??
-      column.slots.find((s) => s.kind === "free" && s.available) ??
-      null
-    );
+  function barberNameFor(barberId: string): string {
+    return columns.find((c) => c.barber.id === barberId)?.barber.name ?? "";
+  }
+
+  function showActionError(msg: string) {
+    setError(msg);
+    toast.error(msg);
   }
 
   async function createStaffBooking(input: {
@@ -251,26 +268,47 @@ export default function AdminPage() {
           setSheet({ ...sheet, shortenUntil: json.error.canShortenUntil });
           return;
         }
-        const msg = json.error?.message ?? t("admin.staffBook.slotTaken");
-        setError(msg);
+        const column = columns.find((c) => c.barber.id === input.barberId);
+        const next =
+          column && (json.error?.code === "SLOT_TAKEN" || json.error?.code === "SLOT_BLOCKED")
+            ? findNextFreeBoardSlot(column, new Date().getTime())
+            : null;
+        if (next && input.source === "walk_in") {
+          setWalkInOffer({ barberId: input.barberId, startTime: next.startTime });
+        } else {
+          setWalkInOffer(null);
+        }
+        const msg = staffBookingErrorMessage(json.error?.code, t, {
+          barberName: barberNameFor(input.barberId),
+          timeLabel: formatSlotTime(input.startTime),
+          nextFreeLabel: next ? formatSlotTime(next.startTime) : undefined,
+          openLabel: json.error?.code === "SHOP_CLOSED" ? nextShopOpenHint() : undefined,
+        });
+        showActionError(msg);
         if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
         else if (json.error?.code?.includes("LINE")) toast.error(t("admin.toast.lineSendFailed"));
         return;
       }
       setSheet(null);
+      setWalkInOffer(null);
       toast.success(t("admin.toast.success"));
       await loadDay();
     } catch {
-      setError(t("admin.networkError"));
+      showActionError(t("admin.networkError"));
     } finally {
       setPendingKey(null);
     }
+  }
+
+  function nextShopOpenHint(): string | undefined {
+    return nextShopOpenLabel(shopHours, new Date()) ?? undefined;
   }
 
   async function onBlockSlot(barberId: string, slot: AdminSlot) {
     const key = `${barberId}:${slot.startTime}`;
     setPendingKey(key);
     setError(null);
+    setWalkInOffer(null);
     const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
     try {
       const res = await fetch(shopApi("/block"), {
@@ -407,6 +445,7 @@ export default function AdminPage() {
     });
     setRescheduleTarget(null);
     setError(null);
+    setWalkInOffer(null);
   }
 
   async function confirmStaffReschedule() {
@@ -450,16 +489,39 @@ export default function AdminPage() {
   }
 
   function onWalkInQuick(barberId: string) {
-    const slot = findNextFreeSlot(barberId);
-    if (!slot) {
-      setError(t("admin.staffBook.noFreeBarber"));
+    setError(null);
+    const column = columns.find((c) => c.barber.id === barberId);
+    const assessment = assessWalkInQuick(column, shopHours, new Date(), walkInOffer);
+
+    if (assessment.kind !== "ok") {
+      const msg = walkInAssessmentMessage(assessment, t);
+      if (assessment.kind === "busy") {
+        setWalkInOffer({
+          barberId: assessment.barberId,
+          startTime: assessment.nextFreeStartTime,
+        });
+        setError(msg);
+        toast.warning(msg);
+        return;
+      }
+      setWalkInOffer(null);
+      showActionError(msg);
       return;
     }
+
+    setWalkInOffer(null);
     void createStaffBooking({
-      barberId,
-      startTime: new Date().toISOString(),
+      barberId: assessment.barberId,
+      startTime: assessment.startTime,
       source: "walk_in",
     });
+  }
+
+  function walkInButtonDisabledReason(barberId: string): string | null {
+    const column = columns.find((c) => c.barber.id === barberId);
+    const gate = walkInDisabledReason(column, shopHours, new Date());
+    if (!gate) return null;
+    return walkInDisabledLabel(gate, t);
   }
 
   function onWhoIsFree() {
@@ -741,6 +803,7 @@ export default function AdminPage() {
             editableBarberId={editableBarberId}
             onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
             onWalkInQuick={(id) => onWalkInQuick(id)}
+            walkInDisabledReason={walkInButtonDisabledReason}
             onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
             onLateCalled={(id, slot) => void onLateCalled(id, slot)}
             onCancel={(id, slot) => void onCancel(id, slot)}
@@ -801,14 +864,29 @@ export default function AdminPage() {
             pending={pendingKey === `${sheet.barberId}:${sheet.slot.startTime}`}
             shortenUntil={sheet.shortenUntil}
             onClose={() => setSheet(null)}
-            onWalkInNow={() =>
+            onWalkInNow={() => {
+              const column = columns.find((c) => c.barber.id === sheet.barberId);
+              const assessment = assessWalkInQuick(column, shopHours, new Date(), null);
+              if (assessment.kind !== "ok") {
+                const msg = walkInAssessmentMessage(assessment, t);
+                if (assessment.kind === "busy") {
+                  setWalkInOffer({
+                    barberId: assessment.barberId,
+                    startTime: assessment.nextFreeStartTime,
+                  });
+                  setError(msg);
+                  toast.warning(msg);
+                  return;
+                }
+                showActionError(msg);
+                return;
+              }
               void createStaffBooking({
-                barberId: sheet.barberId,
-                // Walk-in always starts now — slot cells flip available:false after start
-                startTime: new Date().toISOString(),
+                barberId: assessment.barberId,
+                startTime: assessment.startTime,
                 source: "walk_in",
-              })
-            }
+              });
+            }}
             onStaffBooking={(input) =>
               void createStaffBooking({
                 barberId: sheet.barberId,

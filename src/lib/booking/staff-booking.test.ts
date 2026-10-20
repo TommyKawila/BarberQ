@@ -1,5 +1,6 @@
-import { describe, it } from "node:test";
+import { describe, it, before } from "node:test";
 import assert from "node:assert/strict";
+import { fromZonedTime } from "date-fns-tz";
 import { memoryStore } from "@/lib/data/memory-store";
 import {
   BookingError,
@@ -11,12 +12,37 @@ import {
   markAppointmentOutcome,
 } from "@/lib/services/booking-service";
 import { getStatsReport } from "@/lib/services/stats-service";
-import { getBookableDates } from "@/lib/services/slot-service";
+import { getBookableDates, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { StaffAuth } from "@/lib/admin-auth";
+import type { ShopHours } from "@/lib/shop/shop-hours";
 
 const PHINX_SHOP = "00000000-0000-0000-0000-000000000001";
 const SAEB_ID = "11111111-1111-4111-8111-111111111111";
 const TIDE_ID = "22222222-2222-4222-8222-222222222222";
+
+const ALL_DAY_OPEN: ShopHours = Array.from({ length: 7 }, () => ({
+  closed: false,
+  open: "00:00",
+  close: "23:59",
+}));
+
+const QA_HOURS: ShopHours = [
+  { closed: false, open: "10:00", close: "23:30" },
+  { closed: false, open: "10:30", close: "23:30" },
+  { closed: false, open: "10:30", close: "23:30" },
+  { closed: false, open: "10:30", close: "23:30" },
+  { closed: false, open: "10:30", close: "23:30" },
+  { closed: false, open: "10:30", close: "23:30" },
+  { closed: false, open: "10:00", close: "23:30" },
+];
+
+async function shopAlwaysOpen(shopId: string) {
+  const settings = await memoryStore.getShopSettings(shopId);
+  await memoryStore.setShopSettings(shopId, {
+    ...settings,
+    hours: ALL_DAY_OPEN.map((d) => ({ ...d })),
+  });
+}
 
 const OWNER: StaffAuth = {
   staffId: "owner-test",
@@ -26,6 +52,10 @@ const OWNER: StaffAuth = {
   shopId: PHINX_SHOP,
   lineId: "owner-line",
 };
+
+before(async () => {
+  await shopAlwaysOpen(PHINX_SHOP);
+});
 
 async function firstFutureSlot(barberId: string, minAheadMs = 0) {
   const dates = getBookableDates();
@@ -59,6 +89,7 @@ describe("staff booking + source (P3)", () => {
       name: "Walk-in Number Shop",
       subscriptionMonths: 1,
     });
+    await shopAlwaysOpen(shop.id);
     const a = await memoryStore.createBarber({
       shopId: shop.id,
       name: "A",
@@ -87,6 +118,71 @@ describe("staff booking + source (P3)", () => {
       new Date(first.start_time).getTime() >= Date.now() - 6 * 60_000,
       "walk-in from past cell start snaps to ~now",
     );
+  });
+
+  it("walk-in start-now before shop open rejects with SHOP_CLOSED", async () => {
+    const shop = await memoryStore.createShop({
+      name: "Pre-open Walk-in Gate",
+      subscriptionMonths: 1,
+    });
+    const settings = await memoryStore.getShopSettings(shop.id);
+    await memoryStore.setShopSettings(shop.id, {
+      ...settings,
+      hours: QA_HOURS.map((d) => ({ ...d })),
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Ken",
+      slotDuration: 30,
+    });
+    // Monday 08:23 BKK — same window as Tommy QA on barberqpilottest
+    const now = fromZonedTime("2026-10-20T08:23:00", SHOP_TIMEZONE);
+    await assert.rejects(
+      () =>
+        createStaffBooking(
+          shop.id,
+          {
+            barberId: barber.id,
+            startTime: now.toISOString(),
+            source: "walk_in",
+          },
+          now,
+        ),
+      (err: unknown) =>
+        err instanceof BookingError &&
+        err.code === "SHOP_CLOSED" &&
+        /10:30/.test(err.message),
+    );
+  });
+
+  it("walk-in scheduled at next free after open still allowed while closed now", async () => {
+    const shop = await memoryStore.createShop({
+      name: "Scheduled Walk-in After Open",
+      subscriptionMonths: 1,
+    });
+    const settings = await memoryStore.getShopSettings(shop.id);
+    await memoryStore.setShopSettings(shop.id, {
+      ...settings,
+      hours: QA_HOURS.map((d) => ({ ...d })),
+    });
+    const barber = await memoryStore.createBarber({
+      shopId: shop.id,
+      name: "Ken",
+      slotDuration: 30,
+    });
+    const now = fromZonedTime("2026-10-20T08:23:00", SHOP_TIMEZONE);
+    const openSlot = fromZonedTime("2026-10-20T10:30:00", SHOP_TIMEZONE);
+    const apt = await createStaffBooking(
+      shop.id,
+      {
+        barberId: barber.id,
+        startTime: openSlot.toISOString(),
+        source: "walk_in",
+      },
+      now,
+    );
+    assert.equal(apt.source, "walk_in");
+    assert.equal(new Date(apt.start_time).toISOString(), openSlot.toISOString());
   });
 
   it("phone staff booking requires name and locks slot against LINE booking", async () => {
@@ -174,6 +270,7 @@ describe("staff booking + source (P3)", () => {
       name: "P3 Outcome Shop",
       subscriptionMonths: 1,
     });
+    await shopAlwaysOpen(shop.id);
     const barber = await memoryStore.createBarber({
       shopId: shop.id,
       name: "OutcomeBarber",
@@ -250,6 +347,7 @@ describe("staff booking + source (P3)", () => {
       name: "P3 NoShow Shop",
       subscriptionMonths: 1,
     });
+    await shopAlwaysOpen(shop.id);
     const barber = await memoryStore.createBarber({
       shopId: shop.id,
       name: "NoShowBarber",

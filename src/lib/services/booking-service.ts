@@ -18,6 +18,8 @@ import { scheduleBookingReminder } from "@/lib/reminders/schedule-booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
 import { countCustomerNoShows } from "@/lib/admin/customer-no-show";
+import { isShopClosedNow, nextShopOpenLabel } from "@/lib/admin/free-barbers";
+import { isBarberOffToday } from "@/lib/admin/today-queue-cards";
 import type {
   AdminColumn,
   AdminSlot,
@@ -355,8 +357,23 @@ export async function createStaffBooking(
   // Walk-in "start now": never keep a past grid-cell start (e.g. covering free
   // cell that began 20:30 when tapping at 20:54). Snap to the current 5-min bucket.
   if (source === "walk_in") {
+    const hours = await shopHoursForBarber(barber);
+    if (isBarberOffToday(barber, now)) {
+      throw new BookingError("BARBER_OFF", "Barber is off today", 400);
+    }
+    // Only gate "start now" (near-now) walk-ins — scheduled staff bookings at a
+    // future free cell (e.g. next-free offer) may still land after open.
     const deltaMs = start.getTime() - now.getTime();
-    if (deltaMs <= 0 || deltaMs < 2 * 60_000) {
+    const isStartNow = deltaMs <= 0 || deltaMs < 2 * 60_000;
+    if (isStartNow) {
+      if (isShopClosedNow(hours, now)) {
+        const openLabel = nextShopOpenLabel(hours, now);
+        throw new BookingError(
+          "SHOP_CLOSED",
+          openLabel ? `Shop opens at ${openLabel}` : "Shop is closed",
+          400,
+        );
+      }
       start = roundDownToFiveMinutes(now);
     }
   }

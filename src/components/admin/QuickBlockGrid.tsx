@@ -26,6 +26,8 @@ interface QuickBlockGridProps {
   editableBarberId?: string | null;
   onFreeSlot: (barberId: string, slot: AdminSlot) => void;
   onWalkInQuick?: (barberId: string) => void;
+  /** When set, disables + Walk-in and shows the reason as title/aria. */
+  walkInDisabledReason?: (barberId: string) => string | null;
   onOutcome?: (
     barberId: string,
     slot: AdminSlot,
@@ -84,6 +86,7 @@ export function QuickBlockGrid({
   editableBarberId = null,
   onFreeSlot,
   onWalkInQuick,
+  walkInDisabledReason,
   onOutcome,
   onLateCalled,
   onCancel,
@@ -170,13 +173,28 @@ export function QuickBlockGrid({
                 {column.barber.slot_duration_minutes} {t("common.minutes")}
               </div>
               {canEdit && onWalkInQuick ? (
-                <button
-                  type="button"
-                  onClick={() => onWalkInQuick(column.barber.id)}
-                  className="mt-1 min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
-                >
-                  {t("admin.addWalkIn")}
-                </button>
+                (() => {
+                  const disabledReason = walkInDisabledReason?.(column.barber.id) ?? null;
+                  return (
+                    <button
+                      type="button"
+                      disabled={Boolean(disabledReason)}
+                      title={disabledReason ?? undefined}
+                      aria-label={
+                        disabledReason
+                          ? `${t("admin.addWalkIn")} — ${disabledReason}`
+                          : t("admin.addWalkIn")
+                      }
+                      onClick={() => {
+                        if (disabledReason) return;
+                        onWalkInQuick(column.barber.id);
+                      }}
+                      className="mt-1 min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100 disabled:cursor-not-allowed disabled:border-zinc-800 disabled:text-zinc-500"
+                    >
+                      {t("admin.addWalkIn")}
+                    </button>
+                  );
+                })()
               ) : null}
             </div>
             {column.slots.length === 0 ? (
