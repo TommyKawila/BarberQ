@@ -18,6 +18,8 @@ export interface Barber {
   off_days: number[];
   created_at: string;
   line_id?: string | null;
+  /** LINE display name captured when the barber claims a link-invite (optional). */
+  line_display_name?: string | null;
   role?: BarberRole;
   shop_id?: string | null;
   is_bookable?: boolean;
@@ -32,6 +34,8 @@ export interface Shop {
   slug: string;
   status: "pending" | "active" | "suspended" | "cancelled";
   subscribed_until: string | null;
+  /** Marketing/demo tenant — no LINE pushes, not billed. */
+  is_demo?: boolean;
   invite_token?: string | null;
   invite_expires_at?: string | null;
   created_at: string;
@@ -109,6 +113,12 @@ export interface AdminSlot extends Slot {
   customerPhone?: string | null;
   customerLineId?: string | null;
   appointmentId?: string;
+  /**
+   * Real appointment bounds (may differ from grid cell start/end when a
+   * walk-in starts mid-slot and spans the next cell).
+   */
+  appointmentStart?: string;
+  appointmentEnd?: string;
   status?: AppointmentStatus;
   source?: AppointmentSource;
   /** P8: walk-in from QR queue */
@@ -119,6 +129,10 @@ export interface AdminSlot extends Slot {
   reason?: string;
   /** Lifetime no-show count for this customer (LINE id or phone) in the shop. */
   noShowCount?: number;
+  /** Snapshot when completed (for card + edit price). */
+  serviceId?: string | null;
+  serviceName?: string | null;
+  priceBaht?: number | null;
 }
 
 export interface AdminColumn {

@@ -55,7 +55,11 @@ export function BarberQxLogo({
     />
   );
   if (!href) return img;
-  return <Link href={href}>{img}</Link>;
+  return (
+    <Link href={href} className="inline-flex min-h-11 items-center">
+      {img}
+    </Link>
+  );
 }
 
 export const ClipperQLogo = BarberQxLogo;

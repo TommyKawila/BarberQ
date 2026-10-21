@@ -71,16 +71,20 @@ export function resolveMarketingTierForBarberCount(
 
 /**
  * Fill offer placeholders from marketingOffer:
- * `{days}` `{quota}` `{price}`=399 `{price2}`=599 `{price3}`=999
+ * `{days}` `{quota}` `{price}`=399
+ * `{price2}`/`{priceMid}`=599 `{price3}`/`{priceLarge}`=999
  */
 export function fillOfferCopy(template: string): string {
-  const p1 = formatBaht(marketingOffer.tiers[0].monthlyPriceThb);
-  const p2 = formatBaht(marketingOffer.tiers[1].monthlyPriceThb);
-  const p3 = formatBaht(marketingOffer.tiers[2].monthlyPriceThb);
+  const [t1, t2, t3] = marketingOffer.tiers;
+  const p1 = formatBaht(t1.monthlyPriceThb);
+  const p2 = formatBaht(t2.monthlyPriceThb);
+  const p3 = formatBaht(t3.monthlyPriceThb);
   return template
     .replaceAll("{days}", String(marketingOffer.trialDays))
     .replaceAll("{quota}", String(marketingOffer.lineFreePushQuota))
     .replaceAll("{price}", p1)
     .replaceAll("{price2}", p2)
-    .replaceAll("{price3}", p3);
+    .replaceAll("{price3}", p3)
+    .replaceAll("{priceMid}", p2)
+    .replaceAll("{priceLarge}", p3);
 }

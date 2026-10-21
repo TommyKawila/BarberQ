@@ -76,6 +76,23 @@ npm run build
 npm run start
 ```
 
+### UI QA crawl (Playwright / ภาษาไทย)
+
+ชุดตรวจ UI อัตโนมัติยิงไปที่ **barberq-qa เท่านั้น** (ร้าน `barberqpilottest`) — ห้ามยิง Production (`barber-q` / `barber-q-pi.vercel.app`) สคริปต์จะ hard-fail ถ้า base URL เป็นโปรดักชัน
+
+```bash
+# หน้าสาธารณะ (ไม่ต้องมี secret)
+QA_BASE_URL=https://barberq-qa.vercel.app npm run qa:crawl
+
+# รวมหน้า admin เมื่อ deploy แล้วตั้ง QA_E2E_SECRET บน Vercel barberq-qa
+QA_BASE_URL=https://barberq-qa.vercel.app QA_E2E_SECRET=… npm run qa:crawl
+```
+
+ผลลัพธ์: `report/index.html` (กริดภาพ 3 viewport + ปัญหาเรียง fail/warn) และ `report/summary.json`  
+Workflow มือ (`workflow_dispatch`): `.github/workflows/qa-ui-crawl.yml` — อัปโหลด artifact ไม่บังคับใน CI
+
+**Env ที่ต้องใส่ใน Vercel โปรเจกต์ barberq-qa (ชื่ออย่างเดียว):** `QA_E2E_SECRET` (และต้องมีอยู่แล้ว: `BARBERQ_ENV`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_APP_URL`) — ห้ามใส่บน Production
+
 ## Security / tenancy (high level)
 
 - Data and admin actions are shop-scoped. Staff from shop A cannot manage shop B.

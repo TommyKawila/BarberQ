@@ -40,16 +40,16 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
         <BarberQxLogo priority className="h-auto w-[84px] shrink-0 justify-self-start md:w-[120px]" />
         {isTrial ? null : (
           <nav className="hidden items-center justify-center gap-6 text-sm text-zinc-300 md:flex">
-            <a href="#how-it-works" className="hover:text-amber-400">
+            <a href="#how-it-works" className="inline-flex min-h-11 items-center hover:text-amber-400">
               {t("marketing.nav.how")}
             </a>
-            <a href="#board" className="hover:text-amber-400">
+            <a href="#board" className="inline-flex min-h-11 items-center hover:text-amber-400">
               {t("marketing.nav.features")}
             </a>
-            <a href="#pricing" className="hover:text-amber-400">
+            <a href="#pricing" className="inline-flex min-h-11 items-center hover:text-amber-400">
               {t("marketing.nav.pricing")}
             </a>
-            <a href="#faq" className="hover:text-amber-400">
+            <a href="#faq" className="inline-flex min-h-11 items-center hover:text-amber-400">
               {t("marketing.nav.faq")}
             </a>
           </nav>

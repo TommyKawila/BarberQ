@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
+import { AdminContentSkeleton } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
@@ -31,15 +32,21 @@ interface ApiError {
   error?: { code?: string; message?: string };
 }
 
-const WEEKDAYS: { value: number; key: MessageKey }[] = [
-  { value: 0, key: "common.sunday" },
-  { value: 1, key: "common.monday" },
-  { value: 2, key: "common.tuesday" },
-  { value: 3, key: "common.wednesday" },
-  { value: 4, key: "common.thursday" },
-  { value: 5, key: "common.friday" },
-  { value: 6, key: "common.saturday" },
+/** Sun→Sat order for off-day chips (อา จ อ พ พฤ ศ ส). */
+const WEEKDAYS: { value: number; shortKey: MessageKey; fullKey: MessageKey }[] = [
+  { value: 0, shortKey: "common.sunShort", fullKey: "common.sunday" },
+  { value: 1, shortKey: "common.monShort", fullKey: "common.monday" },
+  { value: 2, shortKey: "common.tueShort", fullKey: "common.tuesday" },
+  { value: 3, shortKey: "common.wedShort", fullKey: "common.wednesday" },
+  { value: 4, shortKey: "common.thuShort", fullKey: "common.thursday" },
+  { value: 5, shortKey: "common.friShort", fullKey: "common.friday" },
+  { value: 6, shortKey: "common.satShort", fullKey: "common.saturday" },
 ];
+
+const CHIP_BASE =
+  "inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl px-3 text-sm font-semibold transition";
+const CHIP_ON = "bg-amber-400 text-zinc-950";
+const CHIP_OFF = "border border-zinc-700 bg-zinc-950 text-zinc-200";
 
 function MyScheduleContent() {
   const { t, locale } = useI18n();
@@ -70,9 +77,11 @@ function MyScheduleContent() {
   const [creatingBreak, setCreatingBreak] = useState(false);
 
   const weekdayLabel = useMemo(() => {
-    const map = new Map(WEEKDAYS.map((day) => [day.value, t(day.key)]));
+    const map = new Map(WEEKDAYS.map((day) => [day.value, t(day.fullKey)]));
     return (weekday: number) => map.get(weekday) ?? String(weekday);
   }, [t]);
+
+  const canEditShopHours = isShopOperatorRole(profile?.role ?? "barber");
 
   const loadSchedule = useCallback(async () => {
     if (!barberId) return;
@@ -221,9 +230,9 @@ function MyScheduleContent() {
 
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+      </AdminShell>
     );
   }
 
@@ -239,9 +248,28 @@ function MyScheduleContent() {
     );
   }
 
+  const breakThumbBar = showBreakForm ? (
+    <button
+      type="button"
+      disabled={creatingBreak || breakWeekday === null}
+      onClick={() => void createBreak()}
+      className="min-h-11 w-full rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
+    >
+      {t("admin.addBreak")}
+    </button>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setShowBreakForm(true)}
+      className="min-h-11 w-full rounded-xl border border-zinc-700 text-sm text-zinc-200"
+    >
+      {t("admin.addBreak")}
+    </button>
+  );
+
   return (
-    <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-5 px-4 py-5">
+    <AdminShell role={profile.role} thumbBar={breakThumbBar}>
+      <div className="flex flex-col gap-5 px-4 py-5 pb-28 lg:pb-4">
         <header>
           {mockMode ? (
             <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
@@ -271,18 +299,29 @@ function MyScheduleContent() {
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
         <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.offDays")}</h2>
-          <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-            {WEEKDAYS.map((day) => (
-              <label key={day.value} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={offDays.includes(day.value)}
-                  onChange={() => toggleOffDay(day.value)}
-                />
-                {t(day.key)}
-              </label>
-            ))}
+          <h2 id="off-days-label" className="text-sm font-semibold">
+            {t("admin.offDays")}
+          </h2>
+          <div
+            role="group"
+            aria-labelledby="off-days-label"
+            className="mt-3 flex flex-wrap gap-2"
+          >
+            {WEEKDAYS.map((day) => {
+              const pressed = offDays.includes(day.value);
+              return (
+                <button
+                  key={day.value}
+                  type="button"
+                  aria-pressed={pressed}
+                  aria-label={t(day.fullKey)}
+                  onClick={() => toggleOffDay(day.value)}
+                  className={`${CHIP_BASE} ${pressed ? CHIP_ON : CHIP_OFF}`}
+                >
+                  {t(day.shortKey)}
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
@@ -296,19 +335,29 @@ function MyScheduleContent() {
         </section>
 
         <section className="rounded-2xl bg-zinc-900 p-4">
-          <h2 className="text-sm font-semibold">{t("admin.slotDuration")}</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {ALLOWED_SLOT_DURATIONS.map((minutes) => (
-              <label key={minutes} className="flex items-center gap-1 text-sm">
-                <input
-                  type="radio"
-                  name="slotDuration"
-                  checked={slotDuration === minutes}
-                  onChange={() => setSlotDuration(minutes)}
-                />
-                {minutes} {t("common.minutes")}
-              </label>
-            ))}
+          <h2 id="slot-duration-label" className="text-sm font-semibold">
+            {t("admin.slotDuration")}
+          </h2>
+          <div
+            role="radiogroup"
+            aria-labelledby="slot-duration-label"
+            className="mt-3 flex flex-wrap gap-2"
+          >
+            {ALLOWED_SLOT_DURATIONS.map((minutes) => {
+              const selected = slotDuration === minutes;
+              return (
+                <button
+                  key={minutes}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => setSlotDuration(minutes)}
+                  className={`${CHIP_BASE} ${selected ? CHIP_ON : CHIP_OFF}`}
+                >
+                  {minutes} {t("common.minutes")}
+                </button>
+              );
+            })}
           </div>
           <button
             type="button"
@@ -320,6 +369,18 @@ function MyScheduleContent() {
           </button>
           {durationMessage ? <p className="mt-2 text-sm text-emerald-400">{durationMessage}</p> : null}
         </section>
+
+        {canEditShopHours ? (
+          <p className="text-sm text-zinc-400">
+            {t("admin.shopHoursFromSchedule")}{" "}
+            <Link
+              href={`${shopPath("/admin/settings")}#shop-hours`}
+              className="font-medium text-amber-400 underline underline-offset-2"
+            >
+              {t("admin.shopHours")}
+            </Link>
+          </p>
+        ) : null}
 
         <section className="rounded-2xl bg-zinc-900 p-4">
           <h2 className="text-sm font-semibold">{t("admin.recurringBreaks")}</h2>
@@ -410,24 +471,8 @@ function MyScheduleContent() {
                   className="min-h-11 rounded-lg bg-zinc-800 px-3"
                 />
               </label>
-              <button
-                type="button"
-                disabled={creatingBreak || breakWeekday === null}
-                onClick={() => void createBreak()}
-                className="min-h-11 rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
-              >
-                {t("admin.addBreak")}
-              </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowBreakForm(true)}
-              className="mt-3 min-h-11 w-full rounded-xl border border-zinc-700 text-sm text-zinc-200"
-            >
-              {t("admin.addBreak")}
-            </button>
-          )}
+          ) : null}
           {breakMessage ? (
             <p className={`mt-2 text-sm ${breakMessageIsError ? "text-red-400" : "text-emerald-400"}`}>
               {breakMessage}

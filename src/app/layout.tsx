@@ -1,12 +1,22 @@
-import { Noto_Sans_Thai } from "next/font/google";
+import { IBM_Plex_Sans_Thai, Prompt } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import { ToastProvider } from "@/components/ui/ToastProvider";
 import { LocaleProvider } from "@/lib/i18n/locale-provider";
 import { BARBERQX_BRAND } from "@/lib/brand/barberqx";
 import "./globals.css";
 
-const notoThai = Noto_Sans_Thai({
+const prompt = Prompt({
   subsets: ["thai", "latin"],
-  weight: ["400", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-prompt",
+  display: "swap",
+});
+
+const ibmPlexThai = IBM_Plex_Sans_Thai({
+  subsets: ["thai", "latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-ibm-plex-thai",
+  display: "swap",
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://example.com";
@@ -41,20 +51,24 @@ export const metadata: Metadata = {
   },
 };
 
+/** AD-05: allow pinch-zoom — do not set maximumScale / userScalable:false */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: "cover",
-  themeColor: BARBERQX_BRAND.gold,
+  themeColor: BARBERQX_BRAND.ink,
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="th" className={`${notoThai.className} h-full antialiased`}>
+    <html
+      lang="th"
+      className={`${prompt.variable} ${ibmPlexThai.variable} h-full antialiased`}
+    >
       <body className="min-h-full bg-zinc-950 text-zinc-50">
-        <LocaleProvider>{children}</LocaleProvider>
+        <LocaleProvider>
+          <ToastProvider>{children}</ToastProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

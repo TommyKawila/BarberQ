@@ -137,9 +137,31 @@ export default function LineConnectPage() {
     );
   }
 
+  const doneThumbBar =
+    view === "connected" ? (
+      <div className="flex w-full flex-col gap-2">
+        <button
+          type="button"
+          disabled={testing}
+          onClick={() => void runTest()}
+          className="min-h-12 w-full rounded-xl border border-zinc-700 font-semibold text-zinc-100 disabled:opacity-50"
+        >
+          {t("lineConnect.testAgain")}
+        </button>
+        <Link
+          href={shopPath("/admin/settings")}
+          className="flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
+        >
+          {t("lineConnect.done")}
+        </Link>
+      </div>
+    ) : undefined;
+
   return (
-    <AdminShell role={profile.role}>
-      <div className="flex flex-col gap-5 px-4 py-5">
+    <AdminShell role={profile.role} thumbBar={doneThumbBar}>
+      <div
+        className={`flex flex-col gap-5 px-4 py-5${doneThumbBar ? " pb-28 lg:pb-4" : ""}`}
+      >
         <header>
           <Link href={shopPath("/admin/settings")} className="text-sm text-zinc-400">
             ← {t("common.back")}
@@ -222,9 +244,6 @@ export default function LineConnectPage() {
           <ConnectedCard
             channel={channel}
             checks={testResult?.checks}
-            onRetest={() => void runTest()}
-            testing={testing}
-            doneHref={shopPath("/admin/settings")}
             quotaHref={shopPath("/admin/settings/line/quota")}
             t={t}
           />
@@ -469,17 +488,11 @@ function ErrorCard({
 function ConnectedCard({
   channel,
   checks,
-  onRetest,
-  testing,
-  doneHref,
   quotaHref,
   t,
 }: {
   channel: ShopLineChannelPublic;
   checks?: ConnectionCheck[];
-  onRetest: () => void;
-  testing: boolean;
-  doneHref: string;
   quotaHref: string;
   t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string;
 }) {
@@ -525,20 +538,6 @@ function ConnectedCard({
           {t("lineConnect.viewQuota")} →
         </Link>
       </section>
-      <button
-        type="button"
-        disabled={testing}
-        onClick={onRetest}
-        className="min-h-12 w-full rounded-xl border border-zinc-700 font-semibold text-zinc-100 disabled:opacity-50"
-      >
-        {t("lineConnect.testAgain")}
-      </button>
-      <Link
-        href={doneHref}
-        className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 font-semibold text-zinc-950"
-      >
-        {t("lineConnect.done")}
-      </Link>
     </>
   );
 }

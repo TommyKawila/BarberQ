@@ -7,6 +7,7 @@ import {
   type BookedSlotSheetAction,
 } from "@/components/admin/BookedSlotActionsSheet";
 import { getBookedCardActions } from "@/lib/admin/board-card-actions";
+import { blockedSlotLabel, isStaffBlockReason } from "@/lib/admin/block-time";
 import { NO_SHOW_WARNING_THRESHOLD } from "@/lib/admin/customer-no-show";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { formatSlotTime } from "@/lib/services/slot-service";
@@ -26,11 +27,19 @@ interface QuickBlockGridProps {
   editableBarberId?: string | null;
   onFreeSlot: (barberId: string, slot: AdminSlot) => void;
   onWalkInQuick?: (barberId: string) => void;
+  /**
+   * When set, Walk-in is gated: visible reason under the button + tap still
+   * fires onWalkInQuick (iPad — no tooltip). Return null when Walk-in is allowed.
+   */
+  walkInDisabledReason?: (barberId: string) => string | null;
+  /** Optional shop-level banner shown once above the grid (e.g. before open). */
+  walkInShopBanner?: string | null;
   onOutcome?: (
     barberId: string,
     slot: AdminSlot,
     outcome: "completed" | "no_show" | "left",
   ) => void;
+  onChangeService?: (barberId: string, slot: AdminSlot) => void;
   onLateCalled?: (barberId: string, slot: AdminSlot) => void;
   onCancel?: (barberId: string, slot: AdminSlot) => void;
   onRescheduleStart?: (barberId: string, slot: AdminSlot) => void;
@@ -84,7 +93,10 @@ export function QuickBlockGrid({
   editableBarberId = null,
   onFreeSlot,
   onWalkInQuick,
+  walkInDisabledReason,
+  walkInShopBanner = null,
   onOutcome,
+  onChangeService,
   onLateCalled,
   onCancel,
   onRescheduleStart,
@@ -122,30 +134,37 @@ export function QuickBlockGrid({
       setSheet(null);
       return;
     }
-    onOutcome?.(barberId, slot, action);
-    setSheet(null);
+    if (action === "change_service") {
+      onChangeService?.(barberId, slot);
+      setSheet(null);
+      return;
+    }
+    if (action === "completed" || action === "no_show" || action === "left") {
+      onOutcome?.(barberId, slot, action);
+      setSheet(null);
+    }
   }
 
   if (columns.length === 0) {
     return (
       <section className="flex flex-col items-center gap-3 rounded-2xl bg-zinc-900 px-4 py-10 text-center">
         <p className="text-sm text-zinc-400">{t("admin.noQueueToday")}</p>
-        {bookingHref ? (
-          <Link
-            href={bookingHref}
-            className="rounded-xl bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950"
-          >
-            {t("admin.nav.booking")}
-          </Link>
-        ) : null}
         {onCopyBookingLink ? (
           <button
             type="button"
             onClick={onCopyBookingLink}
-            className="rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200"
+            className="min-h-11 rounded-xl border border-zinc-600 px-4 py-2 text-sm font-semibold text-zinc-100"
           >
             {bookingLinkCopied ? t("admin.bookingLinkCopied") : t("admin.copyBookingLink")}
           </button>
+        ) : null}
+        {bookingHref ? (
+          <Link
+            href={bookingHref}
+            className="min-h-11 rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200"
+          >
+            {t("admin.nav.booking")}
+          </Link>
         ) : null}
       </section>
     );
@@ -153,6 +172,15 @@ export function QuickBlockGrid({
 
   return (
     <>
+    {walkInShopBanner ? (
+      <p
+        className="mb-2 rounded-lg border border-amber-500/50 bg-amber-950 px-3 py-2 text-center text-sm font-medium text-amber-50"
+        data-testid="walk-in-shop-banner"
+        role="status"
+      >
+        {walkInShopBanner}
+      </p>
+    ) : null}
     <div
       className="grid gap-1.5 pb-1"
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -166,17 +194,43 @@ export function QuickBlockGrid({
               <div className="truncate text-xs font-semibold sm:text-sm">
                 {barberLabel(column.barber.name, locale)}
               </div>
-              <div className="text-[10px] text-zinc-400">
+              <div className="text-xs text-zinc-400">
                 {column.barber.slot_duration_minutes} {t("common.minutes")}
               </div>
               {canEdit && onWalkInQuick ? (
-                <button
-                  type="button"
-                  onClick={() => onWalkInQuick(column.barber.id)}
-                  className="mt-1 min-h-11 w-full rounded-md bg-rose-700/80 px-1 py-1 text-[11px] font-semibold text-white"
-                >
-                  {t("admin.addWalkIn")}
-                </button>
+                (() => {
+                  const disabledReason = walkInDisabledReason?.(column.barber.id) ?? null;
+                  const gated = Boolean(disabledReason);
+                  return (
+                    <div className="mt-1 flex flex-col items-stretch gap-1">
+                      <button
+                        type="button"
+                        aria-disabled={gated}
+                        aria-label={
+                          gated
+                            ? `${t("admin.addWalkIn")} — ${disabledReason}`
+                            : t("admin.addWalkIn")
+                        }
+                        onClick={() => onWalkInQuick(column.barber.id)}
+                        className={
+                          gated
+                            ? "cq-press min-h-11 w-full rounded-md border border-zinc-600 bg-zinc-950/80 px-1 py-1 text-xs font-semibold text-zinc-300"
+                            : "cq-press min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
+                        }
+                      >
+                        {t("admin.addWalkIn")}
+                      </button>
+                      {gated ? (
+                        <p
+                          className="px-0.5 text-[11px] font-medium leading-snug text-amber-200 sm:text-xs"
+                          data-testid={`walk-in-reason-${column.barber.id}`}
+                        >
+                          {disabledReason}
+                        </p>
+                      ) : null}
+                    </div>
+                  );
+                })()
               ) : null}
             </div>
             {column.slots.length === 0 ? (
@@ -191,14 +245,18 @@ export function QuickBlockGrid({
                 const pastFree = slot.kind === "free" && !slot.available;
                 const booked = slot.kind === "booked";
                 const locked = slot.kind === "blocked" && slot.reason === "break";
-                const blockedManual = slot.kind === "blocked" && slot.reason !== "break";
+                const blockedManual =
+                  slot.kind === "blocked" && isStaffBlockReason(slot.reason);
                 const actions = getBookedCardActions(slot, { canEdit, nowMs: now });
                 const sheetOpenable =
-                  actions.canOpenSheet && Boolean(onOutcome || onCancel || onLateCalled);
+                  actions.canOpenSheet &&
+                  Boolean(onOutcome || onCancel || onLateCalled || onChangeService);
                 const label =
                   slot.kind === "booked"
                     ? slot.status === "completed"
-                      ? `${slot.customerName} · ${t("admin.completed")}`
+                      ? slot.priceBaht != null
+                        ? `${slot.customerName} · ${t("admin.completedWithPrice").replace("{price}", String(slot.priceBaht))}`
+                        : `${slot.customerName} · ${t("admin.completed")}`
                       : slot.status === "no_show"
                         ? `${slot.customerName} · ${t("admin.noShow")}`
                         : slot.status === "left"
@@ -207,9 +265,7 @@ export function QuickBlockGrid({
                             ? `${slot.customerName} · ${slot.lateCalledAt ? t("admin.called") : t("admin.late")}`
                             : slot.customerName
                     : slot.kind === "blocked"
-                      ? slot.reason === "break"
-                        ? t("admin.break")
-                        : slot.reason || t("admin.walkIn")
+                      ? blockedSlotLabel(slot.reason, (k) => t(k as Parameters<typeof t>[0]))
                       : t("admin.free");
 
                 if (sheetOpenable) {
@@ -259,6 +315,14 @@ export function QuickBlockGrid({
                           {slot.customerPhone}
                         </div>
                       ) : null}
+                      {slot.status === "completed" && slot.priceBaht != null ? (
+                        <div className="mt-0.5 truncate text-[9px] font-semibold text-amber-100">
+                          {t("admin.completedWithPrice").replace(
+                            "{price}",
+                            String(slot.priceBaht),
+                          )}
+                        </div>
+                      ) : null}
                       <div className="mt-1 rounded bg-zinc-950/40 px-1 py-1 text-center text-[9px] font-semibold">
                         {t("admin.tapForActions")}
                       </div>
@@ -272,11 +336,15 @@ export function QuickBlockGrid({
                       key={slot.startTime}
                       type="button"
                       disabled={pending}
+                      data-testid={`blocked-slot-${slot.blockId ?? slot.startTime}`}
                       onClick={() => onUnblock(column.barber.id, slot)}
-                      className={`min-h-14 rounded-lg px-1 py-1.5 text-left transition ${slotClass(slot, pending)}`}
+                      className={`cq-press min-h-14 rounded-lg px-1 py-1.5 text-left transition ${slotClass(slot, pending)}`}
                     >
                       <div className="text-[11px] font-bold sm:text-xs">{formatSlotTime(slot.startTime)}</div>
                       <div className="truncate text-[10px] leading-tight">{label}</div>
+                      <div className="mt-1 rounded bg-zinc-950/40 px-1 py-0.5 text-center text-[9px] font-semibold">
+                        {t("admin.tapForActions")}
+                      </div>
                     </button>
                   );
                 }

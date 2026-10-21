@@ -5,22 +5,72 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { addDays } from "date-fns";
 import { enUS, th } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
-import { AdminSessionBadge } from "@/components/admin/AdminSessionBadge";
+import { RefreshCw } from "lucide-react";
+import { AdminContentSkeleton } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
+import {
+  BookedSlotActionsSheet,
+  type BookedSlotSheetAction,
+} from "@/components/admin/BookedSlotActionsSheet";
+import {
+  CompleteServicePicker,
+  type CompleteServiceChoice,
+} from "@/components/admin/CompleteServicePicker";
+import { BlockTimeSheet } from "@/components/admin/BlockTimeSheet";
 import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
+import { QrWaitingRow } from "@/components/admin/QrWaitingRow";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
+import { TodayQueueCards } from "@/components/admin/TodayQueueCards";
+import { UnblockConfirmSheet } from "@/components/admin/UnblockConfirmSheet";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
-import { QrWaitingBoard } from "@/components/admin/QrWaitingBoard";
+import {
+  blockRangeFromColumn,
+  type BlockReasonCode,
+} from "@/lib/admin/block-time";
+import { shouldPromptServicePicker } from "@/lib/admin/complete-service-picker";
+import { OfflineBanner } from "@/components/ui/OfflineBanner";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { useAdminTodayDerived } from "@/lib/admin/use-admin-today-derived";
+import {
+  describeWhoIsFreeEmpty,
+  nextShopOpenLabel,
+  type FreeBarberNow,
+} from "@/lib/admin/free-barbers";
+import {
+  staffBookingErrorMessage,
+  walkInAssessmentMessage,
+  walkInDisabledLabel,
+  walkInShopBannerLabel,
+} from "@/lib/admin/staff-booking-errors";
+import {
+  assessWalkInQuick,
+  findNextFreeBoardSlot,
+  walkInDisabledReason,
+  type WalkInOffer,
+} from "@/lib/admin/walk-in-quick";
 import { isShopOperatorRole } from "@/lib/admin-auth";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import type { ShopActivation } from "@/lib/onboarding/activation";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
-import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
-import type { AdminColumn, AdminSlot, StaffBookingSource } from "@/types/booking";
-import type { FreeBarberNow } from "@/lib/admin/free-barbers";
+import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
+import {
+  dateISOFromInstant,
+  formatSlotTime,
+  SHOP_TIMEZONE,
+} from "@/lib/services/slot-service";
+import type {
+  AdminColumn,
+  AdminSlot,
+  ShopService,
+  StaffBookingSource,
+} from "@/types/booking";
+
+type BoardTab = "queue" | "schedule";
+type ThumbIntent = "walk_in" | "block";
 
 interface ApiError {
   error?: {
@@ -34,9 +84,26 @@ interface ApiError {
 export default function AdminPage() {
   const { locale, t } = useI18n();
   const { shopApi, shopPath, shopSlug } = useShopSlug();
-  const { ready, profile, error: authError, authHeaders, mockMode } = useAdminPageAuth();
+  const { ready, profile, error: authError, authHeaders } = useAdminPageAuth();
+  const toast = useToast();
+  const online = useOnlineStatus();
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [boardTab, setBoardTab] = useState<BoardTab>("queue");
+  const [thumbIntent, setThumbIntent] = useState<ThumbIntent>("walk_in");
   const [columns, setColumns] = useState<AdminColumn[]>([]);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [pendingKind, setPendingKind] = useState<"walk_in" | "booking" | "block" | null>(null);
+  const [actionsSheet, setActionsSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    slot: AdminSlot;
+  } | null>(null);
+  const [shopServices, setShopServices] = useState<ShopService[]>([]);
+  const [servicePicker, setServicePicker] = useState<{
+    mode: "complete" | "change";
+    barberId: string;
+    slot: AdminSlot;
+  } | null>(null);
   const [outcomePendingKey, setOutcomePendingKey] = useState<string | null>(null);
   const [latePendingKey, setLatePendingKey] = useState<string | null>(null);
   const [cancelPendingKey, setCancelPendingKey] = useState<string | null>(null);
@@ -56,6 +123,7 @@ export default function AdminPage() {
   const [bookingUrl, setBookingUrl] = useState("");
   const [lineQuotaFull, setLineQuotaFull] = useState(false);
   const [remindersEnabled, setRemindersEnabled] = useState(false);
+  const [shopHours, setShopHours] = useState<ShopHours>(() => normalizeShopHours(null));
   const [dateISO, setDateISO] = useState(() => dateISOFromInstant(new Date()));
   const [showClosedQueue, setShowClosedQueue] = useState(false);
   const [sheet, setSheet] = useState<{
@@ -65,24 +133,43 @@ export default function AdminPage() {
     shortenUntil?: string | null;
   } | null>(null);
   const [whoFreeOpen, setWhoFreeOpen] = useState(false);
+  const [blockSheet, setBlockSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    initialStartISO?: string | null;
+    freeUntilISO?: string | null;
+  } | null>(null);
+  const [unblockSheet, setUnblockSheet] = useState<{
+    barberId: string;
+    barberName: string;
+    blockId: string;
+    startTime: string;
+    endTime: string;
+  } | null>(null);
+  /** Second-tap Walk-in target after a busy / next-free offer. */
+  const [walkInOffer, setWalkInOffer] = useState<WalkInOffer | null>(null);
   const todayISO = dateISOFromInstant(new Date());
   const isToday = dateISO === todayISO;
   const dateLocale = locale === "th" ? th : enUS;
-  const displayDate = useMemo(
+  const displayDateShort = useMemo(
     () =>
       formatInTimeZone(
         fromZonedTime(`${dateISO}T12:00:00`, SHOP_TIMEZONE),
         SHOP_TIMEZONE,
-        "EEEE d MMMM yyyy",
+        locale === "th" ? "EEE d MMM" : "EEE d MMM",
         { locale: dateLocale },
       ),
-    [dateISO, dateLocale],
+    [dateISO, dateLocale, locale],
   );
   // Unconditional — never after auth early-return (React #310).
   const { freeNow, mini, hasBookingsToday, setupIncomplete } = useAdminTodayDerived(
     columns,
     isToday,
     activation,
+  );
+  const whoIsFreeEmpty = useMemo(
+    () => describeWhoIsFreeEmpty(columns, shopHours, new Date()),
+    [columns, shopHours, lastUpdated],
   );
 
   function shiftDay(days: number) {
@@ -101,15 +188,31 @@ export default function AdminPage() {
         columns?: AdminColumn[];
       } & ApiError;
       if (!res.ok) {
-        setError(json.error?.message ?? t("admin.loadFailed"));
+        const msg = json.error?.message ?? t("admin.loadFailed");
+        setError(msg);
+        if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
+        else toast.error(t("admin.toast.refreshFailed"));
         return;
       }
       setError(null);
       setColumns(json.columns ?? []);
+      setLastUpdated(new Date());
     } catch {
       setError(t("admin.networkError"));
+      toast.error(t("admin.toast.refreshFailed"));
     }
-  }, [authHeaders, dateISO, shopApi, showClosedQueue, t]);
+  }, [authHeaders, dateISO, shopApi, showClosedQueue, t, toast]);
+
+  useEffect(() => {
+    if (!ready || !profile) return;
+    void fetch(shopApi("/services"), { headers: authHeaders })
+      .then(async (res) => {
+        if (!res.ok) return;
+        const json = (await res.json()) as { services?: ShopService[] };
+        setShopServices(json.services ?? []);
+      })
+      .catch(() => {});
+  }, [authHeaders, profile, ready, shopApi]);
 
   useEffect(() => {
     if (!ready || !profile || !isShopOperatorRole(profile.role)) return;
@@ -134,8 +237,12 @@ export default function AdminPage() {
           setLineQuotaFull(q.quota?.level === "full");
         }
         if (settingsRes.ok) {
-          const s = (await settingsRes.json()) as { remindersEnabled?: boolean };
+          const s = (await settingsRes.json()) as {
+            remindersEnabled?: boolean;
+            hours?: ShopHours | null;
+          };
           setRemindersEnabled(Boolean(s.remindersEnabled));
+          if (s.hours) setShopHours(normalizeShopHours(s.hours));
         }
       })
       .catch(() => {});
@@ -177,29 +284,38 @@ export default function AdminPage() {
     });
   }
 
-  function findNextFreeSlot(barberId: string): AdminSlot | null {
-    const column = columns.find((c) => c.barber.id === barberId);
-    if (!column) return null;
-    const now = Date.now();
-    return (
-      column.slots.find(
-        (s) => s.kind === "free" && s.available && new Date(s.startTime).getTime() >= now - 5 * 60_000,
-      ) ??
-      column.slots.find((s) => s.kind === "free" && s.available) ??
-      null
-    );
+  function barberNameFor(barberId: string): string {
+    return columns.find((c) => c.barber.id === barberId)?.barber.name ?? "";
   }
 
-  async function createStaffBooking(input: {
-    barberId: string;
-    startTime: string;
-    endTime?: string;
-    source: StaffBookingSource;
-    customerName?: string;
-    customerPhone?: string;
-  }) {
-    const key = `${input.barberId}:${input.startTime}`;
-    setPendingKey(key);
+  function showActionError(msg: string) {
+    setError(msg);
+    toast.error(msg);
+  }
+
+  async function createStaffBooking(
+    input: {
+      barberId: string;
+      startTime: string;
+      endTime?: string;
+      source: StaffBookingSource;
+      customerName?: string;
+      customerPhone?: string;
+    },
+    opts?: {
+      /** UI pending key (sheet slot may differ from snapped walk-in startTime). */
+      uiKey?: string;
+      kind?: "walk_in" | "booking";
+      /** Parent already set pendingKey (e.g. before walk-in gate). */
+      alreadyPending?: boolean;
+    },
+  ) {
+    const key = opts?.uiKey ?? `${input.barberId}:${input.startTime}`;
+    const kind = opts?.kind ?? (input.source === "walk_in" ? "walk_in" : "booking");
+    if (!opts?.alreadyPending) {
+      setPendingKey(key);
+      setPendingKind(kind);
+    }
     setError(null);
     const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
     try {
@@ -214,69 +330,133 @@ export default function AdminPage() {
           setSheet({ ...sheet, shortenUntil: json.error.canShortenUntil });
           return;
         }
-        setError(json.error?.message ?? t("admin.staffBook.slotTaken"));
+        const column = columns.find((c) => c.barber.id === input.barberId);
+        const next =
+          column && (json.error?.code === "SLOT_TAKEN" || json.error?.code === "SLOT_BLOCKED")
+            ? findNextFreeBoardSlot(column, new Date().getTime())
+            : null;
+        if (next && input.source === "walk_in") {
+          setWalkInOffer({ barberId: input.barberId, startTime: next.startTime });
+        } else {
+          setWalkInOffer(null);
+        }
+        const msg = staffBookingErrorMessage(json.error?.code, t, {
+          barberName: barberNameFor(input.barberId),
+          timeLabel: formatSlotTime(input.startTime),
+          nextFreeLabel: next ? formatSlotTime(next.startTime) : undefined,
+          openLabel: json.error?.code === "SHOP_CLOSED" ? nextShopOpenHint() : undefined,
+        });
+        showActionError(msg);
+        if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
+        else if (json.error?.code?.includes("LINE")) toast.error(t("admin.toast.lineSendFailed"));
         return;
       }
       setSheet(null);
-      await loadDay();
+      setWalkInOffer(null);
+      toast.success(
+        input.source === "walk_in" ? t("admin.toast.walkInQueued") : t("admin.toast.success"),
+      );
+      // Don't await board refetch — clear pending immediately so tap feels snappy.
+      void loadDay();
     } catch {
-      setError(t("admin.networkError"));
+      showActionError(t("admin.networkError"));
     } finally {
       setPendingKey(null);
+      setPendingKind(null);
     }
   }
 
-  async function onBlockSlot(barberId: string, slot: AdminSlot) {
-    const key = `${barberId}:${slot.startTime}`;
+  function nextShopOpenHint(): string | undefined {
+    return nextShopOpenLabel(shopHours, new Date()) ?? undefined;
+  }
+
+  async function onBlockRange(input: {
+    barberId: string;
+    startTime: string;
+    endTime: string;
+    reason: BlockReasonCode;
+  }) {
+    const key = `${input.barberId}:${input.startTime}`;
     setPendingKey(key);
+    setPendingKind("block");
     setError(null);
+    setWalkInOffer(null);
     const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
     try {
       const res = await fetch(shopApi("/block"), {
         method: "POST",
         headers,
         body: JSON.stringify({
-          barberId,
-          startTime: slot.startTime,
-          endTime: slot.endTime,
-          reason: "manual",
+          barberId: input.barberId,
+          startTime: input.startTime,
+          endTime: input.endTime,
+          reason: input.reason,
         }),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
+        toast.error(json.error?.message ?? t("admin.updateFailed"));
         return;
       }
       setSheet(null);
-      await loadDay();
+      setBlockSheet(null);
+      toast.success(t("admin.toast.blocked"));
+      void loadDay();
     } catch {
       setError(t("admin.updateFailed"));
+      toast.error(t("admin.updateFailed"));
     } finally {
       setPendingKey(null);
+      setPendingKind(null);
     }
   }
 
-  async function onUnblock(_barberId: string, slot: AdminSlot) {
+  function requestUnblock(barberId: string, slot: AdminSlot) {
     if (!slot.blockId) return;
-    const key = `${_barberId}:${slot.startTime}`;
+    const column = columns.find((c) => c.barber.id === barberId);
+    const range = column
+      ? blockRangeFromColumn(column, slot.blockId)
+      : { startTime: slot.startTime, endTime: slot.endTime };
+    if (!range) return;
+    const barberName =
+      column?.barber.name ?? barberNameFor(barberId);
+    setUnblockSheet({
+      barberId,
+      barberName,
+      blockId: slot.blockId,
+      startTime: range.startTime,
+      endTime: range.endTime,
+    });
+  }
+
+  async function confirmUnblock() {
+    if (!unblockSheet) return;
+    const key = `${unblockSheet.barberId}:${unblockSheet.startTime}`;
     setPendingKey(key);
+    setPendingKind("block");
     setError(null);
     try {
       const res = await fetch(shopApi("/block"), {
         method: "DELETE",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ id: slot.blockId }),
+        body: JSON.stringify({ id: unblockSheet.blockId }),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
+        toast.error(json.error?.message ?? t("admin.updateFailed"));
         return;
       }
-      await loadDay();
+      setUnblockSheet(null);
+      toast.success(t("admin.toast.unblocked"));
+      void loadDay();
     } catch {
       setError(t("admin.updateFailed"));
+      toast.error(t("admin.updateFailed"));
     } finally {
       setPendingKey(null);
+      setPendingKind(null);
     }
   }
 
@@ -284,8 +464,9 @@ export default function AdminPage() {
     _barberId: string,
     slot: AdminSlot,
     outcome: "completed" | "no_show" | "left",
-  ) {
-    if (!profile || !slot.appointmentId) return;
+    options?: { serviceId?: string; priceBaht?: number },
+  ): Promise<boolean> {
+    if (!profile || !slot.appointmentId) return false;
     const key = `${_barberId}:${slot.startTime}`;
     setOutcomePendingKey(key);
     setError(null);
@@ -293,13 +474,63 @@ export default function AdminPage() {
       const res = await fetch(`/api/appointments/${slot.appointmentId}/outcome`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...authHeaders },
-        body: JSON.stringify({ outcome }),
+        body: JSON.stringify({
+          outcome,
+          serviceId: options?.serviceId,
+          priceBaht: options?.priceBaht,
+        }),
       });
       const json = (await res.json()) as ApiError;
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
+        if (json.error?.code === "FORBIDDEN") toast.error(t("admin.toast.noPermission"));
+        else if (json.error?.code?.includes("LINE")) toast.error(t("admin.toast.lineSendFailed"));
+        return false;
+      }
+      toast.success(t("admin.toast.success"));
+      await loadDay();
+      return true;
+    } catch {
+      setError(t("admin.networkError"));
+      return false;
+    } finally {
+      setOutcomePendingKey(null);
+    }
+  }
+
+  function requestComplete(barberId: string, slot: AdminSlot) {
+    if (shouldPromptServicePicker(shopServices)) {
+      setServicePicker({ mode: "complete", barberId, slot });
+      return;
+    }
+    void onOutcome(barberId, slot, "completed");
+  }
+
+  async function onChangeCompletedService(
+    slot: AdminSlot,
+    choice: CompleteServiceChoice,
+  ) {
+    if (!profile || !slot.appointmentId) return;
+    const key = `${slot.appointmentId}:service`;
+    setOutcomePendingKey(key);
+    setError(null);
+    try {
+      const res = await fetch(`/api/appointments/${slot.appointmentId}/service`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({
+          serviceId: choice.serviceId,
+          priceBaht: choice.priceBaht,
+        }),
+      });
+      const json = (await res.json()) as ApiError;
+      if (!res.ok) {
+        setError(json.error?.message ?? t("admin.updateFailed"));
+        toast.error(t("admin.updateFailed"));
         return;
       }
+      toast.success(t("admin.toast.success"));
+      setServicePicker(null);
       await loadDay();
     } catch {
       setError(t("admin.networkError"));
@@ -363,6 +594,7 @@ export default function AdminPage() {
     });
     setRescheduleTarget(null);
     setError(null);
+    setWalkInOffer(null);
   }
 
   async function confirmStaffReschedule() {
@@ -406,24 +638,74 @@ export default function AdminPage() {
   }
 
   function onWalkInQuick(barberId: string) {
-    const slot = findNextFreeSlot(barberId);
-    if (!slot) {
-      setError(t("admin.staffBook.noFreeBarber"));
+    setError(null);
+    const column = columns.find((c) => c.barber.id === barberId);
+    const assessment = assessWalkInQuick(column, shopHours, new Date(), walkInOffer);
+
+    if (assessment.kind !== "ok") {
+      if (assessment.kind === "busy") {
+        const msg = walkInAssessmentMessage(assessment, t);
+        setWalkInOffer({
+          barberId: assessment.barberId,
+          startTime: assessment.nextFreeStartTime,
+        });
+        setError(msg);
+        toast.warning(msg);
+        return;
+      }
+      // Hours / off-day: same short Thai copy as the visible grid label (iPad).
+      const gated =
+        assessment.kind === "shop_before_open" ||
+        assessment.kind === "shop_after_close" ||
+        assessment.kind === "shop_closed_day" ||
+        assessment.kind === "barber_off";
+      const msg = gated
+        ? walkInDisabledLabel(assessment, t)
+        : walkInAssessmentMessage(assessment, t);
+      setWalkInOffer(null);
+      showActionError(msg);
       return;
     }
+
+    setWalkInOffer(null);
     void createStaffBooking({
-      barberId,
-      startTime: new Date().toISOString(),
+      barberId: assessment.barberId,
+      startTime: assessment.startTime,
       source: "walk_in",
     });
   }
+
+  function walkInButtonDisabledReason(barberId: string): string | null {
+    const column = columns.find((c) => c.barber.id === barberId);
+    const gate = walkInDisabledReason(column, shopHours, new Date());
+    if (!gate) return null;
+    return walkInDisabledLabel(gate, t);
+  }
+
+  const walkInShopBanner = useMemo(() => {
+    if (!profile) return null;
+    const editableId = isShopOperatorRole(profile.role) ? null : profile.barberId;
+    const assessments = columns
+      .filter((c) => editableId == null || c.barber.id === editableId)
+      .map((c) => assessWalkInQuick(c, shopHours, new Date(), null));
+    return walkInShopBannerLabel(assessments, t);
+  }, [columns, shopHours, lastUpdated, t, profile]);
 
   function onWhoIsFree() {
     setWhoFreeOpen(true);
   }
 
-  function onWalkInFromFreeSheet(row: FreeBarberNow) {
+  function onPickFreeBarber(row: FreeBarberNow, intent: ThumbIntent = thumbIntent) {
     setWhoFreeOpen(false);
+    if (intent === "block") {
+      setBlockSheet({
+        barberId: row.barberId,
+        barberName: row.barberName,
+        initialStartISO: row.slot.startTime,
+        freeUntilISO: row.freeUntil,
+      });
+      return;
+    }
     setSheet({
       barberId: row.barberId,
       barberName: row.barberName,
@@ -432,148 +714,160 @@ export default function AdminPage() {
     });
   }
 
+  function handleBookedSheetAction(action: BookedSlotSheetAction) {
+    if (!actionsSheet) return;
+    const { barberId, slot } = actionsSheet;
+    if (action === "cancel") {
+      void onCancel(barberId, slot);
+      setActionsSheet(null);
+      return;
+    }
+    if (action === "reschedule") {
+      onRescheduleStart(barberId, slot);
+      setActionsSheet(null);
+      return;
+    }
+    if (action === "late_called") {
+      void onLateCalled(barberId, slot);
+      setActionsSheet(null);
+      return;
+    }
+    if (action === "change_service") {
+      setActionsSheet(null);
+      setServicePicker({ mode: "change", barberId, slot });
+      return;
+    }
+    if (action === "completed") {
+      setActionsSheet(null);
+      requestComplete(barberId, slot);
+      return;
+    }
+    if (action === "no_show" || action === "left") {
+      void onOutcome(barberId, slot, action);
+      setActionsSheet(null);
+    }
+  }
+
   if (!ready || !profile) {
     return (
-      <section className="flex min-h-full flex-col gap-4 px-4 py-10">
-        <p className="text-sm text-zinc-400">{t("common.loading")}</p>
-        {authError ? <p className="text-sm text-red-400">{authError}</p> : null}
-      </section>
+      <AdminShell role="owner">
+        <AdminContentSkeleton />
+        {authError ? (
+          <p className="px-4 text-sm text-red-400">{authError}</p>
+        ) : null}
+      </AdminShell>
     );
   }
 
   const isOperator = isShopOperatorRole(profile.role);
   const editableBarberId = isOperator ? null : profile.barberId;
-  const badgeRole = profile.role;
 
   async function copyBookingLink() {
     const url = bookingUrl || buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug);
     await navigator.clipboard.writeText(url);
     setBookingLinkCopied(true);
+    toast.success(t("admin.toast.copyBookingLink"));
     window.setTimeout(() => setBookingLinkCopied(false), 2000);
   }
 
+  const thumbBar = isOperator ? (
+    <div className="flex gap-2">
+      <button
+        type="button"
+        onClick={() => {
+          setThumbIntent("block");
+          setWhoFreeOpen(true);
+        }}
+        className="cq-press flex min-h-12 flex-1 items-center justify-center gap-1 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+      >
+        🚫 {t("admin.staffBook.blockTime")}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setThumbIntent("walk_in");
+          // Always open the picker so it matches Today cards (never skip when freeNow is nonempty)
+          setWhoFreeOpen(true);
+        }}
+        className="cq-press flex min-h-12 flex-[1.2] items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+      >
+        + Walk-in
+      </button>
+    </div>
+  ) : undefined;
+
   return (
-    <AdminShell role={profile.role}>
+    <AdminShell role={profile.role} thumbBar={thumbBar}>
       <div
-        className={`flex flex-col gap-4 px-3 py-4${
-          rescheduleFrom ? " pb-36" : ""
+        className={`flex flex-col gap-3 px-3 py-3${
+          rescheduleFrom || thumbBar ? " pb-28 lg:pb-4" : ""
         }`}
       >
-        <header className="flex flex-col gap-3">
-          <div className="min-w-0">
-            {mockMode ? (
-              <span className="mb-1 inline-block rounded bg-zinc-800 px-2 py-0.5 text-[11px] uppercase tracking-wide text-amber-400">
-                {t("common.prototypeMode")}
-              </span>
-            ) : null}
-            <h1 className="text-xl font-semibold">
-              {isToday ? t("admin.todayTap") : t("admin.dateDisplay")}
-            </h1>
-            <p className="text-sm text-zinc-400">{displayDate}</p>
-            <AdminSessionBadge name={profile.displayName || profile.barberName} role={badgeRole} />
-          </div>
-          <div className="flex flex-wrap items-center gap-1.5">
+        <header className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 flex-1 items-center gap-1">
             <button
               type="button"
               onClick={() => shiftDay(-1)}
-              className="min-h-11 min-w-11 rounded-xl bg-zinc-800 text-sm text-zinc-200"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-zinc-300"
+              aria-label={t("admin.prevDay")}
             >
               ‹
             </button>
             <button
               type="button"
-              disabled={isToday}
               onClick={() => setDateISO(todayISO)}
-              className="min-h-11 rounded-xl bg-zinc-800 px-3 text-sm text-zinc-200 disabled:opacity-40"
+              className="min-h-11 truncate rounded-xl px-1 text-left text-sm text-zinc-200"
             >
-              {t("admin.today")}
+              <span className="font-medium">
+                {displayDateShort}
+                {isToday ? ` · ${t("admin.today")}` : ""}
+              </span>
+              {lastUpdated ? (
+                <span className="ml-1 text-xs text-zinc-500">
+                  · {formatInTimeZone(lastUpdated, SHOP_TIMEZONE, "HH:mm")}
+                </span>
+              ) : null}
             </button>
             <button
               type="button"
               onClick={() => shiftDay(1)}
-              className="min-h-11 min-w-11 rounded-xl bg-zinc-800 text-sm text-zinc-200"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-zinc-300"
+              aria-label={t("admin.nextDay")}
             >
               ›
             </button>
-            <button
-              type="button"
-              onClick={() => void loadDay()}
-              className="min-h-11 rounded-xl bg-zinc-800 px-3 text-sm text-zinc-200"
-            >
-              {t("admin.refresh")}
-            </button>
-            {isToday ? (
-              <button
-                type="button"
-                onClick={onWhoIsFree}
-                className="min-h-11 rounded-xl bg-rose-700 px-3 text-sm font-semibold text-white"
-              >
-                {t("admin.whoIsFree")}
-              </button>
-            ) : null}
           </div>
-          {isOperator ? (
-            <label className="flex min-h-11 items-center gap-3 text-sm text-zinc-300">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={showClosedQueue}
-                onClick={() => setShowClosedQueue((v) => !v)}
-                className={`relative min-h-11 w-14 shrink-0 rounded-full transition ${
-                  showClosedQueue ? "bg-amber-400" : "bg-zinc-700"
-                }`}
-              >
-                <span
-                  className={`absolute top-1 left-1 h-9 w-9 rounded-full bg-white shadow transition ${
-                    showClosedQueue ? "translate-x-6" : "translate-x-0"
-                  }`}
-                />
-              </button>
-              {t("admin.showClosedQueueBarbers")}
-            </label>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => void loadDay()}
+            aria-label={t("admin.refresh")}
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-full border border-zinc-700 text-zinc-200"
+          >
+            <RefreshCw size={18} />
+          </button>
         </header>
 
-        <div className="grid grid-cols-3 gap-2 rounded-xl border border-zinc-800 bg-zinc-900/60 p-2">
-          <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-amber-400">{mini.remaining}</p>
-            <p className="text-[11px] text-zinc-400">
-              {t("admin.miniRemaining").replace("{n}", String(mini.remaining))}
-            </p>
+        <OfflineBanner message={t("admin.offlineBanner")} visible={!online} />
+
+        <div className="flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <SegmentedControl
+              ariaLabel={t("admin.nav.board")}
+              value={boardTab}
+              onChange={setBoardTab}
+              options={[
+                { value: "queue" as const, label: t("admin.segmentQueue") },
+                { value: "schedule" as const, label: t("admin.segmentSchedule") },
+              ]}
+            />
           </div>
-          <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-zinc-100">{mini.done}</p>
-            <p className="text-[11px] text-zinc-400">
-              {t("admin.miniDone").replace("{n}", String(mini.done))}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-lg font-semibold tabular-nums text-emerald-400">{mini.freeSlots}</p>
-            <p className="text-[11px] text-zinc-400">
-              {t("admin.miniFree").replace("{n}", String(mini.freeSlots))}
-            </p>
-          </div>
+          <p className="shrink-0 text-xs tabular-nums text-zinc-400">
+            {t("admin.miniRemainDone")
+              .replace("{remain}", String(mini.remaining))
+              .replace("{done}", String(mini.done))}
+          </p>
         </div>
 
-        {isToday ? (
-          <QrWaitingBoard
-            shopApi={shopApi}
-            authHeaders={authHeaders}
-            enabled={Boolean(profile)}
-            onStarted={() => void loadDay()}
-          />
-        ) : null}
-
-        <div className="flex flex-wrap gap-1.5 text-[11px] text-zinc-400">
-          <span className="rounded bg-emerald-700 px-2 py-0.5 text-white">{t("admin.open")}</span>
-          <span className="rounded bg-sky-700 px-2 py-0.5 text-white">{t("admin.sourceLine")}</span>
-          <span className="rounded bg-rose-700 px-2 py-0.5 text-white">{t("admin.sourceWalkIn")}</span>
-          <span className="rounded border border-red-500/60 bg-red-950 px-2 py-0.5 text-red-200">
-            {t("admin.staffBook.blockTime")}
-          </span>
-          <span className="rounded bg-yellow-600 px-2 py-0.5 text-zinc-950">{t("admin.late")}</span>
-          <span className="rounded bg-zinc-600 px-2 py-0.5 text-white">{t("admin.completed")}</span>
-        </div>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         {isOperator && remindersEnabled && lineQuotaFull ? (
           <div className="rounded-xl border border-red-500/50 bg-red-950/40 p-4">
@@ -634,37 +928,87 @@ export default function AdminPage() {
             </Link>
           </div>
         ) : null}
-        {isOperator && isToday && !hasBookingsToday && activation?.ready ? (
-          <div className="rounded-xl bg-zinc-900 p-4 text-sm">
+        {isOperator && isToday && !hasBookingsToday && activation?.ready && boardTab === "queue" ? (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4 text-sm">
             <p className="text-zinc-300">{t("onboarding.noBookingsToday")}</p>
             <button
               type="button"
               onClick={() => void copyBookingLink()}
-              className="mt-2 min-h-11 w-full rounded-lg bg-amber-400 text-sm font-semibold text-zinc-950"
+              className="mt-2 min-h-11 w-full rounded-lg border border-zinc-600 text-sm font-semibold text-zinc-100"
             >
-              {bookingLinkCopied ? t("onboarding.copied") : t("onboarding.copyLink")}
+              {bookingLinkCopied ? t("admin.toast.copyBookingLink") : t("onboarding.copyLink")}
             </button>
           </div>
         ) : null}
-        <QuickBlockGrid
-          columns={columns}
-          pendingKey={pendingKey}
-          outcomePendingKey={outcomePendingKey}
-          latePendingKey={latePendingKey}
-          cancelPendingKey={cancelPendingKey}
-          editableBarberId={editableBarberId}
-          onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
-          onWalkInQuick={(id) => onWalkInQuick(id)}
-          onOutcome={(id, slot, outcome) => void onOutcome(id, slot, outcome)}
-          onLateCalled={(id, slot) => void onLateCalled(id, slot)}
-          onCancel={(id, slot) => void onCancel(id, slot)}
-          onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
-          onUnblock={(id, slot) => void onUnblock(id, slot)}
-          reschedulePickMode={Boolean(rescheduleFrom)}
-          bookingHref={shopPath("/")}
-          onCopyBookingLink={() => void copyBookingLink()}
-          bookingLinkCopied={bookingLinkCopied}
-        />
+
+        {boardTab === "queue" ? (
+          <>
+            <TodayQueueCards
+              columns={columns}
+              shopHours={shopHours}
+              editableBarberId={editableBarberId}
+              outcomePendingKey={outcomePendingKey}
+              latePendingKey={latePendingKey}
+              onWalkInBarber={(id) => onWalkInQuick(id)}
+              onOutcome={(id, slot, outcome) => {
+                if (outcome === "completed") requestComplete(id, slot);
+                else void onOutcome(id, slot, outcome);
+              }}
+              onLateOrNoShow={(id, slot) => {
+                const col = columns.find((c) => c.barber.id === id);
+                setActionsSheet({
+                  barberId: id,
+                  barberName: col?.barber.name ?? "",
+                  slot,
+                });
+              }}
+              onOpenNext={(id, slot) => {
+                const col = columns.find((c) => c.barber.id === id);
+                setActionsSheet({
+                  barberId: id,
+                  barberName: col?.barber.name ?? "",
+                  slot,
+                });
+              }}
+            />
+            {isToday ? (
+              <QrWaitingRow
+                shopApi={shopApi}
+                authHeaders={authHeaders}
+                enabled={Boolean(profile)}
+                onStarted={() => void loadDay()}
+              />
+            ) : null}
+          </>
+        ) : (
+          <QuickBlockGrid
+            columns={columns}
+            pendingKey={pendingKey}
+            outcomePendingKey={outcomePendingKey}
+            latePendingKey={latePendingKey}
+            cancelPendingKey={cancelPendingKey}
+            editableBarberId={editableBarberId}
+            onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
+            onWalkInQuick={(id) => onWalkInQuick(id)}
+            walkInDisabledReason={walkInButtonDisabledReason}
+            walkInShopBanner={walkInShopBanner}
+            onOutcome={(id, slot, outcome) => {
+              if (outcome === "completed") requestComplete(id, slot);
+              else void onOutcome(id, slot, outcome);
+            }}
+            onChangeService={(id, slot) =>
+              setServicePicker({ mode: "change", barberId: id, slot })
+            }
+            onLateCalled={(id, slot) => void onLateCalled(id, slot)}
+            onCancel={(id, slot) => void onCancel(id, slot)}
+            onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
+            onUnblock={(id, slot) => requestUnblock(id, slot)}
+            reschedulePickMode={Boolean(rescheduleFrom)}
+            bookingHref={shopPath("/")}
+            onCopyBookingLink={() => void copyBookingLink()}
+            bookingLinkCopied={bookingLinkCopied}
+          />
+        )}
         {rescheduleTarget && rescheduleFrom ? (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
             <button
@@ -712,33 +1056,177 @@ export default function AdminPage() {
             barberName={sheet.barberName}
             slot={sheet.slot}
             pending={pendingKey === `${sheet.barberId}:${sheet.slot.startTime}`}
+            pendingKind={
+              pendingKey === `${sheet.barberId}:${sheet.slot.startTime}` ? pendingKind : null
+            }
             shortenUntil={sheet.shortenUntil}
-            onClose={() => setSheet(null)}
-            onWalkInNow={() =>
-              void createStaffBooking({
-                barberId: sheet.barberId,
-                startTime: sheet.slot.startTime,
-                source: "walk_in",
-              })
-            }
+            onClose={() => {
+              if (!pendingKey) setSheet(null);
+            }}
+            onWalkInNow={() => {
+              const uiKey = `${sheet.barberId}:${sheet.slot.startTime}`;
+              // Immediate feedback before gate / network (iOS / LINE feel laggy otherwise).
+              setPendingKey(uiKey);
+              setPendingKind("walk_in");
+              const column = columns.find((c) => c.barber.id === sheet.barberId);
+              const assessment = assessWalkInQuick(column, shopHours, new Date(), null);
+              if (assessment.kind !== "ok") {
+                setPendingKey(null);
+                setPendingKind(null);
+                const msg = walkInAssessmentMessage(assessment, t);
+                if (assessment.kind === "busy") {
+                  setWalkInOffer({
+                    barberId: assessment.barberId,
+                    startTime: assessment.nextFreeStartTime,
+                  });
+                  setError(msg);
+                  toast.warning(msg);
+                  return;
+                }
+                showActionError(msg);
+                return;
+              }
+              void createStaffBooking(
+                {
+                  barberId: assessment.barberId,
+                  startTime: assessment.startTime,
+                  source: "walk_in",
+                },
+                { uiKey, kind: "walk_in", alreadyPending: true },
+              );
+            }}
             onStaffBooking={(input) =>
-              void createStaffBooking({
-                barberId: sheet.barberId,
-                startTime: sheet.slot.startTime,
-                endTime: input.endTime,
-                source: input.source,
-                customerName: input.customerName,
-                customerPhone: input.customerPhone,
-              })
+              void createStaffBooking(
+                {
+                  barberId: sheet.barberId,
+                  startTime: sheet.slot.startTime,
+                  endTime: input.endTime,
+                  source: input.source,
+                  customerName: input.customerName,
+                  customerPhone: input.customerPhone,
+                },
+                {
+                  uiKey: `${sheet.barberId}:${sheet.slot.startTime}`,
+                  kind: input.source === "walk_in" ? "walk_in" : "booking",
+                },
+              )
             }
-            onBlock={() => void onBlockSlot(sheet.barberId, sheet.slot)}
+            onBlock={() => {
+              setBlockSheet({
+                barberId: sheet.barberId,
+                barberName: sheet.barberName,
+                initialStartISO: sheet.slot.startTime,
+                freeUntilISO: sheet.slot.endTime,
+              });
+              setSheet(null);
+            }}
           />
         ) : null}
         <WhoIsFreeSheet
           open={whoFreeOpen}
           rows={freeNow}
+          emptyState={whoIsFreeEmpty}
+          intent={thumbIntent}
           onClose={() => setWhoFreeOpen(false)}
-          onWalkIn={onWalkInFromFreeSheet}
+          onWalkIn={(row) => onPickFreeBarber(row)}
+          onOpenSchedule={() => {
+            setBoardTab("schedule");
+            setWhoFreeOpen(false);
+          }}
+        />
+        {blockSheet ? (
+          <BlockTimeSheet
+            open
+            barberId={blockSheet.barberId}
+            barberName={blockSheet.barberName}
+            column={
+              columns.find((c) => c.barber.id === blockSheet.barberId) ?? {
+                barber: {
+                  id: blockSheet.barberId,
+                  name: blockSheet.barberName,
+                  slot_duration_minutes: 30,
+                  off_days: [],
+                  created_at: "",
+                },
+                slots: [],
+              }
+            }
+            shopHours={shopHours}
+            initialStartISO={blockSheet.initialStartISO}
+            freeUntilISO={blockSheet.freeUntilISO}
+            pending={
+              pendingKind === "block" &&
+              Boolean(pendingKey?.startsWith(`${blockSheet.barberId}:`))
+            }
+            onClose={() => {
+              if (pendingKind !== "block") setBlockSheet(null);
+            }}
+            onConfirm={(input) => void onBlockRange(input)}
+          />
+        ) : null}
+        {unblockSheet ? (
+          <UnblockConfirmSheet
+            open
+            barberName={unblockSheet.barberName}
+            startTime={unblockSheet.startTime}
+            endTime={unblockSheet.endTime}
+            pending={
+              pendingKind === "block" &&
+              pendingKey === `${unblockSheet.barberId}:${unblockSheet.startTime}`
+            }
+            onClose={() => {
+              if (pendingKind !== "block") setUnblockSheet(null);
+            }}
+            onConfirm={() => void confirmUnblock()}
+          />
+        ) : null}
+        <BookedSlotActionsSheet
+          open={Boolean(actionsSheet)}
+          barberId={actionsSheet?.barberId ?? ""}
+          barberName={actionsSheet?.barberName ?? ""}
+          slot={
+            actionsSheet?.slot ?? {
+              startTime: "",
+              endTime: "",
+              available: false,
+              kind: "free",
+            }
+          }
+          pending={Boolean(
+            actionsSheet &&
+              (outcomePendingKey === `${actionsSheet.barberId}:${actionsSheet.slot.startTime}` ||
+                latePendingKey === `${actionsSheet.barberId}:${actionsSheet.slot.startTime}` ||
+                cancelPendingKey === `${actionsSheet.barberId}:${actionsSheet.slot.startTime}`),
+          )}
+          onClose={() => setActionsSheet(null)}
+          onAction={handleBookedSheetAction}
+        />
+        <CompleteServicePicker
+          open={Boolean(servicePicker)}
+          services={shopServices}
+          mode={servicePicker?.mode ?? "complete"}
+          initialServiceId={servicePicker?.slot.serviceId ?? null}
+          customerLabel={servicePicker?.slot.customerName ?? null}
+          pending={Boolean(
+            servicePicker &&
+              (outcomePendingKey ===
+                `${servicePicker.barberId}:${servicePicker.slot.startTime}` ||
+                outcomePendingKey === `${servicePicker.slot.appointmentId}:service`),
+          )}
+          onClose={() => setServicePicker(null)}
+          onConfirm={(choice) => {
+            if (!servicePicker) return;
+            if (servicePicker.mode === "change") {
+              void onChangeCompletedService(servicePicker.slot, choice);
+              return;
+            }
+            void onOutcome(servicePicker.barberId, servicePicker.slot, "completed", {
+              serviceId: choice.serviceId,
+              priceBaht: choice.priceBaht,
+            }).then((ok) => {
+              if (ok) setServicePicker(null);
+            });
+          }}
         />
       </div>
     </AdminShell>

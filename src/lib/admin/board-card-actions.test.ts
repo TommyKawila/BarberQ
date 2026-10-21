@@ -89,6 +89,22 @@ describe("board card cancel for every source", () => {
     assert.equal(flags.canOpenSheet, false);
     assert.equal(flags.canCancel, false);
   });
+
+  it("completed booking opens sheet to change service/price", () => {
+    const flags = getBookedCardActions(
+      bookedSlot({
+        status: "completed",
+        priceBaht: 200,
+        serviceId: "svc-1",
+        serviceName: "ตัดผม + เฟด",
+      }),
+      { canEdit: true },
+    );
+    assert.equal(flags.canOpenSheet, true);
+    assert.equal(flags.canChangeService, true);
+    assert.equal(flags.canComplete, false);
+    assert.equal(flags.canCancel, false);
+  });
 });
 
 describe("LINE cancel push gating", () => {
@@ -110,6 +126,23 @@ describe("board cancel UX wiring", () => {
     assert.match(grid, /getBookedCardActions/);
     assert.match(grid, /admin\.tapForActions/);
     assert.doesNotMatch(grid, /staffCancellable && !markable/);
+  });
+
+  it("gated Walk-in stays tappable (aria-disabled) with visible reason — no native disabled/title tooltip", () => {
+    const grid = readFileSync(
+      resolve(root, "components/admin/QuickBlockGrid.tsx"),
+      "utf8",
+    );
+    const page = readFileSync(resolve(root, "app/admin/page.tsx"), "utf8");
+    assert.match(grid, /aria-disabled=\{gated\}/);
+    assert.match(grid, /walk-in-shop-banner/);
+    assert.match(grid, /walk-in-reason-/);
+    assert.match(grid, /onWalkInQuick\(column\.barber\.id\)/);
+    // Native `disabled={gated}` would block taps on iPad — only aria-disabled is OK.
+    assert.doesNotMatch(grid, /(?<!aria-)disabled=\{gated\}/);
+    assert.doesNotMatch(grid, /\btitle=\{disabledReason\}/);
+    assert.match(page, /walkInShopBanner=\{walkInShopBanner\}/);
+    assert.match(page, /walkInDisabledReason=\{walkInButtonDisabledReason\}/);
   });
 
   it("sheet picks LINE vs non-LINE confirm copy", () => {

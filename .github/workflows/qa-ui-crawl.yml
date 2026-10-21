@@ -1,0 +1,57 @@
+name: QA UI crawl
+
+# Manual only — not a required check. Does not run on PR/push.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: "Target base URL (must be barberq-qa; production is refused)"
+        required: true
+        default: "https://barberq-qa.vercel.app"
+      shop_slug:
+        description: "Shop slug"
+        required: true
+        default: "barberqpilottest"
+
+concurrency:
+  group: qa-ui-crawl-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  crawl:
+    name: Playwright UI crawl (barberq-qa)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run UI QA crawl
+        env:
+          QA_BASE_URL: ${{ inputs.base_url }}
+          QA_SHOP_SLUG: ${{ inputs.shop_slug }}
+          # Optional — set as repo/org Actions secret for admin routes after QA deploy
+          QA_E2E_SECRET: ${{ secrets.QA_E2E_SECRET }}
+        run: npm run qa:crawl
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-ui-report
+          path: report/
+          if-no-files-found: warn
+          retention-days: 14

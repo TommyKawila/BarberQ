@@ -515,7 +515,30 @@ describe("marketing layout split", () => {
     assert.match(trial, /marketing.trial.backHome/);
     assert.match(trial, /marketing.trial.priceExpect/);
     assert.match(trial, /ClarityMarketingScript/);
+    assert.match(trial, /marketing.trial.lineSignup/);
+    assert.match(trial, /resolveClipperqSupportLineUrl/);
     assert.match(nav, /variant === "trial"/);
+  });
+
+  it("ships stable OA rich-menu routes", () => {
+    assert.equal(existsSync(resolve(root, "app/demo/page.tsx")), true);
+    assert.equal(existsSync(resolve(root, "app/demo/board/page.tsx")), true);
+    assert.equal(existsSync(resolve(root, "app/pricing/page.tsx")), true);
+    assert.equal(existsSync(resolve(root, "app/owner/page.tsx")), true);
+    assert.equal(existsSync(resolve(root, "app/guide/page.tsx")), true);
+    const docs = readFileSync(resolve(root, "../docs/line-rich-menu.md"), "utf8");
+    assert.match(docs, /\/trial/);
+    assert.match(docs, /\/demo/);
+    assert.match(docs, /#pricing/);
+    assert.match(docs, /\/owner/);
+    assert.match(docs, /\/guide/);
+    assert.match(docs, /clipperqdemo/);
+    assert.match(docs, /seed_clipperq_demo_prod\.sql/);
+    assert.match(docs, /0042_shops_is_demo\.sql/);
+    assert.match(docs, /Pre-check \(slug free\)/);
+    assert.match(docs, /where slug = 'clipperqdemo'/);
+    assert.match(docs, /read-only|อ่านอย่างเดียว/i);
+    assert.doesNotMatch(docs, /default `phinxstudio`/);
   });
 });
 
@@ -569,7 +592,7 @@ describe("visible marketing claim locks", () => {
     for (const [key, value] of claimKeys) {
       assert.doesNotMatch(value, /\*/, `claim asterisk left on ${key}`);
     }
-    assert.match(th, /1–2/);
+    assert.match(th, /1–2 ช่าง|1–2/);
     assert.match(th, /3–5/);
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);

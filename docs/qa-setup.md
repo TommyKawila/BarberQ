@@ -164,6 +164,7 @@ Endpoint URL ใน Console ต้องชี้ไปที่ **โดเม�
 | `NEXT_PUBLIC_APP_URL` | ใช่ | URL เว็บ QA เช่น `https://barberq-qa.vercel.app` | **ใช่** | ต้องตรง LIFF Endpoint |
 | `SUPERADMIN_TOKEN` | ใช่ | สร้างรหัสสุ่มใหม่สำหรับ QA | **ใช่** | ใช้เข้า `/superadmin` |
 | `BARBERQ_ENV` | ใช่สำหรับ QA tooling | ใส่ค่าคงที่ `founder_qa` | **ใช่** (Production ใช้ `production` หรือว่างตามที่ตั้ง) | บังคับก่อน `qa:verify` / `qa:reset` |
+| `QA_E2E_SECRET` | สำหรับ UI crawl (admin) | สร้างรหัสสุ่มยาว ๆ | **ใช่ — ห้ามใส่ Production** | เปิด `POST /api/qa/e2e-session` เมื่อโปรเจกต์คือ barberq-qa เท่านั้น |
 | `LINE_CHANNEL_ACCESS_TOKEN` | ไม่บังคับ | Messaging API QA | **ใช่** ถ้าใช้ | ไม่มี = จองได้แต่ไม่ส่ง LINE |
 | `NEXT_PUBLIC_LINE_OA_ADD_URL` | ไม่บังคับ | ลิงก์ Add Friend ของ OA QA | ควรเป็นของ QA | ไม่มี = ซ่อนปุ่มเพิ่มเพื่อน |
 | `NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL` | ไม่บังคับ | ลิงก์ซัพพอร์ต | ตามต้องการ | หน้า marketing / trial |
