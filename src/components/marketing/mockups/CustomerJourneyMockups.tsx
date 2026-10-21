@@ -54,7 +54,7 @@ export function CustomerStepPhone({
         // Step 1 asset already has a tall status-bar pad; safeTop's pt+object-cover
         // was cropping glyph tops off ClipperQ Demo. Steps 2–3 keep safeTop.
         safeTop={step !== 1}
-        className="mx-auto w-full max-w-[270px]"
+        className="mx-auto w-full max-w-[200px]"
       />
     );
   }

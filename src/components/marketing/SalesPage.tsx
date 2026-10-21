@@ -546,9 +546,10 @@ export function SalesPage() {
       {/* How it works — mobile compact tabs; desktop 3-column unchanged */}
       <section
         id="how-it-works"
-        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/25 to-zinc-950"
+        data-hide-sticky
+        className="scroll-mt-[4.5rem] overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/25 to-zinc-950 md:scroll-mt-20"
       >
-        <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
+        <div className="mx-auto max-w-[1280px] px-4 pt-6 pb-10 md:px-6 md:py-14">
           <div data-reveal>
             <HowItWorksMobile />
           </div>

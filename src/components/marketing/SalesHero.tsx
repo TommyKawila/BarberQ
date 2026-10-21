@@ -38,7 +38,10 @@ export function SalesHero({
   })();
 
   return (
-    <div className="relative max-w-full overflow-x-clip bg-zinc-950">
+    <>
+      {/* Nav outside overflow-x-clip so position:sticky works on iOS/Safari */}
+      <MarketingNav />
+      <div className="relative max-w-full overflow-x-clip bg-zinc-950">
       {/*
         Desktop (lg+): full-bleed — subject on right, left fade for copy.
         Locked (Tommy hero-composite). Do not change.
@@ -62,8 +65,6 @@ export function SalesHero({
         />
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/40 via-transparent to-zinc-950/25" />
       </div>
-
-      <MarketingNav />
 
       {/*
         Mobile / tablet (<lg): design C — flat zinc-950, text then CTAs then photo.
@@ -187,6 +188,7 @@ export function SalesHero({
           <div className="hidden lg:block" aria-hidden />
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 }

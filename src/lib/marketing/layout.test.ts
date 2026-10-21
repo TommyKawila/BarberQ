@@ -105,14 +105,17 @@ describe("marketing layout split", () => {
     assert.match(mobileHow, /aria-controls/);
     assert.match(mobileHow, /prefers-reduced-motion/);
     assert.match(mobileHow, /IntersectionObserver/);
-    assert.match(mobileHow, /max-w-\[270px\]/);
+    assert.match(mobileHow, /max-w-\[200px\]/);
     assert.match(mobileHow, /marketing\.how\.eyebrow/);
+    assert.match(sales, /scroll-mt-\[4\.5rem\]/);
+    assert.match(sales, /id="how-it-works"[\s\S]*?data-hide-sticky/);
     const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
     assert.match(stepFn, /hidden lg:block/);
     assert.match(stepFn, /size="md"/);
     assert.match(stepFn, /compact/);
     assert.match(stepFn, /safeTop/);
     assert.match(stepFn, /COMPACT_STEP_SCREENS/);
+    assert.match(stepFn, /max-w-\[200px\]/);
     assert.match(mockups, /adminQueueBoard/);
     assert.match(mockups, /chooseCompact/);
     assert.match(mockups, /COMPACT_STEP_SCREENS/);

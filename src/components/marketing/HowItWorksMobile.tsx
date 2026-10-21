@@ -89,7 +89,7 @@ export function HowItWorksMobile() {
       <div
         role="tablist"
         aria-label={t("marketing.how.title")}
-        className="mt-6 flex flex-col gap-1.5"
+        className="mt-4 flex flex-col gap-1"
       >
         {STEPS.map((n) => {
           const Icon = ICONS[n - 1];
@@ -104,7 +104,7 @@ export function HowItWorksMobile() {
               aria-controls={`how-panel-${n}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => selectStep(n)}
-              className={`relative overflow-hidden rounded-xl px-3 py-2.5 text-left transition-colors ${
+              className={`relative overflow-hidden rounded-xl px-3 py-2 text-left transition-colors ${
                 selected
                   ? "bg-zinc-900/80 ring-1 ring-amber-400/40"
                   : "bg-transparent hover:bg-zinc-900/50"
@@ -119,9 +119,11 @@ export function HowItWorksMobile() {
                   <span className="block text-[15px] font-semibold leading-snug text-zinc-50">
                     {t(`marketing.how.${n}.title` as MessageKey)}
                   </span>
-                  <span className="mt-0.5 block text-[13px] leading-snug text-zinc-400">
-                    {t(`marketing.how.${n}.desc` as MessageKey)}
-                  </span>
+                  {selected ? (
+                    <span className="mt-0.5 block text-[13px] leading-snug text-zinc-400">
+                      {t(`marketing.how.${n}.desc` as MessageKey)}
+                    </span>
+                  ) : null}
                 </span>
               </span>
               {selected && autoAdvance && !reducedMotion ? (
@@ -136,7 +138,8 @@ export function HowItWorksMobile() {
         })}
       </div>
 
-      <div className="relative mx-auto mt-6 w-full max-w-[270px]">
+      {/* ~26% smaller than prior 270px so step + phone fit a 390×844 viewport */}
+      <div className="relative mx-auto mt-3 w-full max-w-[200px]">
         {STEPS.map((n) => (
           <div
             key={n}
@@ -155,7 +158,7 @@ export function HowItWorksMobile() {
         ))}
       </div>
 
-      <p className="mt-6 text-center text-[15px] leading-relaxed text-zinc-300">
+      <p className="mt-4 text-center text-[15px] leading-relaxed text-zinc-300">
         {t("marketing.how.micro")}
       </p>
     </div>
