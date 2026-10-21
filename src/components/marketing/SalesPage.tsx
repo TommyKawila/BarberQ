@@ -26,7 +26,7 @@ import {
   LineReminderMockup,
 } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
-import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
+import { ScheduleBoardMockup } from "@/components/marketing/mockups/ScheduleBoardMockup";
 import { TryBookingDemo } from "@/components/marketing/TryBookingDemo";
 import { PainHammerTitle } from "@/components/marketing/PainHammerTitle";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
@@ -518,18 +518,20 @@ export function SalesPage() {
               {t("marketing.line.queueBoardCallout")}
             </p>
             <div className="flex flex-col items-center gap-8 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:gap-12">
-              {/* Magnified admin queue callout — phone in the photo is too small to read */}
+              {/* Magnified ตาราง (schedule) callout — matches the phone tab in the photo */}
               <div className="relative w-full max-w-[220px] sm:max-w-[240px] lg:flex lg:h-full lg:w-auto lg:max-w-none lg:items-stretch">
                 <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85 lg:hidden">
                   {t("marketing.line.queueBoardCallout")}
                 </p>
-                {/* Mobile: width-capped fluid phone. Desktop: match photo row height via grid stretch */}
                 <div className="w-full lg:hidden">
-                  <PhoneScreen screen="adminQueue" fluid sampleLabel />
+                  <ScheduleBoardMockup fluid />
                 </div>
                 <div className="hidden h-full lg:block lg:aspect-[390/844]">
-                  <PhoneScreen screen="adminQueue" matchHeight sampleLabel />
+                  <ScheduleBoardMockup matchHeight />
                 </div>
+                <p className="mt-2 text-center text-[12px] leading-snug text-zinc-400 lg:mt-3">
+                  {t("marketing.line.scheduleTabNote")}
+                </p>
               </div>
               <MarketingPhotoSlot
                 slot="solutionBarberCalm"

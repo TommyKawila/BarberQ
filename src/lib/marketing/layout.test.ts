@@ -109,6 +109,21 @@ describe("marketing layout split", () => {
     assert.match(mobileHow, /marketing\.how\.eyebrow/);
     assert.match(sales, /scroll-mt-\[4\.5rem\]/);
     assert.match(sales, /id="how-it-works"[\s\S]*?data-hide-sticky/);
+    assert.match(sales, /ScheduleBoardMockup/);
+    assert.match(dictionary.th["marketing.line.scheduleTabNote"], /อีกแท็บคือคิววันนี้/);
+    const scheduleMock = readFileSync(
+      resolve(root, "components/marketing/mockups/ScheduleBoardMockup.tsx"),
+      "utf8",
+    );
+    assert.match(scheduleMock, /aria-hidden/);
+    assert.match(scheduleMock, /ว่าง/);
+    assert.match(scheduleMock, /จองแล้ว/);
+    assert.match(scheduleMock, /ตาราง/);
+    assert.match(scheduleMock, /มิกซ์/);
+    assert.match(scheduleMock, /โอ๊ต/);
+    assert.match(scheduleMock, /เจ/);
+    assert.match(scheduleMock, /ตัวอย่าง/);
+    assert.doesNotMatch(scheduleMock, /<button/);
     const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
     assert.match(stepFn, /hidden lg:block/);
     assert.match(stepFn, /size="md"/);
