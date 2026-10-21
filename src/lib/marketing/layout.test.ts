@@ -279,6 +279,33 @@ describe("marketing layout split", () => {
     );
   });
 
+  it("try-booking demo is client-side only with ClipperQ Demo barbers", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const demo = readFileSync(
+      resolve(root, "components/marketing/TryBookingDemo.tsx"),
+      "utf8",
+    );
+    assert.match(sales, /id="try-booking"/);
+    assert.match(sales, /TryBookingDemo/);
+    assert.match(demo, /DEMO_SHOP_DISPLAY_NAME/);
+    assert.match(demo, /มิกซ์/);
+    assert.match(demo, /โอ๊ต/);
+    assert.match(demo, /นนท์/);
+    assert.match(demo, /marketing\.try\.disclaimer/);
+    assert.match(demo, /by ClipperQ|brandFooter/);
+    assert.match(demo, /prefers-reduced-motion/);
+    assert.match(demo, /min-h-11|min-h-12|min-h-14/);
+    assert.doesNotMatch(demo, /fetch\(|supabase|insert|createAppointment/i);
+    assert.equal(
+      dictionary.th["marketing.try.disclaimer"],
+      "ตัวอย่าง — ไม่ได้จองจริง",
+    );
+    assert.match(dictionary.en["marketing.try.disclaimer"], /Demo only/i);
+  });
+
   it("sales page uses progressive scroll reveals", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
@@ -391,6 +418,8 @@ describe("marketing layout split", () => {
       'id="line-messages"',
       "how-it-works",
       "CustomerStepPhone",
+      'id="try-booking"',
+      "TryBookingDemo",
       'id="board"',
       'id="owner"',
       'id="founder"',

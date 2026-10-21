@@ -315,4 +315,19 @@ html[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
   .pain-badge-shake {
     animation: pain-badge-pop 0.42s ease-out;
   }
+
+  .cq-demo-card-enter {
+    animation: cq-demo-card-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes cq-demo-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

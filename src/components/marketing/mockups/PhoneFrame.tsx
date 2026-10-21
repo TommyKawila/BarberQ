@@ -9,6 +9,8 @@ export function PhoneFrame({
   fluid,
   /** Height-driven sizing (width follows 390/844). Use when parent sets height. */
   matchHeight,
+  /** Interactive demos: allow taps and expose content to assistive tech. */
+  interactive = false,
   children,
   className,
 }: {
@@ -16,6 +18,7 @@ export function PhoneFrame({
   width?: number;
   fluid?: boolean;
   matchHeight?: boolean;
+  interactive?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -23,7 +26,7 @@ export function PhoneFrame({
 
   return (
     <div
-      aria-hidden="true"
+      aria-hidden={interactive ? undefined : true}
       style={
         matchHeight
           ? { height: "100%", aspectRatio: "390 / 844" }

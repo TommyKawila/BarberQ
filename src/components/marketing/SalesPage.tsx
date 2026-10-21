@@ -31,6 +31,7 @@ import {
 } from "@/components/marketing/mockups/LineReminderMockup";
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
 import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
+import { TryBookingDemo } from "@/components/marketing/TryBookingDemo";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useSalesPageReveal } from "@/hooks/useSalesPageReveal";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -600,6 +601,30 @@ export function SalesPage() {
             >
               {t("marketing.how.micro")}
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Try booking — client-side demo after how-it-works; no DB / API */}
+      <section
+        id="try-booking"
+        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/30 to-zinc-950"
+      >
+        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
+          <header data-reveal className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-medium tracking-wide text-amber-300/80">
+              {t("marketing.try.eyebrow")}
+            </p>
+            <h2 className="mt-2 text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+              {t("marketing.try.title")}
+            </h2>
+            <p className={`mx-auto mt-3 max-w-xl ${BODY}`}>{t("marketing.try.body")}</p>
+            <p className="mt-3 inline-flex items-center rounded-lg border border-amber-500/35 bg-amber-400/10 px-3.5 py-1.5 text-[13px] font-medium text-amber-200">
+              {t("marketing.try.disclaimer")}
+            </p>
+          </header>
+          <div data-reveal className="mt-10 md:mt-12">
+            <TryBookingDemo />
           </div>
         </div>
       </section>
