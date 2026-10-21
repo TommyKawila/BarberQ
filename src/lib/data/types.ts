@@ -208,7 +208,14 @@ export interface CreateShopInput {
   name: string;
   ownerLineId?: string;
   ownerName?: string;
-  subscriptionMonths: number;
+  /** Calendar months from now (1/3/12). Ignored when subscriptionDays is set. */
+  subscriptionMonths?: number;
+  /** Exact day count (e.g. 30-day trial). Wins over subscriptionMonths. */
+  subscriptionDays?: number;
+  /** With owner: active (default) or trialing. Invite path always pending. */
+  status?: "active" | "trialing";
+  /** Optional trial_leads row to link after create. */
+  trialLeadId?: string | null;
 }
 
 export interface ClaimOwnerInviteInput {
@@ -407,8 +414,14 @@ export interface BookingStore {
   updateTrialLeadStatus(id: string, status: TrialLeadStatus): Promise<TrialLead>;
   updateTrialLead(
     id: string,
-    patch: { status?: TrialLeadStatus; followUpAt?: string | null },
+    patch: {
+      status?: TrialLeadStatus;
+      followUpAt?: string | null;
+      shopId?: string | null;
+    },
   ): Promise<TrialLead>;
   listTrialLeadNotes(leadId: string): Promise<TrialLeadNote[]>;
   createTrialLeadNote(leadId: string, body: string): Promise<TrialLeadNote>;
+  /** Extend subscribed_until by N calendar months from max(now, current). Sets status active if trialing. */
+  extendShopSubscription(shopId: string, months: number): Promise<Shop>;
 }

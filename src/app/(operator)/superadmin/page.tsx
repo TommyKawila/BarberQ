@@ -11,6 +11,14 @@ import {
 } from "@/lib/superadmin/operator-session";
 import type { Shop } from "@/types/booking";
 
+type Prefill = {
+  trialLeadId: string;
+  shopName?: string;
+  ownerName?: string;
+  ownerLineId?: string;
+  subscriptionDays?: number;
+};
+
 export default function SuperAdminPage() {
   const [token, setToken] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -18,6 +26,20 @@ export default function SuperAdminPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const [prefill, setPrefill] = useState<Prefill | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromLead = params.get("fromLead");
+    if (!fromLead) return;
+    setPrefill({
+      trialLeadId: fromLead,
+      shopName: params.get("shopName") ?? undefined,
+      ownerName: params.get("ownerName") ?? undefined,
+      ownerLineId: params.get("ownerLineId") ?? undefined,
+      subscriptionDays: params.get("days") === "30" ? 30 : undefined,
+    });
+  }, []);
 
   const loadShops = useCallback(async (authToken: string) => {
     setLoading(true);
@@ -92,7 +114,11 @@ export default function SuperAdminPage() {
         </Link>
       </header>
 
-      <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />
+      <QuickAddShopForm
+        token={token}
+        prefill={prefill}
+        onSuccess={() => void loadShops(token)}
+      />
 
       <section>
         <h2 className="mb-4 text-xl font-semibold">LINE OA Install Requests</h2>

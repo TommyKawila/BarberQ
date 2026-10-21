@@ -40,6 +40,7 @@ function lead(partial: Partial<TrialLead> & Pick<TrialLead, "id" | "shop_name">)
     referrer: null,
     locale: "th",
     follow_up_at: null,
+    shop_id: null,
     created_at: "2026-09-10T10:00:00.000Z",
     updated_at: "2026-09-10T10:00:00.000Z",
     ...partial,

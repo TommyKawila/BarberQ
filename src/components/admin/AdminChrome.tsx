@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { SubscriptionGate } from "@/components/billing/SubscriptionGate";
 import { adminNavRole, useAdminAuth } from "@/lib/admin/admin-auth-context";
 import { ADMIN_NAV_OFFSET_CLASS } from "@/lib/admin/admin-nav-items";
 
@@ -18,7 +19,7 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
   const auth = useAdminAuth();
 
   if (isBareAdminPath(pathname)) {
-    return <>{children}</>;
+    return <SubscriptionGate>{children}</SubscriptionGate>;
   }
 
   const role = adminNavRole(auth.profile);
@@ -31,7 +32,7 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
           className={`${ADMIN_NAV_OFFSET_CLASS} w-full lg:mx-auto lg:max-w-7xl lg:px-4 xl:px-6`}
           data-testid="admin-chrome-content"
         >
-          {children}
+          <SubscriptionGate>{children}</SubscriptionGate>
         </div>
       </div>
     </div>

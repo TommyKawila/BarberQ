@@ -1,10 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface QuickAddShopFormProps {
   token: string;
   onSuccess: () => void;
+  /** Prefill from trial lead “create shop”. */
+  prefill?: {
+    shopName?: string;
+    ownerName?: string;
+    ownerLineId?: string;
+    trialLeadId?: string;
+    subscriptionDays?: number;
+  } | null;
 }
 
 async function copyText(text: string): Promise<boolean> {
@@ -16,15 +24,27 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
+type DurationMode = "days30" | "m1" | "m3" | "m12";
+
+export function QuickAddShopForm({ token, onSuccess, prefill }: QuickAddShopFormProps) {
   const [shopName, setShopName] = useState("");
   const [ownerLineId, setOwnerLineId] = useState("");
   const [ownerName, setOwnerName] = useState("");
-  const [months, setMonths] = useState(1);
+  const [duration, setDuration] = useState<DurationMode>("m1");
+  const [trialLeadId, setTrialLeadId] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!prefill) return;
+    if (prefill.shopName) setShopName(prefill.shopName);
+    if (prefill.ownerName) setOwnerName(prefill.ownerName);
+    if (prefill.ownerLineId) setOwnerLineId(prefill.ownerLineId);
+    if (prefill.trialLeadId) setTrialLeadId(prefill.trialLeadId);
+    if (prefill.subscriptionDays === 30) setDuration("days30");
+  }, [prefill]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -33,6 +53,17 @@ export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
     setInviteUrl(null);
     setCopied(false);
 
+    const body: Record<string, unknown> = {
+      shopName,
+      ownerLineId: ownerLineId.trim() || undefined,
+      ownerName,
+      trialLeadId: trialLeadId || undefined,
+    };
+    if (duration === "days30") body.subscriptionDays = 30;
+    else if (duration === "m1") body.subscriptionMonths = 1;
+    else if (duration === "m3") body.subscriptionMonths = 3;
+    else body.subscriptionMonths = 12;
+
     try {
       const res = await fetch("/api/superadmin/shops", {
         method: "POST",
@@ -40,12 +71,7 @@ export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
           "Content-Type": "application/json",
           "x-superadmin-token": token,
         },
-        body: JSON.stringify({
-          shopName,
-          ownerLineId: ownerLineId.trim() || undefined,
-          ownerName,
-          subscriptionMonths: months,
-        }),
+        body: JSON.stringify(body),
       });
       const json = (await res.json()) as { error?: string; inviteUrl?: string };
       if (!res.ok) throw new Error(json.error ?? "Failed to create shop");
@@ -56,6 +82,7 @@ export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
         setShopName("");
         setOwnerLineId("");
         setOwnerName("");
+        setTrialLeadId(undefined);
         onSuccess();
       }
     } catch (err) {
@@ -75,6 +102,7 @@ export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
     setShopName("");
     setOwnerLineId("");
     setOwnerName("");
+    setTrialLeadId(undefined);
     setInviteUrl(null);
     setCopied(false);
     onSuccess();
@@ -82,7 +110,9 @@ export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="rounded-xl bg-zinc-900 p-6">
-      <h3 className="mb-4 text-lg font-semibold">Quick Add Shop</h3>
+      <h3 className="mb-4 text-lg font-semibold">
+        {trialLeadId ? "Create Shop from Lead" : "Quick Add Shop"}
+      </h3>
       <div className="space-y-3">
         <input
           required
@@ -104,13 +134,14 @@ export function QuickAddShopForm({ token, onSuccess }: QuickAddShopFormProps) {
           className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 outline-none"
         />
         <select
-          value={months}
-          onChange={(e) => setMonths(Number(e.target.value))}
+          value={duration}
+          onChange={(e) => setDuration(e.target.value as DurationMode)}
           className="w-full rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2 outline-none"
         >
-          <option value={1}>1 month</option>
-          <option value={3}>3 months</option>
-          <option value={12}>12 months</option>
+          <option value="days30">30-day trial</option>
+          <option value="m1">1 month</option>
+          <option value="m3">3 months</option>
+          <option value="m12">12 months</option>
         </select>
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
         {inviteUrl ? (

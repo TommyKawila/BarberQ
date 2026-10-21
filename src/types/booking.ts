@@ -32,7 +32,7 @@ export interface Shop {
   id: string;
   name: string;
   slug: string;
-  status: "pending" | "active" | "suspended" | "cancelled";
+  status: "pending" | "active" | "trialing" | "suspended" | "cancelled";
   subscribed_until: string | null;
   /** Marketing/demo tenant — no LINE pushes, not billed. */
   is_demo?: boolean;

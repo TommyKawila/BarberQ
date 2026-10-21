@@ -93,6 +93,18 @@ export function TrialLeadDetail({
         </div>
         {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
         <LeadContactActions value={lead.contact_value} />
+        {lead.shop_id ? (
+          <p className="mt-3 text-xs text-emerald-400">
+            Linked shop: {lead.shop_id}
+          </p>
+        ) : (
+          <a
+            href={`/superadmin?fromLead=${encodeURIComponent(lead.id)}&shopName=${encodeURIComponent(lead.shop_name)}&ownerName=${encodeURIComponent(lead.contact_name)}&days=30`}
+            className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-amber-500 px-4 text-sm font-semibold text-zinc-950"
+          >
+            Create shop from lead (30-day)
+          </a>
+        )}
       </section>
 
       <div className="flex flex-col gap-4">

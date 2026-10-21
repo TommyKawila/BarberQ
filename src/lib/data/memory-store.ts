@@ -1049,9 +1049,18 @@ export const memoryStore: BookingStore = {
   async createShop(input: CreateShopInput) {
     const name = input.name.trim();
     if (!name) throw new StoreConflict("INVALID_RANGE");
+    if (input.subscriptionDays == null && input.subscriptionMonths == null) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
 
     const ownerLineId = input.ownerLineId?.trim() ?? "";
     const now = nowIso();
+    const subscribedUntil = new Date(
+      Date.now() +
+        (input.subscriptionDays != null
+          ? input.subscriptionDays * 24 * 60 * 60 * 1000
+          : (input.subscriptionMonths ?? 1) * 30 * 24 * 60 * 60 * 1000),
+    ).toISOString();
 
     if (!ownerLineId) {
       const token = inviteToken();
@@ -1060,9 +1069,7 @@ export const memoryStore: BookingStore = {
         name,
         slug: slugifyShopName(name),
         status: "pending",
-        subscribed_until: new Date(
-          Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
-        ).toISOString(),
+        subscribed_until: subscribedUntil,
         invite_token: token,
         invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         created_at: now,
@@ -1080,9 +1087,17 @@ export const memoryStore: BookingStore = {
         remindersEnabled: false,
         reminderLeadMinutes: 120,
         bookingConfirmPushEnabled: true,
-      queueAheadPushEnabled: true,
-      showFlexBrandFooter: true,
+        queueAheadPushEnabled: true,
+        showFlexBrandFooter: true,
       };
+      if (input.trialLeadId) {
+        const lead = getState().trialLeads.find((l) => l.id === input.trialLeadId);
+        if (lead) {
+          lead.shop_id = shop.id;
+          lead.status = "CONVERTED";
+          lead.updated_at = now;
+        }
+      }
       return shop;
     }
 
@@ -1094,10 +1109,8 @@ export const memoryStore: BookingStore = {
       id: uuid(),
       name,
       slug: slugifyShopName(name),
-      status: "active",
-      subscribed_until: new Date(
-        Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
+      status: input.status === "trialing" ? "trialing" : "active",
+      subscribed_until: subscribedUntil,
       invite_token: null,
       invite_expires_at: null,
       created_at: now,
@@ -1130,6 +1143,15 @@ export const memoryStore: BookingStore = {
       shop_id: shop.id,
       is_bookable: false,
     });
+
+    if (input.trialLeadId) {
+      const lead = getState().trialLeads.find((l) => l.id === input.trialLeadId);
+      if (lead) {
+        lead.shop_id = shop.id;
+        lead.status = "CONVERTED";
+        lead.updated_at = now;
+      }
+    }
 
     return shop;
   },
@@ -1585,6 +1607,7 @@ export const memoryStore: BookingStore = {
       referrer: input.referrer ?? null,
       locale: input.locale ?? null,
       follow_up_at: null,
+      shop_id: null,
       created_at: now,
       updated_at: now,
     };
@@ -1604,7 +1627,11 @@ export const memoryStore: BookingStore = {
 
   async updateTrialLead(
     id: string,
-    patch: { status?: TrialLeadStatus; followUpAt?: string | null },
+    patch: {
+      status?: TrialLeadStatus;
+      followUpAt?: string | null;
+      shopId?: string | null;
+    },
   ) {
     if (patch.status && !TRIAL_LEAD_STATUSES.includes(patch.status)) {
       throw new StoreConflict("INVALID_RANGE");
@@ -1613,8 +1640,24 @@ export const memoryStore: BookingStore = {
     if (!row) throw new StoreConflict("NOT_FOUND");
     if (patch.status) row.status = patch.status;
     if (patch.followUpAt !== undefined) row.follow_up_at = patch.followUpAt;
+    if (patch.shopId !== undefined) row.shop_id = patch.shopId;
     row.updated_at = nowIso();
     return { ...row };
+  },
+
+  async extendShopSubscription(shopId: string, months: number) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const base = Math.max(
+      shop.subscribed_until ? new Date(shop.subscribed_until).getTime() : 0,
+      Date.now(),
+    );
+    shop.subscribed_until = new Date(
+      base + Math.max(1, months) * 30 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    if (shop.status === "trialing") shop.status = "active";
+    shop.updated_at = nowIso();
+    return { ...shop };
   },
 
   async listTrialLeadNotes(leadId: string) {

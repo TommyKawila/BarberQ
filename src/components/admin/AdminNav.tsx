@@ -9,6 +9,7 @@ import {
   CalendarDays,
   ChevronRight,
   Clock3,
+  CreditCard,
   ExternalLink,
   MoreHorizontal,
   Store,
@@ -36,6 +37,7 @@ const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
   stats: "admin.nav.stats",
   settings: "admin.nav.settings",
   notifications: "admin.settingsNotifications",
+  billing: "admin.nav.billing",
   booking: "admin.nav.booking",
   more: "admin.nav.more",
 };
@@ -43,6 +45,7 @@ const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
 const MORE_HINTS: Partial<Record<AdminNavDestinationId, MessageKey>> = {
   schedule: "admin.moreScheduleHint",
   settings: "admin.moreSettingsHint",
+  billing: "admin.moreBillingHint",
   notifications: "admin.settingsNotificationsHint",
   booking: "admin.moreBookingHint",
 };
@@ -55,6 +58,7 @@ function NavIcon({ id }: { id: AdminNavItemId }) {
   if (id === "stats") return <BarChart3 size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "schedule") return <Clock3 size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "settings") return <Store size={ICON.size} strokeWidth={ICON.strokeWidth} />;
+  if (id === "billing") return <CreditCard size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "notifications") return <Bell size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "booking") return <ExternalLink size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   return <MoreHorizontal size={ICON.size} strokeWidth={ICON.strokeWidth} />;
@@ -96,6 +100,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     stats: shopPath(ADMIN_NAV_PATHS.stats),
     settings: shopPath(ADMIN_NAV_PATHS.settings),
     notifications: shopPath(ADMIN_NAV_PATHS.notifications),
+    billing: shopPath(ADMIN_NAV_PATHS.billing),
     booking: shopPath(ADMIN_NAV_PATHS.booking),
   };
 
