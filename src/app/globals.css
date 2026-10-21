@@ -372,12 +372,42 @@ html[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
   .cq-demo-card-enter {
     animation: cq-demo-card-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
+
+  .cq-demo-toast-enter {
+    animation: cq-demo-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cq-demo-queue-pop {
+    animation: cq-demo-queue-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 @keyframes cq-demo-card-in {
   from {
     opacity: 0;
     transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cq-demo-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cq-demo-queue-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
   }
   to {
     opacity: 1;

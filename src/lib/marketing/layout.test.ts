@@ -296,24 +296,41 @@ describe("marketing layout split", () => {
     );
     assert.match(sales, /id="try-booking"/);
     assert.match(sales, /TryBookingDemo/);
+    assert.match(sales, /marketing\.try\.featureWalkin/);
+    assert.match(sales, /marketing\.try\.featureQr/);
+    assert.match(sales, /marketing\.try\.featurePush/);
+    assert.doesNotMatch(sales, /OwnerSurfacePhone/);
     assert.match(demo, /DEMO_SHOP_DISPLAY_NAME/);
     assert.match(demo, /มิกซ์/);
     assert.match(demo, /โอ๊ต/);
     assert.match(demo, /นนท์/);
+    assert.doesNotMatch(demo, /นัท|แสบ|ไกด์|ไทด์|Saeb|Tide/);
     assert.match(demo, /marketing\.try\.disclaimer/);
     assert.match(demo, /marketing\.try\.tapBarber/);
+    assert.match(demo, /marketing\.try\.tabCustomer/);
+    assert.match(demo, /marketing\.try\.tabShop/);
+    assert.match(demo, /marketing\.try\.seeShop/);
+    assert.match(demo, /marketing\.try\.toastNotified/);
+    assert.match(demo, /marketing\.try\.statusStart/);
+    assert.match(demo, /marketing\.try\.statusDone/);
+    assert.match(demo, /marketing\.try\.statusNoShow/);
     assert.match(demo, /data-demo-tap-hint/);
     assert.match(demo, /data-hide-sticky/);
     assert.match(demo, /data-demo-reset/);
+    assert.match(demo, /data-demo-toast/);
+    assert.match(demo, /data-demo-summary/);
     assert.match(demo, /by ClipperQ|brandFooter/);
     assert.match(demo, /prefers-reduced-motion/);
     assert.match(demo, /min-h-11|min-h-12|min-h-14/);
+    assert.match(demo, /max-h-\[640px\]/);
     assert.doesNotMatch(demo, /fetch\(|supabase|insert|createAppointment/i);
     assert.equal(
       dictionary.th["marketing.try.disclaimer"],
       "ตัวอย่าง — ไม่ได้จองจริง",
     );
     assert.equal(dictionary.th["marketing.try.tapBarber"], "แตะเลือกช่าง");
+    assert.equal(dictionary.th["marketing.try.reset"], "เริ่มใหม่");
+    assert.match(dictionary.th["marketing.try.toastNotified"], /แจ้งเตือนถึงช่าง/);
     assert.match(dictionary.en["marketing.try.disclaimer"], /Demo only/i);
   });
 
@@ -464,12 +481,12 @@ describe("marketing layout split", () => {
       "SalesHero",
       'id="try-booking"',
       "TryBookingDemo",
+      'id="board"',
+      'id="owner"',
       "marketing.pain",
       'id="line-messages"',
       "how-it-works",
       "CustomerStepPhone",
-      'id="board"',
-      'id="owner"',
       'id="founder"',
       'id="pricing"',
       "marketingOffer.tiers",
