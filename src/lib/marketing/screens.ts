@@ -1,9 +1,10 @@
 /** Marketing product screens captured via Playwright (390×844 @2x → WebP). */
 export const marketingScreens = {
   landing: "/marketing/screens/shop-landing.webp",
-  choose: "/marketing/screens/choose-slot.webp",
+  /** ClipperQ Demo barbers (มิกซ์/โอ๊ต/เจ/นนท์) — -demo filenames bust stale image cache. */
+  choose: "/marketing/screens/choose-slot-demo.webp",
   /** Compact how-it-works step 1: full BrandMark + extra status-bar breathing room. */
-  chooseCompact: "/marketing/screens/choose-booking-v3.webp",
+  chooseCompact: "/marketing/screens/choose-booking-demo.webp",
   summary: "/marketing/screens/booking-summary.webp",
   ticket: "/marketing/screens/queue-ticket.webp",
   /** Demo-shop sample queues (มิกซ์/โอ๊ต/เจ/นนท์) — v2 filenames bust stale CDN/image cache. */

@@ -137,8 +137,8 @@ describe("marketing layout split", () => {
       "admin-queue-board-demo.webp missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/choose-booking-v3.webp")),
-      "choose-booking-v3.webp missing",
+      existsSync(resolve(root, "../public/marketing/screens/choose-booking-demo.webp")),
+      "choose-booking-demo.webp missing",
     );
     assert.match(dictionary.th["marketing.how.1.desc"], /เลือกช่าง|วัน|เวลา/);
     assert.match(dictionary.th["marketing.how.2.title"], /บัตรคิว/);
@@ -261,8 +261,8 @@ describe("marketing layout split", () => {
       "founder.webp missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
-      "choose-slot.webp missing",
+      existsSync(resolve(root, "../public/marketing/screens/choose-slot-demo.webp")),
+      "choose-slot-demo.webp missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/admin-queue-demo.webp")),

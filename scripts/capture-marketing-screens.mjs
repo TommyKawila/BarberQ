@@ -105,7 +105,11 @@ async function main() {
   await waitForServer(BASE);
   await renameShop(BASE);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || "/usr/local/bin/google-chrome",
+    headless: true,
+    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+  });
   const context = await browser.newContext({
     viewport: VIEW,
     deviceScaleFactor: SCALE,
@@ -180,11 +184,14 @@ async function main() {
 
   const available = await ensureAvailableSlots();
   await page.waitForTimeout(400);
-  await shot(page, "choose-slot");
+  await shot(page, "choose-slot-demo");
   // Compact how-it-works step 1 uses the same frame (BrandMark unlock styles above).
-  await sharp(join(RAW_OUT, "choose-slot.webp")).toFile(join(RAW_OUT, "choose-booking-v3.webp"));
-  await sharp(join(OUT, "choose-slot.webp")).toFile(join(OUT, "choose-booking-v3.webp"));
-  console.log("wrote", join(RAW_OUT, "choose-booking-v3.webp"));
+  await sharp(join(RAW_OUT, "choose-slot-demo.webp")).toFile(join(RAW_OUT, "choose-booking-demo.webp"));
+  await sharp(join(OUT, "choose-slot-demo.webp")).toFile(join(OUT, "choose-booking-demo.webp"));
+  // Keep legacy names in sync for hand-phone composite source.
+  await sharp(join(RAW_OUT, "choose-slot-demo.webp")).toFile(join(RAW_OUT, "choose-slot.webp"));
+  await sharp(join(OUT, "choose-slot-demo.webp")).toFile(join(OUT, "choose-slot.webp"));
+  console.log("wrote", join(RAW_OUT, "choose-booking-demo.webp"));
 
   // 3) Summary — pick first available slot
   await available.first().click();
