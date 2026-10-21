@@ -1,90 +1,59 @@
-# รายงาน UI QA Crawl — ClipperQ (barberq-qa) · Phase 3
+# รายงาน UI QA Crawl — ClipperQ (barberq-qa) · Phase 4
 
-- **เป้าหมาย:** `https://barberq-qa.vercel.app` (เท่านั้น — ไม่แตะ production)
+- **เป้าหมาย:** `https://barberq-qa.vercel.app`
 - **ร้าน:** `barberqpilottest`
-- **เริ่ม:** 2026-10-20T23:23:02.798Z
-- **จบ:** 2026-10-20T23:28:03.709Z
-- **โหมด auth:** `qa-e2e`
-- **auth ต่อ viewport:** `{"iphone": "chrome=true cookie=true storage=true", "ipad": "chrome=true cookie=true storage=true", "desktop": "chrome=true cookie=true storage=true"}`
-- **สถานะรวม:** **FAIL** — fail=15 · warn=58 · info=6
-- **ภาพหน้าจอ:** 60 / 60 (ครบทุกหน้า × 3 ขนาด รวม admin ที่ login แล้ว)
-- **Artifact:** `/opt/cursor/artifacts/qa-ui-crawl/`
-- **Head ที่ crawl ใช้ (crawler local):** sessionStorage reinject + wait-for-chrome
-- **Deployed tap-target fixes:** barberq-qa production @ `3b677dd` (+ crawler push `3fe69c3`)
+- **เริ่ม:** 2026-10-20T23:59:45.070Z
+- **จบ:** 2026-10-21T00:04:28.354Z
+- **โหมด auth:** `qa-e2e` · `{"iphone": "chrome=true cookie=true storage=true", "ipad": "chrome=true cookie=true storage=true", "desktop": "chrome=true cookie=true storage=true"}`
+- **สถานะรวม:** **WARN** — fail=0 · warn=34 · info=9
+- **ภาพหน้าจอ:** 60/60
+- **Deploy:** barberq-qa @ `cbc40af`
 
-## สิ่งที่แก้ใน Phase 3 (แล้ว verify ด้วย crawl)
+## Phase 4 — สิ่งที่แก้แล้ว (verify ด้วย crawl)
 
-1. **Crawler auth race:** รอ admin chrome / cookie+sessionStorage (timeout 45s) แทน sleep 2.5s; auth แยกต่อ viewport; reinject sessionStorage หลังปิดหน้า login (Chromium ล้างเมื่อปิดแท็บสุดท้าย)
-2. **เป้าแตะสูง ≥44px:** LanguageToggle, marketing footer/nav links, Guide tabs, BarberQxLogo link, pilot “กลับ Super Admin”
-3. **Admin login สำเร็จทั้ง iPhone/iPad/Desktop** — `auth_redirect=0`, `skippedAuth=[]`
+| # | เป้าหมาย | ผล |
+|---|---|---|
+| 1 | Sticky CTA ทับ bottom nav (schedule/services/LINE) | **ผ่าน** — ย้าย CTA เข้า `AdminShell` thumbBar + pb-28; overlap fail=0 |
+| 2 | More menu latency | **ผ่าน** — iPhone ~50ms; iPad/desktop info; ไม่มี fail (แก้ locator + waitForFunction) |
+| 3 | เปิดรับคิว + ลูกศรวันที่ ≥44×44 | **ผ่าน** — ไม่เหลือใน small_tap |
+| 4 | Guide inline/download ≥44px สูง | **ผ่าน** |
+| 5 | คิวและราคา outside viewport | **ผ่าน** — section chips ใช้ flex-wrap |
 
-## สรุปตามหัวข้อที่ขอ
+## Latency (admin Today)
 
-| หัวข้อ | ผล |
-|---|---|
-| Admin pages logged in | **ใช่** — Today/Team/Summary (+ อื่นๆ) มี screenshot บอร์ดจริงครบ 3 ขนาด |
-| ปุ่มไม่มี pressed/active (`no_tap_feedback`) | **ไม่พบ** (0) |
-| Navigation >1s | **พบ** — “More menu” fail บนทั้ง 3 viewport (iphone ~34s / ipad·desktop ~4s); Today/Team/Summary ~75–80ms (info) |
-| Layout / overlap / console | **fail overlapping_interactive** บน admin-schedule/services/line (iPhone) — sticky CTA ทับ bottom nav; `outside_viewport` warn 2 รายการ |
-| เป้าแตะที่ Phase 3 ตั้งใจแก้ | สูงของ ไทย/EN, Guide tabs, logo, Super Admin, footer **ผ่านความสูง 44** — ยังเหลือความกว้าง <44 บนข้อความสั้น (วิธีใช้/ราคา) และเป้าใหม่บน admin |
+- info: iphone — นำทาง “More menu” ใช้เวลา 45ms
+- info: ipad — นำทาง “More menu” ใช้เวลา 45ms
+- info: ipad — นำทาง “Today” ใช้เวลา 83ms
+- info: ipad — นำทาง “Team” ใช้เวลา 76ms
+- info: ipad — นำทาง “Summary” ใช้เวลา 81ms
+- info: desktop — นำทาง “More menu” ใช้เวลา 60ms
+- info: desktop — นำทาง “Today” ใช้เวลา 81ms
+- info: desktop — นำทาง “Team” ใช้เวลา 77ms
+- info: desktop — นำทาง “Summary” ใช้เวลา 82ms
 
-## Top issues (จัดอันดับ — ยังไม่แก้ในรอบนี้)
+## ที่ยังเหลือ (warn — ไม่แก้ในรอบนี้)
 
-1. **[fail] Sticky CTA ทับ bottom nav (iPhone)** — `overlapping_interactive` บน admin-schedule (`เพิ่มเวลาพัก`), admin-services (`เพิ่มบริการ`), admin-line (`เสร็จสิ้น`) ทับปุ่มนำทาง “วันนี้/ทีมช่าง/สรุป/เพิ่มเติม”
-2. **[fail] More menu latency** — เปิด “เพิ่มเติม” แล้วรอ dialog นานเกิน: iPhone 34004ms, iPad 4034ms, desktop 4018ms (อาจเมนูไม่ขึ้นเป็น dialog ที่ crawler คาด)
-3. **[warn] เป้าแตะ admin ใหม่** — “✓ เปิดรับคิว” 96×32; ลูกศรวันที่ ‹ › 36×44; ลิงก์ย้อนกลับตั้งค่า
-4. **[warn] Footer/nav ข้อความสั้น กว้าง <44** — วิธีใช้/ราคา/คำถาม/ฟีเจอร์ (สูง 44 แล้ว แต่กว้าง 28–39)
-5. **[warn] Guide inline links** — “ทดลองใช้ฟรี 30 วัน”, “สมัครผ่าน LINE”, ลิงก์ดาวน์โหลด rich-menu สูง 23–25px
-6. **[warn] outside_viewport** — องค์ประกอบ “คิวและราคา” นอก viewport (2)
-7. **[info] Today/Team/Summary nav** — ~75–80ms ผ่านเกณฑ์
-8. **[ข้อมูล] ไม่พบ no_tap_feedback** บนหน้าที่ crawl
+1. Footer/nav ข้อความสั้น **กว้าง** <44 (สูง 44 แล้ว): วิธีใช้/ราคา/คำถาม/ฟีเจอร์
+2. ลิงก์ย้อนกลับตั้งค่า / ดูโควตา / เวลาเปิดร้าน — สูง <44
+3. Guide FAQ ลิงก์อื่น (`/demo`, `/owner`, หน้าราคา) สูง ~25px
 
-## สรุปรหัสปัญหา
+## สรุปรหัส
 
-- `small_tap_target`: 56
-- `overlapping_interactive`: 12
+- `small_tap_target`: 34
 - `nav_latency`: 9
-- `outside_viewport`: 2
 
-### Fail detail
+### เป้าแตะเล็กที่เหลือ
 
-#### `nav_latency` (3)
-- admin-today/iphone: นำทาง “More menu” ใช้เวลา 34004ms
-- admin-today/ipad: นำทาง “More menu” ใช้เวลา 4034ms
-- admin-today/desktop: นำทาง “More menu” ใช้เวลา 4018ms
-
-#### `overlapping_interactive` (12)
-- admin-schedule/iphone: ปุ่ม/ลิงก์ทับกัน: “วันนี้” ∩ “เพิ่มเวลาพัก”
-- admin-schedule/iphone: ปุ่ม/ลิงก์ทับกัน: “ทีมช่าง” ∩ “เพิ่มเวลาพัก”
-- admin-schedule/iphone: ปุ่ม/ลิงก์ทับกัน: “สรุป” ∩ “เพิ่มเวลาพัก”
-- admin-schedule/iphone: ปุ่ม/ลิงก์ทับกัน: “เพิ่มเติม” ∩ “เพิ่มเวลาพัก”
-- admin-services/iphone: ปุ่ม/ลิงก์ทับกัน: “วันนี้” ∩ “เพิ่มบริการ”
-- admin-services/iphone: ปุ่ม/ลิงก์ทับกัน: “ทีมช่าง” ∩ “เพิ่มบริการ”
-- admin-services/iphone: ปุ่ม/ลิงก์ทับกัน: “สรุป” ∩ “เพิ่มบริการ”
-- admin-services/iphone: ปุ่ม/ลิงก์ทับกัน: “เพิ่มเติม” ∩ “เพิ่มบริการ”
-- admin-line/iphone: ปุ่ม/ลิงก์ทับกัน: “วันนี้” ∩ “เสร็จสิ้น”
-- admin-line/iphone: ปุ่ม/ลิงก์ทับกัน: “ทีมช่าง” ∩ “เสร็จสิ้น”
-- admin-line/iphone: ปุ่ม/ลิงก์ทับกัน: “สรุป” ∩ “เสร็จสิ้น”
-- admin-line/iphone: ปุ่ม/ลิงก์ทับกัน: “เพิ่มเติม” ∩ “เสร็จสิ้น”
-
-### เป้าแตะเล็กที่เหลือ (จัดกลุ่ม)
-
-| ครั้ง | ป้าย (ขนาด) | หน้าตัวอย่าง |
+| ครั้ง | ป้าย | หน้า |
 |---:|---|---|
-| 8 | ✓ เปิดรับคิว (96×32) | admin-team |
-| 4 | ‹ (36×44) | admin-login, admin-today |
-| 4 | › (36×44) | admin-login, admin-today |
 | 3 | วิธีใช้ (29×44) | sales-home |
 | 3 | ราคา (28×44) | sales-home |
 | 3 | คำถาม (39×44) | sales-home |
-| 2 | ทดลองใช้ฟรี 30 วัน (111×23) | guide |
-| 2 | สมัครผ่าน LINE (91×23) | guide |
-| 2 | ดาวน์โหลด shop-large.png (176×25) | guide |
-| 2 | ดาวน์โหลด shop-compact.png (201×25) | guide |
-| 2 | shop-large-nologo.png (163×25) | guide |
-| 2 | shop-compact-nologo.png (188×25) | guide |
-| 2 | shop-large-longname.png (185×25) | guide |
-| 2 | shop-compact-longname.png (210×25) | guide |
+| 2 | เปิดหน้าทดลองใช้ (103×25) | guide |
+| 2 | /demo (46×25) | guide |
+| 2 | /demo/board (92×25) | guide |
+| 2 | หน้าราคา (55×25) | guide |
+| 2 | /owner (51×25) | guide |
 | 2 | เวลาเปิดร้าน (73×23) | admin-schedule |
 | 2 | < ตั้งค่า (44×23) | admin-notifications |
 | 2 | กลับ (21×18) | admin-services |
@@ -94,7 +63,7 @@
 | 2 | ← ตั้งค่า (736×20) | admin-qr-queue-settings, admin-reminders |
 | 1 | ฟีเจอร์ (39×44) | sales-home |
 
-## ภาพหน้าจอต่อหน้า / ขนาด
+## ภาพหน้าจอ
 
 | หน้า | path | iPhone | iPad | Desktop |
 |---|---|---|---|---|
@@ -119,13 +88,3 @@
 | `admin-reminders` | `/barberqpilottest/admin/settings/reminders` | [✓](screenshots/admin-reminders__iphone.png) | [✓](screenshots/admin-reminders__ipad.png) | [✓](screenshots/admin-reminders__desktop.png) |
 | `admin-setup` | `/barberqpilottest/admin/setup` | [✓](screenshots/admin-setup__iphone.png) | [✓](screenshots/admin-setup__ipad.png) | [✓](screenshots/admin-setup__desktop.png) |
 
-## ไฟล์ประกอบ
-
-- HTML: artifact `qa-ui-crawl/index.html`
-- JSON: artifact `qa-ui-crawl/summary.json`
-- Screenshots: artifact `qa-ui-crawl/screenshots/` (60 ไฟล์)
-- Admin samples: `screenshots/qa-p3-admin-today-iphone.png`, `qa-p3-admin-team-iphone.png`, `qa-p3-admin-summary-iphone.png`
-
-## ไม่ได้แก้บั๊ก admin ใหม่ในรอบนี้
-
-Phase 3 แก้ crawler auth + เป้าแตะที่ระบุเท่านั้น — fail/warn ใหม่บน admin รายงานอย่างเดียว
