@@ -452,6 +452,7 @@ export default function EditBarberPage() {
 
         <div
           className={ADMIN_STICKY_SAVE_BAR_CLASS}
+          data-cq-sticky-save="true"
           data-testid="admin-sticky-save-bar"
         >
           <div className="mx-auto flex max-w-7xl gap-2 lg:px-4 xl:px-6">

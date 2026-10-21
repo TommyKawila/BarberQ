@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Clock3,
   ExternalLink,
+  LifeBuoy,
   MoreHorizontal,
   Store,
   Users,
@@ -305,6 +306,29 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             </p>
             <div className="mt-4 flex flex-col gap-2 pb-3">
               {renderMoreLinks(false)}
+              <Link
+                href={shopPath("/admin/support/reports")}
+                prefetch
+                onClick={() => {
+                  setPendingPath(shopPath("/admin/support/reports"));
+                  closeMore("mobile");
+                }}
+                className="cq-press flex min-h-14 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-3 text-left"
+                data-testid="admin-nav-my-reports"
+              >
+                <span className="text-amber-400">
+                  <LifeBuoy size={ICON.size} strokeWidth={ICON.strokeWidth} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold">
+                    {t("admin.nav.myReports")}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-zinc-400">
+                    {t("admin.moreMyReportsHint")}
+                  </span>
+                </span>
+                <ChevronRight size={18} className="shrink-0 text-zinc-500" />
+              </Link>
               <button
                 type="button"
                 onClick={() => closeMore("mobile")}
@@ -335,7 +359,24 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             <p className="mb-2 px-3 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
               {t("admin.nav.more")}
             </p>
-            <div className="flex flex-col gap-0.5">{renderMoreLinks(true)}</div>
+            <div className="flex flex-col gap-0.5">
+              {renderMoreLinks(true)}
+              <Link
+                href={shopPath("/admin/support/reports")}
+                prefetch
+                onClick={() => {
+                  setPendingPath(shopPath("/admin/support/reports"));
+                  closeMore("side");
+                }}
+                className="cq-press flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+                data-testid="admin-nav-my-reports-side"
+              >
+                <span className="text-amber-400/90">
+                  <LifeBuoy size={ICON.size} strokeWidth={ICON.strokeWidth} />
+                </span>
+                <span className="min-w-0 truncate">{t("admin.nav.myReports")}</span>
+              </Link>
+            </div>
           </div>
         ) : null}
       </aside>

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { AdminNav } from "@/components/admin/AdminNav";
+import { HelpFab } from "@/components/support/HelpFab";
 import { adminNavRole, useAdminAuth } from "@/lib/admin/admin-auth-context";
 import { ADMIN_NAV_OFFSET_CLASS } from "@/lib/admin/admin-nav-items";
 
@@ -18,7 +19,12 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
   const auth = useAdminAuth();
 
   if (isBareAdminPath(pathname)) {
-    return <>{children}</>;
+    return (
+      <>
+        {children}
+        <HelpFab />
+      </>
+    );
   }
 
   const role = adminNavRole(auth.profile);
@@ -34,6 +40,7 @@ export function AdminChrome({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </div>
+      <HelpFab />
     </div>
   );
 }

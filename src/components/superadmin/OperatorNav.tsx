@@ -9,6 +9,7 @@ import { useI18n } from "@/lib/i18n/locale-provider";
 const LINKS = [
   { href: "/superadmin", key: "superadmin.crm.nav.shops" as const, exact: true },
   { href: "/superadmin/trial-leads", key: "superadmin.crm.nav.leads" as const, exact: false },
+  { href: "/superadmin/support", key: "superadmin.crm.nav.support" as const, exact: false },
 ];
 
 export function OperatorNav() {
