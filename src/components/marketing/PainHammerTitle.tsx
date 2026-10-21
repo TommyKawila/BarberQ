@@ -66,7 +66,7 @@ export function PainHammerTitle() {
     <h2
       ref={headingRef}
       data-pain-hammer-title
-      className="text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] lg:text-[58px] xl:text-[64px]"
+      className="text-center text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] md:text-left lg:text-[58px] xl:text-[64px]"
     >
       <span
         ref={line1Ref}

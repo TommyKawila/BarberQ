@@ -322,6 +322,8 @@ describe("marketing layout split", () => {
     assert.match(hammer, /IntersectionObserver/);
     assert.match(hammer, /prefers-reduced-motion/);
     assert.match(hammer, /pain-hammer-hit/);
+    assert.match(hammer, /text-center/);
+    assert.match(hammer, /md:text-left/);
     assert.match(css, /pain-hammer-in/);
     assert.match(css, /data-pain-hammer/);
   });
