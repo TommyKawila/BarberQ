@@ -22,7 +22,7 @@ export interface ShopActivation {
 }
 
 export function deriveShopActivation(input: ShopActivationInput): ShopActivation {
-  const claimed = input.shopStatus === "active";
+  const claimed = input.shopStatus === "active" || input.shopStatus === "trialing";
   const profileOk = Boolean(input.shopName?.trim());
   const bookableCount = input.barbers.filter(
     (b) => b.is_active !== false && b.is_bookable !== false,

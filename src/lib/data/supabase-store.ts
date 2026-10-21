@@ -1116,17 +1116,35 @@ export const supabaseStore: BookingStore = {
   async createShop(input: CreateShopInput) {
     const supabase = createServiceClient();
     const ownerLineId = input.ownerLineId?.trim() ?? "";
+    if (input.subscriptionDays == null && input.subscriptionMonths == null) {
+      throw new StoreConflict("INVALID_RANGE");
+    }
+    const months =
+      input.subscriptionDays != null ? null : (input.subscriptionMonths ?? null);
+    const days = input.subscriptionDays ?? null;
 
     if (!ownerLineId) {
       const { data, error } = await supabase.rpc("create_shop_invite", {
         p_shop_name: input.name,
-        p_subscription_months: input.subscriptionMonths,
+        p_subscription_months: months,
+        p_subscription_days: days,
       });
       if (error) mapRpcError(error);
 
       const result = data as { shop_id?: string } | null;
       const shopId = result?.shop_id;
       if (!shopId) throw new Error("Shop creation failed");
+
+      if (input.trialLeadId) {
+        await supabase
+          .from("trial_leads")
+          .update({
+            shop_id: shopId,
+            status: "CONVERTED",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", input.trialLeadId);
+      }
 
       const { data: shop, error: shopError } = await supabase
         .from("shops")
@@ -1142,13 +1160,26 @@ export const supabaseStore: BookingStore = {
       p_shop_name: input.name,
       p_owner_line_id: ownerLineId,
       p_owner_name: input.ownerName ?? "Owner",
-      p_subscription_months: input.subscriptionMonths,
+      p_subscription_months: months,
+      p_subscription_days: days,
+      p_status: input.status === "trialing" ? "trialing" : "active",
     });
     if (error) mapRpcError(error);
 
     const result = data as { shop_id?: string } | null;
     const shopId = result?.shop_id;
     if (!shopId) throw new Error("Shop creation failed");
+
+    if (input.trialLeadId) {
+      await supabase
+        .from("trial_leads")
+        .update({
+          shop_id: shopId,
+          status: "CONVERTED",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.trialLeadId);
+    }
 
     const { data: shop, error: shopError } = await supabase
       .from("shops")
@@ -1711,7 +1742,11 @@ export const supabaseStore: BookingStore = {
 
   async updateTrialLead(
     id: string,
-    patch: { status?: TrialLeadStatus; followUpAt?: string | null },
+    patch: {
+      status?: TrialLeadStatus;
+      followUpAt?: string | null;
+      shopId?: string | null;
+    },
   ) {
     if (patch.status && !TRIAL_LEAD_STATUSES.includes(patch.status)) {
       throw new StoreConflict("INVALID_RANGE");
@@ -1720,6 +1755,7 @@ export const supabaseStore: BookingStore = {
     const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (patch.status) update.status = patch.status;
     if (patch.followUpAt !== undefined) update.follow_up_at = patch.followUpAt;
+    if (patch.shopId !== undefined) update.shop_id = patch.shopId;
     const { data, error } = await supabase
       .from("trial_leads")
       .update(update)
@@ -1729,6 +1765,50 @@ export const supabaseStore: BookingStore = {
     if (error) throw new Error(error.message);
     if (!data) throw new StoreConflict("NOT_FOUND");
     return data as TrialLead;
+  },
+
+  async extendShopSubscription(shopId: string, months: number) {
+    const supabase = createServiceClient();
+    if (months === 1) {
+      const { data, error } = await supabase.rpc("extend_shop_subscription_one_month", {
+        p_shop_id: shopId,
+      });
+      if (error) mapRpcError(error);
+      void data;
+    } else {
+      const { data: shopRow, error: readErr } = await supabase
+        .from("shops")
+        .select("*")
+        .eq("id", shopId)
+        .maybeSingle();
+      if (readErr) throw new Error(readErr.message);
+      if (!shopRow) throw new StoreConflict("NOT_FOUND");
+      const current = shopRow as Shop;
+      const base = Math.max(
+        current.subscribed_until ? new Date(current.subscribed_until).getTime() : 0,
+        Date.now(),
+      );
+      const next = new Date(base);
+      next.setUTCMonth(next.getUTCMonth() + Math.max(1, months));
+      const { error: updErr } = await supabase
+        .from("shops")
+        .update({
+          subscribed_until: next.toISOString(),
+          status: current.status === "trialing" ? "active" : current.status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", shopId);
+      if (updErr) throw new Error(updErr.message);
+    }
+
+    const { data: shop, error } = await supabase
+      .from("shops")
+      .select("*")
+      .eq("id", shopId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    return shop as Shop;
   },
 
   async listTrialLeadNotes(leadId: string) {

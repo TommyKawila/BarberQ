@@ -60,10 +60,13 @@ export async function POST(req: Request) {
       ownerLineId?: string;
       ownerName?: string;
       subscriptionMonths?: number;
+      subscriptionDays?: number;
+      trialLeadId?: string | null;
     };
 
-    const { shopName, ownerLineId, ownerName, subscriptionMonths } = body;
-    if (!shopName || !subscriptionMonths) {
+    const { shopName, ownerLineId, ownerName, subscriptionMonths, subscriptionDays, trialLeadId } =
+      body;
+    if (!shopName || (subscriptionMonths == null && subscriptionDays == null)) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
@@ -71,11 +74,40 @@ export async function POST(req: Request) {
       name: shopName,
       ownerLineId: ownerLineId?.trim() || undefined,
       ownerName: ownerName || "Owner",
-      subscriptionMonths,
+      subscriptionMonths:
+        subscriptionDays != null ? undefined : subscriptionMonths,
+      subscriptionDays: subscriptionDays ?? undefined,
+      trialLeadId: trialLeadId ?? undefined,
     });
 
     const inviteUrl =
       shop.invite_token ? buildOwnerInviteUrl(shop.invite_token) : undefined;
+
+    if (!ownerLineId?.trim()) {
+      const { formatShopCreatedMessage, notifyOperator } = await import(
+        "@/lib/billing/operator-notify"
+      );
+      void notifyOperator(
+        "shop_created",
+        formatShopCreatedMessage({
+          shopName: shop.name,
+          shopSlug: shop.slug,
+          mode: "invite",
+        }),
+      );
+    } else {
+      const { formatShopCreatedMessage, notifyOperator } = await import(
+        "@/lib/billing/operator-notify"
+      );
+      void notifyOperator(
+        "shop_created",
+        formatShopCreatedMessage({
+          shopName: shop.name,
+          shopSlug: shop.slug,
+          mode: "with_owner",
+        }),
+      );
+    }
 
     return NextResponse.json({ shop, inviteUrl }, { status: 201 });
   } catch (err) {

@@ -21,6 +21,8 @@ export interface TrialLead {
   referrer: string | null;
   locale: string | null;
   follow_up_at: string | null;
+  /** Linked shop when converted / self-serve trial started. */
+  shop_id: string | null;
   created_at: string;
   updated_at: string;
 }

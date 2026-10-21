@@ -213,12 +213,18 @@ export function TrialForm() {
               </li>
             ))}
           </ul>
+          <Link
+            href="/start-trial"
+            className="mt-6 inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-xl bg-amber-400 px-6 py-3 text-[15px] font-semibold text-zinc-950"
+          >
+            เริ่มทดลอง 30 วันด้วย LINE
+          </Link>
           <a
             href={supportUrl}
             target="_blank"
             rel="noopener noreferrer"
             onClick={() => trackMarketingEvent("support_line_click")}
-            className="mt-6 inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-xl border border-[#F6AD34]/60 bg-transparent px-6 py-3 text-[15px] font-semibold text-[#F6AD34] hover:bg-[#F6AD34]/10"
+            className="mt-3 inline-flex min-h-12 w-full max-w-sm items-center justify-center rounded-xl border border-[#F6AD34]/60 bg-transparent px-6 py-3 text-[15px] font-semibold text-[#F6AD34] hover:bg-[#F6AD34]/10"
           >
             {t("marketing.trial.lineSignup")}
           </a>

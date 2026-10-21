@@ -18,6 +18,7 @@ const hrefs = {
   stats: "/demo/admin/stats",
   settings: "/demo/admin/settings",
   notifications: "/demo/admin/settings/notifications",
+  billing: "/demo/admin/billing",
   booking: "/demo",
 };
 

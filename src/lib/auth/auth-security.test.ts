@@ -69,10 +69,11 @@ describe("admin nav visibility", () => {
     assert.deepEqual(primaryAdminNavItems("owner"), ["board", "team", "stats", "more"]);
   });
 
-  it("owner more sheet has schedule, settings, notifications, booking", () => {
+  it("owner more sheet has schedule, settings, billing, notifications, booking", () => {
     assert.deepEqual(moreAdminNavItems("owner"), [
       "schedule",
       "settings",
+      "billing",
       "notifications",
       "booking",
     ]);
@@ -100,6 +101,7 @@ describe("admin nav visibility", () => {
       "stats",
       "schedule",
       "settings",
+      "billing",
       "notifications",
       "booking",
     ]);
