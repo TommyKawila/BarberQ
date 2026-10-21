@@ -38,15 +38,34 @@ export const WARM_NOTE_SAMPLE = {
   linkCta: "เลื่อน / ยกเลิกนัด",
 } as const;
 
+/** Shared how-it-works demo booking (same queue across steps 01–03). */
+export const HOW_DEMO_BOOKING = {
+  shopName: "ClipperQ Demo",
+  barberName: "เจ · Jay",
+  barberShort: "เจ",
+  date: "พ. 21 ต.ค.",
+  time: "21:30–22:00",
+  timeShort: "21:30",
+  bookingCode: "#DEMO21",
+} as const;
+
 export type WarmNoteVariant = "confirm" | "reminder";
 
 export function WarmNoteFlexCard({
   variant,
   shopName = WARM_NOTE_SAMPLE.shopName,
+  barberName = WARM_NOTE_SAMPLE.barberName,
+  date = WARM_NOTE_SAMPLE.date,
+  time = WARM_NOTE_SAMPLE.time,
+  bookingCode = WARM_NOTE_SAMPLE.bookingCode,
   className,
 }: {
   variant: WarmNoteVariant;
   shopName?: string;
+  barberName?: string;
+  date?: string;
+  time?: string;
+  bookingCode?: string;
   className?: string;
 }) {
   const theme = variant === "confirm" ? WARM_NOTE.confirm : WARM_NOTE.reminder;
@@ -81,13 +100,13 @@ export function WarmNoteFlexCard({
           className="text-xs font-bold leading-snug"
           style={{ color: WARM_NOTE.ink2 }}
         >
-          {WARM_NOTE_SAMPLE.date}
+          {date}
         </p>
         <p
           className="text-[15px] font-bold leading-tight tracking-tight"
           style={{ color: WARM_NOTE.ink }}
         >
-          {WARM_NOTE_SAMPLE.time}
+          {time}
         </p>
         <div
           className="mt-[10%] border-t"
@@ -98,7 +117,7 @@ export function WarmNoteFlexCard({
             ช่าง
           </span>
           <span className="min-w-0 flex-1 font-bold" style={{ color: WARM_NOTE.ink }}>
-            {WARM_NOTE_SAMPLE.barberName}
+            {barberName}
           </span>
         </div>
         {variant === "confirm" ? (
@@ -107,7 +126,7 @@ export function WarmNoteFlexCard({
               เลขที่จอง
             </span>
             <span className="min-w-0 flex-1 font-bold" style={{ color: WARM_NOTE.ink }}>
-              {WARM_NOTE_SAMPLE.bookingCode}
+              {bookingCode}
             </span>
           </div>
         ) : null}

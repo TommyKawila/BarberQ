@@ -2,20 +2,7 @@ import { HandPhoneComposite } from "./HandPhoneComposite";
 import { PhoneScreen } from "./PhoneScreen";
 import type { PhoneSize } from "./PhoneFrame";
 import type { MarketingScreenKey } from "@/lib/marketing/screens";
-
-/** Match marketing.how.1–3 copy: book flow → LINE ticket → shop queue board */
-const STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
-  1: "choose",
-  2: "ticket",
-  3: "adminQueue",
-};
-
-/** Compact mobile: step 1 full-header booking shot; step 3 grid crop. Desktop unchanged. */
-const COMPACT_STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
-  1: "chooseCompact",
-  2: "ticket",
-  3: "adminQueueBoard",
-};
+import { HowItWorksStepPhone } from "./HowItWorksStepPhones";
 
 type FrameProps = {
   screen: MarketingScreenKey;
@@ -33,42 +20,29 @@ function ScreenFrame({ screen, size, fluid, className, priority }: FrameProps) {
       fluid={fluid}
       className={className}
       priority={priority}
-      sampleLabel={screen === "adminQueue" || screen === "adminQueueBoard"}
     />
   );
 }
 
+/**
+ * How-it-works step phone — shared HTML mockups (เจ 21:30) for mobile + desktop.
+ * Step 1 book · Step 2 LINE confirm card · Step 3 shop notify + queue card.
+ */
 export function CustomerStepPhone({
   step,
-  /** Compact mobile how-it-works: single capped phone; step 3 uses a readable board crop. */
   compact,
 }: {
   step: 1 | 2 | 3;
+  /** Compact mobile how-it-works width (~200px). Desktop omits this. */
   compact?: boolean;
 }) {
-  const screen = compact ? COMPACT_STEP_SCREENS[step] : STEP_SCREENS[step];
   if (compact) {
-    return (
-      <PhoneScreen
-        screen={screen}
-        fluid
-        // Step 1 asset already has a tall status-bar pad; safeTop's pt+object-cover
-        // was cropping glyph tops off ClipperQ Demo. Steps 2–3 keep safeTop.
-        safeTop={step !== 1}
-        className="mx-auto w-full max-w-[200px]"
-        sampleLabel={step === 3}
-      />
-    );
+    return <HowItWorksStepPhone step={step} />;
   }
   return (
-    <>
-      <div className="lg:hidden">
-        <ScreenFrame screen={screen} fluid />
-      </div>
-      <div className="hidden lg:block">
-        <ScreenFrame screen={screen} size="md" />
-      </div>
-    </>
+    <div className="mx-auto w-full max-w-[240px] lg:max-w-[260px]">
+      <HowItWorksStepPhone step={step} />
+    </div>
   );
 }
 

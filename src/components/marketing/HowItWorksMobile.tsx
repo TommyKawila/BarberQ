@@ -89,7 +89,7 @@ export function HowItWorksMobile() {
       <div
         role="tablist"
         aria-label={t("marketing.how.title")}
-        className="mt-4 flex flex-col gap-1"
+        className="mt-4 flex flex-col gap-1.5"
       >
         {STEPS.map((n) => {
           const Icon = ICONS[n - 1];
@@ -104,19 +104,27 @@ export function HowItWorksMobile() {
               aria-controls={`how-panel-${n}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => selectStep(n)}
-              className={`relative flex min-h-11 items-center overflow-hidden rounded-xl px-3 py-2.5 text-left transition-colors ${
+              className={`relative flex min-h-[44px] items-center overflow-hidden rounded-xl px-3 py-2.5 text-left transition-colors ${
                 selected
-                  ? "bg-zinc-900/80 ring-1 ring-amber-400/40"
-                  : "bg-transparent hover:bg-zinc-900/50"
+                  ? "bg-zinc-900/90 ring-2 ring-amber-400/70"
+                  : "bg-zinc-900/40 ring-1 ring-zinc-800 hover:bg-zinc-900/60"
               }`}
             >
               <span className="flex items-start gap-2.5">
-                <span className="mt-0.5 flex shrink-0 items-center gap-1 text-sm font-bold tabular-nums text-amber-400">
+                <span
+                  className={`mt-0.5 flex shrink-0 items-center gap-1 text-sm font-bold tabular-nums ${
+                    selected ? "text-amber-300" : "text-amber-400/80"
+                  }`}
+                >
                   <Icon size={16} className="shrink-0" strokeWidth={2} aria-hidden />
                   {String(n).padStart(2, "0")}
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-[15px] font-semibold leading-snug text-zinc-50">
+                  <span
+                    className={`block text-[15px] font-semibold leading-snug ${
+                      selected ? "text-zinc-50" : "text-zinc-300"
+                    }`}
+                  >
                     {t(`marketing.how.${n}.title` as MessageKey)}
                   </span>
                   {selected ? (
@@ -154,13 +162,15 @@ export function HowItWorksMobile() {
             }`}
           >
             <CustomerStepPhone step={n} compact />
+            <p
+              data-how-caption
+              className="mt-2 text-center text-[13px] font-medium leading-snug text-zinc-400"
+            >
+              {t(`marketing.how.${n}.caption` as MessageKey)}
+            </p>
           </div>
         ))}
       </div>
-
-      <p className="mt-4 text-center text-[15px] leading-relaxed text-zinc-300">
-        {t("marketing.how.micro")}
-      </p>
     </div>
   );
 }

@@ -125,15 +125,27 @@ describe("marketing layout split", () => {
     assert.match(scheduleMock, /ตัวอย่าง/);
     assert.doesNotMatch(scheduleMock, /<button/);
     const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
-    assert.match(stepFn, /hidden lg:block/);
-    assert.match(stepFn, /size="md"/);
+    assert.match(stepFn, /HowItWorksStepPhone/);
     assert.match(stepFn, /compact/);
-    assert.match(stepFn, /safeTop/);
-    assert.match(stepFn, /COMPACT_STEP_SCREENS/);
-    assert.match(stepFn, /max-w-\[200px\]/);
-    assert.match(mockups, /adminQueueBoard/);
-    assert.match(mockups, /chooseCompact/);
-    assert.match(mockups, /COMPACT_STEP_SCREENS/);
+    assert.match(mobileHow, /marketing\.how\.\$\{n\}\.caption/);
+    assert.match(mobileHow, /min-h-\[44px\]/);
+    assert.doesNotMatch(mobileHow, /marketing\.how\.micro/);
+    assert.match(sales, /marketing\.how\.micro/);
+    const howPhones = readFileSync(
+      resolve(root, "components/marketing/mockups/HowItWorksStepPhones.tsx"),
+      "utf8",
+    );
+    assert.match(howPhones, /HowStepLineConfirmPhone/);
+    assert.match(howPhones, /HowStepShopNotifyPhone/);
+    assert.match(howPhones, /WarmNoteFlexCard/);
+    assert.match(howPhones, /คิวใหม่: ช่าง/);
+    assert.match(howPhones, /21:30/);
+    assert.match(howPhones, /เจ/);
+    assert.match(howPhones, /ตัวอย่าง/);
+    assert.match(howPhones, /aria-hidden/);
+    assert.match(dictionary.th["marketing.how.1.caption"], /ลูกค้าเลือกช่าง/);
+    assert.match(dictionary.th["marketing.how.2.caption"], /ทักแชทถามซ้ำ/);
+    assert.match(dictionary.th["marketing.how.3.caption"], /ไม่พลาดคิว/);
     const phoneScreen = readFileSync(
       resolve(root, "components/marketing/mockups/PhoneScreen.tsx"),
       "utf8",
@@ -142,11 +154,6 @@ describe("marketing layout split", () => {
     assert.match(phoneScreen, /h-\[14%\]/);
     assert.match(phoneScreen, /sampleLabel/);
     assert.match(phoneScreen, /ตัวอย่าง/);
-    assert.match(stepFn, /safeTop=\{step !== 1\}/);
-    assert.match(stepFn, /sampleLabel=\{step === 3\}/);
-    assert.match(mockups, /1:\s*"choose"/);
-    assert.match(mockups, /2:\s*"ticket"/);
-    assert.match(mockups, /3:\s*"adminQueue"/);
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/admin-queue-board-demo.webp")),
       "admin-queue-board-demo.webp missing",

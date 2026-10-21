@@ -585,17 +585,17 @@ export function SalesPage() {
                     {/* mt-auto keeps phone bezels aligned across columns (right was sitting low) */}
                     <div className="mt-5 w-full lg:mt-auto lg:pt-5">
                       <CustomerStepPhone step={n} />
+                      <p
+                        data-how-caption
+                        className="mt-3 text-center text-[14px] font-medium leading-snug text-zinc-400"
+                      >
+                        {t(`marketing.how.${n}.caption` as MessageKey)}
+                      </p>
                     </div>
                   </li>
                 );
               })}
             </ol>
-            <p
-              data-reveal="soft"
-              className="mt-8 text-center text-[15px] leading-relaxed text-zinc-300 md:text-base"
-            >
-              {t("marketing.how.micro")}
-            </p>
           </div>
         </div>
       </section>
@@ -741,6 +741,9 @@ export function SalesPage() {
               ))}
             </ul>
             <div className="mt-5">
+              <p className="mb-3 text-center text-[13px] leading-relaxed text-zinc-400">
+                {t("marketing.how.micro")}
+              </p>
               <PrimaryTrialCta
                 labelKey="marketing.pricing.cta"
                 placement="pricing"
@@ -794,6 +797,11 @@ export function SalesPage() {
                     ))}
                   </ul>
                   <div className="mt-auto pt-6">
+                    {i === 0 ? (
+                      <p className="mb-3 text-center text-[13px] leading-relaxed text-zinc-400 lg:text-left">
+                        {t("marketing.how.micro")}
+                      </p>
+                    ) : null}
                     <PrimaryTrialCta
                       labelKey="marketing.pricing.cta"
                       placement="pricing"
