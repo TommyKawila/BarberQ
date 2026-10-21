@@ -278,7 +278,7 @@ export function SalesPage() {
     <div
       className={`min-h-full max-w-full overflow-x-clip bg-zinc-950 text-zinc-50 ${
         showSticky
-          ? "pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-0"
+          ? "pb-[calc(10rem+env(safe-area-inset-bottom))] md:pb-0"
           : "md:pb-0"
       }`}
     >
@@ -289,7 +289,7 @@ export function SalesPage() {
 
       {/* Pain — Option C: checklist (F-pattern) + notification storm over photo */}
       <section className="overflow-x-clip bg-zinc-950">
-        <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-14 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:pb-16 lg:pt-[112px] xl:px-[120px]">
+        <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-10 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:pb-16 lg:pt-[112px] xl:px-[120px]">
           <div className="order-2 lg:order-1">
             <h2 className="text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] lg:text-[58px] xl:text-[64px]">
               <span className="text-amber-300">
@@ -342,9 +342,9 @@ export function SalesPage() {
             />
           </div>
         </div>
-        {/* Hand-off fade into solution section */}
+        {/* Desktop-only hand-off fade — mobile kept a blank ~200px band (fade + py stack) */}
         <div
-          className="pointer-events-none h-[80px] bg-gradient-to-b from-transparent to-[#111113] lg:h-[120px]"
+          className="pointer-events-none hidden h-[120px] bg-gradient-to-b from-transparent to-zinc-950 lg:block"
           aria-hidden
         />
       </section>
@@ -355,7 +355,7 @@ export function SalesPage() {
         ref={lineSectionRef}
         className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/35 to-zinc-950"
       >
-        <div className="relative mx-auto max-w-[1440px] px-6 py-20 md:px-10 md:py-24 xl:px-12 xl:py-28">
+        <div className="relative mx-auto max-w-[1440px] px-6 py-10 md:px-10 md:py-24 xl:px-12 xl:py-28">
           <header className="relative z-10 max-w-3xl">
             <p className="text-sm font-medium tracking-wide text-amber-300/80 lg:text-[15px]">
               {t("marketing.line.eyebrow")}
