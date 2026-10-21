@@ -4,14 +4,11 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   Bell,
-  CalendarClock,
-  ChartColumn,
   Check,
   ChevronDown,
   ChevronRight,
   CircleCheck,
   MessageCircle,
-  Phone,
   QrCode,
   Smartphone,
   Users,
@@ -24,7 +21,6 @@ import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { SalesHero } from "@/components/marketing/SalesHero";
 import { HowItWorksMobile } from "@/components/marketing/HowItWorksMobile";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
-import { OwnerSurfacePhone } from "@/components/marketing/mockups/OwnerSurfacesMockups";
 import {
   LineConfirmMockup,
   LineReminderMockup,
@@ -49,7 +45,12 @@ import {
 } from "@/lib/marketing/offer";
 
 const HOW_ICONS = [MessageCircle, CircleCheck, Smartphone] as const;
-const BOARD_ICONS = [Phone, CalendarClock, Users, Bell, QrCode] as const;
+const DEMO_FEATURE_ICONS = [Users, QrCode, Bell] as const;
+const DEMO_FEATURE_KEYS = [
+  "marketing.try.featureWalkin",
+  "marketing.try.featureQr",
+  "marketing.try.featurePush",
+] as const;
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
@@ -322,6 +323,25 @@ export function SalesPage() {
           <div data-reveal className="mt-8 md:mt-12">
             <TryBookingDemo />
           </div>
+          {/* Walk-in / QR / Web Push — short list under demo (replaces long board/owner sections) */}
+          <ul
+            id="board"
+            data-reveal
+            className="mx-auto mt-10 max-w-xl space-y-3 scroll-mt-[4.5rem] md:mt-12 md:scroll-mt-20"
+          >
+            {DEMO_FEATURE_KEYS.map((key, i) => {
+              const Icon = DEMO_FEATURE_ICONS[i];
+              return (
+                <li key={key} className="flex items-start gap-2.5 text-[15px] leading-snug text-zinc-300">
+                  <Icon size={18} className="mt-0.5 shrink-0 text-amber-400" strokeWidth={2} aria-hidden />
+                  <span>{t(key)}</span>
+                </li>
+              );
+            })}
+          </ul>
+          <p id="owner" className="sr-only">
+            {t("marketing.owner.title")}
+          </p>
         </div>
       </section>
 
@@ -575,88 +595,6 @@ export function SalesPage() {
               {t("marketing.how.micro")}
             </p>
           </div>
-        </div>
-      </section>
-
-      {/* Board — barbers / front desk. Mobile A: H2 → plate → bullets; desktop unchanged two-col. */}
-      <section id="board" className="scroll-mt-20 overflow-x-clip">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
-          <div>
-            <h2 data-reveal className="text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-3xl">
-              {t("marketing.board.title")}
-            </h2>
-            {/* Mobile: barberMobile plate under H2 — near full column, shorter crop toward tablet/board */}
-            <MarketingPhotoSlot
-              slot="barberMobile"
-              alt={t("marketing.board.photoAlt")}
-              fill
-              objectPosition="58% 34%"
-              sizes="92vw"
-              className="mt-5 h-[330px] w-full lg:hidden"
-            />
-            <ul className="mt-5 space-y-3.5 lg:mt-6 lg:space-y-4">
-              {([1, 2, 3, 4, 5] as const).map((n) => {
-                const Icon = BOARD_ICONS[n - 1];
-                return (
-                  <li
-                    key={n}
-                    data-reveal
-                    style={{ ["--reveal-delay" as string]: (n - 1) * 65 }}
-                    className="flex gap-2.5 lg:gap-3"
-                  >
-                    <Icon
-                      size={20}
-                      className="mt-0.5 shrink-0 text-amber-400"
-                      strokeWidth={2}
-                    />
-                    <div>
-                      <p className="text-[15px] font-semibold leading-snug text-zinc-50 md:text-base">
-                        {t(`marketing.board.${n}.title` as MessageKey)}
-                      </p>
-                      <p className="mt-0.5 text-[14px] leading-relaxed text-zinc-300 md:mt-1 md:text-base">
-                        {t(`marketing.board.${n}.desc` as MessageKey)}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-          {/* Desktop: Tommy iPad plate + live admin queue composite (unchanged). */}
-          <div data-reveal className="hidden justify-end lg:flex">
-            <MarketingPhotoSlot
-              slot="barberDesktop"
-              alt={t("marketing.board.photoAlt")}
-              sizes="(min-width: 1280px) 560px, 480px"
-              className="w-full max-w-[560px]"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* Owner stats — mobile C: compact phone, metric chips, sticky clearance; desktop unchanged */}
-      <section id="owner" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
-        <div className="mx-auto grid max-w-[1280px] items-center gap-4 px-4 pt-10 pb-40 md:gap-8 md:px-6 md:py-14 lg:grid-cols-2 lg:gap-12">
-          <div data-reveal>
-            <h2 className="text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-3xl">
-              {t("marketing.owner.title")}
-            </h2>
-            <p className={`mt-4 ${BODY}`}>{t("marketing.owner.body")}</p>
-            <ul className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 lg:mt-5 lg:flex-col lg:items-start lg:gap-y-2">
-              {([1, 2, 3] as const).map((n) => (
-                <li key={n} className={`flex items-center gap-2 ${BODY}`}>
-                  <ChartColumn size={16} className="shrink-0 text-amber-400" />
-                  {t(`marketing.owner.metric${n}` as MessageKey)}
-                </li>
-              ))}
-            </ul>
-          </div>
-          <figure data-reveal style={{ ["--reveal-delay" as string]: 90 }} className="flex flex-col items-center">
-            <OwnerSurfacePhone surface="stats" sampleLabel />
-            <figcaption className="mt-2 text-center text-sm text-zinc-400 md:mt-3">
-              {t("marketing.owner.caption")}
-            </figcaption>
-          </figure>
         </div>
       </section>
 

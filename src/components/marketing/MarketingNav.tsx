@@ -43,7 +43,7 @@ export function MarketingNav({ variant = "sales" }: { variant?: "sales" | "trial
             <a href="#how-it-works" className="inline-flex min-h-11 items-center hover:text-amber-400">
               {t("marketing.nav.how")}
             </a>
-            <a href="#board" className="inline-flex min-h-11 items-center hover:text-amber-400">
+            <a href="#try-booking" className="inline-flex min-h-11 items-center hover:text-amber-400">
               {t("marketing.nav.features")}
             </a>
             <a href="#pricing" className="inline-flex min-h-11 items-center hover:text-amber-400">
