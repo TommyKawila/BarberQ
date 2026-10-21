@@ -279,6 +279,28 @@ describe("marketing layout split", () => {
     );
   });
 
+  it("sales page uses progressive scroll reveals", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const hook = readFileSync(
+      resolve(root, "hooks/useSalesPageReveal.ts"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    assert.match(sales, /useSalesPageReveal/);
+    assert.match(sales, /data-reveal/);
+    assert.match(sales, /data-reveal="emphasis"/);
+    assert.match(hook, /IntersectionObserver/);
+    assert.match(hook, /prefers-reduced-motion/);
+    assert.match(hook, /data-cq-reveal/);
+    assert.match(hook, /unobserve/);
+    assert.match(css, /data-cq-reveal="on"/);
+    assert.match(css, /prefers-reduced-motion: reduce/);
+    assert.doesNotMatch(css, /\[data-reveal\]\s*\{\s*opacity:\s*0/);
+  });
+
   it("pain section uses Option C checklist + notification storm", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),

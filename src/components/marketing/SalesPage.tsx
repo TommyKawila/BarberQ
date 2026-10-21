@@ -32,6 +32,7 @@ import {
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
 import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
+import { useSalesPageReveal } from "@/hooks/useSalesPageReveal";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
@@ -169,6 +170,7 @@ export function SalesPage() {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
   const supportLineUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
+  const pageRootRef = useRef<HTMLDivElement | null>(null);
   const heroCtaRef = useRef<HTMLDivElement | null>(null);
   const heroCtaDesktopRef = useRef<HTMLDivElement | null>(null);
   const finalCtaRef = useRef<HTMLElement | null>(null);
@@ -176,6 +178,8 @@ export function SalesPage() {
   const lineSectionRef = useRef<HTMLElement | null>(null);
   const [showSticky, setShowSticky] = useState(false);
   const [openFaqIds, setOpenFaqIds] = useState<number[]>([]);
+
+  useSalesPageReveal(pageRootRef);
 
   useEffect(() => {
     trackMarketingEvent("sales_page_view");
@@ -282,6 +286,7 @@ export function SalesPage() {
 
   return (
     <div
+      ref={pageRootRef}
       className={`min-h-full max-w-full overflow-x-clip bg-zinc-950 text-zinc-50 ${
         showSticky
           ? "pb-[calc(10rem+env(safe-area-inset-bottom))] md:pb-0"
@@ -297,7 +302,10 @@ export function SalesPage() {
       <section className="overflow-x-clip bg-zinc-950">
         <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-10 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:pb-16 lg:pt-[112px] xl:px-[120px]">
           <div className="order-2 lg:order-1">
-            <h2 className="text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] lg:text-[58px] xl:text-[64px]">
+            <h2
+              data-reveal
+              className="text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] lg:text-[58px] xl:text-[64px]"
+            >
               <span className="text-amber-300">
                 <span className="text-zinc-50">“</span>
                 {t("marketing.pain.titleLead")}
@@ -311,6 +319,8 @@ export function SalesPage() {
               {PAIN_BULLETS.map((n, i) => (
                 <li
                   key={n}
+                  data-reveal
+                  style={{ ["--reveal-delay" as string]: i * 70 }}
                   className={`flex items-start gap-3.5 py-[18px] ${
                     i < PAIN_BULLETS.length - 1 ? "border-b border-zinc-800" : ""
                   }`}
@@ -328,7 +338,7 @@ export function SalesPage() {
               ))}
             </ul>
 
-            <div className="mt-10">
+            <div data-reveal style={{ ["--reveal-delay" as string]: 120 }} className="mt-10">
               <div className="h-px w-12 bg-amber-300" aria-hidden />
               <p className="mt-5 text-xl font-extrabold leading-[1.35] tracking-tight text-amber-300 sm:text-2xl lg:text-[32px]">
                 <PainCopy messageKey="marketing.pain.punchline" />
@@ -362,7 +372,7 @@ export function SalesPage() {
         className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/35 to-zinc-950"
       >
         <div className="relative mx-auto max-w-[1440px] px-6 py-10 md:px-10 md:py-24 xl:px-12 xl:py-28">
-          <header className="relative z-10 max-w-3xl">
+          <header data-reveal className="relative z-10 max-w-3xl">
             <p className="text-sm font-medium tracking-wide text-amber-300/80 lg:text-[15px]">
               {t("marketing.line.eyebrow")}
             </p>
@@ -400,7 +410,10 @@ export function SalesPage() {
 
             <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:h-full lg:items-stretch lg:gap-10 xl:gap-12">
               {/* Same phones row as 36871e6 — w-full so fluid mocks don't collapse under items-start */}
-              <div className="flex w-full shrink-0 flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7">
+              <div
+                data-reveal
+                className="flex w-full shrink-0 flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7"
+              >
                 {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
                 <LineConfirmMockup shopName="ClipperQ Demo" />
                 <LineReminderMockup
@@ -457,9 +470,11 @@ export function SalesPage() {
                 }}
               />
               <div className="relative space-y-8">
-                {lineBullets.map((key) => (
+                {lineBullets.map((key, i) => (
                   <p
                     key={key}
+                    data-reveal
+                    style={{ ["--reveal-delay" as string]: i * 80 }}
                     className="flex gap-3.5 text-base leading-[1.65] text-zinc-300 md:text-[1.0625rem] lg:text-lg lg:leading-[1.6]"
                   >
                     <Check size={20} className="mt-1 shrink-0 text-amber-400/90" />
@@ -468,7 +483,11 @@ export function SalesPage() {
                 ))}
               </div>
 
-              <div className="relative mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start">
+              <div
+                data-reveal
+                style={{ ["--reveal-delay" as string]: 100 }}
+                className="relative mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start"
+              >
                 <PrimaryTrialCta
                   labelKey="marketing.line.cta"
                   placement="line"
@@ -481,7 +500,10 @@ export function SalesPage() {
                 />
               </div>
 
-              <div className="relative mt-12 space-y-3 border-t border-zinc-800/80 pt-8">
+              <div
+                data-reveal="soft"
+                className="relative mt-12 space-y-3 border-t border-zinc-800/80 pt-8"
+              >
                 <p className="max-w-md text-xs leading-relaxed text-zinc-400 lg:text-[13px]">
                   {t("marketing.line.evidence")}
                 </p>
@@ -497,7 +519,7 @@ export function SalesPage() {
             </div>
           </div>
 
-          <figure className="mt-20 xl:mt-24">
+          <figure data-reveal className="mt-20 xl:mt-24">
             {/* Desktop: callout above the row so phone top/bottom can match the photo */}
             <p className="mb-3 hidden text-xs font-medium tracking-wide text-amber-300/85 lg:block lg:text-[13px]">
               {t("marketing.line.queueBoardCallout")}
@@ -536,17 +558,24 @@ export function SalesPage() {
         className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/25 to-zinc-950"
       >
         <div className="mx-auto max-w-[1280px] px-4 py-10 md:px-6 md:py-14">
-          <HowItWorksMobile />
+          <div data-reveal>
+            <HowItWorksMobile />
+          </div>
 
           <div className="hidden md:block">
-            <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
+            <h2 data-reveal className="text-2xl font-bold text-zinc-50 md:text-3xl">
               {t("marketing.how.title")}
             </h2>
             <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:items-stretch lg:gap-6">
               {([1, 2, 3] as const).map((n) => {
                 const Icon = HOW_ICONS[n - 1];
                 return (
-                  <li key={n} className="flex h-full flex-col items-center text-center">
+                  <li
+                    key={n}
+                    data-reveal
+                    style={{ ["--reveal-delay" as string]: (n - 1) * 90 }}
+                    className="flex h-full flex-col items-center text-center"
+                  >
                     <span className="flex items-center gap-2 text-xl font-bold tabular-nums text-amber-400 lg:text-3xl">
                       <Icon size={22} className="shrink-0" strokeWidth={2} />
                       {String(n).padStart(2, "0")}
@@ -565,7 +594,10 @@ export function SalesPage() {
                 );
               })}
             </ol>
-            <p className="mt-8 text-center text-[15px] leading-relaxed text-zinc-300 md:text-base">
+            <p
+              data-reveal="soft"
+              className="mt-8 text-center text-[15px] leading-relaxed text-zinc-300 md:text-base"
+            >
               {t("marketing.how.micro")}
             </p>
           </div>
@@ -576,7 +608,7 @@ export function SalesPage() {
       <section id="board" className="scroll-mt-20 overflow-x-clip">
         <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
           <div>
-            <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+            <h2 data-reveal className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
               {t("marketing.board.title")}
             </h2>
             {/* Mobile: barberMobile plate under H2 — near full column, shorter crop toward tablet/board */}
@@ -592,7 +624,12 @@ export function SalesPage() {
               {([1, 2, 3, 4, 5] as const).map((n) => {
                 const Icon = BOARD_ICONS[n - 1];
                 return (
-                  <li key={n} className="flex gap-2.5 lg:gap-3">
+                  <li
+                    key={n}
+                    data-reveal
+                    style={{ ["--reveal-delay" as string]: (n - 1) * 65 }}
+                    className="flex gap-2.5 lg:gap-3"
+                  >
                     <Icon
                       size={20}
                       className="mt-0.5 shrink-0 text-amber-400"
@@ -612,7 +649,7 @@ export function SalesPage() {
             </ul>
           </div>
           {/* Desktop: Tommy iPad plate + live admin queue composite (unchanged). */}
-          <div className="hidden justify-end lg:flex">
+          <div data-reveal className="hidden justify-end lg:flex">
             <MarketingPhotoSlot
               slot="barberDesktop"
               alt={t("marketing.board.photoAlt")}
@@ -626,7 +663,7 @@ export function SalesPage() {
       {/* Owner stats — mobile C: compact phone, metric chips, sticky clearance; desktop unchanged */}
       <section id="owner" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto grid max-w-[1280px] items-center gap-4 px-4 pt-10 pb-40 md:gap-8 md:px-6 md:py-14 lg:grid-cols-2 lg:gap-12">
-          <div>
+          <div data-reveal>
             <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
               {t("marketing.owner.title")}
             </h2>
@@ -640,7 +677,7 @@ export function SalesPage() {
               ))}
             </ul>
           </div>
-          <figure className="flex flex-col items-center">
+          <figure data-reveal style={{ ["--reveal-delay" as string]: 90 }} className="flex flex-col items-center">
             <OwnerSurfacePhone surface="stats" />
             <figcaption className="mt-2 text-center text-sm text-zinc-400 md:mt-3">
               {t("marketing.owner.caption")}
@@ -658,7 +695,10 @@ export function SalesPage() {
               : "pb-10"
           }`}
         >
-          <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8">
+          <div
+            data-reveal
+            className="flex flex-col items-center gap-5 sm:flex-row sm:items-start sm:gap-8"
+          >
             <MarketingPhotoSlot
               slot="founder"
               alt={t("marketing.founder.photoAlt")}
@@ -700,16 +740,18 @@ export function SalesPage() {
       {/* Pricing — mobile C: single price table; lg+ keeps three-card layout unchanged */}
       <section id="pricing" ref={pricingRef} className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
-          <p className="text-sm font-medium text-amber-400/90">
-            {t("marketing.pricing.eyebrow")}
-          </p>
-          <h2 className="mt-2 text-2xl font-bold leading-snug text-zinc-50 md:text-3xl">
-            {td("marketing.pricing.title")}
-          </h2>
-          <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
+          <div data-reveal>
+            <p className="text-sm font-medium text-amber-400/90">
+              {t("marketing.pricing.eyebrow")}
+            </p>
+            <h2 className="mt-2 text-2xl font-bold leading-snug text-zinc-50 md:text-3xl">
+              {td("marketing.pricing.title")}
+            </h2>
+            <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
+          </div>
 
           {/* Mobile: direction C price table */}
-          <div className="mt-8 lg:hidden">
+          <div data-reveal className="mt-8 lg:hidden">
             <div className="overflow-hidden rounded-2xl border border-zinc-700">
               {marketingOffer.tiers.map((tier) => {
                 const isStarter = tier.id === "tier1";
@@ -798,12 +840,14 @@ export function SalesPage() {
 
           {/* Desktop (lg+): three-card layout unchanged */}
           <div className="mt-8 hidden gap-4 lg:grid lg:grid-cols-3">
-            {marketingOffer.tiers.map((tier) => {
+            {marketingOffer.tiers.map((tier, i) => {
               const perDay = tierPerDayHint(tier, locale);
               const isStarter = tier.id === "tier1";
               return (
                 <div
                   key={tier.id}
+                  data-reveal
+                  style={{ ["--reveal-delay" as string]: i * 90 }}
                   className={
                     isStarter
                       ? "flex flex-col rounded-2xl border-2 border-amber-400/70 bg-zinc-950/60 p-6 md:p-7"
@@ -850,7 +894,10 @@ export function SalesPage() {
             })}
           </div>
 
-          <div className="mt-4 hidden items-center justify-between gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 md:p-6 lg:flex">
+          <div
+            data-reveal
+            className="mt-4 hidden items-center justify-between gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 md:p-6 lg:flex"
+          >
             <div>
               <p className="text-sm font-medium text-zinc-400">
                 {t("marketing.pricing.contactRange")}
@@ -863,7 +910,7 @@ export function SalesPage() {
             <ContactCta label={t("marketing.pricing.contactCta")} className="sm:w-auto sm:min-w-[180px]" />
           </div>
 
-          <div className="mt-8 grid gap-6 md:grid-cols-2">
+          <div data-reveal="soft" className="mt-8 grid gap-6 md:grid-cols-2">
             <div>
               <h3 className="text-sm font-semibold text-zinc-200">
                 {t("marketing.pricing.requiresTitle")}
@@ -879,7 +926,10 @@ export function SalesPage() {
           </div>
 
           {/* Trial / risk-reversal box */}
-          <div className="mt-10 overflow-visible rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5 md:p-7">
+          <div
+            data-reveal
+            className="mt-10 overflow-visible rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5 md:p-7"
+          >
             <h3 className="text-xl font-bold leading-snug text-zinc-50">
               {td("marketing.trialBox.title")}
             </h3>
@@ -900,10 +950,12 @@ export function SalesPage() {
       <section id="faq" className="scroll-mt-20 overflow-x-clip">
         <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
           <div className="mx-auto max-w-[800px]">
-            <p className="text-sm font-medium text-amber-400/90">{t("marketing.faq.eyebrow")}</p>
-            <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
-              {t("marketing.faq.title")}
-            </h2>
+            <div data-reveal>
+              <p className="text-sm font-medium text-amber-400/90">{t("marketing.faq.eyebrow")}</p>
+              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+                {t("marketing.faq.title")}
+              </h2>
+            </div>
             <div className="mt-5 space-y-1.5 md:mt-8 md:space-y-3">
               {FAQ_ITEMS.map((n) => {
                 const open = openFaqIds.includes(n);
@@ -912,6 +964,8 @@ export function SalesPage() {
                 return (
                   <div
                     key={n}
+                    data-reveal="soft"
+                    style={{ ["--reveal-delay" as string]: Math.min(n - 1, 5) * 45 }}
                     className={`rounded-lg border bg-zinc-900/40 px-3 md:rounded-xl md:bg-zinc-900/50 md:px-4 ${
                       open
                         ? "border-amber-500/30 pb-3 md:pb-4"
@@ -968,7 +1022,10 @@ export function SalesPage() {
         ref={finalCtaRef}
         className="overflow-x-clip border-t border-amber-500/20 bg-zinc-900/60"
       >
-        <div className="mx-auto max-w-[1280px] px-4 py-12 text-center md:px-6 md:py-16">
+        <div
+          data-reveal="emphasis"
+          className="mx-auto max-w-[1280px] px-4 py-12 text-center md:px-6 md:py-16"
+        >
           <h2 className="text-[1.375rem] font-bold leading-snug text-zinc-50 sm:text-2xl md:text-4xl md:leading-tight">
             {t("marketing.final.title")}
           </h2>
