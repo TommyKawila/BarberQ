@@ -72,7 +72,7 @@ export function PhoneScreen({
         </div>
       </PhoneFrame>
       {sampleLabel ? (
-        <span className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-md border border-amber-400/50 bg-zinc-950/90 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-amber-200 shadow-sm">
+        <span className="pointer-events-none absolute left-1/2 top-2 z-30 -translate-x-1/2 rounded-md border border-amber-400/50 bg-zinc-950/90 px-2 py-0.5 text-xs font-semibold tracking-wide text-amber-200 shadow-sm">
           ตัวอย่าง
         </span>
       ) : null}
