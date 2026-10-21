@@ -82,7 +82,7 @@ export function HowItWorksMobile() {
       <p className="text-sm font-medium tracking-wide text-amber-300/80">
         {t("marketing.how.eyebrow")}
       </p>
-      <h2 className="mt-2 text-2xl font-bold leading-[1.3] text-zinc-50">
+      <h2 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50">
         {t("marketing.how.title")}
       </h2>
 
@@ -104,7 +104,7 @@ export function HowItWorksMobile() {
               aria-controls={`how-panel-${n}`}
               tabIndex={selected ? 0 : -1}
               onClick={() => selectStep(n)}
-              className={`relative overflow-hidden rounded-xl px-3 py-2 text-left transition-colors ${
+              className={`relative flex min-h-11 items-center overflow-hidden rounded-xl px-3 py-2.5 text-left transition-colors ${
                 selected
                   ? "bg-zinc-900/80 ring-1 ring-amber-400/40"
                   : "bg-transparent hover:bg-zinc-900/50"

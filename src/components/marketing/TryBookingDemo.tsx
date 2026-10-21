@@ -100,7 +100,7 @@ function DemoLineConfirmCard({
       >
         <p className="text-[13px] font-bold leading-snug">{shopName}</p>
         <p
-          className="mt-0.5 text-[11px] font-bold leading-snug"
+          className="mt-0.5 text-xs font-bold leading-snug"
           style={{ color: WARM_NOTE.confirm.accentText }}
         >
           {status}
@@ -124,12 +124,12 @@ function DemoLineConfirmCard({
           </span>
           <span className="min-w-0 flex-1 font-bold">{bookingCode}</span>
         </div>
-        <p className="mt-3 text-[11px] leading-snug" style={{ color: WARM_NOTE.ink2 }}>
+        <p className="mt-3 text-xs leading-snug" style={{ color: WARM_NOTE.ink2 }}>
           {note}
         </p>
       </div>
       <div
-        className="border-t px-3.5 py-2.5 text-center text-[11px]"
+        className="border-t px-3.5 py-2.5 text-center text-xs"
         style={{ borderColor: WARM_NOTE.line, color: "#A8A29E" }}
       >
         {brandFooter}
@@ -203,12 +203,12 @@ export function TryBookingDemo() {
           : t("marketing.try.stepSuccess");
 
   return (
-    <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-start lg:justify-center lg:gap-14 xl:gap-16">
-      <div className="w-full max-w-[300px] sm:max-w-[320px]">
-        <PhoneFrame size="lg" interactive className="mx-auto w-full max-w-[300px]">
+    <div className="flex flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-14 xl:gap-16">
+      <div className="w-full max-w-[260px] sm:max-w-[280px] lg:max-w-[300px]">
+        <PhoneFrame size="md" interactive className="mx-auto w-full max-w-[260px] sm:max-w-[280px] lg:max-w-[300px]">
           <div className="flex h-full flex-col bg-zinc-950 text-zinc-50">
             {/* App chrome */}
-            <div className="shrink-0 border-b border-zinc-800/80 px-3 pb-2.5 pt-10">
+            <div className="shrink-0 border-b border-zinc-800/80 px-3 pb-2 pt-9">
               <div className="flex items-center gap-1">
                 {step !== "barber" && step !== "success" ? (
                   <button
@@ -226,42 +226,50 @@ export function TryBookingDemo() {
                   <p className="truncate text-[13px] font-semibold text-zinc-100">
                     {DEMO_SHOP_DISPLAY_NAME}
                   </p>
-                  <p className="truncate text-[11px] text-zinc-500">{stepTitle}</p>
+                  <p className="truncate text-xs text-zinc-500">{stepTitle}</p>
                 </div>
                 <span className="w-11 shrink-0" aria-hidden />
               </div>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-3 py-3">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain px-3 py-2.5">
               {step === "barber" ? (
-                <ul className="space-y-2" role="list">
-                  {DEMO_BARBERS.map((b) => (
-                    <li key={b.id}>
-                      <button
-                        type="button"
-                        data-demo-barber={b.id}
-                        onClick={() => {
-                          setBarber(b);
-                          setStep("slot");
-                        }}
-                        className="flex min-h-14 w-full items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-3 py-2.5 text-left transition-colors hover:border-amber-400/40 hover:bg-zinc-900 active:bg-zinc-800"
-                      >
-                        <BarberAvatar name={b.name} size="sm" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-[15px] font-semibold text-zinc-50">
-                            {barberLabel(b, locale)}
+                <>
+                  <ul className="space-y-1.5" role="list">
+                    {DEMO_BARBERS.map((b) => (
+                      <li key={b.id}>
+                        <button
+                          type="button"
+                          data-demo-barber={b.id}
+                          onClick={() => {
+                            setBarber(b);
+                            setStep("slot");
+                          }}
+                          className="flex min-h-12 w-full items-center gap-2.5 rounded-2xl border border-zinc-800 bg-zinc-900/80 px-2.5 py-2 text-left transition-colors hover:border-amber-400/40 hover:bg-zinc-900 active:bg-zinc-800"
+                        >
+                          <BarberAvatar name={b.name} size="sm" />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[14px] font-semibold text-zinc-50">
+                              {barberLabel(b, locale)}
+                            </span>
+                            <span className="block text-[12px] text-zinc-400">
+                              {t("marketing.try.duration").replace(
+                                "{min}",
+                                String(b.durationMin),
+                              )}
+                            </span>
                           </span>
-                          <span className="block text-[12px] text-zinc-400">
-                            {t("marketing.try.duration").replace(
-                              "{min}",
-                              String(b.durationMin),
-                            )}
-                          </span>
-                        </span>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  <p
+                    className="mt-3 flex flex-1 items-start justify-center pt-1 text-center text-[13px] font-semibold tracking-wide text-amber-300/90"
+                    data-demo-tap-hint
+                  >
+                    {t("marketing.try.tapBarber")}
+                  </p>
+                </>
               ) : null}
 
               {step === "slot" && barber ? (
@@ -349,7 +357,7 @@ export function TryBookingDemo() {
                     <Check size={18} strokeWidth={2.75} aria-hidden />
                     {t("marketing.try.confirmCta")}
                   </button>
-                  <p className="text-center text-[11px] leading-snug text-zinc-500">
+                  <p className="text-center text-xs leading-snug text-zinc-500">
                     {t("marketing.try.disclaimer")}
                   </p>
                 </div>
@@ -382,7 +390,7 @@ export function TryBookingDemo() {
         </PhoneFrame>
       </div>
 
-      <div className="flex w-full max-w-md flex-col items-stretch gap-4 text-center lg:max-w-sm lg:items-start lg:pt-6 lg:text-left">
+      <div className="flex w-full max-w-md flex-col items-stretch gap-3 text-center lg:max-w-sm lg:items-start lg:pt-4 lg:text-left">
         {step === "success" ? (
           <>
             <p className="text-base font-semibold leading-snug text-amber-300 sm:text-lg">
@@ -398,7 +406,10 @@ export function TryBookingDemo() {
           </p>
         )}
 
-        <div className="flex w-full flex-col gap-2.5 sm:mx-auto sm:max-w-[320px] lg:mx-0 lg:max-w-none">
+        <div
+          data-hide-sticky
+          className="flex w-full flex-col gap-2.5 sm:mx-auto sm:max-w-[280px] lg:mx-0 lg:max-w-none"
+        >
           {step === "success" ? (
             <PrimaryTrialCta
               labelKey="marketing.try.trialCta"

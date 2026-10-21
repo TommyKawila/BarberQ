@@ -188,13 +188,13 @@ export function SalesPage() {
   }, []);
 
   useEffect(() => {
-    // Hide sticky while any in-page primary CTA is on screen, or the footer is in view.
+    // Hide sticky while hero CTA, pricing CTA, or other in-page CTAs / hide targets are on screen.
     const hideEls = [
       ...document.querySelectorAll<HTMLElement>("[data-inpage-trial-cta]"),
       ...document.querySelectorAll<HTMLElement>("[data-hide-sticky]"),
     ];
-    // Fallback: hero wrappers if attribute not yet on a wrapped block
-    for (const el of [heroCtaRef.current, heroCtaDesktopRef.current]) {
+    // Fallback: hero wrappers + pricing section if attribute not yet on a wrapped block
+    for (const el of [heroCtaRef.current, heroCtaDesktopRef.current, pricingRef.current]) {
       if (el && !hideEls.includes(el)) hideEls.push(el);
     }
     if (hideEls.length === 0) return;
@@ -291,7 +291,7 @@ export function SalesPage() {
       ref={pageRootRef}
       className={`min-h-full max-w-full overflow-x-clip bg-zinc-950 text-zinc-50 ${
         showSticky
-          ? "pb-[calc(10rem+env(safe-area-inset-bottom))] md:pb-0"
+          ? "pb-[calc(110px+env(safe-area-inset-bottom))] md:pb-0"
           : "md:pb-0"
       }`}
     >
@@ -299,6 +299,32 @@ export function SalesPage() {
       <LiffCallbackRedirect />
       <AttributionCapture />
       <SalesHero heroCtaRef={heroCtaRef} heroCtaDesktopRef={heroCtaDesktopRef} />
+
+      {/* Try booking — client-side demo right under hero; no DB / API */}
+      <section
+        id="try-booking"
+        data-hide-sticky
+        className="scroll-mt-[4.5rem] overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/30 to-zinc-950 md:scroll-mt-20"
+      >
+        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-44 md:px-6 md:py-14 lg:pb-14">
+          <header data-reveal className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-medium tracking-wide text-amber-300/80">
+              {t("marketing.try.eyebrow")}
+            </p>
+            <h2 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+              {t("marketing.try.title")}
+            </h2>
+            <p className={`mx-auto mt-3 max-w-xl ${BODY}`}>{t("marketing.try.body")}</p>
+            <p className="mt-3 inline-flex items-center rounded-lg border border-amber-500/35 bg-amber-400/10 px-3.5 py-1.5 text-[13px] font-medium text-amber-200">
+              {t("marketing.try.disclaimer")}
+            </p>
+          </header>
+          <div data-reveal className="mt-8 md:mt-12">
+            <TryBookingDemo />
+          </div>
+        </div>
+      </section>
+
 
       {/* Pain — Option C: checklist (F-pattern) + notification storm over photo */}
       <section className="overflow-x-clip bg-zinc-950">
@@ -367,12 +393,12 @@ export function SalesPage() {
             <p className="text-sm font-medium tracking-wide text-amber-300/80 lg:text-[15px]">
               {t("marketing.line.eyebrow")}
             </p>
-            <h2 className="mt-4 text-[1.75rem] font-bold leading-[1.3] tracking-tight text-zinc-50 sm:text-3xl md:text-[2.35rem] lg:text-[2.75rem] lg:leading-[1.25] xl:text-[3rem]">
+            <h2 className="mt-4 text-[1.75rem] font-bold leading-[1.3] tracking-tight text-zinc-50 md:text-[2.35rem] lg:text-[2.75rem] lg:leading-[1.25] xl:text-[3rem]">
               {t("marketing.line.title")}
             </h2>
           </header>
 
-          <div className="relative mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-stretch lg:gap-16 xl:mt-20 xl:gap-20">
+          <div className="relative mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
             {/* Option B mobile: mood plate behind copy (unchanged) */}
             {marketingPhotoSlots.solutionCustomer.src ? (
               <div
@@ -399,7 +425,7 @@ export function SalesPage() {
               </div>
             ) : null}
 
-            <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:h-full lg:items-stretch lg:gap-10 xl:gap-12">
+            <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:items-start lg:gap-10 xl:gap-12">
               {/* Same phones row as 36871e6 — w-full so fluid mocks don't collapse under items-start */}
               <div
                 data-reveal
@@ -412,42 +438,6 @@ export function SalesPage() {
                   whenLabel={t("marketing.line.mockWhen")}
                 />
               </div>
-
-              {/* Desktop: mood beside evidence/cost — below phones, larger, soft all-edge fade */}
-              {marketingPhotoSlots.solutionCustomer.src ? (
-                <div
-                  aria-hidden
-                  className="pointer-events-none relative mt-auto hidden w-full max-w-[420px] self-start opacity-[0.97] lg:block xl:max-w-[460px]"
-                >
-                  <div
-                    className="relative aspect-square w-full"
-                    style={{
-                      WebkitMaskImage:
-                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 12%, #000 28%, #000 55%, rgba(0,0,0,0.45) 78%, transparent 100%)",
-                      maskImage:
-                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.25) 12%, #000 28%, #000 55%, rgba(0,0,0,0.45) 78%, transparent 100%)",
-                    }}
-                  >
-                    <div
-                      className="absolute inset-0 overflow-hidden"
-                      style={{
-                        WebkitMaskImage:
-                          "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.3) 14%, #000 32%, #000 72%, rgba(0,0,0,0.35) 90%, transparent 100%)",
-                        maskImage:
-                          "linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.3) 14%, #000 32%, #000 72%, rgba(0,0,0,0.35) 90%, transparent 100%)",
-                      }}
-                    >
-                      <Image
-                        src={marketingPhotoSlots.solutionCustomer.src}
-                        alt=""
-                        fill
-                        sizes="(min-width: 1280px) 28vw, 34vw"
-                        className="object-cover object-[62%_42%]"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : null}
             </div>
 
             <div className="relative z-10 order-1 max-w-xl lg:order-2 lg:max-w-[22rem] lg:pt-1 xl:max-w-[24rem]">
@@ -498,14 +488,6 @@ export function SalesPage() {
                 <p className="max-w-md text-xs leading-relaxed text-zinc-400 lg:text-[13px]">
                   {t("marketing.line.evidence")}
                 </p>
-                <p className="max-w-md text-xs leading-relaxed text-zinc-400 lg:text-[13px]">
-                  <span className="font-medium text-zinc-300">
-                    {td("marketing.line.costTitle")}
-                  </span>
-                  {" · "}
-                  {td("marketing.line.costBody")}{" "}
-                  <span className="text-zinc-300">{td("marketing.line.costClose")}</span>
-                </p>
               </div>
             </div>
           </div>
@@ -523,10 +505,10 @@ export function SalesPage() {
                 </p>
                 {/* Mobile: width-capped fluid phone. Desktop: match photo row height via grid stretch */}
                 <div className="w-full lg:hidden">
-                  <PhoneScreen screen="adminQueue" fluid />
+                  <PhoneScreen screen="adminQueue" fluid sampleLabel />
                 </div>
                 <div className="hidden h-full lg:block lg:aspect-[390/844]">
-                  <PhoneScreen screen="adminQueue" matchHeight />
+                  <PhoneScreen screen="adminQueue" matchHeight sampleLabel />
                 </div>
               </div>
               <MarketingPhotoSlot
@@ -555,7 +537,7 @@ export function SalesPage() {
           </div>
 
           <div className="hidden md:block">
-            <h2 data-reveal className="text-2xl font-bold text-zinc-50 md:text-3xl">
+            <h2 data-reveal className="text-[1.75rem] font-bold text-zinc-50 md:text-3xl">
               {t("marketing.how.title")}
             </h2>
             <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:items-stretch lg:gap-6">
@@ -596,35 +578,11 @@ export function SalesPage() {
         </div>
       </section>
 
-      {/* Try booking — client-side demo after how-it-works; no DB / API */}
-      <section
-        id="try-booking"
-        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/30 to-zinc-950"
-      >
-        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
-          <header data-reveal className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-medium tracking-wide text-amber-300/80">
-              {t("marketing.try.eyebrow")}
-            </p>
-            <h2 className="mt-2 text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
-              {t("marketing.try.title")}
-            </h2>
-            <p className={`mx-auto mt-3 max-w-xl ${BODY}`}>{t("marketing.try.body")}</p>
-            <p className="mt-3 inline-flex items-center rounded-lg border border-amber-500/35 bg-amber-400/10 px-3.5 py-1.5 text-[13px] font-medium text-amber-200">
-              {t("marketing.try.disclaimer")}
-            </p>
-          </header>
-          <div data-reveal className="mt-10 md:mt-12">
-            <TryBookingDemo />
-          </div>
-        </div>
-      </section>
-
       {/* Board — barbers / front desk. Mobile A: H2 → plate → bullets; desktop unchanged two-col. */}
       <section id="board" className="scroll-mt-20 overflow-x-clip">
         <div className="mx-auto grid max-w-[1280px] items-center gap-8 px-4 py-10 md:px-6 md:py-14 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-12">
           <div>
-            <h2 data-reveal className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+            <h2 data-reveal className="text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-3xl">
               {t("marketing.board.title")}
             </h2>
             {/* Mobile: barberMobile plate under H2 — near full column, shorter crop toward tablet/board */}
@@ -680,7 +638,7 @@ export function SalesPage() {
       <section id="owner" className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto grid max-w-[1280px] items-center gap-4 px-4 pt-10 pb-40 md:gap-8 md:px-6 md:py-14 lg:grid-cols-2 lg:gap-12">
           <div data-reveal>
-            <h2 className="text-2xl font-bold leading-[1.3] text-zinc-50 md:text-3xl">
+            <h2 className="text-[1.75rem] font-bold leading-[1.3] text-zinc-50 md:text-3xl">
               {t("marketing.owner.title")}
             </h2>
             <p className={`mt-4 ${BODY}`}>{t("marketing.owner.body")}</p>
@@ -694,7 +652,7 @@ export function SalesPage() {
             </ul>
           </div>
           <figure data-reveal style={{ ["--reveal-delay" as string]: 90 }} className="flex flex-col items-center">
-            <OwnerSurfacePhone surface="stats" />
+            <OwnerSurfacePhone surface="stats" sampleLabel />
             <figcaption className="mt-2 text-center text-sm text-zinc-400 md:mt-3">
               {t("marketing.owner.caption")}
             </figcaption>
@@ -726,7 +684,7 @@ export function SalesPage() {
               <p className="mb-1.5 text-sm font-medium text-amber-400/90 sm:hidden">
                 {t("marketing.founder.eyebrow")}
               </p>
-              <h2 className="text-2xl font-bold text-zinc-50 md:text-3xl">
+              <h2 className="text-[1.75rem] font-bold text-zinc-50 md:text-3xl">
                 {t("marketing.founder.title")}
               </h2>
               <p className={`mt-3 ${BODY}`}>{td("marketing.founder.body")}</p>
@@ -760,7 +718,7 @@ export function SalesPage() {
             <p className="text-sm font-medium text-amber-400/90">
               {t("marketing.pricing.eyebrow")}
             </p>
-            <h2 className="mt-2 text-2xl font-bold leading-snug text-zinc-50 md:text-3xl">
+            <h2 className="mt-2 text-[1.75rem] font-bold leading-snug text-zinc-50 md:text-3xl">
               {td("marketing.pricing.title")}
             </h2>
             <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
@@ -968,7 +926,7 @@ export function SalesPage() {
           <div className="mx-auto max-w-[800px]">
             <div data-reveal>
               <p className="text-sm font-medium text-amber-400/90">{t("marketing.faq.eyebrow")}</p>
-              <h2 className="mt-2 text-2xl font-bold text-zinc-50 md:text-3xl">
+              <h2 className="mt-2 text-[1.75rem] font-bold text-zinc-50 md:text-3xl">
                 {t("marketing.faq.title")}
               </h2>
             </div>
@@ -1042,7 +1000,7 @@ export function SalesPage() {
           data-reveal="emphasis"
           className="mx-auto max-w-[1280px] px-4 py-12 text-center md:px-6 md:py-16"
         >
-          <h2 className="text-[1.375rem] font-bold leading-snug text-zinc-50 sm:text-2xl md:text-4xl md:leading-tight">
+          <h2 className="text-[1.75rem] font-bold leading-snug text-zinc-50 md:text-4xl md:leading-tight">
             {t("marketing.final.title")}
           </h2>
           <p className={`mx-auto mt-3 max-w-xl ${BODY}`}>{t("marketing.final.sub")}</p>

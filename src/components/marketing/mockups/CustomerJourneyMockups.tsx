@@ -33,6 +33,7 @@ function ScreenFrame({ screen, size, fluid, className, priority }: FrameProps) {
       fluid={fluid}
       className={className}
       priority={priority}
+      sampleLabel={screen === "adminQueue" || screen === "adminQueueBoard"}
     />
   );
 }
@@ -55,6 +56,7 @@ export function CustomerStepPhone({
         // was cropping glyph tops off ClipperQ Demo. Steps 2–3 keep safeTop.
         safeTop={step !== 1}
         className="mx-auto w-full max-w-[200px]"
+        sampleLabel={step === 3}
       />
     );
   }

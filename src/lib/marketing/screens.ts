@@ -6,11 +6,12 @@ export const marketingScreens = {
   chooseCompact: "/marketing/screens/choose-booking-v3.webp",
   summary: "/marketing/screens/booking-summary.webp",
   ticket: "/marketing/screens/queue-ticket.webp",
-  adminQueue: "/marketing/screens/admin-queue.webp",
+  /** Demo-shop sample queues (มิกซ์/โอ๊ต/เจ/นนท์) — v2 filenames bust stale CDN/image cache. */
+  adminQueue: "/marketing/screens/admin-queue-demo.webp",
   /** Compact how-it-works step 3: grid-focused crop (full barber columns, no side clip). */
-  adminQueueBoard: "/marketing/screens/admin-queue-board.webp",
+  adminQueueBoard: "/marketing/screens/admin-queue-board-demo.webp",
   adminTeam: "/marketing/screens/admin-team.webp",
-  adminStats: "/marketing/screens/admin-stats.webp",
+  adminStats: "/marketing/screens/admin-stats-demo.webp",
 } as const;
 
 export type MarketingScreenKey = keyof typeof marketingScreens;

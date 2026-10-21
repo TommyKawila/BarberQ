@@ -125,13 +125,16 @@ describe("marketing layout split", () => {
     );
     assert.match(phoneScreen, /safeTop/);
     assert.match(phoneScreen, /h-\[14%\]/);
+    assert.match(phoneScreen, /sampleLabel/);
+    assert.match(phoneScreen, /ตัวอย่าง/);
     assert.match(stepFn, /safeTop=\{step !== 1\}/);
+    assert.match(stepFn, /sampleLabel=\{step === 3\}/);
     assert.match(mockups, /1:\s*"choose"/);
     assert.match(mockups, /2:\s*"ticket"/);
     assert.match(mockups, /3:\s*"adminQueue"/);
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/admin-queue-board.webp")),
-      "admin-queue-board.webp missing",
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue-board-demo.webp")),
+      "admin-queue-board-demo.webp missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/choose-booking-v3.webp")),
@@ -262,12 +265,12 @@ describe("marketing layout split", () => {
       "choose-slot.webp missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/admin-queue.webp")),
-      "admin-queue.webp missing",
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue-demo.webp")),
+      "admin-queue-demo.webp missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/admin-stats.webp")),
-      "admin-stats.webp missing",
+      existsSync(resolve(root, "../public/marketing/screens/admin-stats-demo.webp")),
+      "admin-stats-demo.webp missing",
     );
     assert.ok(
       existsSync(resolve(root, "../public/marketing/screens/queue-ticket.webp")),
@@ -298,6 +301,10 @@ describe("marketing layout split", () => {
     assert.match(demo, /โอ๊ต/);
     assert.match(demo, /นนท์/);
     assert.match(demo, /marketing\.try\.disclaimer/);
+    assert.match(demo, /marketing\.try\.tapBarber/);
+    assert.match(demo, /data-demo-tap-hint/);
+    assert.match(demo, /data-hide-sticky/);
+    assert.match(demo, /data-demo-reset/);
     assert.match(demo, /by ClipperQ|brandFooter/);
     assert.match(demo, /prefers-reduced-motion/);
     assert.match(demo, /min-h-11|min-h-12|min-h-14/);
@@ -306,6 +313,7 @@ describe("marketing layout split", () => {
       dictionary.th["marketing.try.disclaimer"],
       "ตัวอย่าง — ไม่ได้จองจริง",
     );
+    assert.equal(dictionary.th["marketing.try.tapBarber"], "แตะเลือกช่าง");
     assert.match(dictionary.en["marketing.try.disclaimer"], /Demo only/i);
   });
 
@@ -395,7 +403,17 @@ describe("marketing layout split", () => {
     assert.equal(dictionary.th["marketing.pain.unreadBadge"], "99+");
     assert.equal(dictionary.en["marketing.pain.unreadBadge"], "99+");
     assert.match(dictionary.th["marketing.pain.chat5"], /พรุ่งนี้ว่างไหม/);
-    assert.match(dictionary.th["marketing.pain.chat6"], /ช่างนัทอยู่ไหม/);
+    assert.match(dictionary.th["marketing.pain.chat6"], /ช่างมิกซ์อยู่ไหม/);
+    assert.match(dictionary.th["marketing.faq.3.a"], /BMJ Open/);
+    assert.doesNotMatch(dictionary.th["marketing.line.evidence"], /BMJ Open/);
+    assert.match(dictionary.th["marketing.line.evidence"], /เครื่องคำนวณ/);
+    assert.match(
+      readFileSync(
+        resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
+        "utf8",
+      ),
+      /มิกซ์ · Mix/,
+    );
     assert.match(dictionary.th["marketing.pain.chat7"], /เลื่อนเป็นบ่าย/);
     assert.ok(dictionary.th["marketing.pain.photoAlt"]);
     assert.ok(dictionary.en["marketing.pain.photoAlt"]);
@@ -444,12 +462,12 @@ describe("marketing layout split", () => {
     const order = [
       "ClarityMarketingScript",
       "SalesHero",
+      'id="try-booking"',
+      "TryBookingDemo",
       "marketing.pain",
       'id="line-messages"',
       "how-it-works",
       "CustomerStepPhone",
-      'id="try-booking"',
-      "TryBookingDemo",
       'id="board"',
       'id="owner"',
       'id="founder"',
@@ -460,6 +478,11 @@ describe("marketing layout split", () => {
       "marketing.final",
       "sticky_cta_click",
     ];
+    assert.match(sales, /pb-\[calc\(110px\+env\(safe-area-inset-bottom\)\)\]/);
+    assert.match(
+      readFileSync(resolve(root, "components/marketing/SalesHero.tsx"), "utf8"),
+      /href="#try-booking"/,
+    );
     let cursor = 0;
     for (const token of order) {
       const idx = sales.indexOf(token, cursor);

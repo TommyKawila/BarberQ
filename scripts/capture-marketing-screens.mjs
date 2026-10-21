@@ -14,7 +14,8 @@ const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "public/marketing/screens");
 const RAW_OUT = join(OUT, "raw");
 const DEMO_SHOP = "ClipperQ Demo";
-const SHOP = "phinxstudio";
+/** ClipperQ Demo tenant — barbers มิกซ์/โอ๊ต/เจ/นนท์ + seeded sample queues. */
+const SHOP = "clipperqdemo";
 const OWNER = "mock-owner-line-id";
 const VIEW = { width: 390, height: 844 };
 const SCALE = 2;
@@ -235,11 +236,19 @@ async function main() {
     /* best-effort */
   }
 
-  // 5) Admin queue board
+  // 5) Admin queue board — expect seeded sample queues (มิกซ์/โอ๊ต/เจ/นนท์)
   await page.goto(`${BASE}/${SHOP}/admin`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(
+    () => /มิกซ์|โอ๊ต|นนท์|Mix|Oat/i.test(document.body?.innerText || ""),
+    { timeout: 20000 },
+  );
+  await page.waitForFunction(
+    () => !/ยังไม่มีคิววันนี้/.test(document.body?.innerText || ""),
+    { timeout: 15000 },
+  );
+  await page.waitForTimeout(800);
   await hideChrome(page);
-  await shot(page, "admin-queue");
+  await shot(page, "admin-queue-demo");
 
   // Compact how-it-works step 3: scroll to the barber column grid.
   await page.evaluate(() => {
@@ -251,7 +260,7 @@ async function main() {
     target?.scrollIntoView({ block: "start" });
   });
   await page.waitForTimeout(500);
-  await shot(page, "admin-queue-board");
+  await shot(page, "admin-queue-board-demo");
 
   // 6) Admin team
   await page.goto(`${BASE}/${SHOP}/admin/staff`, { waitUntil: "networkidle" });
@@ -259,15 +268,21 @@ async function main() {
   await hideChrome(page);
   await shot(page, "admin-team");
 
-  // 7) Admin summary / revenue (D5)
-  await page.goto(`${BASE}/${SHOP}/admin/stats`, { waitUntil: "networkidle" });
+  // 7) Admin summary — ?cqSample=1 shows ข้อมูลตัวอย่าง; seeded completed rows give numbers
+  await page.goto(`${BASE}/${SHOP}/admin/stats?cqSample=1`, {
+    waitUntil: "networkidle",
+  });
   await page.waitForFunction(
-    () => /สรุป|Summary|ลูกค้า/i.test(document.body?.innerText || ""),
+    () => /สรุป|Summary|ลูกค้า|ข้อมูลตัวอย่าง/i.test(document.body?.innerText || ""),
     { timeout: 20000 },
+  );
+  await page.waitForFunction(
+    () => !/ยังไม่มีคิวในช่วงนี้/.test(document.body?.innerText || ""),
+    { timeout: 15000 },
   );
   await page.waitForTimeout(800);
   await hideChrome(page);
-  await shot(page, "admin-stats");
+  await shot(page, "admin-stats-demo");
 
   await browser.close();
   console.log("Done. Screens in", OUT);

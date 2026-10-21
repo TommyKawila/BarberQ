@@ -1,6 +1,7 @@
 /**
  * Visual replica of LINE Flex Option A · Warm Note (src/lib/line/flex-messages.ts).
  * Tokens, Thai copy, and layout match the real builders — not inventing promo copy.
+ * Readable type ≥12px for sales-page mockups.
  */
 
 export const WARM_NOTE = {
@@ -24,10 +25,10 @@ export const WARM_NOTE = {
   },
 } as const;
 
-/** Sample booking used by flex-messages tests / render-option-a-flex.mjs */
+/** Sample booking — ClipperQ Demo barber set (มิกซ์ / โอ๊ต / เจ / นนท์). */
 export const WARM_NOTE_SAMPLE = {
   shopName: "ClipperQ Demo",
-  barberName: "นัท · Nat",
+  barberName: "มิกซ์ · Mix",
   /** Asia/Bangkok · Sun 18 Oct 2026 */
   date: "อา. 18 ต.ค.",
   time: "18:30–19:30",
@@ -61,13 +62,13 @@ export function WarmNoteFlexCard({
         style={{ backgroundColor: theme.tint }}
       >
         <p
-          className="text-[11px] font-bold leading-snug"
+          className="text-xs font-bold leading-snug"
           style={{ color: WARM_NOTE.ink }}
         >
           {shopName}
         </p>
         <p
-          className="mt-0.5 text-[9px] font-bold leading-snug"
+          className="mt-0.5 text-xs font-bold leading-snug"
           style={{ color: theme.accentText }}
         >
           {theme.status}
@@ -77,7 +78,7 @@ export function WarmNoteFlexCard({
       {/* Body — big date/time, separator, rows, note */}
       <div className="px-[11%] pb-[6%] pt-[8%]">
         <p
-          className="text-[10px] font-bold leading-snug"
+          className="text-xs font-bold leading-snug"
           style={{ color: WARM_NOTE.ink2 }}
         >
           {WARM_NOTE_SAMPLE.date}
@@ -92,7 +93,7 @@ export function WarmNoteFlexCard({
           className="mt-[10%] border-t"
           style={{ borderColor: WARM_NOTE.line }}
         />
-        <div className="mt-[10%] flex gap-2 text-[9px] leading-snug">
+        <div className="mt-[10%] flex gap-2 text-xs leading-snug">
           <span className="w-[28%] shrink-0" style={{ color: WARM_NOTE.muted }}>
             ช่าง
           </span>
@@ -101,7 +102,7 @@ export function WarmNoteFlexCard({
           </span>
         </div>
         {variant === "confirm" ? (
-          <div className="mt-[6%] flex gap-2 text-[9px] leading-snug">
+          <div className="mt-[6%] flex gap-2 text-xs leading-snug">
             <span className="w-[28%] shrink-0" style={{ color: WARM_NOTE.muted }}>
               เลขที่จอง
             </span>
@@ -111,7 +112,7 @@ export function WarmNoteFlexCard({
           </div>
         ) : null}
         <p
-          className="mt-[10%] text-[8.5px] leading-snug"
+          className="mt-[10%] text-xs leading-snug"
           style={{ color: WARM_NOTE.ink2 }}
         >
           {theme.note}
@@ -121,13 +122,13 @@ export function WarmNoteFlexCard({
       {/* Footer — primary + link (same labels as real builders) */}
       <div className="px-[11%] pb-[8%]">
         <div
-          className="rounded-md py-[7%] text-center text-[9.5px] font-bold text-white"
+          className="rounded-md py-[7%] text-center text-xs font-bold text-white"
           style={{ backgroundColor: theme.accent }}
         >
           {WARM_NOTE_SAMPLE.primaryCta}
         </div>
         <p
-          className="mt-[5%] py-[2%] text-center text-[8.5px]"
+          className="mt-[5%] py-[2%] text-center text-xs"
           style={{ color: WARM_NOTE.ink2 }}
         >
           {WARM_NOTE_SAMPLE.linkCta}

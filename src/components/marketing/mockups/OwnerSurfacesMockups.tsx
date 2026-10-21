@@ -17,29 +17,47 @@ type FrameProps = {
   className?: string;
   fluid?: boolean;
   width?: number;
+  sampleLabel?: boolean;
 };
 
-function SurfaceFrame({ screen, className, fluid, width }: FrameProps) {
+function SurfaceFrame({ screen, className, fluid, width, sampleLabel }: FrameProps) {
   return (
     <PhoneScreen
       screen={screen}
       fluid={fluid}
       width={width}
       className={className ?? "mx-auto"}
+      sampleLabel={sampleLabel}
     />
   );
 }
 
-export function OwnerSurfacePhone({ surface }: { surface: OwnerSurface }) {
+export function OwnerSurfacePhone({
+  surface,
+  sampleLabel,
+}: {
+  surface: OwnerSurface;
+  sampleLabel?: boolean;
+}) {
   const screen = SURFACE_SCREENS[surface];
   return (
     <>
       <div className="w-full lg:hidden">
-        <SurfaceFrame screen={screen} fluid className={PHONE_MOBILE} />
+        <SurfaceFrame
+          screen={screen}
+          fluid
+          className={PHONE_MOBILE}
+          sampleLabel={sampleLabel}
+        />
       </div>
       {/* Fixed width — avoids 0×0 collapse inside flex items-center columns */}
       <div className="hidden w-[200px] shrink-0 lg:block">
-        <SurfaceFrame screen={screen} width={200} className="mx-auto" />
+        <SurfaceFrame
+          screen={screen}
+          width={200}
+          className="mx-auto"
+          sampleLabel={sampleLabel}
+        />
       </div>
     </>
   );

@@ -73,7 +73,7 @@ export function SalesHero({
       */}
       <section className="relative max-w-full px-4 pb-8 pt-5 lg:hidden">
         <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-        <h1 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50 [word-break:keep-all]">
+        <h1 className="mt-2 text-[2.125rem] font-bold leading-[1.28] text-zinc-50 [word-break:keep-all] sm:text-[2.25rem]">
           {mobileTitle ? (
             <>
               {mobileTitle[0]}
@@ -98,7 +98,7 @@ export function SalesHero({
             />
             {/* Design C always shows “ดูวิธีทำงาน” — not the support LINE label */}
             <a
-              href="#how-it-works"
+              href="#try-booking"
               onClick={() => trackMarketingEvent("how_it_works_click")}
               className="inline-flex h-[52px] min-h-[52px] shrink-0 items-center justify-center rounded-xl border border-zinc-400/55 bg-transparent px-3.5 text-[15px] font-medium text-zinc-100 hover:border-zinc-300 hover:text-zinc-50"
             >
@@ -108,7 +108,7 @@ export function SalesHero({
           <RiskReversalRow className="mt-3 justify-start gap-x-3 text-[13px] sm:justify-start" />
         </div>
 
-        <div className="relative mt-5 aspect-[4/5] overflow-hidden rounded-2xl">
+        <div className="relative mt-5 h-[45vh] max-h-[45vh] w-full overflow-hidden rounded-2xl">
           <div
             className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-10 bg-gradient-to-b from-zinc-950/90 to-transparent"
             aria-hidden
@@ -169,7 +169,7 @@ export function SalesHero({
                   </a>
                 ) : (
                   <a
-                    href="#how-it-works"
+                    href="#try-booking"
                     onClick={() => trackMarketingEvent("how_it_works_click")}
                     className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-500/45 bg-transparent px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-400 hover:text-zinc-50"
                   >
