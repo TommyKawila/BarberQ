@@ -315,7 +315,7 @@ export function SalesPage() {
                   >
                     <Check size={14} strokeWidth={3} />
                   </span>
-                  <p className="text-[1.05rem] font-semibold leading-[1.45] text-zinc-50 sm:text-lg lg:text-[22px]">
+                  <p className="text-[1.05rem] font-normal leading-[1.65] text-zinc-300 sm:text-lg lg:text-[22px] lg:leading-[1.6]">
                     <PainCopy messageKey={`marketing.pain.bullet${n}` as MessageKey} />
                   </p>
                 </li>
