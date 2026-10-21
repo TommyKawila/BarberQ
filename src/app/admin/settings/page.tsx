@@ -558,7 +558,7 @@ export default function AdminSettingsPage() {
   const previewShopName = normalizeShopName(shopNameInput);
 
   const sectionIndexLinksMobile = (
-    <div className="flex gap-2 overflow-x-auto snap-x snap-mandatory [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <div className="flex flex-wrap gap-2">
       {sectionTabs.map((tab) => {
         const active = activeSection === tab.id;
         return (
@@ -570,7 +570,7 @@ export default function AdminSettingsPage() {
               event.preventDefault();
               scrollToSection(tab.id);
             }}
-            className={`inline-flex h-11 shrink-0 snap-start items-center rounded-full px-4 text-sm font-medium transition ${
+            className={`inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition ${
               active
                 ? "bg-amber-400/15 text-amber-400"
                 : "bg-zinc-900 text-zinc-400 hover:text-zinc-200"

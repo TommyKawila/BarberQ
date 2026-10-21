@@ -81,7 +81,7 @@ export function GuidePage() {
             <a
               key={href}
               href={href}
-              className="min-h-10 rounded-lg border border-zinc-700 px-3 py-2 text-zinc-300 hover:border-[#F6AD34]/50"
+              className="inline-flex min-h-11 items-center rounded-lg border border-zinc-700 px-3 py-2 text-zinc-300 hover:border-[#F6AD34]/50"
             >
               {label}
             </a>
@@ -99,15 +99,18 @@ export function GuidePage() {
               <li>ทำตามขั้นตอนเชื่อม Channel ของ LINE OA ร้าน</li>
               <li>คัดลอกลิงก์จองของร้าน ไปวางใน Rich Menu หรือปุ่มในแชท</li>
             </ol>
-            <p className="text-sm text-zinc-500">
-              ยังไม่มีร้าน?{" "}
-              <Link href="/trial" className="text-[#F6AD34] underline underline-offset-2">
+            <p className="flex flex-wrap items-center gap-x-1 gap-y-1 text-sm text-zinc-500">
+              <span>ยังไม่มีร้าน?</span>
+              <Link
+                href="/trial"
+                className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
+              >
                 ทดลองใช้ฟรี 30 วัน
-              </Link>{" "}
-              หรือ{" "}
+              </Link>
+              <span>หรือ</span>
               <a
                 href={CLIPPERQ_OA_LINE_URL}
-                className="text-[#F6AD34] underline underline-offset-2"
+                className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -182,32 +185,32 @@ export function GuidePage() {
               <p className="text-sm font-medium text-zinc-200">
                 เทมเพลต PNG (ทางเลือก) — อัปโหลดใน LINE OA Manager
               </p>
-              <ul className="mt-3 space-y-2">
-                <li>
+              <ul className="mt-3 space-y-1">
+                <li className="flex flex-wrap items-center gap-x-1">
                   <a
                     href="/rich-menu/shop-large.png"
                     download
-                    className="text-[#F6AD34] underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                   >
                     ดาวน์โหลด shop-large.png
                   </a>
                   <span className="text-zinc-500"> · Large 2500×1686</span>
                 </li>
-                <li>
+                <li className="flex flex-wrap items-center gap-x-1">
                   <a
                     href="/rich-menu/shop-compact.png"
                     download
-                    className="text-[#F6AD34] underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                   >
                     ดาวน์โหลด shop-compact.png
                   </a>
                   <span className="text-zinc-500"> · Compact 2500×843</span>
                 </li>
-                <li>
+                <li className="flex flex-wrap items-center gap-x-1">
                   <a
                     href="/rich-menu/variants/shop-large-nologo.png"
                     download
-                    className="text-[#F6AD34] underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                   >
                     shop-large-nologo.png
                   </a>
@@ -217,16 +220,16 @@ export function GuidePage() {
                   <a
                     href="/rich-menu/variants/shop-compact-nologo.png"
                     download
-                    className="text-[#F6AD34] underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                   >
                     shop-compact-nologo.png
                   </a>
                 </li>
-                <li>
+                <li className="flex flex-wrap items-center gap-x-1">
                   <a
                     href="/rich-menu/variants/shop-large-longname.png"
                     download
-                    className="text-[#F6AD34] underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                   >
                     shop-large-longname.png
                   </a>
@@ -236,7 +239,7 @@ export function GuidePage() {
                   <a
                     href="/rich-menu/variants/shop-compact-longname.png"
                     download
-                    className="text-[#F6AD34] underline underline-offset-2"
+                    className="inline-flex min-h-11 items-center text-[#F6AD34] underline underline-offset-2"
                   >
                     shop-compact-longname.png
                   </a>

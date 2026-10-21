@@ -808,7 +808,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => shiftDay(-1)}
-              className="flex min-h-11 min-w-9 items-center justify-center rounded-xl text-zinc-300"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-zinc-300"
               aria-label={t("admin.prevDay")}
             >
               ‹
@@ -831,7 +831,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => shiftDay(1)}
-              className="flex min-h-11 min-w-9 items-center justify-center rounded-xl text-zinc-300"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-zinc-300"
               aria-label={t("admin.nextDay")}
             >
               ›

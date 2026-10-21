@@ -307,7 +307,10 @@ export default function PilotPage() {
         >
           {authLoading ? "Loading..." : "เข้าสู่ระบบ"}
         </button>
-        <Link href="/superadmin" className="text-sm text-zinc-500 underline">
+        <Link
+          href="/superadmin"
+          className="inline-flex min-h-11 items-center text-sm text-zinc-500 underline"
+        >
           กลับ Super Admin
         </Link>
       </section>
@@ -331,7 +334,7 @@ export default function PilotPage() {
         <div className="mt-2 flex flex-wrap gap-2">
           <Link
             href="/superadmin"
-            className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-300"
+            className="inline-flex min-h-11 items-center rounded-lg border border-zinc-700 px-3 text-xs text-zinc-300"
           >
             Super Admin
           </Link>
