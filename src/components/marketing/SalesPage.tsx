@@ -32,6 +32,7 @@ import {
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
 import { PhoneScreen } from "@/components/marketing/mockups/PhoneScreen";
 import { TryBookingDemo } from "@/components/marketing/TryBookingDemo";
+import { PainHammerTitle } from "@/components/marketing/PainHammerTitle";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
 import { useSalesPageReveal } from "@/hooks/useSalesPageReveal";
 import { useI18n } from "@/lib/i18n/locale-provider";
@@ -303,18 +304,7 @@ export function SalesPage() {
       <section className="overflow-x-clip bg-zinc-950">
         <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-10 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:pb-16 lg:pt-[112px] xl:px-[120px]">
           <div className="order-2 lg:order-1">
-            <h2
-              data-reveal
-              className="text-[2rem] font-extrabold leading-[1.28] tracking-tight sm:text-[2.5rem] lg:text-[58px] xl:text-[64px]"
-            >
-              <span className="text-amber-300">
-                <span className="text-zinc-50">“</span>
-                {t("marketing.pain.titleLead")}
-                <span className="text-zinc-50">”</span>
-              </span>
-              <br />
-              <span className="text-zinc-50">{t("marketing.pain.titleRest")}</span>
-            </h2>
+            <PainHammerTitle />
 
             <ul className="mt-10 lg:mt-10">
               {PAIN_BULLETS.map((n, i) => (

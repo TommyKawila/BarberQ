@@ -306,6 +306,26 @@ describe("marketing layout split", () => {
     assert.match(dictionary.en["marketing.try.disclaimer"], /Demo only/i);
   });
 
+  it("pain heading uses once-per-view hammer line reveal", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const hammer = readFileSync(
+      resolve(root, "components/marketing/PainHammerTitle.tsx"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    assert.match(sales, /PainHammerTitle/);
+    assert.match(hammer, /marketing\.pain\.titleLead/);
+    assert.match(hammer, /marketing\.pain\.titleRest/);
+    assert.match(hammer, /IntersectionObserver/);
+    assert.match(hammer, /prefers-reduced-motion/);
+    assert.match(hammer, /pain-hammer-hit/);
+    assert.match(css, /pain-hammer-in/);
+    assert.match(css, /data-pain-hammer/);
+  });
+
   it("sales page uses progressive scroll reveals", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
@@ -337,9 +357,14 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/mockups/PainStormVisual.tsx"),
       "utf8",
     );
+    const hammer = readFileSync(
+      resolve(root, "components/marketing/PainHammerTitle.tsx"),
+      "utf8",
+    );
     assert.match(sales, /PainStormVisual/);
-    assert.match(sales, /marketing\.pain\.titleLead/);
-    assert.match(sales, /marketing\.pain\.titleRest/);
+    assert.match(sales, /PainHammerTitle/);
+    assert.match(hammer, /marketing\.pain\.titleLead/);
+    assert.match(hammer, /marketing\.pain\.titleRest/);
     assert.match(sales, /marketing\.pain\.bullet/);
     assert.match(sales, /marketing\.pain\.punchline/);
     assert.match(sales, /marketing\.pain\.photoAlt/);

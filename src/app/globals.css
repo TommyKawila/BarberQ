@@ -255,6 +255,59 @@ html[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
   }
 }
 
+/*
+  Pain H2 hammer — progressive. Lines stay visible until data-pain-hammer="on".
+  filter + transform only (no layout shift of surrounding blocks).
+*/
+@keyframes pain-hammer-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.15) translate3d(0, 3px, 0) rotate(-0.7deg);
+    filter: blur(4px);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(1.04) translate3d(-1px, 0, 0) rotate(0.5deg);
+    filter: blur(1px);
+  }
+  62% {
+    transform: scale(0.985) translate3d(1px, 0, 0) rotate(-0.35deg);
+    filter: blur(0);
+  }
+  82% {
+    transform: scale(1.012) translate3d(-0.5px, 0, 0) rotate(0.15deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0) rotate(0deg);
+    filter: blur(0);
+  }
+}
+
+[data-pain-hammer="on"] .pain-hammer-line:not(.pain-hammer-hit) {
+  opacity: 0;
+  transform: scale(1.15);
+  filter: blur(4px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-pain-hammer="on"] .pain-hammer-line.pain-hammer-hit,
+  [data-pain-hammer="done"] .pain-hammer-line.pain-hammer-hit {
+    animation: pain-hammer-in 0.35s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pain-hammer="on"] .pain-hammer-line,
+  [data-pain-hammer="on"] .pain-hammer-line.pain-hammer-hit,
+  [data-pain-hammer="done"] .pain-hammer-line {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+}
+
 @keyframes pain-notif-in {
   0% {
     opacity: 0;
