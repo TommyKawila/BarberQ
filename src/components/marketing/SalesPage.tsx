@@ -462,39 +462,6 @@ export function SalesPage() {
                 ))}
               </div>
 
-              {marketingClaims.reminderShortLeads ? (
-                <p className="relative mt-10 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
-                  <span className="font-medium text-zinc-200">
-                    {t("marketing.line.leadsLabel")}
-                  </span>
-                  <span className="mt-1.5 block text-zinc-400">
-                    {(
-                      [
-                        "marketing.line.lead1d",
-                        "marketing.line.lead3h",
-                        "marketing.line.lead1h",
-                        "marketing.line.lead30m",
-                        "marketing.line.leadNone",
-                      ] as const
-                    )
-                      .map((key) => t(key))
-                      .join(" · ")}
-                  </span>
-                </p>
-              ) : null}
-
-              {marketingClaims.customerSelfReschedule ? (
-                <p className="relative mt-6 flex gap-3 text-base leading-[1.65] text-zinc-400 lg:text-[1.0625rem]">
-                  <CalendarClock size={18} className="mt-1 shrink-0 text-amber-400/80" />
-                  <span>
-                    <span className="font-medium text-zinc-200">
-                      {t("marketing.line.rescheduleTitle")}
-                    </span>
-                    <span className="mt-1 block">{t("marketing.line.rescheduleBody")}</span>
-                  </span>
-                </p>
-              ) : null}
-
               <div className="relative mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start">
                 <PrimaryTrialCta
                   labelKey="marketing.line.cta"

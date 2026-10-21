@@ -437,8 +437,10 @@ describe("marketing layout split", () => {
     );
     assert.match(sales, /marketingClaims\.reminderShortLeads/);
     assert.match(sales, /marketingClaims\.customerSelfReschedule/);
-    assert.match(sales, /marketing\.line\.lead3h/);
-    assert.match(sales, /marketing\.line\.rescheduleTitle/);
+    assert.match(sales, /marketing\.line\.bullet2ShortLeads/);
+    assert.match(sales, /marketing\.line\.bullet3/);
+    assert.doesNotMatch(sales, /marketing\.line\.leadsLabel/);
+    assert.doesNotMatch(sales, /marketing\.line\.rescheduleTitle/);
     // Option B mood plate uses solutionCustomer src (no framed MarketingPhotoSlot)
     assert.match(sales, /marketingPhotoSlots\.solutionCustomer/);
     assert.match(sales, /slot="solutionBarberCalm"/);
