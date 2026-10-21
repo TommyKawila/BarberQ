@@ -66,88 +66,69 @@ export function SalesHero({
       <MarketingNav />
 
       {/*
-        Mobile / tablet (<lg): copy+CTA above, then full-bleed hero plate.
-        Zoom crops dark headroom so the phone reads ~55–60% of viewport width;
-        height capped in svh so hand/wrist stay above Safari chrome.
+        Mobile / tablet (<lg): design C — flat zinc-950, text then CTAs then photo.
+        Never place the photo behind type.
+        object-position nudged ~10% toward bottom so wrist stays in frame.
       */}
-      <section className="relative max-w-full pb-8 pt-5 lg:hidden">
-        <div className="px-4">
-          <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-          <h1 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50 [word-break:keep-all]">
-            {mobileTitle ? (
-              <>
-                {mobileTitle[0]}
-                <br />
-                {mobileTitle[1]}
-              </>
-            ) : (
-              t("marketing.hero.title")
-            )}
-          </h1>
-          <p className="mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300">
-            {t("marketing.hero.subtitleShort")}
-          </p>
+      <section className="relative max-w-full px-4 pb-8 pt-5 lg:hidden">
+        <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
+        <h1 className="mt-2 text-[1.75rem] font-bold leading-[1.3] text-zinc-50 [word-break:keep-all]">
+          {mobileTitle ? (
+            <>
+              {mobileTitle[0]}
+              <br />
+              {mobileTitle[1]}
+            </>
+          ) : (
+            t("marketing.hero.title")
+          )}
+        </h1>
+        <p className="mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300">
+          {t("marketing.hero.subtitleShort")}
+        </p>
 
-          <div ref={heroCtaRef} className="relative mt-5 max-w-full">
-            <div className="flex w-full items-stretch gap-2.5">
-              <PrimaryTrialCta
-                labelKey="marketing.hero.cta"
-                placement="hero"
-                showRisk={false}
-                className="h-[52px] min-h-[52px] flex-1 justify-center px-4 py-0 text-center text-[15px] sm:text-base"
-              />
-              {/* Design C always shows “ดูวิธีทำงาน” — not the support LINE label */}
-              <a
-                href="#how-it-works"
-                onClick={() => trackMarketingEvent("how_it_works_click")}
-                className="inline-flex h-[52px] min-h-[52px] shrink-0 items-center justify-center rounded-xl border border-zinc-400/55 bg-transparent px-3.5 text-[15px] font-medium text-zinc-100 hover:border-zinc-300 hover:text-zinc-50"
-              >
-                {t("marketing.hero.secondaryFallback")}
-              </a>
-            </div>
-            <RiskReversalRow className="mt-3 justify-start gap-x-3 text-[13px] sm:justify-start" />
-          </div>
-        </div>
-
-        <div className="relative mt-4 w-full overflow-hidden">
-          {/*
-            Full-bleed plate (edge-to-edge). Inner 4:5 at 205% width → phone
-            ≈55–60vw (source phone is ~28% of plate). translateY strips dark
-            ceiling; svh height keeps phone-top → hand/wrist above Safari chrome.
-          */}
-          <div
-            className="relative w-full overflow-hidden"
-            style={{ height: "min(40svh, 340px)" }}
-            data-hero-mobile-plate
-          >
-            <div
-              className="absolute left-1/2 top-0 w-[205%]"
-              style={{
-                aspectRatio: "4 / 5",
-                transform: "translate(-50%, -46%)",
-              }}
+        <div ref={heroCtaRef} className="relative mt-5 max-w-full">
+          <div className="flex w-full items-stretch gap-2.5">
+            <PrimaryTrialCta
+              labelKey="marketing.hero.cta"
+              placement="hero"
+              showRisk={false}
+              className="h-[52px] min-h-[52px] flex-1 justify-center px-4 py-0 text-center text-[15px] sm:text-base"
+            />
+            {/* Design C always shows “ดูวิธีทำงาน” — not the support LINE label */}
+            <a
+              href="#how-it-works"
+              onClick={() => trackMarketingEvent("how_it_works_click")}
+              className="inline-flex h-[52px] min-h-[52px] shrink-0 items-center justify-center rounded-xl border border-zinc-400/55 bg-transparent px-3.5 text-[15px] font-medium text-zinc-100 hover:border-zinc-300 hover:text-zinc-50"
             >
-              <MarketingPhotoSlot
-                slot="heroMobile"
-                alt=""
-                priority
-                fill
-                sizes="205vw"
-                objectPosition="center center"
-                className="h-full w-full !rounded-none border-0"
-              />
-            </div>
+              {t("marketing.hero.secondaryFallback")}
+            </a>
           </div>
+          <RiskReversalRow className="mt-3 justify-start gap-x-3 text-[13px] sm:justify-start" />
         </div>
 
-        <div className="px-4">
-          <p className="mt-4 max-w-full break-words text-sm leading-relaxed text-zinc-400">
-            {td("marketing.hero.micro")}
-          </p>
-          <p className="mt-2 max-w-full text-sm font-medium text-amber-300/95">
-            {t("marketing.hero.setup")}
-          </p>
+        <div className="relative mt-5 aspect-[4/5] overflow-hidden rounded-2xl">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-10 bg-gradient-to-b from-zinc-950/90 to-transparent"
+            aria-hidden
+          />
+          <MarketingPhotoSlot
+            slot="heroMobile"
+            alt=""
+            priority
+            fill
+            sizes="(max-width: 1023px) 100vw, 0px"
+            objectPosition="center 60%"
+            className="h-full w-full rounded-2xl"
+          />
         </div>
+
+        <p className="mt-4 max-w-full break-words text-sm leading-relaxed text-zinc-400">
+          {td("marketing.hero.micro")}
+        </p>
+        <p className="mt-2 max-w-full text-sm font-medium text-amber-300/95">
+          {t("marketing.hero.setup")}
+        </p>
       </section>
 
       {/* Desktop copy column locked (Tommy): stays on dark left of hero-composite */}
