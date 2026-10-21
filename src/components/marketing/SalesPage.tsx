@@ -256,12 +256,18 @@ export function SalesPage() {
     t("marketing.pain.chat2"),
     t("marketing.pain.chat3"),
     t("marketing.pain.chat4"),
+    t("marketing.pain.chat5"),
+    t("marketing.pain.chat6"),
+    t("marketing.pain.chat7"),
   ];
   const painTimes = [
     t("marketing.pain.chatTime1"),
     t("marketing.pain.chatTime2"),
     t("marketing.pain.chatTime3"),
     t("marketing.pain.chatTime4"),
+    t("marketing.pain.chatTime5"),
+    t("marketing.pain.chatTime6"),
+    t("marketing.pain.chatTime7"),
   ];
 
   const lineBullets = [

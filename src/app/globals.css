@@ -219,6 +219,42 @@ html {
   }
 }
 
+@keyframes pain-notif-in {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.82);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(-6px) scale(1.06);
+  }
+  78% {
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pain-badge-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.18) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(8deg);
+  }
+  75% {
+    transform: scale(1.14) rotate(-5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .hero-phones-enter {
     animation: hero-phones-in 0.6s ease-out both;
@@ -234,5 +270,13 @@ html {
 
   .cq-toast-enter {
     animation: cq-toast-in 0.2s ease-out both;
+  }
+
+  .pain-notif-enter {
+    animation: pain-notif-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .pain-badge-shake {
+    animation: pain-badge-pop 0.42s ease-out;
   }
 }
