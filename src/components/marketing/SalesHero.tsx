@@ -108,7 +108,7 @@ export function SalesHero({
           <RiskReversalRow className="mt-3 justify-center gap-x-3 text-[13px] sm:justify-center" />
         </div>
 
-        <div className="relative mx-auto mt-5 w-full max-w-[260px]">
+        <div className="relative mx-auto mt-5 flex w-full justify-center">
           <HeroLineBookingAnim initialScene={initialScene} />
         </div>
 
@@ -188,9 +188,9 @@ export function SalesHero({
             </a>
           </div>
 
-          <div className="relative z-10 flex justify-center lg:justify-end lg:pr-6">
+          <div className="relative z-10 flex justify-center lg:justify-end lg:pr-4">
             <HeroLineBookingAnim
-              className="w-full max-w-[300px]"
+              className="w-full max-w-[min(420px,46vw)]"
               initialScene={initialScene}
             />
           </div>

@@ -89,6 +89,15 @@ describe("marketing layout split", () => {
     assert.match(heroAnim, /HOW_DEMO_BOOKING/);
     assert.match(heroAnim, /ตัวอย่างร้านสาธิต/);
     assert.match(heroAnim, /booking-success-chair-capture/);
+    assert.match(heroAnim, /hero-phone-mockup\.webp/);
+    assert.match(heroAnim, /hero-phone-mockup\.avif/);
+    assert.match(heroAnim, /32\.755%/);
+    assert.match(heroAnim, /21\.441%/);
+    assert.match(heroAnim, /34\.259%/);
+    assert.match(heroAnim, /56\.25%/);
+    assert.match(heroAnim, /ResizeObserver/);
+    assert.match(heroAnim, /text-\[20px\]/);
+    assert.doesNotMatch(heroAnim, /PhoneFrame/);
     assert.match(heroAnim, /min-h-11|h-11/);
     assert.match(heroAnim, /aria-hidden/);
     assert.match(dictionary.th["marketing.hero.tryYourself"], /ลองจองเอง/);
