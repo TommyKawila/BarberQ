@@ -466,36 +466,63 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/PainHammerTitle.tsx"),
       "utf8",
     );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
     assert.match(sales, /PainStormVisual/);
     assert.match(sales, /PainHammerTitle/);
     assert.match(hammer, /marketing\.pain\.titleLead/);
     assert.match(hammer, /marketing\.pain\.titleRest/);
     assert.match(sales, /marketing\.pain\.bullet/);
     assert.match(sales, /marketing\.pain\.punchline/);
-    assert.match(sales, /marketing\.pain\.photoAlt/);
     assert.match(sales, /border-b border-zinc-800/);
-    assert.match(storm, /unreadLabel/);
-    assert.match(storm, /times/);
-    assert.match(storm, /#06C755/);
-    assert.match(storm, /aspect-\[4\/5\]/);
-    assert.match(storm, /lg:aspect-\[5\/6\]/);
-    // Notification storm only — no stock photo / object-cover plate
+    // Compact auto-height frame — no empty aspect photo box
+    assert.doesNotMatch(storm, /aspect-\[4\/5\]|aspect-\[5\/6\]/);
     assert.doesNotMatch(storm, /object-cover/);
     assert.doesNotMatch(storm, /MarketingPhotoSlot|painBarber/);
-    assert.match(storm, /bottom-4 left-3/);
-    assert.match(storm, /gap-2/);
+    assert.match(storm, /#1A1A1A/);
+    assert.match(storm, /rounded-\[20px\]/);
+    assert.match(storm, /#06C755/);
+    assert.match(storm, /#E5484D/);
+    assert.match(storm, /stormTitle/);
+    assert.match(storm, /stormUnread/);
+    assert.match(storm, /unreadBadge/);
+    assert.match(storm, /STORM_CARDS/);
+    assert.match(storm, /STAGGER_MS = 180/);
+    assert.match(storm, /data-pain-overlap/);
+    assert.match(storm, /pain-storm-card/);
+    assert.match(storm, /sampleBadge/);
     assert.match(storm, /prefers-reduced-motion/);
     assert.match(storm, /IntersectionObserver/);
-    assert.match(storm, /pain-notif-enter/);
-    assert.match(storm, /pain-badge-shake/);
-    assert.match(storm, /MAX_VISIBLE/);
-    assert.match(sales, /marketing\.pain\.chat5/);
-    assert.match(sales, /marketing\.pain\.chat7/);
+    assert.match(storm, /classList\.add\("js"\)/);
+    assert.match(css, /pain-storm-card-in/);
+    // Never pre-hide storm cards with opacity:0 (0.7 pile-up opacity is OK)
+    assert.doesNotMatch(
+      css,
+      /html\.js \[data-pain-storm\][^{]*\{[^}]*opacity:\s*0\s*[;}]/,
+    );
     assert.equal(dictionary.th["marketing.pain.unreadBadge"], "ทั้งวัน");
     assert.equal(dictionary.en["marketing.pain.unreadBadge"], "All day");
     assert.doesNotMatch(dictionary.th["marketing.pain.unreadBadge"], /99\+/);
-    assert.match(dictionary.th["marketing.pain.chat5"], /พรุ่งนี้ว่างไหม/);
-    assert.match(dictionary.th["marketing.pain.chat6"], /ช่างมิกซ์อยู่ไหม/);
+    assert.match(
+      dictionary.th["marketing.pain.stormTitle"],
+      /แชทเข้าทั้งวัน ระหว่างที่มือคุณตัดผมอยู่/,
+    );
+    assert.match(
+      dictionary.th["marketing.pain.stormUnread"],
+      /ยังไม่ได้ตอบอีกหลายข้อความ/,
+    );
+    assert.doesNotMatch(dictionary.th["marketing.pain.stormUnread"], /\d/);
+    assert.match(dictionary.th["marketing.pain.chat1"], /ว่างกี่โมงครับ/);
+    assert.match(dictionary.th["marketing.pain.chat2"], /วันนี้มีคิวไหม/);
+    assert.match(dictionary.th["marketing.pain.chat3"], /ช่างเจว่างไหมครับ/);
+    assert.match(dictionary.th["marketing.pain.chat4"], /ขอเลื่อนเป็นพรุ่งนี้ได้ไหม/);
+    assert.match(dictionary.th["marketing.pain.chat5"], /เลื่อนเป็นบ่ายได้ไหม/);
+    assert.equal(dictionary.th["marketing.pain.chatTime1"], "09:14");
+    assert.equal(dictionary.th["marketing.pain.chatTime2"], "11:32");
+    assert.equal(dictionary.th["marketing.pain.chatTime3"], "14:05");
+    assert.equal(dictionary.th["marketing.pain.chatTime4"], "17:48");
+    assert.equal(dictionary.th["marketing.pain.chatTime5"], "19:27");
+    assert.ok(dictionary.en["marketing.pain.stormTitle"]);
+    assert.ok(dictionary.en["marketing.pain.stormUnread"]);
     // BMJ Open + message-cost calculator live in FAQ (faq.5), not line.evidence
     assert.match(dictionary.th["marketing.faq.5.a"], /BMJ Open/);
     assert.match(dictionary.th["marketing.faq.5.a"], /เครื่องคำนวณ/);
@@ -508,7 +535,6 @@ describe("marketing layout split", () => {
       ),
       /มิกซ์ · Mix/,
     );
-    assert.match(dictionary.th["marketing.pain.chat7"], /เลื่อนเป็นบ่าย/);
     assert.ok(dictionary.th["marketing.pain.photoAlt"]);
     assert.ok(dictionary.en["marketing.pain.photoAlt"]);
     assert.equal(dictionary.th["marketing.pain.titleLead"], "ว่างกี่โมงครับ?");

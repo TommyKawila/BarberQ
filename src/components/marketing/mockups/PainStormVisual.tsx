@@ -1,80 +1,75 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 
-const MAX_VISIBLE = 3;
-/** Rapid cadence so the storm feels annoying / overwhelming. */
-const POP_INTERVAL_MS = 780;
+/** Five chats in time order — pop 180ms apart (<1.2s total). */
+const STORM_CARDS = [
+  { text: "marketing.pain.chat1", time: "marketing.pain.chatTime1" },
+  { text: "marketing.pain.chat2", time: "marketing.pain.chatTime2" },
+  { text: "marketing.pain.chat3", time: "marketing.pain.chatTime3" },
+  { text: "marketing.pain.chat4", time: "marketing.pain.chatTime4" },
+  { text: "marketing.pain.chat5", time: "marketing.pain.chatTime5" },
+] as const satisfies readonly { text: MessageKey; time: MessageKey }[];
 
-type VisibleBubble = {
-  id: number;
-  text: string;
-  time: string;
-};
+const STAGGER_MS = 180;
 
-function LineBubble({
+function LineCard({
   text,
   time,
-  opacity = 1,
-  className = "",
+  overlap,
+  revealIndex,
+  animate,
 }: {
   text: string;
   time: string;
-  opacity?: number;
-  className?: string;
+  /** Cards 4–5: slight pile-up */
+  overlap?: boolean;
+  revealIndex: number;
+  animate: boolean;
 }) {
   return (
     <div
-      className={`flex h-12 w-[300px] max-w-[calc(100%-24px)] items-center gap-2.5 rounded-2xl border border-zinc-700/50 bg-zinc-900/88 pl-2 pr-3 shadow-[0_12px_28px_rgba(0,0,0,0.45)] backdrop-blur-sm lg:w-full lg:max-w-none ${className}`}
-      style={{ opacity }}
+      data-pain-card
+      data-pain-overlap={overlap ? "" : undefined}
+      className={`flex min-h-14 w-full items-center gap-2.5 rounded-2xl border border-white/[0.08] bg-zinc-900/90 py-2.5 pl-2 pr-3 shadow-[0_8px_20px_rgba(0,0,0,0.35)] ${
+        overlap ? "relative z-0 origin-top" : "relative z-10"
+      } ${animate ? "pain-storm-card" : ""} ${
+        overlap && !animate ? "-mt-2 scale-[0.97] opacity-70" : ""
+      }`}
+      style={
+        animate
+          ? ({
+              ["--pain-card-delay" as string]: `${revealIndex * STAGGER_MS}ms`,
+            } as { [key: string]: string })
+          : undefined
+      }
     >
       <span
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[9px] text-[9px] font-bold tracking-tight text-white"
         style={{ backgroundColor: "#06C755" }}
+        aria-hidden
       >
         LINE
       </span>
-      <p className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-zinc-100 lg:text-[16px]">
+      <p className="min-w-0 flex-1 text-[15px] font-medium leading-snug text-zinc-100">
         {text}
       </p>
-      <span className="shrink-0 text-[12px] tabular-nums text-zinc-400 lg:text-[13px]">
-        {time}
-      </span>
+      <span className="shrink-0 text-[12px] tabular-nums text-zinc-400">{time}</span>
     </div>
   );
 }
 
-function bubbleOpacity(index: number, total: number): number {
-  if (total <= 1) return 1;
-  if (index === total - 1) return 1;
-  if (index === total - 2) return 0.88;
-  return 0.72;
-}
-
 /**
- * Pain visual — LINE notification storm only (no AI/stock photo).
- * Real product metaphor: chat piling up while you cut hair.
+ * Problem-section chat storm — compact auto-height frame (no photo / empty aspect box).
+ * Cards visible by default; JS stagger is transform-only enter (never opacity:0 pre-hide).
  */
-export function PainStormVisual({
-  messages,
-  times,
-  unreadLabel,
-  alt,
-  className = "",
-}: {
-  messages: string[];
-  times: string[];
-  unreadLabel: string;
-  alt: string;
-  className?: string;
-}) {
+export function PainStormVisual({ className = "" }: { className?: string }) {
+  const { t } = useI18n();
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const nextIdxRef = useRef(0);
-  const idRef = useRef(0);
-  const [inView, setInView] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const [visible, setVisible] = useState<VisibleBubble[]>([]);
-  const [badgeKey, setBadgeKey] = useState(0);
+  const [played, setPlayed] = useState(false);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -86,117 +81,78 @@ export function PainStormVisual({
 
   useEffect(() => {
     const el = rootRef.current;
-    if (!el) return;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const html = document.documentElement;
+    html.classList.add("js");
+
+    if (reducedMotion) {
+      setPlayed(true);
+      return;
+    }
+
+    let done = false;
     const obs = new IntersectionObserver(
-      ([entry]) => setInView(entry.isIntersecting),
-      { threshold: 0.25 },
+      ([entry]) => {
+        if (!entry.isIntersecting || done) return;
+        done = true;
+        setPlayed(true);
+        obs.disconnect();
+      },
+      { threshold: 0.3 },
     );
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [reducedMotion]);
 
-  useEffect(() => {
-    if (!inView || reducedMotion || messages.length === 0) return;
-
-    const pushNext = () => {
-      const i = nextIdxRef.current % messages.length;
-      nextIdxRef.current += 1;
-      const id = ++idRef.current;
-      const text = messages[i] ?? "";
-      const time = times[i % Math.max(times.length, 1)] ?? "";
-      setVisible((prev) => {
-        const next = [...prev, { id, text, time }];
-        return next.length > MAX_VISIBLE ? next.slice(-MAX_VISIBLE) : next;
-      });
-      setBadgeKey((k) => k + 1);
-    };
-
-    pushNext();
-    const timer = window.setInterval(pushNext, POP_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [inView, reducedMotion, messages, times]);
-
-  /** Static fallback: first + last of day (same beat as pre-animation layout). */
-  const staticBubbles: VisibleBubble[] =
-    messages.length === 0
-      ? []
-      : [
-          { id: 1, text: messages[0] ?? "", time: times[0] ?? "" },
-          {
-            id: 2,
-            text: messages[Math.min(3, messages.length - 1)] ?? "",
-            time: times[Math.min(3, times.length - 1)] ?? "",
-          },
-        ];
-
-  const stack = reducedMotion || !inView ? staticBubbles : visible;
-  const showGhosts = reducedMotion || !inView;
+  const animate = !reducedMotion;
 
   return (
     <div
       ref={rootRef}
-      aria-label={alt}
       data-pain-storm
+      data-pain-storm-played={played ? "true" : undefined}
+      aria-label={t("marketing.pain.photoAlt")}
       className={`relative w-full max-w-[420px] justify-self-center lg:max-w-none lg:justify-self-end ${className}`}
     >
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[28px] border border-zinc-800 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 lg:aspect-[5/6]">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-40"
-          style={{
-            background:
-              "radial-gradient(ellipse 70% 45% at 50% 20%, rgba(251,191,36,0.08) 0%, transparent 65%)",
-          }}
-          aria-hidden
-        />
-
-        <span
-          key={badgeKey}
-          className={`absolute right-3 top-3 z-20 flex h-8 min-w-8 items-center justify-center rounded-full bg-red-500 px-2.5 text-sm font-bold leading-none text-white shadow-[0_0_0_3px_rgba(9,9,11,0.55)] sm:right-4 sm:top-4 sm:h-9 sm:min-w-9 sm:text-base ${
-            !reducedMotion && inView && badgeKey > 0 ? "pain-badge-shake" : ""
-          }`}
-        >
-          {unreadLabel}
-        </span>
-
-        <div
-          className="absolute bottom-4 left-3 z-10 flex w-[min(100%-1.5rem,20.5rem)] flex-col gap-2 lg:left-auto lg:right-5"
-          aria-hidden
-        >
-          {showGhosts && stack.length >= 2 ? (
-            <>
-              <LineBubble
-                text={stack[0]?.text ?? ""}
-                time={stack[0]?.time ?? ""}
-                opacity={0.85}
-              />
-              <div className="relative">
-                <div
-                  className="pointer-events-none absolute inset-x-4 top-3 h-12 rounded-2xl border border-zinc-700 bg-zinc-800 opacity-35 lg:hidden"
-                  aria-hidden
-                />
-                <div
-                  className="pointer-events-none absolute inset-x-2 top-1.5 h-12 rounded-2xl border border-zinc-700 bg-zinc-800 opacity-60 lg:hidden"
-                  aria-hidden
-                />
-                <LineBubble
-                  text={stack[1]?.text ?? ""}
-                  time={stack[1]?.time ?? ""}
-                  opacity={1}
-                />
-              </div>
-            </>
-          ) : (
-            stack.map((bubble, index) => (
-              <LineBubble
-                key={bubble.id}
-                text={bubble.text}
-                time={bubble.time}
-                opacity={bubbleOpacity(index, stack.length)}
-                className={!reducedMotion && inView ? "pain-notif-enter" : ""}
-              />
-            ))
-          )}
+      <div
+        className="relative w-full rounded-[20px] p-4"
+        style={{
+          backgroundColor: "#1A1A1A",
+          border: "1px solid rgba(255,255,255,0.08)",
+        }}
+      >
+        {/* Header: title left · badge right (same row) */}
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 flex-1 text-[16px] font-semibold leading-snug text-white">
+            {t("marketing.pain.stormTitle")}
+          </p>
+          <span className="inline-flex shrink-0 items-center rounded-full bg-[#E5484D] px-2.5 py-1 text-[12px] font-bold leading-none text-white">
+            {t("marketing.pain.unreadBadge")}
+          </span>
         </div>
+
+        {/* 5 LINE cards — 8px gap; cards 4–5 overlap */}
+        <div className="mt-3 flex flex-col gap-2" aria-hidden>
+          {STORM_CARDS.map((card, i) => (
+            <LineCard
+              key={card.text}
+              text={t(card.text)}
+              time={t(card.time)}
+              overlap={i >= 3}
+              revealIndex={i}
+              animate={animate}
+            />
+          ))}
+        </div>
+
+        <p className="mt-3 text-[13px] font-medium leading-snug text-[#E5484D]">
+          {t("marketing.pain.stormUnread")}
+        </p>
+
+        <p className="mt-3 text-right text-[11px] font-medium tracking-wide text-zinc-500 sm:text-[12px]">
+          {t("marketing.try.sampleBadge")}
+        </p>
       </div>
     </div>
   );

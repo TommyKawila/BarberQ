@@ -201,25 +201,6 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
     return () => obs.disconnect();
   }, []);
 
-  const painMessages = [
-    t("marketing.pain.chat1"),
-    t("marketing.pain.chat2"),
-    t("marketing.pain.chat3"),
-    t("marketing.pain.chat4"),
-    t("marketing.pain.chat5"),
-    t("marketing.pain.chat6"),
-    t("marketing.pain.chat7"),
-  ];
-  const painTimes = [
-    t("marketing.pain.chatTime1"),
-    t("marketing.pain.chatTime2"),
-    t("marketing.pain.chatTime3"),
-    t("marketing.pain.chatTime4"),
-    t("marketing.pain.chatTime5"),
-    t("marketing.pain.chatTime6"),
-    t("marketing.pain.chatTime7"),
-  ];
-
   return (
     <div
       ref={pageRootRef}
@@ -281,12 +262,7 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
           </div>
 
           <div className="order-1 lg:order-2">
-            <PainStormVisual
-              messages={painMessages}
-              times={painTimes}
-              unreadLabel={t("marketing.pain.unreadBadge")}
-              alt={t("marketing.pain.photoAlt")}
-            />
+            <PainStormVisual />
           </div>
         </div>
       </section>

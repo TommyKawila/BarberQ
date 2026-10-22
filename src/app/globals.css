@@ -353,19 +353,76 @@ html.js[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in
 
 @keyframes pain-notif-in {
   0% {
-    opacity: 0;
     transform: translateY(22px) scale(0.82);
   }
   55% {
-    opacity: 1;
     transform: translateY(-6px) scale(1.06);
   }
   78% {
     transform: translateY(2px) scale(0.98);
   }
   100% {
-    opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+/* Problem storm cards — visible by default; transform-only stagger under html.js */
+@keyframes pain-storm-card-in {
+  0% {
+    transform: translateY(10px) scale(0.96);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pain-storm-card-in-overlap {
+  0% {
+    transform: translateY(10px) scale(0.96);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0) scale(0.97);
+    opacity: 0.7;
+  }
+}
+
+html.js [data-pain-storm]:not([data-pain-storm-played]) .pain-storm-card {
+  transform: translateY(10px) scale(0.96);
+}
+
+html.js [data-pain-storm] .pain-storm-card[data-pain-overlap] {
+  margin-top: -8px;
+}
+
+html.js [data-pain-storm-played] .pain-storm-card:not([data-pain-overlap]) {
+  animation: pain-storm-card-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--pain-card-delay, 0ms);
+}
+
+html.js [data-pain-storm-played] .pain-storm-card[data-pain-overlap] {
+  animation: pain-storm-card-in-overlap 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--pain-card-delay, 0ms);
+}
+
+/* Without JS motion class: overlap still piles */
+[data-pain-storm] .pain-storm-card[data-pain-overlap] {
+  margin-top: -8px;
+  transform: scale(0.97);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-pain-storm] .pain-storm-card,
+  html.js [data-pain-storm-played] .pain-storm-card {
+    animation: none !important;
+  }
+  html.js [data-pain-storm] .pain-storm-card:not([data-pain-overlap]) {
+    transform: none !important;
+  }
+  html.js [data-pain-storm] .pain-storm-card[data-pain-overlap] {
+    transform: scale(0.97) !important;
+    opacity: 0.7 !important;
   }
 }
 
