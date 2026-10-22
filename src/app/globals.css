@@ -243,91 +243,78 @@ html {
 
 /*
   Sales page scroll reveals — progressive enhancement.
-  Default: fully visible. Only hide when html[data-cq-reveal="on"] is set by JS
-  and the node has not yet received data-reveal-in. Opacity + transform only.
+  Default: fully visible (no opacity:0 hide). JS sets html.js + data-cq-reveal="on";
+  only then unrevealed nodes offset via transform. prefers-reduced-motion = instant.
 */
-html[data-cq-reveal="on"] [data-reveal]:not([data-reveal-in]) {
-  opacity: 0;
+html.js[data-cq-reveal="on"] [data-reveal]:not([data-reveal-in]) {
   transform: translate3d(0, 14px, 0);
 }
 
-html[data-cq-reveal="on"] [data-reveal][data-reveal="soft"]:not([data-reveal-in]) {
+html.js[data-cq-reveal="on"] [data-reveal][data-reveal="soft"]:not([data-reveal-in]) {
   transform: translate3d(0, 10px, 0);
 }
 
-html[data-cq-reveal="on"] [data-reveal][data-reveal="emphasis"]:not([data-reveal-in]) {
+html.js[data-cq-reveal="on"] [data-reveal][data-reveal="emphasis"]:not([data-reveal-in]) {
   transform: translate3d(0, 16px, 0) scale(0.985);
 }
 
-html[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
-  opacity: 1;
+html.js[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
   transform: none;
-  transition:
-    opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: calc(var(--reveal-delay, 0) * 1ms);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-cq-reveal="on"] [data-reveal],
-  html[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
-    opacity: 1 !important;
+  html.js[data-cq-reveal="on"] [data-reveal],
+  html.js[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
     transform: none !important;
     transition: none !important;
   }
 }
 
 /*
-  LINE relief section — progressive. Visible until html[data-cq-line-relief="on"].
+  LINE relief section — progressive. Visible by default; transform-only under JS.
   Sequence: heading → bullets (stagger) → check ticks after text → CTA.
   Soft ease-out, no bounce. prefers-reduced-motion: instant (hook marks all in).
 */
-html[data-cq-line-relief="on"] [data-line-reveal]:not([data-line-reveal-in]) {
-  opacity: 0;
+html.js[data-cq-line-relief="on"] [data-line-reveal]:not([data-line-reveal-in]) {
   transform: translate3d(0, 10px, 0);
 }
 
-html[data-cq-line-relief="on"] [data-line-reveal="check"]:not([data-line-reveal-in]) {
-  opacity: 0;
+html.js[data-cq-line-relief="on"] [data-line-reveal="check"]:not([data-line-reveal-in]) {
   transform: scale(0.7);
 }
 
-html[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
-  opacity: 1;
+html.js[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
   transform: none;
-  transition:
-    opacity var(--line-dur, 450ms) cubic-bezier(0.22, 1, 0.36, 1),
-    transform var(--line-dur, 450ms) cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--line-dur, 450ms) cubic-bezier(0.22, 1, 0.36, 1);
   transition-delay: var(--line-delay, 0ms);
 }
 
-html[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in] {
+html.js[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in] {
   transform: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  html[data-cq-line-relief="on"] [data-line-reveal],
-  html[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
-    opacity: 1 !important;
+  html.js[data-cq-line-relief="on"] [data-line-reveal],
+  html.js[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
     transform: none !important;
     transition: none !important;
   }
 }
 
 /*
-  Pain H2 hammer — progressive. Lines stay visible until data-pain-hammer="on".
-  filter + transform only (no layout shift of surrounding blocks).
+  Pain H2 hammer — progressive. Lines stay visible (no opacity:0 hide).
+  Transform + filter only when JS arms data-pain-hammer="on".
 */
 @keyframes pain-hammer-in {
   0% {
-    opacity: 0;
-    transform: scale(1.15) translate3d(0, 3px, 0) rotate(-0.7deg);
-    filter: blur(4px);
+    transform: scale(1.12) translate3d(0, 3px, 0) rotate(-0.7deg);
+    filter: blur(2px);
   }
   40% {
-    opacity: 1;
     transform: scale(1.04) translate3d(-1px, 0, 0) rotate(0.5deg);
-    filter: blur(1px);
+    filter: blur(0.5px);
   }
   62% {
     transform: scale(0.985) translate3d(1px, 0, 0) rotate(-0.35deg);
@@ -337,16 +324,14 @@ html[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in] {
     transform: scale(1.012) translate3d(-0.5px, 0, 0) rotate(0.15deg);
   }
   100% {
-    opacity: 1;
     transform: scale(1) translate3d(0, 0, 0) rotate(0deg);
     filter: blur(0);
   }
 }
 
 [data-pain-hammer="on"] .pain-hammer-line:not(.pain-hammer-hit) {
-  opacity: 0;
-  transform: scale(1.15);
-  filter: blur(4px);
+  transform: scale(1.08);
+  filter: blur(1.5px);
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -360,7 +345,6 @@ html[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in] {
   [data-pain-hammer="on"] .pain-hammer-line,
   [data-pain-hammer="on"] .pain-hammer-line.pain-hammer-hit,
   [data-pain-hammer="done"] .pain-hammer-line {
-    opacity: 1 !important;
     transform: none !important;
     filter: none !important;
     animation: none !important;

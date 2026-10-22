@@ -508,9 +508,6 @@ function ShopPhone({
         data-demo-summary
         className="mx-2 mt-1 shrink-0 rounded-lg border border-amber-400/35 bg-amber-400/10 px-2.5 py-1.5"
       >
-        <p className="text-[11px] font-semibold tracking-wide text-amber-300">
-          {t("marketing.try.sampleBadge")} · {t("marketing.try.story3")}
-        </p>
         <div className="mt-0.5 flex items-center justify-between gap-2 text-[13px] font-semibold tabular-nums text-zinc-50">
           <span>
             {t("marketing.try.summaryRevenue")} ฿{revenueBaht.toLocaleString("th-TH")}
@@ -541,8 +538,7 @@ function ShopPhone({
                     {q.time} · {q.customer}
                   </p>
                   <p className="truncate text-[12px] leading-tight text-zinc-400">
-                    {locale === "th" ? b.name : b.nameEn} · ฿{q.priceBaht} ·{" "}
-                    {t("marketing.try.sampleBadge")}
+                    {locale === "th" ? b.name : b.nameEn} · ฿{q.priceBaht}
                   </p>
                 </div>
               </div>
@@ -710,34 +706,11 @@ export function TryBookingDemo() {
   ];
 
   const phoneClass =
-    "mx-auto w-full max-w-[260px] max-h-[640px] sm:max-w-[270px] lg:max-w-[280px]";
+    "mx-auto w-full max-w-[260px] sm:max-w-[270px] lg:max-w-[280px]";
 
   return (
-    <div data-hide-sticky className="flex w-full flex-col items-center gap-4">
-      {/* Story steps */}
-      <ol
-        className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[12px] font-semibold sm:text-[13px]"
-        aria-label={t("marketing.try.storyLabel")}
-      >
-        {storyLabels.map((s, i) => (
-          <li key={s.n} className="flex items-center gap-1.5">
-            {i > 0 ? <span className="text-zinc-600" aria-hidden>›</span> : null}
-            <span
-              className={
-                storyStep === s.n
-                  ? "text-amber-300"
-                  : storyStep > s.n
-                    ? "text-zinc-300"
-                    : "text-zinc-500"
-              }
-            >
-              <span className="tabular-nums">{s.n}</span> {t(s.key)}
-            </span>
-          </li>
-        ))}
-      </ol>
-
-      {/* Tabs */}
+    <div data-hide-sticky className="flex w-full flex-col items-center gap-3">
+      {/* Tabs ลูกค้า | ร้าน — board lives in ร้าน */}
       <div
         role="tablist"
         aria-label={t("marketing.try.tabLabel")}
@@ -767,8 +740,41 @@ export function TryBookingDemo() {
         ))}
       </div>
 
-      {/* Phones — mobile one tab at a time; desktop both side by side */}
-      <div className="flex w-full flex-col items-center gap-5 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-12">
+      {/* Story steps */}
+      <ol
+        className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-1 text-[12px] font-semibold sm:text-[13px]"
+        aria-label={t("marketing.try.storyLabel")}
+      >
+        {storyLabels.map((s, i) => (
+          <li key={s.n} className="flex items-center gap-1.5">
+            {i > 0 ? <span className="text-zinc-600" aria-hidden>›</span> : null}
+            <span
+              className={
+                storyStep === s.n
+                  ? "text-amber-300"
+                  : storyStep > s.n
+                    ? "text-zinc-300"
+                    : "text-zinc-500"
+              }
+            >
+              <span className="tabular-nums">{s.n}</span> {t(s.key)}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      {/* Phones — one tab on mobile; both on desktop. Queue board = ร้าน tab. */}
+      <div className="relative flex w-full flex-col items-center gap-3 lg:flex-row lg:items-start lg:justify-center lg:gap-10 xl:gap-12">
+        <button
+          type="button"
+          data-demo-reset
+          onClick={reset}
+          aria-label={t("marketing.try.reset")}
+          title={t("marketing.try.reset")}
+          className="absolute right-0 top-0 z-10 inline-flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-700/80 bg-zinc-900/80 text-zinc-400 hover:border-zinc-500 hover:text-zinc-100 lg:right-2"
+        >
+          <RotateCcw size={14} strokeWidth={2.25} aria-hidden />
+        </button>
         <div
           role="tabpanel"
           aria-hidden={tab !== "customer"}
@@ -807,8 +813,9 @@ export function TryBookingDemo() {
 
         <div
           role="tabpanel"
+          id="board"
           aria-hidden={tab !== "shop"}
-          className={`${tab === "shop" ? "block" : "hidden"} lg:!block`}
+          className={`${tab === "shop" ? "block" : "hidden"} scroll-mt-[4.5rem] lg:!block md:scroll-mt-20`}
         >
           <PhoneFrame size="md" interactive className={phoneClass}>
             <ShopPhone
@@ -827,23 +834,16 @@ export function TryBookingDemo() {
         </div>
       </div>
 
-      <div className="flex w-full max-w-md flex-col items-stretch gap-2.5 text-center sm:mx-auto">
+      <div className="flex w-full max-w-md flex-col items-stretch gap-2 text-center sm:mx-auto">
         <p className="text-[12px] leading-snug text-zinc-500">{t("marketing.try.disclaimer")}</p>
-        <div data-hide-sticky className="flex w-full flex-col gap-2.5">
-          <button
-            type="button"
-            data-demo-reset
-            onClick={reset}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-600 px-5 text-[15px] font-semibold text-zinc-200 hover:border-zinc-400 hover:bg-zinc-900/60"
-          >
-            <RotateCcw size={16} strokeWidth={2.25} aria-hidden />
-            {t("marketing.try.reset")}
-          </button>
+        <div data-hide-sticky>
           <PrimaryTrialCta
             labelKey="marketing.try.trialCta"
             placement="try-booking"
             fullWidth
-            riskClassName="mt-2 justify-center text-[13px] sm:text-sm"
+            showRisk={false}
+            showAfterClick
+            afterClickClassName="text-center"
           />
         </div>
       </div>

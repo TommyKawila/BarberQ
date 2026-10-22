@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import Image from "next/image";
 import { Check } from "lucide-react";
 import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
-import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
 import { ScheduleBoardMockup } from "@/components/marketing/mockups/ScheduleBoardMockup";
 import {
   HOW_DEMO_BOOKING,
@@ -13,12 +11,11 @@ import {
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-import { fillOfferCopy, marketingClaims } from "@/lib/marketing/offer";
-import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
+import { marketingClaims } from "@/lib/marketing/offer";
 
 /**
- * LINE signature section — progressive reveal (IO ~0.3, once).
- * Content stays fully visible until JS opts in; reduced-motion = instant.
+ * LINE signature section — what customers get in LINE.
+ * Progressive reveal (transform-only under html.js). No AI/stock photos.
  */
 const LINE_BULLETS = [
   "marketing.line.bullet1",
@@ -93,13 +90,13 @@ export function LineReliefSection() {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement | null>(null);
   const [revealed, setRevealed] = useState(false);
-  // fillOfferCopy substitutes {quota} from marketingOffer.lineFreePushQuota (300)
-  const evidenceFilled = fillOfferCopy(t("marketing.line.evidence"));
-  const evidence = /\{[a-zA-Z_]+\}/.test(evidenceFilled) ? null : evidenceFilled;
 
   useEffect(() => {
     const el = sectionRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
+
+    const html = document.documentElement;
+    html.classList.add("js");
 
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
     const markAllIn = () => {
@@ -112,15 +109,16 @@ export function LineReliefSection() {
 
     if (mq.matches) {
       markAllIn();
-      return;
+      return () => {
+        html.classList.remove("js");
+      };
     }
 
     let played = false;
     const play = () => {
       if (played) return;
       played = true;
-      document.documentElement.dataset.cqLineRelief = "on";
-      // Next frame so the pre-hide styles apply before we flip to "in"
+      html.dataset.cqLineRelief = "on";
       requestAnimationFrame(() => {
         el.dataset.lineReliefIn = "";
         for (const node of el.querySelectorAll<HTMLElement>("[data-line-reveal]")) {
@@ -143,12 +141,10 @@ export function LineReliefSection() {
     obs.observe(el);
     return () => {
       obs.disconnect();
-      delete document.documentElement.dataset.cqLineRelief;
+      delete html.dataset.cqLineRelief;
     };
   }, []);
 
-  // Heading 500ms; bullets start ~400ms, 180ms apart, ~420ms each; checks +120ms; CTA last.
-  // Sequence finishes under 1.5s.
   const headingDelay = 0;
   const bulletBase = 400;
   const bulletStagger = 180;
@@ -163,37 +159,8 @@ export function LineReliefSection() {
       data-line-revealed={revealed ? "true" : undefined}
       className="scroll-mt-20 overflow-x-clip bg-zinc-950"
     >
-      {/* Mobile: smiling customer photo on top (~40vh), face bright — no text over photo */}
-      {marketingPhotoSlots.solutionCustomer.src ? (
-        <div className="relative isolate h-[40vh] min-h-[220px] w-full overflow-hidden lg:hidden">
-          <Image
-            src={marketingPhotoSlots.solutionCustomer.src}
-            alt={t("marketing.line.customerPhotoAlt")}
-            fill
-            sizes="100vw"
-            className="object-cover object-[center_20%] brightness-[1.08] contrast-[1.04]"
-            priority={false}
-          />
-          {/* Warm gold radial glow (8–12% opacity) */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              background:
-                "radial-gradient(ellipse 70% 55% at 50% 35%, rgba(251,191,36,0.1) 0%, transparent 65%)",
-            }}
-          />
-          {/* Gradient transparent → black on bottom half only */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-zinc-950"
-          />
-        </div>
-      ) : null}
-
       <div className="relative mx-auto max-w-[1440px] px-6 py-16 md:px-10 md:py-20 xl:px-12">
         <div className="grid items-start gap-12 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:gap-16 xl:gap-20">
-          {/* Copy column — solid text on dark ground, contrast ≥4.5:1 */}
           <div className="order-1 max-w-xl lg:max-w-none">
             <p
               data-line-reveal="eyebrow"
@@ -215,7 +182,7 @@ export function LineReliefSection() {
                   ["--line-dur" as string]: "500ms",
                 } as CSSProperties
               }
-              className="mt-3 max-w-[20ch] text-[26px] font-bold leading-[1.35] tracking-tight text-zinc-50 text-balance sm:text-[27px] md:text-[28px] md:max-w-none"
+              className="mt-3 max-w-[20ch] text-[26px] font-bold leading-[1.35] tracking-tight text-zinc-50 text-balance sm:text-[27px] md:max-w-none md:text-[28px]"
             >
               {t("marketing.line.title")}
             </h2>
@@ -269,7 +236,6 @@ export function LineReliefSection() {
               {t("marketing.line.toggleNote")}
             </p>
 
-            {/* Mobile chat bubbles under checklist — centered; desktop column keeps start align */}
             <div className="mt-8 flex flex-col items-center gap-5 lg:hidden">
               <SampleChatBubble variant="confirm" revealDelayMs={bubbleDelay} />
               <SampleChatBubble
@@ -292,52 +258,16 @@ export function LineReliefSection() {
               <PrimaryTrialCta
                 labelKey="marketing.line.cta"
                 placement="line"
+                showRisk={false}
+                showAfterClick
+                afterClickClassName="text-center lg:text-left"
                 className="w-full justify-center text-center sm:w-auto sm:justify-start sm:text-left"
               />
               <LineGhostCta label={t("marketing.line.lineCta")} placement="line" />
             </div>
-
-            {evidence ? (
-              <p
-                data-line-reveal="evidence"
-                style={
-                  {
-                    ["--line-delay" as string]: `${ctaDelay + 80}ms`,
-                    ["--line-dur" as string]: "400ms",
-                  } as CSSProperties
-                }
-                className="mt-8 max-w-md border-t border-zinc-800/80 pt-6 text-[13px] leading-relaxed text-zinc-400"
-              >
-                {evidence}
-              </p>
-            ) : null}
           </div>
 
-          {/* Desktop: photo + bubbles — text never overlays the photo */}
           <div className="order-2 hidden lg:flex lg:flex-col lg:gap-8">
-            {marketingPhotoSlots.solutionCustomer.src ? (
-              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-sm">
-                <Image
-                  src={marketingPhotoSlots.solutionCustomer.src}
-                  alt={t("marketing.line.customerPhotoAlt")}
-                  fill
-                  sizes="(min-width: 1024px) 560px, 50vw"
-                  className="object-cover object-[center_22%] brightness-[1.06]"
-                />
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(ellipse 65% 50% at 50% 30%, rgba(251,191,36,0.09) 0%, transparent 70%)",
-                  }}
-                />
-                <div
-                  aria-hidden
-                  className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-zinc-950/80"
-                />
-              </div>
-            ) : null}
             <div className="flex flex-wrap items-start gap-4">
               <SampleChatBubble variant="confirm" revealDelayMs={bubbleDelay} />
               <SampleChatBubble
@@ -346,39 +276,33 @@ export function LineReliefSection() {
                 revealDelayMs={bubbleDelay + 160}
               />
             </div>
+            <figure className="mt-2">
+              <p className="mb-3 text-xs font-medium tracking-wide text-amber-300/85 lg:text-[13px]">
+                {t("marketing.line.queueBoardCallout")}
+              </p>
+              <div className="relative w-full max-w-[240px]">
+                <div className="aspect-[390/844]">
+                  <ScheduleBoardMockup matchHeight />
+                </div>
+                <p className="mt-2 text-center text-[12px] leading-snug text-zinc-400">
+                  {t("marketing.line.scheduleTabNote")}
+                </p>
+              </div>
+            </figure>
           </div>
         </div>
 
-        {/* Shop calm evidence — schedule zoom + barber photo */}
-        <figure className="mt-16 xl:mt-20">
-          <p className="mb-3 hidden text-xs font-medium tracking-wide text-amber-300/85 lg:block lg:text-[13px]">
+        {/* Mobile board sample */}
+        <figure className="mt-12 flex flex-col items-center lg:hidden">
+          <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85">
             {t("marketing.line.queueBoardCallout")}
           </p>
-          <div className="flex flex-col items-center gap-8 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:gap-12">
-            <div className="relative w-full max-w-[220px] sm:max-w-[240px] lg:flex lg:h-full lg:w-auto lg:max-w-none lg:items-stretch">
-              <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85 lg:hidden">
-                {t("marketing.line.queueBoardCallout")}
-              </p>
-              <div className="w-full lg:hidden">
-                <ScheduleBoardMockup fluid />
-              </div>
-              <div className="hidden h-full lg:block lg:aspect-[390/844]">
-                <ScheduleBoardMockup matchHeight />
-              </div>
-              <p className="mt-2 text-center text-[12px] leading-snug text-zinc-400 lg:mt-3">
-                {t("marketing.line.scheduleTabNote")}
-              </p>
-            </div>
-            <MarketingPhotoSlot
-              slot="solutionBarberCalm"
-              alt={t("marketing.line.barberPhotoAlt")}
-              sizes="(min-width: 1440px) 1000px, (min-width: 1280px) 900px, 92vw"
-              className="w-full min-w-0"
-            />
+          <div className="w-full max-w-[220px] sm:max-w-[240px]">
+            <ScheduleBoardMockup fluid />
           </div>
-          <figcaption className="mt-5 text-center text-sm text-zinc-500 lg:text-base">
-            {t("marketing.line.barberCaption")}
-          </figcaption>
+          <p className="mt-2 text-center text-[12px] leading-snug text-zinc-400">
+            {t("marketing.line.scheduleTabNote")}
+          </p>
         </figure>
       </div>
     </section>

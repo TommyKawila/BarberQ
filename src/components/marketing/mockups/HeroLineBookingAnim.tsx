@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useI18n } from "@/lib/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 
-/** Scene dwell times (ms). Loop ≈ 9.3s + transitions. */
-const SCENE_MS = [2500, 800, 3000, 3000] as const;
+/** Scene dwell times (ms). 4 scenes → 4 dots. */
+const SCENE_MS = [2200, 2600, 2600, 2800] as const;
 const TRANSITION_MS = 350;
 
 /** Keyed phone mockup (864×1152). Screen measured from chroma plate. */
@@ -55,16 +56,19 @@ const SCREENS = {
  */
 const TAP_PCT = { left: "16.54%", top: "75.32%" } as const;
 
-/** Dot index 0→menu(+tap), 1→booking, 2→success */
-function sceneToDot(scene: number): 0 | 1 | 2 {
-  if (scene <= 1) return 0;
-  if (scene === 2) return 1;
-  return 2;
-}
+const CAPTION_KEYS = [
+  "marketing.hero.animCaption1",
+  "marketing.hero.animCaption2",
+  "marketing.hero.animCaption3",
+  "marketing.hero.animCaption4",
+] as const satisfies readonly MessageKey[];
 
-function dotToScene(dot: 0 | 1 | 2): number {
-  return ([0, 2, 3] as const)[dot];
-}
+const DOT_KEYS = [
+  "marketing.hero.animDot1",
+  "marketing.hero.animDot2",
+  "marketing.hero.animDot3",
+  "marketing.hero.animDot4",
+] as const satisfies readonly MessageKey[];
 
 function DemoShopTag() {
   return (
@@ -90,7 +94,7 @@ function ScreenImage({
         width={screen.width}
         height={screen.height}
         priority={priority}
-        sizes="(max-width: 1023px) 40vw, 160px"
+        sizes="(max-width: 1023px) 90px, 160px"
         className="absolute inset-0 h-full w-full object-cover object-top"
       />
     </picture>
@@ -99,7 +103,8 @@ function ScreenImage({
 
 /**
  * Auto-playing phone — real LINE / booking / success screens inside photo mockup.
- * Pause off-screen / while pressed; reduced-motion = scene 1 + dots only.
+ * Mobile: ~240–260px wide, ≤50vh. 4 scenes / 4 dots + caption under phone.
+ * Pause off-screen / while pressed; reduced-motion = scene 0 + dots only.
  */
 export function HeroLineBookingAnim({
   className,
@@ -160,18 +165,18 @@ export function HeroLineBookingAnim({
     if (typeof initialScene === "number") return;
     if (reducedMotion || !inView || pressed) return;
     const dwell = SCENE_MS[scene] ?? 2500;
-    const t = window.setTimeout(() => {
+    const timer = window.setTimeout(() => {
       setFade(true);
       window.setTimeout(() => {
         setScene((s) => (s + 1) % SCENE_MS.length);
         setFade(false);
       }, TRANSITION_MS);
     }, dwell);
-    return () => window.clearTimeout(t);
+    return () => window.clearTimeout(timer);
   }, [scene, inView, pressed, reducedMotion, initialScene]);
 
-  const goDot = (dot: 0 | 1 | 2) => {
-    const next = dotToScene(dot);
+  const goDot = (dot: number) => {
+    const next = ((dot % SCENE_MS.length) + SCENE_MS.length) % SCENE_MS.length;
     if (reducedMotion) {
       setScene(next);
       setFade(false);
@@ -184,9 +189,11 @@ export function HeroLineBookingAnim({
     }, TRANSITION_MS);
   };
 
-  const activeDot = sceneToDot(scene);
-  const showLine = scene === 0 || scene === 1;
-  const showTap = scene === 1;
+  /** 0 tap menu · 1 barber · 2 time · 3 ticket */
+  const showLine = scene === 0;
+  const showTap = scene === 0;
+  const showBooking = scene === 1 || scene === 2;
+  const showSuccess = scene === 3;
 
   return (
     <div
@@ -199,9 +206,11 @@ export function HeroLineBookingAnim({
       onPointerCancel={() => setPressed(false)}
     >
       <p className="sr-only">{t("marketing.hero.animSr")}</p>
+      {/* Mobile: 240–260px, ≤50vh; desktop unconstrained by parent */}
       <div
         aria-hidden
-        className="relative mx-auto w-full max-h-[55vh] max-w-[min(100%,calc(55vh*864/1152))] lg:max-h-none lg:max-w-none"
+        className="relative mx-auto w-[min(260px,92vw)] max-h-[50vh] max-w-[260px] min-w-[240px] lg:w-full lg:max-h-none lg:max-w-none lg:min-w-0"
+        style={{ maxWidth: "min(260px, calc(50vh * 864 / 1152))" }}
       >
         <div className="relative mx-auto w-full" style={{ aspectRatio: "864 / 1152" }}>
           <picture>
@@ -212,7 +221,7 @@ export function HeroLineBookingAnim({
               width={PHOTO.width}
               height={PHOTO.height}
               priority
-              sizes="(max-width: 1023px) min(92vw, 55vh), 420px"
+              sizes="(max-width: 1023px) 260px, 420px"
               className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
             />
           </picture>
@@ -250,46 +259,58 @@ export function HeroLineBookingAnim({
                   ) : null}
                 </>
               ) : null}
-              {scene === 2 ? <ScreenImage screen={SCREENS.booking} /> : null}
-              {scene === 3 ? <ScreenImage screen={SCREENS.success} /> : null}
+              {showBooking ? <ScreenImage screen={SCREENS.booking} /> : null}
+              {showSuccess ? <ScreenImage screen={SCREENS.success} /> : null}
             </div>
           </div>
           <DemoShopTag />
         </div>
       </div>
 
+      {/* Caption under phone — highlight current scene (≥12px) */}
+      <p
+        className="mt-3 max-w-[min(100%,20rem)] text-center text-[12px] leading-snug text-zinc-400 sm:text-[13px]"
+        aria-live="polite"
+      >
+        {CAPTION_KEYS.map((key, i) => (
+          <span key={key}>
+            {i > 0 ? <span className="text-zinc-600"> · </span> : null}
+            <span
+              className={
+                scene === i
+                  ? "font-semibold text-amber-300"
+                  : "font-medium text-zinc-500"
+              }
+            >
+              {t(key)}
+            </span>
+          </span>
+        ))}
+      </p>
+
       <div
         role="tablist"
         aria-label={t("marketing.hero.animDotsLabel")}
-        className="mt-3 flex items-center justify-center gap-1"
+        className="mt-2 flex items-center justify-center gap-0.5"
       >
-        {([0, 1, 2] as const).map((dot) => {
-          const labelKey = (
-            [
-              "marketing.hero.animDot1",
-              "marketing.hero.animDot2",
-              "marketing.hero.animDot3",
-            ] as const
-          )[dot];
-          return (
-            <button
-              key={dot}
-              type="button"
-              role="tab"
-              aria-selected={activeDot === dot}
-              aria-label={t(labelKey)}
-              onClick={() => goDot(dot)}
-              className="inline-flex h-11 w-11 items-center justify-center"
-            >
-              <span
-                className={`block h-2.5 w-2.5 rounded-full transition-colors ${
-                  activeDot === dot ? "bg-amber-400" : "bg-zinc-600"
-                }`}
-                aria-hidden
-              />
-            </button>
-          );
-        })}
+        {([0, 1, 2, 3] as const).map((dot) => (
+          <button
+            key={dot}
+            type="button"
+            role="tab"
+            aria-selected={scene === dot}
+            aria-label={t(DOT_KEYS[dot])}
+            onClick={() => goDot(dot)}
+            className="inline-flex h-11 w-11 items-center justify-center"
+          >
+            <span
+              className={`block h-2.5 w-2.5 rounded-full transition-colors ${
+                scene === dot ? "bg-amber-400" : "bg-zinc-600"
+              }`}
+              aria-hidden
+            />
+          </button>
+        ))}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BarberQxLogo } from "@/components/brand/BarberQxLogo";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { trackMarketingEvent } from "@/lib/marketing/events";
@@ -18,6 +19,14 @@ export function MarketingFooter({ variant = "sales" }: { variant?: "sales" | "tr
         <div className="mx-auto flex max-w-[1080px] flex-col items-start gap-3 px-4 md:px-6">
           <BarberQxLogo className="h-6 w-auto" />
           <p className="text-sm text-zinc-500">{t("marketing.footer.tagline")}</p>
+          <nav className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-500">
+            <Link href="/privacy" className="hover:text-amber-400">
+              {t("marketing.footer.privacy")}
+            </Link>
+            <Link href="/terms" className="hover:text-amber-400">
+              {t("marketing.footer.terms")}
+            </Link>
+          </nav>
         </div>
       </footer>
     );
@@ -50,6 +59,14 @@ export function MarketingFooter({ variant = "sales" }: { variant?: "sales" | "tr
           >
             {t("marketing.nav.faq")}
           </a>
+        </nav>
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-zinc-500">
+          <Link href="/privacy" className="hover:text-amber-400">
+            {t("marketing.footer.privacy")}
+          </Link>
+          <Link href="/terms" className="hover:text-amber-400">
+            {t("marketing.footer.terms")}
+          </Link>
         </nav>
         {supportUrl ? (
           <a
