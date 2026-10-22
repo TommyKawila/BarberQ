@@ -41,7 +41,7 @@ const DEMO_FEATURE_KEYS = [
   "marketing.try.featureCancel",
 ] as const;
 /** FAQ ordered by real objections (pricing → setup → LINE → app → message cost → …). */
-const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
 const TRIAL_BOX_ITEMS = [1, 2, 3] as const;

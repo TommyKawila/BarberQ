@@ -2,6 +2,7 @@ import type {
   Appointment,
   AppointmentSource,
   Barber,
+  BarberTierId,
   BusyInterval,
   Shop,
   ShopService,
@@ -359,6 +360,8 @@ export interface BookingStore {
   listShops(): Promise<Shop[]>;
   listShopOwners(): Promise<ShopOwnerSummary[]>;
   createShop(input: CreateShopInput): Promise<Shop>;
+  /** Superadmin soft seat-tier update (never blocks shop usage). */
+  updateShopBarberTier(shopId: string, tier: BarberTierId): Promise<Shop>;
   getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
   regenerateOwnerInvite(shopId: string): Promise<Shop>;
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;

@@ -250,7 +250,13 @@ export default function EditBarberPage() {
             <p className="mt-2 text-lg font-semibold">{displayName}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
-                {isBookable ? t("admin.barberBookable") : t("admin.barberNotBookable")}
+                {isOwnerBarber
+                  ? isBookable
+                    ? t("admin.ownerAcceptingOn")
+                    : t("admin.ownerAcceptingOff")
+                  : isBookable
+                    ? t("admin.barberBookable")
+                    : t("admin.barberNotBookable")}
               </span>
               {isOwnerBarber ? (
                 <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs text-amber-300">
@@ -352,13 +358,22 @@ export default function EditBarberPage() {
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 className="font-semibold">{t("admin.queueSection")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.queueSectionHint")}</p>
+          <p className="mt-1 text-sm text-zinc-400">
+            {isOwnerBarber
+              ? t("admin.ownerAcceptingOffHint")
+              : t("admin.queueSectionHint")}
+          </p>
           <label className="mt-4 flex items-center justify-between gap-3 text-sm">
-            <span>{t("admin.openQueueToggle")}</span>
+            <span>
+              {isOwnerBarber
+                ? t("admin.ownerAcceptingToggle")
+                : t("admin.openQueueToggle")}
+            </span>
             <input
               type="checkbox"
               checked={isBookable}
               onChange={(e) => setIsBookable(e.target.checked)}
+              data-testid={isOwnerBarber ? "owner-accepting-toggle" : "barber-bookable-toggle"}
             />
           </label>
           {isBookable ? (

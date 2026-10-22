@@ -103,6 +103,7 @@ function getState(): MemoryState {
           status: "active",
           subscribed_until: null,
           is_demo: false,
+          barber_tier: "tier1",
           created_at: nowIso(),
           updated_at: nowIso(),
         },
@@ -113,6 +114,7 @@ function getState(): MemoryState {
           status: "active",
           subscribed_until: null,
           is_demo: true,
+          barber_tier: "tier1",
           created_at: nowIso(),
           updated_at: nowIso(),
         },
@@ -184,6 +186,7 @@ function getState(): MemoryState {
         status: "active",
         subscribed_until: null,
         is_demo: false,
+        barber_tier: "tier1",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -194,6 +197,7 @@ function getState(): MemoryState {
         status: "active",
         subscribed_until: null,
         is_demo: true,
+        barber_tier: "tier1",
         created_at: nowIso(),
         updated_at: nowIso(),
       },
@@ -206,6 +210,7 @@ function getState(): MemoryState {
       status: "active",
       subscribed_until: null,
       is_demo: true,
+      barber_tier: "tier1",
       created_at: nowIso(),
       updated_at: nowIso(),
     });
@@ -1160,6 +1165,14 @@ export const memoryStore: BookingStore = {
     );
   },
 
+  async updateShopBarberTier(shopId, tier) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    shop.barber_tier = tier;
+    shop.updated_at = nowIso();
+    return shop;
+  },
+
   async listShopOwners() {
     return barbers
       .filter((b) => b.role === "owner" && b.shop_id)
@@ -1183,6 +1196,7 @@ export const memoryStore: BookingStore = {
         subscribed_until: new Date(
           Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
         ).toISOString(),
+        barber_tier: "tier1",
         invite_token: token,
         invite_expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         created_at: now,
@@ -1218,6 +1232,7 @@ export const memoryStore: BookingStore = {
       subscribed_until: new Date(
         Date.now() + input.subscriptionMonths * 30 * 24 * 60 * 60 * 1000,
       ).toISOString(),
+      barber_tier: "tier1",
       invite_token: null,
       invite_expires_at: null,
       created_at: now,

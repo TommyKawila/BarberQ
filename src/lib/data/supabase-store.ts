@@ -1101,6 +1101,18 @@ export const supabaseStore: BookingStore = {
     return (data ?? []) as Shop[];
   },
 
+  async updateShopBarberTier(shopId, tier) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shops")
+      .update({ barber_tier: tier, updated_at: new Date().toISOString() })
+      .eq("id", shopId)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Shop;
+  },
+
   async listShopOwners() {
     const supabase = createServiceClient();
     const { data, error } = await supabase

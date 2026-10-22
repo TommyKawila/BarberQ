@@ -16,11 +16,23 @@ export function canToggleBookable(pending: boolean): boolean {
   return !pending;
 }
 
-export function getQueueStatusLabelKey(bookable: boolean): MessageKey {
+export function getQueueStatusLabelKey(
+  bookable: boolean,
+  role?: string,
+): MessageKey {
+  if (role === "owner") {
+    return bookable ? "admin.ownerAcceptingOn" : "admin.ownerAcceptingOff";
+  }
   return bookable ? "admin.queueOpen" : "admin.queueClosed";
 }
 
-export function getQueueStatusHintKey(bookable: boolean): MessageKey {
+export function getQueueStatusHintKey(
+  bookable: boolean,
+  role?: string,
+): MessageKey {
+  if (role === "owner") {
+    return bookable ? "admin.ownerAcceptingOnHint" : "admin.ownerAcceptingOffHint";
+  }
   return bookable ? "admin.queueOpenHint" : "admin.queueClosedHint";
 }
 
