@@ -2,7 +2,7 @@
 
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
-import { PrimaryTrialCta, RiskReversalRow } from "@/components/marketing/PrimaryTrialCta";
+import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { HeroLineBookingAnim } from "@/components/marketing/mockups/HeroLineBookingAnim";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { fillOfferCopy } from "@/lib/marketing/offer";
@@ -104,10 +104,6 @@ export function SalesHero({
                 <span className="lg:hidden">{t("marketing.hero.subtitleShort")}</span>
                 <span className="hidden lg:inline">{t("marketing.hero.subtitle")}</span>
               </p>
-              <p className="mt-2 max-w-full text-sm font-medium text-amber-300/95 lg:mt-3 lg:text-base">
-                {t("marketing.hero.setup")}
-              </p>
-
               <div
                 ref={setCtaRefs}
                 className="relative mx-auto mt-5 w-full max-w-md lg:mx-0 lg:mt-6 lg:max-w-xl"
@@ -117,8 +113,6 @@ export function SalesHero({
                     labelKey="marketing.hero.cta"
                     placement="hero"
                     showRisk={false}
-                    showAfterClick
-                    afterClickClassName="text-center lg:text-left"
                     className="h-[52px] min-h-[52px] flex-1 justify-center px-4 py-0 text-center text-[15px] sm:text-base lg:h-auto lg:min-h-11 lg:w-auto lg:flex-none lg:justify-start lg:text-left"
                   />
                   {supportUrl ? (
@@ -142,16 +136,9 @@ export function SalesHero({
                     {t("marketing.hero.tryYourself")}
                   </a>
                 </div>
-                <RiskReversalRow
-                  className="mt-3 justify-center gap-x-3 text-[13px] sm:justify-center lg:justify-start lg:text-sm"
-                  items={
-                    [
-                      "marketing.risk.noCard",
-                      "marketing.risk.noAutoCharge",
-                      "marketing.risk.cancelAnytime",
-                    ] as const
-                  }
-                />
+                <p className="mt-3 text-center text-[13px] leading-snug text-zinc-300 sm:text-[13px] lg:text-left lg:text-sm">
+                  {td("marketing.hero.underCta")}
+                </p>
               </div>
 
               <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">

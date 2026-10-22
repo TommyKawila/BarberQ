@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Check } from "lucide-react";
-import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { ScheduleBoardMockup } from "@/components/marketing/mockups/ScheduleBoardMockup";
 import {
   HOW_DEMO_BOOKING,
@@ -255,14 +254,15 @@ export function LineReliefSection() {
               }
               className="mx-auto mt-10 flex w-full max-w-[440px] flex-col items-center gap-2 lg:mx-0 lg:items-start"
             >
-              <PrimaryTrialCta
-                labelKey="marketing.line.cta"
-                placement="line"
-                showRisk={false}
-                showAfterClick
-                afterClickClassName="text-center lg:text-left"
-                className="w-full justify-center text-center sm:w-auto sm:justify-start sm:text-left"
-              />
+              <a
+                href="#pricing"
+                onClick={() =>
+                  trackMarketingEvent("how_it_works_click", { cta_location: "line" })
+                }
+                className="inline-flex min-h-11 items-center justify-center text-[15px] font-medium text-amber-300 underline-offset-4 hover:underline"
+              >
+                {t("marketing.seePricing")}
+              </a>
               <LineGhostCta label={t("marketing.line.lineCta")} placement="line" />
             </div>
           </div>

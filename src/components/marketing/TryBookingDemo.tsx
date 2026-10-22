@@ -3,11 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronLeft, RotateCcw } from "lucide-react";
 import { BarberAvatar } from "@/components/barber/BarberAvatar";
-import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { PhoneFrame } from "@/components/marketing/mockups/PhoneFrame";
 import { WARM_NOTE } from "@/components/marketing/mockups/WarmNoteFlexCard";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { DEMO_SHOP_DISPLAY_NAME } from "@/lib/marketing/demo-shop";
+import { trackMarketingEvent } from "@/lib/marketing/events";
 
 /**
  * ClipperQ Demo shop barbers (same names/ids as memory-store / seed SQL).
@@ -836,16 +836,13 @@ export function TryBookingDemo() {
 
       <div className="flex w-full max-w-md flex-col items-stretch gap-2 text-center sm:mx-auto">
         <p className="text-[12px] leading-snug text-zinc-500">{t("marketing.try.disclaimer")}</p>
-        <div data-hide-sticky>
-          <PrimaryTrialCta
-            labelKey="marketing.try.trialCta"
-            placement="try-booking"
-            fullWidth
-            showRisk={false}
-            showAfterClick
-            afterClickClassName="text-center"
-          />
-        </div>
+        <a
+          href="#pricing"
+          onClick={() => trackMarketingEvent("how_it_works_click", { cta_location: "try-booking" })}
+          className="inline-flex min-h-11 items-center justify-center text-[15px] font-medium text-amber-300 underline-offset-4 hover:underline"
+        >
+          {t("marketing.seePricing")}
+        </a>
       </div>
     </div>
   );

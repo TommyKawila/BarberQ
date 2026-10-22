@@ -42,9 +42,9 @@ const DEMO_FEATURE_KEYS = [
 ] as const;
 /** FAQ ordered by real objections (pricing → setup → LINE → app → message cost → …). */
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
-const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
+const PRICING_INCLUDES = [1, 2, 3, 4, 5] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
-const TRIAL_BOX_ITEMS = [1, 2, 3, 4] as const;
+const TRIAL_BOX_ITEMS = [1, 2, 3] as const;
 const BODY = "text-[15px] leading-relaxed text-zinc-300 md:text-base";
 /** Never render testimonials in production until real reviews exist. */
 const SHOW_TESTIMONIALS_PLACEHOLDER = false;
@@ -138,8 +138,6 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
   const td = (key: MessageKey) => fillOfferCopy(t(key));
   const supportLineUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
   const pageRootRef = useRef<HTMLDivElement | null>(null);
-  const heroCtaRef = useRef<HTMLDivElement | null>(null);
-  const heroCtaDesktopRef = useRef<HTMLDivElement | null>(null);
   const finalCtaRef = useRef<HTMLElement | null>(null);
   const pricingRef = useRef<HTMLElement | null>(null);
   const [showSticky, setShowSticky] = useState(false);
@@ -152,14 +150,10 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
   }, []);
 
   useEffect(() => {
-    // Hide sticky while any in-page CTA / hide target is on screen.
+    // Hide sticky only while hero / pricing / final primary CTAs are on screen.
     const hideEls = [
       ...document.querySelectorAll<HTMLElement>("[data-inpage-trial-cta]"),
-      ...document.querySelectorAll<HTMLElement>("[data-hide-sticky]"),
     ];
-    for (const el of [heroCtaRef.current, heroCtaDesktopRef.current, pricingRef.current]) {
-      if (el && !hideEls.includes(el)) hideEls.push(el);
-    }
     if (hideEls.length === 0) return;
 
     const visibleByEl = new Map<Element, boolean>();
@@ -215,11 +209,7 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
       <AttributionCapture />
 
       {/* 1) Hero */}
-      <SalesHero
-        heroCtaRef={heroCtaRef}
-        heroCtaDesktopRef={heroCtaDesktopRef}
-        initialScene={heroScene}
-      />
+      <SalesHero initialScene={heroScene} />
 
       {/* 2) Problem ≤1 screen */}
       <section className="overflow-x-clip bg-zinc-950">
@@ -392,6 +382,9 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
             <p className={`mx-auto mt-3 max-w-2xl ${BODY}`}>
               {t("marketing.pricing.tierSameFeatures")}
             </p>
+            <p className="mt-2 text-center text-[13px] text-zinc-500 md:text-sm">
+              {td("marketing.pricing.micro")}
+            </p>
           </div>
 
           <div data-reveal className="mt-8">
@@ -458,9 +451,6 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
               )}
             </div>
 
-            <p className="mt-4 text-center text-sm leading-snug text-zinc-400">
-              {t("marketing.pricing.riskLine")}
-            </p>
             <ul className="mt-4 space-y-2">
               {PRICING_INCLUDES.map((n) => (
                 <li key={n} className={`flex items-start gap-2 ${BODY}`}>
@@ -469,17 +459,16 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-center text-[13px] text-zinc-500">
-              {td("marketing.pricing.micro")}
-            </p>
             <div className="mt-5">
               <PrimaryTrialCta
                 labelKey="marketing.pricing.cta"
                 placement="pricing"
                 fullWidth
-                showAfterClick
-                afterClickClassName="text-center"
+                showRisk={false}
               />
+              <p className="mt-3 text-center text-sm leading-snug text-zinc-400">
+                {td("marketing.pricing.riskLine")}
+              </p>
             </div>
           </div>
 
@@ -505,15 +494,16 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
             <h3 className="text-xl font-bold leading-snug text-zinc-50">
               {td("marketing.trialBox.title")}
             </h3>
-            <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            <ol className="mt-5 grid gap-3 sm:grid-cols-3">
               {TRIAL_BOX_ITEMS.map((n) => (
                 <li key={n} className={`flex items-start gap-2 ${BODY}`}>
-                  <Check size={16} className="mt-1 shrink-0 text-amber-400" />
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-amber-400/15 text-[12px] font-bold text-amber-300">
+                    {n}
+                  </span>
                   {t(`marketing.trialBox.item${n}` as MessageKey)}
                 </li>
               ))}
-            </ul>
-            <p className="mt-4 text-sm text-zinc-400">{td("marketing.trialBox.footer")}</p>
+            </ol>
           </div>
         </div>
       </section>
@@ -607,15 +597,12 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
               labelKey="marketing.final.cta"
               placement="final"
               fullWidth
+              showRisk={false}
               showAfterClick
               afterClickClassName="text-center"
-              riskClassName="mt-3 justify-center text-[13px] sm:text-sm"
             />
             <LineCta label={t("marketing.final.lineCta")} className="w-full" placement="final" />
           </div>
-          <p className="mx-auto mt-4 max-w-md text-center text-[13px] leading-snug text-zinc-400 md:text-sm">
-            {t("marketing.final.next")}
-          </p>
           <FinalMicroLines text={td("marketing.final.micro")} />
         </div>
       </section>

@@ -76,7 +76,8 @@ describe("marketing layout split", () => {
     assert.match(hero, /word-break:keep-all/);
     assert.match(hero, /h-\[52px\]/);
     assert.match(hero, /marketing\.hero\.micro/);
-    assert.match(hero, /marketing\.hero\.setup/);
+    assert.match(hero, /marketing\.hero\.underCta/);
+    assert.doesNotMatch(hero, /marketing\.hero\.setup/);
     assert.match(hero, /min-w-0/);
     assert.match(hero, /max-w-full/);
     const heroAnim = readFileSync(
@@ -161,8 +162,8 @@ describe("marketing layout split", () => {
     assert.match(lineRelief, /HOW_DEMO_BOOKING/);
     assert.match(lineRelief, /WarmNoteFlexCard/);
     assert.match(lineRelief, /LineGhostCta|hover:underline/);
-    assert.match(lineRelief, /showRisk=\{false\}/);
-    assert.match(lineRelief, /data-inpage-trial-cta|PrimaryTrialCta/);
+    assert.match(lineRelief, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(lineRelief, /PrimaryTrialCta/);
     const scheduleMock = readFileSync(
       resolve(root, "components/marketing/mockups/ScheduleBoardMockup.tsx"),
       "utf8",
@@ -178,7 +179,8 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(scheduleMock, /<button/);
     assert.doesNotMatch(howStrip, /marketing\.how\.micro/);
     assert.doesNotMatch(sales, /marketing\.how\.micro/);
-    assert.match(dictionary.th["marketing.how.micro"], /Tommy ช่วยตั้งค่าให้/);
+    assert.match(dictionary.th["marketing.how.micro"], /ไม่ขอรหัสผ่าน LINE OA/);
+    assert.doesNotMatch(dictionary.th["marketing.how.micro"], /Tommy ช่วยตั้งค่าให้/);
     const howPhones = readFileSync(
       resolve(root, "components/marketing/mockups/HowItWorksStepPhones.tsx"),
       "utf8",
@@ -194,6 +196,7 @@ describe("marketing layout split", () => {
     assert.match(dictionary.th["marketing.how.1.caption"], /กรอกฟอร์มสั้น/);
     assert.match(dictionary.th["marketing.how.2.caption"], /Tommy ทัก LINE/);
     assert.match(dictionary.th["marketing.how.3.caption"], /ร้านเห็นบนบอร์ด/);
+    assert.doesNotMatch(dictionary.th["marketing.how.2.title"], /Tommy ช่วยตั้งค่าให้/);
     const phoneScreen = readFileSync(
       resolve(root, "components/marketing/mockups/PhoneScreen.tsx"),
       "utf8",
@@ -211,7 +214,7 @@ describe("marketing layout split", () => {
       "choose-booking-demo.webp missing",
     );
     assert.match(dictionary.th["marketing.how.1.desc"], /ชื่อร้าน|LINE/);
-    assert.match(dictionary.th["marketing.how.2.title"], /Tommy ช่วยตั้งค่า/);
+    assert.match(dictionary.th["marketing.how.2.title"], /เชื่อม LINE OA/);
     assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|จองใน LINE/);
   });
 
@@ -385,7 +388,8 @@ describe("marketing layout split", () => {
     assert.match(demo, /marketing\.try\.statusDone/);
     assert.match(demo, /marketing\.try\.statusNoShow/);
     assert.match(demo, /data-demo-tap-hint/);
-    assert.match(demo, /data-hide-sticky/);
+    assert.match(demo, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(demo, /PrimaryTrialCta/);
     assert.match(demo, /data-demo-reset/);
     assert.match(demo, /data-demo-toast/);
     assert.match(demo, /data-demo-summary/);
@@ -393,7 +397,6 @@ describe("marketing layout split", () => {
     assert.match(demo, /prefers-reduced-motion/);
     assert.match(demo, /min-h-11|min-h-12|min-h-14/);
     assert.match(demo, /max-w-\[260px\]/);
-    assert.match(demo, /showRisk=\{false\}/);
     assert.doesNotMatch(demo, /fetch\(|supabase|insert|createAppointment/i);
     assert.equal(
       dictionary.th["marketing.try.disclaimer"],
@@ -621,13 +624,20 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(sales, /id="coming-soon"/);
     assert.doesNotMatch(sales, /barber\.chip|BARBER_CHIPS/);
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
-    const ctaCount =
-      (sales.match(/PrimaryTrialCta/g) ?? []).length +
-      (lineRelief.match(/PrimaryTrialCta/g) ?? []).length;
-    assert.ok(ctaCount >= 4, `expected >=4 PrimaryTrialCta uses, got ${ctaCount}`);
-    // Mobile sticky: soft gradient scrim (no hard top band) + hide when in-page CTAs visible
+    // Primary trial CTAs: hero + pricing + final + sticky (demo/LINE are see-pricing links)
+    const heroSrc = readFileSync(
+      resolve(root, "components/marketing/SalesHero.tsx"),
+      "utf8",
+    );
+    const ctaJsx =
+      (sales.match(/<PrimaryTrialCta\b/g) ?? []).length +
+      (heroSrc.match(/<PrimaryTrialCta\b/g) ?? []).length;
+    assert.equal(ctaJsx, 4, `expected 4 PrimaryTrialCta JSX uses (3 body + sticky), got ${ctaJsx}`);
+    assert.doesNotMatch(lineRelief, /PrimaryTrialCta/);
+    // Mobile sticky: soft gradient scrim; hide only when hero/pricing/final CTAs visible
     assert.match(sales, /linear-gradient\(to top/);
     assert.match(sales, /data-inpage-trial-cta|querySelectorAll.*data-inpage-trial-cta/);
+    assert.doesNotMatch(sales, /querySelectorAll.*data-hide-sticky/);
     assert.doesNotMatch(sales, /border-t border-zinc-800 bg-zinc-950\/95/);
     const footer = readFileSync(
       resolve(root, "components/marketing/MarketingFooter.tsx"),
@@ -666,13 +676,13 @@ describe("marketing layout split", () => {
     assert.match(dictionary.th["marketing.cta.afterClick"], /Tommy/);
     assert.match(dictionary.th["marketing.risk.noCard"], /ไม่ต้องผูกบัตร/);
     assert.match(dictionary.th["marketing.risk.cancelAnytime"], /ยกเลิกได้ทุกเมื่อ/);
-    // Hero: primary CTA without inline risk; RiskReversalRow under CTAs (ไม่ต้องผูกบัตร)
+    // Hero: primary CTA + under-CTA risk line (no after-click, no RiskReversalRow)
     assert.match(hero, /showRisk=\{false\}/);
-    assert.match(hero, /RiskReversalRow/);
+    assert.doesNotMatch(hero, /RiskReversalRow|showAfterClick/);
+    assert.match(hero, /marketing\.hero\.underCta/);
     assert.match(hero, /h-\[52px\]/);
     assert.match(hero, /marketing\.hero\.secondary/);
     assert.match(hero, /marketing\.hero\.tryYourself/);
-    // Sticky / try / line hide risk row; pricing + final keep default showRisk
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
@@ -685,13 +695,20 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/LineReliefSection.tsx"),
       "utf8",
     );
-    // SalesPage: only sticky hides risk; pricing + final use default showRisk
-    assert.equal((sales.match(/showRisk=\{false\}/g) ?? []).length, 1);
+    // SalesPage: pricing + final + sticky all hide risk row; after-click only on final
+    assert.equal((sales.match(/showRisk=\{false\}/g) ?? []).length, 3);
     assert.match(sales, /placement="sticky"[\s\S]*?showRisk=\{false\}/);
     assert.match(sales, /labelKey="marketing\.pricing\.cta"/);
     assert.match(sales, /labelKey="marketing\.final\.cta"/);
-    assert.match(tryDemo, /showRisk=\{false\}/);
-    assert.match(lineRelief, /showRisk=\{false\}/);
+    assert.match(sales, /showAfterClick/);
+    assert.equal((sales.match(/showAfterClick/g) ?? []).length, 1);
+    assert.match(tryDemo, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(tryDemo, /PrimaryTrialCta/);
+    assert.match(lineRelief, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(lineRelief, /PrimaryTrialCta/);
+    assert.match(dictionary.th["marketing.hero.underCta"], /ฟรี \{days\} วัน · ไม่ต้องผูกบัตร · ยกเลิกได้ทุกเมื่อ/);
+    assert.match(dictionary.th["marketing.pricing.riskLine"], /ไม่มีการตัดเงินอัตโนมัติ/);
+    assert.match(dictionary.th["marketing.cta.afterClick"], /Tommy จะทักกลับทาง LINE เพื่อช่วยตั้งค่าให้/);
     assert.match(dictionary.th["marketing.hero.subtitleShort"], /ยืนยันใน LINE/);
     assert.match(
       dictionary.en["marketing.hero.subtitleShort"],
@@ -722,7 +739,7 @@ describe("marketing layout split", () => {
     assert.match(lineRelief, /WarmNoteFlexCard/);
     assert.match(lineRelief, /variant="confirm"/);
     assert.match(lineRelief, /variant="reminder"/);
-    assert.match(lineRelief, /showRisk=\{false\}/);
+    assert.match(lineRelief, /marketing\.seePricing|#pricing/);
     assert.match(sales, /LineReliefSection/);
     const warmNote = readFileSync(
       resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
@@ -857,8 +874,9 @@ describe("visible marketing claim locks", () => {
     assert.match(dictionary.th["marketing.hero.cta"], /สมัครทดลองฟรี \{days\} วัน/);
     assert.match(dictionary.en["marketing.hero.cta"], /Start a free \{days\}-day trial/);
     assert.match(dictionary.th["marketing.hero.eyebrow"], /1–2 ช่าง/);
-    assert.match(dictionary.th["marketing.hero.setup"], /Tommy ช่วยตั้งค่าให้/);
-    assert.match(dictionary.en["marketing.hero.setup"], /Tommy helps you set up/);
+    assert.match(dictionary.th["marketing.founder.body"], /ผมช่วยตั้งค่าให้ทุกร้านเอง/);
+    assert.match(dictionary.en["marketing.founder.body"], /I set up every shop myself/i);
+    assert.doesNotMatch(dictionary.th["marketing.founder.body"], /Tommy ช่วยตั้งค่าให้/);
     assert.doesNotMatch(visibleValues("marketing.", "th"), /ตั้งค่าเองได้ในไม่กี่นาที/);
     assert.doesNotMatch(visibleValues("marketing.", "en"), /set up yourself in a few minutes/i);
     assert.match(dictionary.th["marketing.hero.micro"], /\{price\}/);
@@ -866,9 +884,14 @@ describe("visible marketing claim locks", () => {
     assert.match(dictionary.th["marketing.pricing.tierSameFeatures"], /ทุกแพ็กฟีเจอร์เหมือนกัน/);
     assert.match(dictionary.th["marketing.pricing.tier1Badge"], /ร้านเล็ก/);
     assert.match(dictionary.th["marketing.pricing.micro"], /ฟีเจอร์ใหม่ไม่ขึ้นราคา/);
+    assert.match(dictionary.th["marketing.trialBox.title"], /^ทดลองฟรี \{days\} วัน$/);
+    assert.match(dictionary.th["marketing.trialBox.item1"], /กรอกข้อมูลร้าน/);
+    assert.match(dictionary.th["marketing.trialBox.item2"], /Tommy ทักกลับทาง LINE/);
+    assert.match(dictionary.th["marketing.trialBox.item3"], /เริ่มรับคิวจริง/);
     assert.match(dictionary.th["marketing.founder.body"], /ไม่ใช่เจ้าของร้าน/);
     assert.match(dictionary.en["marketing.founder.body"], /not a barber shop owner/i);
     assert.match(dictionary.th["marketing.faq.2.a"], /Tommy ช่วยตั้งค่าให้/);
+    assert.match(dictionary.th["marketing.seePricing"], /ดูราคา ↓/);
     const pricingUi = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
@@ -877,6 +900,9 @@ describe("visible marketing claim locks", () => {
     assert.match(pricingUi, /isStarter/);
     assert.match(pricingUi, /tierSameFeatures/);
     assert.match(pricingUi, /riskLine/);
+    assert.match(pricingUi, /TRIAL_BOX_ITEMS = \[1, 2, 3\]/);
+    assert.match(pricingUi, /PRICING_INCLUDES = \[1, 2, 3, 4, 5\]/);
+    assert.doesNotMatch(pricingUi, /trialBox\.footer/);
   });
 
   it("rejects unverifiable and outdated pricing claims", () => {
