@@ -256,6 +256,43 @@ html[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
 }
 
 /*
+  LINE relief section — progressive. Visible until html[data-cq-line-relief="on"].
+  Sequence: heading → bullets (stagger) → check ticks after text → CTA.
+  Soft ease-out, no bounce. prefers-reduced-motion: instant (hook marks all in).
+*/
+html[data-cq-line-relief="on"] [data-line-reveal]:not([data-line-reveal-in]) {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0);
+}
+
+html[data-cq-line-relief="on"] [data-line-reveal="check"]:not([data-line-reveal-in]) {
+  opacity: 0;
+  transform: scale(0.7);
+}
+
+html[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--line-dur, 450ms) cubic-bezier(0.22, 1, 0.36, 1),
+    transform var(--line-dur, 450ms) cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--line-delay, 0ms);
+}
+
+html[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in] {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-cq-line-relief="on"] [data-line-reveal],
+  html[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/*
   Pain H2 hammer — progressive. Lines stay visible until data-pain-hammer="on".
   filter + transform only (no layout shift of surrounding blocks).
 */

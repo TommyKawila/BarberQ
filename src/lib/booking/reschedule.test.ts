@@ -257,7 +257,7 @@ describe("P6 customer self-reschedule", () => {
     assert.match(dictionary.th["booking.reschedule"], /เลื่อนคิว/);
     assert.match(dictionary.th["booking.rescheduleSlotTaken"], /คิวเดิมของคุณยังอยู่/);
     // Sale page: customer self-reschedule lives in LINE section; features.5 is shop move/cancel.
-    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนคิวเอง/);
+    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนเอง/);
     assert.match(dictionary.th["marketing.line.rescheduleTitle"], /เลื่อนคิวเอง/);
   });
 

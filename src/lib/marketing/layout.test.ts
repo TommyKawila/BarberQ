@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { dictionary } from "@/lib/i18n/dictionary";
-import { marketingClaims, marketingOffer } from "@/lib/marketing/offer";
+import {
+  fillOfferCopy,
+  marketingClaims,
+  marketingOffer,
+} from "@/lib/marketing/offer";
 import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 
 const root = resolve(import.meta.dirname, "../..");
@@ -109,8 +113,23 @@ describe("marketing layout split", () => {
     assert.match(mobileHow, /marketing\.how\.eyebrow/);
     assert.match(sales, /scroll-mt-\[4\.5rem\]/);
     assert.match(sales, /id="how-it-works"[\s\S]*?data-hide-sticky/);
-    assert.match(sales, /ScheduleBoardMockup/);
+    assert.match(sales, /LineReliefSection/);
     assert.match(dictionary.th["marketing.line.scheduleTabNote"], /อีกแท็บคือคิววันนี้/);
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    assert.match(lineRelief, /ScheduleBoardMockup/);
+    assert.match(lineRelief, /fillOfferCopy/);
+    assert.match(lineRelief, /marketing\.line\.evidence/);
+    assert.match(lineRelief, /IntersectionObserver/);
+    assert.match(lineRelief, /threshold:\s*0\.3/);
+    assert.match(lineRelief, /prefers-reduced-motion/);
+    assert.match(lineRelief, /HOW_DEMO_BOOKING/);
+    assert.match(lineRelief, /WarmNoteFlexCard/);
+    assert.match(lineRelief, /LineGhostCta|hover:underline/);
+    assert.match(lineRelief, /h-\[40vh\]/);
+    assert.match(lineRelief, /data-inpage-trial-cta|PrimaryTrialCta/);
     const scheduleMock = readFileSync(
       resolve(root, "components/marketing/mockups/ScheduleBoardMockup.tsx"),
       "utf8",
@@ -506,7 +525,7 @@ describe("marketing layout split", () => {
       'id="board"',
       'id="owner"',
       "marketing.pain",
-      'id="line-messages"',
+      "LineReliefSection",
       "how-it-works",
       "CustomerStepPhone",
       'id="founder"',
@@ -528,15 +547,22 @@ describe("marketing layout split", () => {
       assert.ok(idx >= 0, `missing ordered token: ${token}`);
       cursor = idx + token.length;
     }
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    assert.match(lineRelief, /id="line-messages"/);
     assert.match(sales, /SHOW_TESTIMONIALS_PLACEHOLDER = false/);
     assert.doesNotMatch(sales, /id="coming-soon"/);
     assert.doesNotMatch(sales, /barber\.chip|BARBER_CHIPS/);
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
-    const ctaCount = (sales.match(/PrimaryTrialCta/g) ?? []).length;
+    const ctaCount =
+      (sales.match(/PrimaryTrialCta/g) ?? []).length +
+      (lineRelief.match(/PrimaryTrialCta/g) ?? []).length;
     assert.ok(ctaCount >= 4, `expected >=4 PrimaryTrialCta uses, got ${ctaCount}`);
     // Mobile sticky: soft gradient scrim (no hard top band) + hide when in-page CTAs visible
     assert.match(sales, /linear-gradient\(to top/);
-    assert.match(sales, /data-inpage-trial-cta/);
+    assert.match(sales, /data-inpage-trial-cta|querySelectorAll.*data-inpage-trial-cta/);
     assert.doesNotMatch(sales, /border-t border-zinc-800 bg-zinc-950\/95/);
   });
 
@@ -586,18 +612,22 @@ describe("marketing layout split", () => {
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    assert.match(sales, /marketingClaims\.reminderShortLeads/);
-    assert.match(sales, /marketingClaims\.customerSelfReschedule/);
-    assert.match(sales, /marketing\.line\.bullet2ShortLeads/);
-    assert.match(sales, /marketing\.line\.bullet3/);
-    assert.doesNotMatch(sales, /marketing\.line\.leadsLabel/);
-    assert.doesNotMatch(sales, /marketing\.line\.rescheduleTitle/);
-    // Option B mood plate uses solutionCustomer src (no framed MarketingPhotoSlot)
-    assert.match(sales, /marketingPhotoSlots\.solutionCustomer/);
-    assert.match(sales, /slot="solutionBarberCalm"/);
-    assert.match(sales, /LineConfirmMockup/);
-    assert.match(sales, /LineReminderMockup/);
-    assert.match(sales, /maskImage|WebkitMaskImage/);
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    assert.match(lineRelief, /marketingClaims\.customerSelfReschedule/);
+    assert.match(lineRelief, /marketing\.line\.bullet3/);
+    assert.match(lineRelief, /marketing\.line\.bullet1/);
+    assert.match(lineRelief, /marketing\.line\.bullet2/);
+    assert.doesNotMatch(lineRelief, /marketing\.line\.leadsLabel/);
+    assert.doesNotMatch(lineRelief, /marketing\.line\.rescheduleTitle/);
+    assert.match(lineRelief, /marketingPhotoSlots\.solutionCustomer/);
+    assert.match(lineRelief, /slot="solutionBarberCalm"/);
+    assert.match(lineRelief, /WarmNoteFlexCard/);
+    assert.match(lineRelief, /variant="confirm"/);
+    assert.match(lineRelief, /variant="reminder"/);
+    assert.match(sales, /LineReliefSection/);
     const warmNote = readFileSync(
       resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
       "utf8",
@@ -634,10 +664,23 @@ describe("marketing layout split", () => {
     );
     assert.match(marketingPhotoSlots.solutionCustomer.labelTh, /ลูกค้ายิ้ม/);
     assert.match(marketingPhotoSlots.solutionBarberCalm.labelTh, /ช่างผ่อนคลาย/);
-    assert.match(dictionary.th["marketing.line.bullet2ShortLeads"], /3 ชม/);
-    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนคิวเอง/);
+    assert.match(dictionary.th["marketing.line.title"], /ข้อความเล็กๆ ที่ทำให้ลูกค้ารู้สึกว่าร้านใส่ใจ/);
+    assert.match(dictionary.th["marketing.line.bullet1"], /จองปุ๊บ/);
+    assert.match(dictionary.th["marketing.line.bullet2"], /เตือนก่อนถึงคิว/);
+    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนเองได้/);
+    assert.match(dictionary.en["marketing.line.title"], /feel the shop cares/);
+    assert.match(dictionary.th["marketing.line.toggleNote"], /เปิด–ปิด/);
     assert.ok(dictionary.th["marketing.line.customerPhotoAlt"]);
     assert.ok(dictionary.th["marketing.line.barberCaption"]);
+    assert.equal(marketingOffer.lineFreePushQuota, 300);
+    assert.match(
+      fillOfferCopy(dictionary.th["marketing.line.evidence"]),
+      /300/,
+    );
+    assert.doesNotMatch(
+      fillOfferCopy(dictionary.th["marketing.line.evidence"]),
+      /\{quota\}/,
+    );
   });
 
   it("Clarity loads only via marketing script gated on env", () => {
