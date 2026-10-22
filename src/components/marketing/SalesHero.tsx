@@ -71,7 +71,7 @@ export function SalesHero({
         Never place the photo behind type.
         object-position nudged ~10% toward bottom so wrist stays in frame.
       */}
-      <section className="relative max-w-full px-4 pb-8 pt-5 lg:hidden">
+      <section className="relative max-w-full px-4 pb-8 pt-5 text-center lg:hidden">
         <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
         <h1 className="mt-2 text-[2.125rem] font-bold leading-[1.28] text-zinc-50 [word-break:keep-all] sm:text-[2.25rem]">
           {mobileTitle ? (
@@ -84,12 +84,12 @@ export function SalesHero({
             t("marketing.hero.title")
           )}
         </h1>
-        <p className="mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300">
+        <p className="mx-auto mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300">
           {t("marketing.hero.subtitleShort")}
         </p>
 
-        <div ref={heroCtaRef} className="relative mt-5 max-w-full">
-          <div className="flex w-full items-stretch gap-2.5">
+        <div ref={heroCtaRef} className="relative mx-auto mt-5 w-full max-w-md">
+          <div className="flex w-full items-stretch justify-center gap-2.5">
             <PrimaryTrialCta
               labelKey="marketing.hero.cta"
               placement="hero"
@@ -105,7 +105,7 @@ export function SalesHero({
               {t("marketing.hero.secondaryFallback")}
             </a>
           </div>
-          <RiskReversalRow className="mt-3 justify-start gap-x-3 text-[13px] sm:justify-start" />
+          <RiskReversalRow className="mt-3 justify-center gap-x-3 text-[13px] sm:justify-center" />
         </div>
 
         <div className="relative mt-5 h-[45vh] max-h-[45vh] w-full overflow-hidden rounded-2xl">
