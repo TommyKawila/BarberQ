@@ -47,6 +47,9 @@ export const ADMIN_STICKY_SAVE_BAR_CLASS = [
   "lg:left-56 lg:bottom-0",
 ].join(" ");
 
+/** Mark sticky save bars so HelpFab can hide itself (data attribute on the bar element). */
+export const ADMIN_STICKY_SAVE_BAR_ATTR = { "data-cq-sticky-save": "true" } as const;
+
 export function primaryAdminNavItems(role: ShopStaffRole): AdminNavItemId[] {
   if (role === "owner" || role === "manager") return ["board", "team", "stats", "more"];
   // D5: barbers see personal summary ("สรุปของฉัน")

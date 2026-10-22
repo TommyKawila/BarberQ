@@ -95,6 +95,18 @@ export default function SuperAdminPage() {
       <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />
 
       <section>
+        <div className="mb-4 flex items-center justify-between gap-2">
+          <h2 className="text-xl font-semibold">Support tickets</h2>
+          <Link href="/superadmin/support" className="text-sm text-amber-400">
+            Open inbox →
+          </Link>
+        </div>
+        <p className="mb-3 text-sm text-zinc-400">
+          Problems, features, setup help, crashes — reply within 24 hours
+        </p>
+      </section>
+
+      <section>
         <h2 className="mb-4 text-xl font-semibold">LINE OA Install Requests</h2>
         <LineSupportInbox token={token} />
       </section>

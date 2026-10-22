@@ -21,6 +21,7 @@ import { QuickBlockGrid } from "@/components/admin/QuickBlockGrid";
 import { QrWaitingRow } from "@/components/admin/QrWaitingRow";
 import { StaffBookingSheet } from "@/components/admin/StaffBookingSheet";
 import { TodayQueueCards } from "@/components/admin/TodayQueueCards";
+import { TodaySupportChecklist } from "@/components/support/TodaySupportChecklist";
 import { UnblockConfirmSheet } from "@/components/admin/UnblockConfirmSheet";
 import { WhoIsFreeSheet } from "@/components/admin/WhoIsFreeSheet";
 import {
@@ -803,6 +804,8 @@ export default function AdminPage() {
           rescheduleFrom || thumbBar ? " pb-28 lg:pb-4" : ""
         }`}
       >
+        {isOperator ? <TodaySupportChecklist /> : null}
+
         <header className="flex items-center justify-between gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-1">
             <button
