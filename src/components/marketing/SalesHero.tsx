@@ -3,6 +3,7 @@
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
 import { PrimaryTrialCta, RiskReversalRow } from "@/components/marketing/PrimaryTrialCta";
+import { HeroLineBookingAnim } from "@/components/marketing/mockups/HeroLineBookingAnim";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
@@ -11,11 +12,14 @@ import type { MessageKey } from "@/lib/i18n/dictionary";
 export function SalesHero({
   heroCtaRef,
   heroCtaDesktopRef,
+  initialScene,
 }: {
   /** Mobile / tablet CTA block (<lg) for sticky-bar intersection. */
   heroCtaRef?: React.RefObject<HTMLDivElement | null>;
   /** Desktop CTA block (lg+) for sticky-bar intersection. */
   heroCtaDesktopRef?: React.RefObject<HTMLDivElement | null>;
+  /** Optional forced scene (0–3) for SSR screenshots via ?heroScene= */
+  initialScene?: number;
 }) {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
@@ -43,8 +47,7 @@ export function SalesHero({
       <MarketingNav />
       <div className="relative max-w-full overflow-x-clip bg-zinc-950">
       {/*
-        Desktop (lg+): full-bleed — subject on right, left fade for copy.
-        Locked (Tommy hero-composite). Do not change.
+        Desktop (lg+): full-bleed atmosphere plate + copy left / anim phone right.
       */}
       <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
         <MarketingPhotoSlot
@@ -54,24 +57,22 @@ export function SalesHero({
           fill
           sizes="100vw"
           objectPosition="right center"
-          className="absolute inset-0 h-full w-full rounded-none border-0"
+          className="absolute inset-0 h-full w-full rounded-none border-0 opacity-40"
         />
         <div
           className="absolute inset-0"
           style={{
             background:
-              "linear-gradient(to right, rgba(9,9,11,0.55) 0%, rgba(9,9,11,0.28) 28%, rgba(9,9,11,0.08) 42%, transparent 52%)",
+              "linear-gradient(to right, rgba(9,9,11,0.92) 0%, rgba(9,9,11,0.75) 38%, rgba(9,9,11,0.55) 55%, rgba(9,9,11,0.7) 100%)",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/40 via-transparent to-zinc-950/25" />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 via-transparent to-zinc-950/30" />
       </div>
 
       {/*
-        Mobile / tablet (<lg): design C — flat zinc-950, text then CTAs then photo.
-        Never place the photo behind type.
-        object-position nudged ~10% toward bottom so wrist stays in frame.
+        Mobile / tablet (<lg): copy + CTA first (first screen), then phone anim ≤55vh.
       */}
-      <section className="relative max-w-full px-4 pb-8 pt-5 text-center lg:hidden">
+      <section className="relative max-w-full px-4 pb-6 pt-5 text-center lg:hidden">
         <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
         <h1 className="mt-2 text-[2.125rem] font-bold leading-[1.28] text-zinc-50 [word-break:keep-all] sm:text-[2.25rem]">
           {mobileTitle ? (
@@ -96,7 +97,6 @@ export function SalesHero({
               showRisk={false}
               className="h-[52px] min-h-[52px] flex-1 justify-center px-4 py-0 text-center text-[15px] sm:text-base"
             />
-            {/* Design C always shows “ดูวิธีทำงาน” — not the support LINE label */}
             <a
               href="#try-booking"
               onClick={() => trackMarketingEvent("how_it_works_click")}
@@ -108,33 +108,29 @@ export function SalesHero({
           <RiskReversalRow className="mt-3 justify-center gap-x-3 text-[13px] sm:justify-center" />
         </div>
 
-        <div className="relative mt-5 h-[45vh] max-h-[45vh] w-full overflow-hidden rounded-2xl">
-          <div
-            className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-10 bg-gradient-to-b from-zinc-950/90 to-transparent"
-            aria-hidden
-          />
-          <MarketingPhotoSlot
-            slot="heroMobile"
-            alt=""
-            priority
-            fill
-            sizes="(max-width: 1023px) 100vw, 0px"
-            objectPosition="center 60%"
-            className="h-full w-full rounded-2xl"
-          />
+        <div className="relative mx-auto mt-5 w-full max-w-[260px]">
+          <HeroLineBookingAnim initialScene={initialScene} />
         </div>
 
-        <p className="mt-4 max-w-full break-words text-sm leading-relaxed text-zinc-400">
+        <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
           {td("marketing.hero.micro")}
         </p>
-        <p className="mt-2 max-w-full text-sm font-medium text-amber-300/95">
+        <p className="mt-1.5 max-w-full text-sm font-medium text-amber-300/95">
           {t("marketing.hero.setup")}
         </p>
+
+        <a
+          href="#try-booking"
+          onClick={() => trackMarketingEvent("how_it_works_click")}
+          className="mt-4 inline-flex min-h-11 items-center justify-center text-[15px] font-medium text-amber-300 underline-offset-4 hover:underline"
+        >
+          {t("marketing.hero.tryYourself")}
+        </a>
       </section>
 
-      {/* Desktop copy column locked (Tommy): stays on dark left of hero-composite */}
+      {/* Desktop copy + anim phone */}
       <section className="relative hidden min-h-[min(720px,100svh)] max-w-full flex-col justify-center pb-16 pt-12 lg:flex">
-        <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,44%)_minmax(0,56%)] lg:gap-8 lg:px-6">
+        <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)] lg:gap-10 lg:px-6">
           <div className="relative z-10 min-w-0 max-w-full text-left lg:max-w-[34rem]">
             <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
             <h1 className="mt-3 break-words text-[3.5rem] font-bold leading-[1.2] text-zinc-50">
@@ -183,9 +179,21 @@ export function SalesHero({
             <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
               {td("marketing.hero.micro")}
             </p>
+            <a
+              href="#try-booking"
+              onClick={() => trackMarketingEvent("how_it_works_click")}
+              className="mt-4 inline-flex min-h-11 items-center text-[15px] font-medium text-amber-300 underline-offset-4 hover:underline"
+            >
+              {t("marketing.hero.tryYourself")}
+            </a>
           </div>
 
-          <div className="hidden lg:block" aria-hidden />
+          <div className="relative z-10 flex justify-center lg:justify-end lg:pr-6">
+            <HeroLineBookingAnim
+              className="w-full max-w-[300px]"
+              initialScene={initialScene}
+            />
+          </div>
         </div>
       </section>
       </div>
