@@ -3,12 +3,14 @@ import assert from "node:assert/strict";
 import {
   fillOfferCopy,
   formatBaht,
+  marketingClaims,
   marketingOffer,
   resolveMarketingTierForBarberCount,
+  tierPerDayHint,
 } from "@/lib/marketing/offer";
 
 describe("marketingOffer single source of truth", () => {
-  it("defines the owner-confirmed tier prices", () => {
+  it("defines the owner-confirmed three-tier prices", () => {
     assert.equal(marketingOffer.tiers.length, 3);
     assert.equal(marketingOffer.tiers[0].monthlyPriceThb, 399);
     assert.equal(marketingOffer.tiers[0].minBarbers, 1);
@@ -22,6 +24,11 @@ describe("marketingOffer single source of truth", () => {
     assert.equal(marketingOffer.contactFromBarbers, 11);
     assert.equal(marketingOffer.trialDays, 30);
     assert.equal(marketingOffer.lineFreePushQuota, 300);
+  });
+
+  it("defaults short-lead and self-reschedule claims on (flags remain toggleable)", () => {
+    assert.equal(marketingClaims.reminderShortLeads, true);
+    assert.equal(marketingClaims.customerSelfReschedule, true);
   });
 
   it("resolves seat counts to tiers or contact", () => {
@@ -48,13 +55,15 @@ describe("marketingOffer single source of truth", () => {
     assert.equal(resolveMarketingTierForBarberCount(20), "contact");
   });
 
-  it("formats baht and offer copy placeholders", () => {
+  it("formats baht, per-day hint, and price/price2/price3 placeholders", () => {
     assert.equal(formatBaht(399), "฿399");
     assert.equal(formatBaht(599), "฿599");
     assert.equal(formatBaht(999), "฿999");
+    assert.match(tierPerDayHint(marketingOffer.tiers[0], "th") ?? "", /13/);
+    assert.equal(tierPerDayHint(marketingOffer.tiers[1], "th"), null);
     assert.match(
-      fillOfferCopy("{days}-day / {quota} msgs / {price} · {priceMid} · {priceLarge}"),
-      /30-day \/ 300 msgs \/ ฿399 · ฿599 · ฿999/,
+      fillOfferCopy("{days} / {quota} / {price} / {price2} / {price3}"),
+      /30 \/ 300 \/ ฿399 \/ ฿599 \/ ฿999/,
     );
   });
 });

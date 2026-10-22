@@ -6,6 +6,7 @@ import { Check, CheckCircle } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
+import { ClarityMarketingScript } from "@/components/marketing/ClarityMarketingScript";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { getMarketingAttribution, readStashedAttribution } from "@/lib/marketing/attribution";
@@ -162,6 +163,7 @@ export function TrialForm() {
   if (successId) {
     return (
       <div className="flex min-h-dvh flex-col bg-zinc-950 text-zinc-50">
+        <ClarityMarketingScript />
         <MarketingNav variant="trial" />
         <div className="flex flex-1 items-center justify-center px-4 py-12">
           <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-10 text-center md:px-8">
@@ -194,6 +196,7 @@ export function TrialForm() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-zinc-950 text-zinc-50">
+      <ClarityMarketingScript />
       <AttributionCapture />
       <MarketingNav variant="trial" />
       <div className="mx-auto grid w-full max-w-[1080px] flex-1 items-start gap-10 px-4 py-10 md:grid-cols-2 md:gap-12 md:px-6 md:py-16">

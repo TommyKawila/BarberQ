@@ -1,95 +1,169 @@
 "use client";
 
-import Image from "next/image";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
-import { MarketingTrialLink } from "@/components/marketing/MarketingTrialLink";
-import { HeroProductMockups } from "@/components/marketing/mockups/CustomerJourneyMockups";
+import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
+import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
+import { HeroLineBookingAnim } from "@/components/marketing/mockups/HeroLineBookingAnim";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import type { MessageKey } from "@/lib/i18n/dictionary";
 import { fillOfferCopy } from "@/lib/marketing/offer";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-import { handPhoneHero } from "@/lib/marketing/screens";
+import type { MessageKey } from "@/lib/i18n/dictionary";
 
-export function SalesHero() {
-  const { t } = useI18n();
+export function SalesHero({
+  heroCtaRef,
+  heroCtaDesktopRef,
+  initialScene,
+}: {
+  /** Mobile / tablet CTA block (<lg) for sticky-bar intersection. */
+  heroCtaRef?: React.RefObject<HTMLDivElement | null>;
+  /** Desktop CTA block (lg+) for sticky-bar intersection — same node as mobile when unified. */
+  heroCtaDesktopRef?: React.RefObject<HTMLDivElement | null>;
+  /** Optional forced scene (0–3) for SSR screenshots via ?heroScene= */
+  initialScene?: number;
+}) {
+  const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
+  const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
+
+  /** Design C: break after LINE so Thai “ไม่ต้อง…” stays intact (no mid-word wrap). */
+  const mobileTitle = (() => {
+    const title = t("marketing.hero.title");
+    if (locale === "th") {
+      const i = title.indexOf("LINE ");
+      if (i >= 0) {
+        return [title.slice(0, i + 4), title.slice(i + 5).trimStart()] as const;
+      }
+    } else {
+      const i = title.indexOf("LINE — ");
+      if (i >= 0) {
+        return [title.slice(0, i + 6), title.slice(i + 7).trimStart()] as const;
+      }
+    }
+    return null;
+  })();
+
+  const setCtaRefs = (node: HTMLDivElement | null) => {
+    if (heroCtaRef) {
+      (heroCtaRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+    }
+    if (heroCtaDesktopRef) {
+      (heroCtaDesktopRef as React.MutableRefObject<HTMLDivElement | null>).current =
+        node;
+    }
+  };
 
   return (
-    <div className="relative max-w-full overflow-x-clip">
-      {/* Full-bleed ambience — dark barbershop atmosphere under cutout / mobile visual */}
-      <div className="absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_18%_0%,rgba(244,183,64,0.14),transparent_48%),radial-gradient(ellipse_at_88%_18%,rgba(244,183,64,0.08),transparent_42%),radial-gradient(ellipse_at_70%_80%,rgba(39,39,42,0.95),transparent_50%),linear-gradient(165deg,#09090B_0%,#18181B_48%,#0B0B0B_100%)]" />
-        <div
-          className="absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23F4B740' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-          }}
-        />
-        {/* Soft vignette so right-column cutout sits in a lit pocket */}
-        <div className="absolute inset-0 hidden bg-gradient-to-r from-zinc-950 via-zinc-950/40 to-transparent md:block" />
-        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-zinc-950/40" />
-      </div>
-
+    <>
+      {/* Nav outside overflow-x-clip so position:sticky works on iOS/Safari */}
       <MarketingNav />
-      <section className="relative flex max-w-full flex-col pb-10 pt-6 md:min-h-[640px] md:pb-14 lg:min-h-[700px] lg:pt-10">
-        <div className="mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-8 px-4 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)] lg:items-center lg:gap-8 lg:px-6">
-          <div className="relative z-10 min-w-0 max-w-full text-left">
-            <p className="text-sm font-medium text-amber-400/90">{t("marketing.hero.eyebrow")}</p>
-            <h1 className="mt-3 break-words text-[2rem] font-bold leading-[1.2] text-zinc-50 sm:text-[2.25rem] md:text-[3.25rem] md:leading-[1.15] lg:text-[3.5rem]">
-              {t("marketing.hero.title")}
-            </h1>
-            <p className="mt-4 max-w-full break-words text-base leading-relaxed text-zinc-300 md:max-w-xl md:text-lg">
-              {t("marketing.hero.subtitle")}
-            </p>
+      <div className="relative max-w-full overflow-x-clip bg-zinc-950">
+        {/* Desktop atmosphere plate */}
+        <div className="pointer-events-none absolute inset-0 hidden lg:block" aria-hidden>
+          <MarketingPhotoSlot
+            slot="heroDesktop"
+            alt=""
+            priority
+            fill
+            sizes="100vw"
+            objectPosition="right center"
+            className="absolute inset-0 h-full w-full rounded-none border-0 opacity-40"
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(9,9,11,0.92) 0%, rgba(9,9,11,0.75) 38%, rgba(9,9,11,0.55) 55%, rgba(9,9,11,0.7) 100%)",
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/50 via-transparent to-zinc-950/30" />
+        </div>
 
-            <div className="relative mt-8 max-w-full md:max-w-xl">
-              <div className="relative flex w-full max-w-full flex-col gap-3 md:flex-row md:items-center">
-                <MarketingTrialLink className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl bg-amber-400 px-4 py-3 text-center font-semibold text-zinc-950 sm:px-6 md:w-auto">
-                  {td("marketing.hero.cta")}
-                </MarketingTrialLink>
-                <a
-                  href="#how-it-works"
-                  onClick={() => trackMarketingEvent("how_it_works_click")}
-                  className="box-border inline-flex min-h-11 w-full max-w-full items-center justify-center rounded-xl border border-zinc-400/50 bg-zinc-950/30 px-4 py-3 text-center font-medium text-zinc-100 sm:px-6 md:w-auto"
-                >
-                  {t("marketing.hero.secondary")}
-                </a>
+        {/* Single hero DOM + single h1 — stacked on mobile, 2-col on lg+ */}
+        <section className="relative max-w-full px-4 pb-8 pt-5 text-center lg:flex lg:min-h-[min(720px,100svh)] lg:flex-col lg:justify-center lg:pb-16 lg:pt-12 lg:text-left">
+          <div className="relative z-10 mx-auto grid w-full min-w-0 max-w-[1280px] flex-1 items-center gap-5 lg:grid-cols-[minmax(0,46%)_minmax(0,54%)] lg:gap-10 lg:px-2">
+            <div className="relative z-10 min-w-0 max-w-full lg:max-w-[34rem]">
+              <p className="text-sm font-medium text-amber-400/90">
+                {t("marketing.hero.eyebrow")}
+              </p>
+              <h1 className="mt-2 break-words text-[2.125rem] font-bold leading-[1.28] text-zinc-50 [word-break:keep-all] sm:text-[2.25rem] lg:mt-3 lg:text-[3.5rem] lg:leading-[1.2]">
+                {/* Mobile: forced break after LINE; desktop: natural wrap */}
+                <span className="lg:hidden">
+                  {mobileTitle ? (
+                    <>
+                      {mobileTitle[0]}
+                      <br />
+                      {mobileTitle[1]}
+                    </>
+                  ) : (
+                    t("marketing.hero.title")
+                  )}
+                </span>
+                <span className="hidden lg:inline">{t("marketing.hero.title")}</span>
+              </h1>
+              <p className="mx-auto mt-3 max-w-full break-words text-[15px] leading-relaxed text-zinc-300 lg:mx-0 lg:mt-4 lg:text-lg lg:md:max-w-xl">
+                <span className="lg:hidden">{t("marketing.hero.subtitleShort")}</span>
+                <span className="hidden lg:inline">{t("marketing.hero.subtitle")}</span>
+              </p>
+              <div
+                ref={setCtaRefs}
+                className="relative mx-auto mt-5 w-full max-w-md lg:mx-0 lg:mt-6 lg:max-w-xl"
+              >
+                <div className="flex w-full items-stretch justify-center gap-2.5 lg:items-center lg:justify-start lg:gap-3">
+                  <PrimaryTrialCta
+                    labelKey="marketing.hero.cta"
+                    placement="hero"
+                    showRisk={false}
+                    className="h-[52px] min-h-[52px] flex-1 justify-center px-4 py-0 text-center text-[15px] sm:text-base lg:h-auto lg:min-h-11 lg:w-auto lg:flex-none lg:justify-start lg:text-left"
+                  />
+                  {supportUrl ? (
+                    <a
+                      href={supportUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() =>
+                        trackMarketingEvent("support_line_click", { cta_location: "hero" })
+                      }
+                      className="hidden min-h-11 shrink-0 items-center justify-center rounded-xl border border-zinc-500/45 bg-transparent px-4 py-2 text-sm font-medium text-zinc-200 hover:border-zinc-400 hover:text-zinc-50 lg:inline-flex"
+                    >
+                      {t("marketing.hero.secondary")}
+                    </a>
+                  ) : null}
+                  <a
+                    href="#try-booking"
+                    onClick={() => trackMarketingEvent("how_it_works_click")}
+                    className="inline-flex h-[52px] min-h-[52px] shrink-0 items-center justify-center rounded-xl border border-zinc-400/55 bg-transparent px-3.5 text-[15px] font-medium text-zinc-100 hover:border-zinc-300 hover:text-zinc-50 lg:hidden"
+                  >
+                    {t("marketing.hero.tryYourself")}
+                  </a>
+                </div>
+                <p className="mt-3 text-center text-[13px] leading-snug text-zinc-300 sm:text-[13px] lg:text-left lg:text-sm">
+                  {td("marketing.hero.underCta")}
+                </p>
               </div>
+
+              <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
+                {td("marketing.hero.micro")}
+              </p>
+
+              {/* Single try-yourself control on desktop (mobile uses the secondary button above) */}
+              <a
+                href="#try-booking"
+                onClick={() => trackMarketingEvent("how_it_works_click")}
+                className="mt-4 hidden min-h-11 items-center text-[15px] font-medium text-amber-300 underline-offset-4 hover:underline lg:inline-flex"
+              >
+                {t("marketing.hero.tryYourself")}
+              </a>
             </div>
 
-            <p className="mt-3 max-w-full break-words text-sm leading-relaxed text-zinc-400">
-              {td("marketing.hero.micro")}
-            </p>
-          </div>
-
-          {/* Desktop: transparent cutout in the RIGHT column — full phone screen visible */}
-          <div
-            className="hero-phones-enter relative hidden w-full min-w-0 max-w-full md:flex md:justify-end md:self-center"
-            aria-label={t("marketing.hero.productAlt")}
-          >
-            <div className="relative w-full max-w-[min(100%,340px)] lg:max-w-[360px] xl:max-w-[380px]">
-              <Image
-                src={handPhoneHero.cutout}
-                alt=""
-                width={handPhoneHero.cutoutWidth}
-                height={handPhoneHero.cutoutHeight}
-                priority
-                sizes="(min-width: 1280px) 380px, (min-width: 1024px) 360px, 340px"
-                className="h-auto w-full object-contain drop-shadow-[0_28px_60px_rgba(0,0,0,0.55)]"
+            <div className="relative z-10 flex justify-center lg:justify-end lg:pr-4">
+              <HeroLineBookingAnim
+                className="w-full lg:max-w-[min(420px,46vw)]"
+                initialScene={initialScene}
               />
             </div>
           </div>
-
-          {/* Mobile: keep large hand-phone product visual (unchanged) */}
-          <div
-            className="hero-phones-enter relative w-full min-w-0 max-w-full md:hidden"
-            aria-label={t("marketing.hero.productAlt")}
-          >
-            <HeroProductMockups />
-          </div>
-        </div>
-      </section>
-    </div>
+        </section>
+      </div>
+    </>
   );
 }

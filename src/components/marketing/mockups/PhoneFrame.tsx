@@ -7,12 +7,18 @@ export function PhoneFrame({
   size = "md",
   width,
   fluid,
+  /** Height-driven sizing (width follows 390/844). Use when parent sets height. */
+  matchHeight,
+  /** Interactive demos: allow taps and expose content to assistive tech. */
+  interactive = false,
   children,
   className,
 }: {
   size?: PhoneSize;
   width?: number;
   fluid?: boolean;
+  matchHeight?: boolean;
+  interactive?: boolean;
   children: React.ReactNode;
   className?: string;
 }) {
@@ -20,16 +26,28 @@ export function PhoneFrame({
 
   return (
     <div
-      aria-hidden="true"
-      style={fluid ? undefined : { width: fixedW }}
-      className={`relative box-border min-w-0 ${
-        fluid ? "w-full max-w-full" : "shrink-0"
+      aria-hidden={interactive ? undefined : true}
+      style={
+        matchHeight
+          ? { height: "100%", aspectRatio: "390 / 844" }
+          : fluid
+            ? undefined
+            : { width: fixedW }
+      }
+      className={`relative box-border ${
+        matchHeight
+          ? "h-full w-auto min-w-min shrink-0"
+          : fluid
+            ? // Width comes from className (e.g. max-w-[270px]) — do not set w-full /
+              // max-w-full here; those override caller caps via Tailwind source order.
+              "min-w-0"
+            : "min-w-0 shrink-0"
       } ${className ?? ""}`}
     >
       <div
-        className="relative mx-auto w-full overflow-hidden bg-[#1c1c1e] shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
+        className="relative mx-auto h-full w-full overflow-hidden bg-[#1c1c1e] shadow-[0_18px_40px_rgba(0,0,0,0.45)]"
         style={{
-          aspectRatio: "390 / 844",
+          ...(matchHeight ? {} : { aspectRatio: "390 / 844" }),
           borderRadius: "14.5% / 6.7%",
           padding: "1.6%",
           boxShadow:

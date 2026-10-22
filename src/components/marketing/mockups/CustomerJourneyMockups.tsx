@@ -2,13 +2,7 @@ import { HandPhoneComposite } from "./HandPhoneComposite";
 import { PhoneScreen } from "./PhoneScreen";
 import type { PhoneSize } from "./PhoneFrame";
 import type { MarketingScreenKey } from "@/lib/marketing/screens";
-
-/** Match marketing.how.1–3 copy: book flow → LINE ticket → shop queue board */
-const STEP_SCREENS: Record<1 | 2 | 3, MarketingScreenKey> = {
-  1: "choose",
-  2: "ticket",
-  3: "adminQueue",
-};
+import { HowItWorksStepPhone } from "./HowItWorksStepPhones";
 
 type FrameProps = {
   screen: MarketingScreenKey;
@@ -30,17 +24,25 @@ function ScreenFrame({ screen, size, fluid, className, priority }: FrameProps) {
   );
 }
 
-export function CustomerStepPhone({ step }: { step: 1 | 2 | 3 }) {
-  const screen = STEP_SCREENS[step];
+/**
+ * How-it-works step phone — shared HTML mockups (เจ 21:30) for mobile + desktop.
+ * Step 1 book · Step 2 LINE confirm card · Step 3 shop notify + queue card.
+ */
+export function CustomerStepPhone({
+  step,
+  compact,
+}: {
+  step: 1 | 2 | 3;
+  /** Compact mobile how-it-works width (~200px). Desktop omits this. */
+  compact?: boolean;
+}) {
+  if (compact) {
+    return <HowItWorksStepPhone step={step} />;
+  }
   return (
-    <>
-      <div className="lg:hidden">
-        <ScreenFrame screen={screen} fluid />
-      </div>
-      <div className="hidden lg:block">
-        <ScreenFrame screen={screen} size="md" />
-      </div>
-    </>
+    <div className="mx-auto w-full max-w-[240px] lg:max-w-[260px]">
+      <HowItWorksStepPhone step={step} />
+    </div>
   );
 }
 

@@ -3,7 +3,12 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { dictionary } from "@/lib/i18n/dictionary";
-import { marketingOffer } from "@/lib/marketing/offer";
+import {
+  fillOfferCopy,
+  marketingClaims,
+  marketingOffer,
+} from "@/lib/marketing/offer";
+import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 
 const root = resolve(import.meta.dirname, "../..");
 
@@ -53,98 +58,296 @@ describe("marketing layout split", () => {
       "utf8",
     );
     assert.match(sales, /SalesHero/);
-    assert.match(sales, /MarketingTrialLink/);
-    assert.match(hero, /MarketingTrialLink/);
-    assert.match(hero, /HeroProductMockups/);
-    assert.match(hero, /handPhoneHero/);
-    assert.match(hero, /cutout/);
-    assert.match(hero, /md:hidden/);
-    assert.match(hero, /hidden md:flex|md:flex/);
-    assert.doesNotMatch(hero, /hero-barbershop-bg\.png/);
+    assert.match(sales, /PrimaryTrialCta/);
+    assert.match(hero, /PrimaryTrialCta/);
+    assert.match(hero, /MarketingPhotoSlot/);
+    assert.match(hero, /heroDesktop/);
+    assert.match(hero, /HeroLineBookingAnim/);
+    assert.match(hero, /marketing\.hero\.tryYourself/);
+    assert.match(hero, /linear-gradient\(to right/);
+    assert.match(hero, /right center/);
+    assert.match(hero, /hidden lg:block/);
+    assert.match(hero, /lg:hidden/);
+    // Design C: anim phone below copy — never absolute behind text on mobile
+    assert.doesNotMatch(hero, /absolute inset-0 lg:hidden/);
+    assert.match(hero, /subtitleShort/);
+    // Mobile title: forced break after LINE so Thai “ไม่ต้อง” stays intact
+    assert.match(hero, /mobileTitle/);
+    assert.match(hero, /word-break:keep-all/);
+    assert.match(hero, /h-\[52px\]/);
     assert.match(hero, /marketing\.hero\.micro/);
+    assert.match(hero, /marketing\.hero\.underCta/);
+    assert.doesNotMatch(hero, /marketing\.hero\.setup/);
     assert.match(hero, /min-w-0/);
     assert.match(hero, /max-w-full/);
+    const heroAnim = readFileSync(
+      resolve(root, "components/marketing/mockups/HeroLineBookingAnim.tsx"),
+      "utf8",
+    );
+    assert.match(heroAnim, /IntersectionObserver/);
+    assert.match(heroAnim, /prefers-reduced-motion/);
+    assert.match(heroAnim, /ตัวอย่างร้านสาธิต/);
+    assert.match(heroAnim, /hero-phone-mockup\.webp/);
+    assert.match(heroAnim, /hero-phone-mockup\.avif/);
+    assert.match(heroAnim, /hero-screens\/line-rich-menu\.webp/);
+    assert.match(heroAnim, /hero-screens\/booking\.webp/);
+    assert.match(heroAnim, /hero-screens\/success\.webp/);
+    assert.match(heroAnim, /32\.755%/);
+    assert.match(heroAnim, /21\.441%/);
+    assert.match(heroAnim, /34\.259%/);
+    assert.match(heroAnim, /56\.25%/);
+    assert.match(heroAnim, /hero-tap-pulse/);
+    assert.match(heroAnim, /animCaption1/);
+    assert.match(heroAnim, /animCaption2/);
+    assert.match(heroAnim, /animCaption3/);
+    assert.match(heroAnim, /animCaption4/);
+    assert.match(heroAnim, /animDot1/);
+    assert.match(heroAnim, /animDot2/);
+    assert.match(heroAnim, /animDot3/);
+    assert.match(heroAnim, /animDot4/);
+    assert.match(heroAnim, /max-h-\[50vh\]/);
+    assert.match(heroAnim, /min-w-\[240px\]/);
+    assert.match(heroAnim, /max-w-\[260px\]/);
+    assert.doesNotMatch(heroAnim, /PhoneFrame/);
+    assert.doesNotMatch(heroAnim, /WarmNoteFlexCard|SceneRichMenu|SceneBooking/);
+    assert.match(heroAnim, /min-h-11|h-11/);
+    assert.match(heroAnim, /aria-hidden/);
+    // Single hero composition: one section + one h1
+    assert.equal((hero.match(/<section\b/g) ?? []).length, 1);
+    assert.equal((hero.match(/<h1\b/g) ?? []).length, 1);
+    assert.match(dictionary.th["marketing.hero.tryYourself"], /ลองจองเอง/);
+    assert.match(dictionary.en["marketing.hero.tryYourself"], /Try booking yourself/);
     assert.match(nav, /MarketingTrialLink/);
+    // Mobile nav trial = gold outline; desktop stays solid amber
+    assert.match(nav, /border-amber-400/);
+    assert.match(nav, /bg-amber-400/);
     assert.doesNotMatch(sales, /href="\/trial"/);
     assert.doesNotMatch(hero, /href="\/trial"/);
     assert.doesNotMatch(nav, /href="\/trial"/);
   });
 
-  it("how-it-works desktop steps map screens to matching copy", () => {
-    const mockups = readFileSync(
-      resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
-      "utf8",
-    );
+  it("how-it-works is a compact text strip without phone mockups", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    // Desktop 3-col layout
-    assert.match(sales, /lg:grid-cols-3/);
-    assert.match(sales, /CustomerStepPhone/);
-    // Desktop uses size="md" PhoneFrame (not only mobile fluid)
-    const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
-    assert.match(stepFn, /hidden lg:block/);
-    assert.match(stepFn, /size="md"/);
-    // Step → screen: book UI, LINE ticket, admin board
-    assert.match(mockups, /1:\s*"choose"/);
-    assert.match(mockups, /2:\s*"ticket"/);
-    assert.match(mockups, /3:\s*"adminQueue"/);
-    assert.match(dictionary.th["marketing.how.1.desc"], /เลือกช่าง|วัน|เวลา/);
-    assert.match(dictionary.th["marketing.how.2.title"], /บัตรคิว/);
-    assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|แจ้งเตือน/);
+    const howStrip = readFileSync(
+      resolve(root, "components/marketing/HowItWorksStrip.tsx"),
+      "utf8",
+    );
+    assert.match(sales, /HowItWorksStrip/);
+    assert.doesNotMatch(sales, /HowItWorksMobile/);
+    assert.doesNotMatch(sales, /CustomerStepPhone/);
+    assert.match(sales, /via-zinc-900\/25/);
+    assert.match(howStrip, /marketing\.how\.eyebrow/);
+    assert.match(howStrip, /marketing\.how\.\$\{n\}\.title/);
+    assert.match(howStrip, /marketing\.how\.\$\{n\}\.caption/);
+    assert.doesNotMatch(howStrip, /PhoneFrame|CustomerStepPhone|HowItWorksStepPhone/);
+    assert.match(sales, /scroll-mt-\[4\.5rem\]/);
+    assert.match(sales, /id="how-it-works"[\s\S]*?data-hide-sticky/);
+    assert.match(sales, /LineReliefSection/);
+    assert.match(dictionary.th["marketing.line.scheduleTabNote"], /อีกแท็บคือคิววันนี้/);
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    assert.match(lineRelief, /ScheduleBoardMockup/);
+    assert.doesNotMatch(lineRelief, /fillOfferCopy/);
+    assert.doesNotMatch(lineRelief, /marketing\.line\.evidence/);
+    assert.doesNotMatch(lineRelief, /MarketingPhotoSlot|solutionCustomer|solutionBarberCalm/);
+    assert.match(lineRelief, /IntersectionObserver/);
+    assert.match(lineRelief, /threshold:\s*0\.3/);
+    assert.match(lineRelief, /prefers-reduced-motion/);
+    assert.match(lineRelief, /classList\.add\("js"\)/);
+    assert.match(lineRelief, /HOW_DEMO_BOOKING/);
+    assert.match(lineRelief, /WarmNoteFlexCard/);
+    assert.match(lineRelief, /LineGhostCta|hover:underline/);
+    assert.match(lineRelief, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(lineRelief, /PrimaryTrialCta/);
+    const scheduleMock = readFileSync(
+      resolve(root, "components/marketing/mockups/ScheduleBoardMockup.tsx"),
+      "utf8",
+    );
+    assert.match(scheduleMock, /aria-hidden/);
+    assert.match(scheduleMock, /ว่าง/);
+    assert.match(scheduleMock, /จองแล้ว/);
+    assert.match(scheduleMock, /ตาราง/);
+    assert.match(scheduleMock, /มิกซ์/);
+    assert.match(scheduleMock, /โอ๊ต/);
+    assert.match(scheduleMock, /เจ/);
+    assert.match(scheduleMock, /ตัวอย่าง/);
+    assert.doesNotMatch(scheduleMock, /<button/);
+    assert.doesNotMatch(howStrip, /marketing\.how\.micro/);
+    assert.doesNotMatch(sales, /marketing\.how\.micro/);
+    assert.match(dictionary.th["marketing.how.micro"], /ไม่ขอรหัสผ่าน LINE OA/);
+    assert.doesNotMatch(dictionary.th["marketing.how.micro"], /Tommy ช่วยตั้งค่าให้/);
+    const howPhones = readFileSync(
+      resolve(root, "components/marketing/mockups/HowItWorksStepPhones.tsx"),
+      "utf8",
+    );
+    assert.match(howPhones, /HowStepLineConfirmPhone/);
+    assert.match(howPhones, /HowStepShopNotifyPhone/);
+    assert.match(howPhones, /WarmNoteFlexCard/);
+    assert.match(howPhones, /คิวใหม่: ช่าง/);
+    assert.match(howPhones, /21:30/);
+    assert.match(howPhones, /เจ/);
+    assert.match(howPhones, /ตัวอย่าง/);
+    assert.match(howPhones, /aria-hidden/);
+    assert.match(dictionary.th["marketing.how.1.caption"], /กรอกฟอร์มสั้น/);
+    assert.match(dictionary.th["marketing.how.2.caption"], /Tommy ทัก LINE/);
+    assert.match(dictionary.th["marketing.how.3.caption"], /ร้านเห็นบนบอร์ด/);
+    assert.doesNotMatch(dictionary.th["marketing.how.2.title"], /Tommy ช่วยตั้งค่าให้/);
+    const phoneScreen = readFileSync(
+      resolve(root, "components/marketing/mockups/PhoneScreen.tsx"),
+      "utf8",
+    );
+    assert.match(phoneScreen, /safeTop/);
+    assert.match(phoneScreen, /h-\[14%\]/);
+    assert.match(phoneScreen, /sampleLabel/);
+    assert.match(phoneScreen, /ตัวอย่าง/);
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue-board-demo.webp")),
+      "admin-queue-board-demo.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/choose-booking-demo.webp")),
+      "choose-booking-demo.webp missing",
+    );
+    assert.match(dictionary.th["marketing.how.1.desc"], /ชื่อร้าน|LINE/);
+    assert.match(dictionary.th["marketing.how.2.title"], /เชื่อม LINE OA/);
+    assert.match(dictionary.th["marketing.how.3.desc"], /บอร์ด|จองใน LINE/);
   });
 
-  it("hero uses pre-composited hand-phone as primary visual with overflow guards", () => {
-    const mockups = readFileSync(
-      resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
+  it("photo slots define desktop/mobile art direction and stay null until swapped", () => {
+    const slots = readFileSync(resolve(root, "lib/marketing/photo-slots.ts"), "utf8");
+    const photoUi = readFileSync(
+      resolve(root, "components/marketing/MarketingPhotoSlot.tsx"),
       "utf8",
     );
-    const hand = readFileSync(
-      resolve(root, "components/marketing/mockups/HandPhoneComposite.tsx"),
-      "utf8",
+    assert.match(slots, /hero-desktop\.webp/);
+    assert.match(slots, /hero-desktop\.png/);
+    assert.match(slots, /hero-mobile\.webp/);
+    assert.match(slots, /barber-desktop\.webp/);
+    assert.match(slots, /barber-mobile\.webp/);
+    assert.match(slots, /founder\.webp/);
+    assert.match(slots, /1731/);
+    assert.match(slots, /1080/);
+    assert.match(slots, /1024/);
+    assert.match(photoUi, /hidden lg:block/);
+    assert.match(photoUi, /lg:hidden/);
+    assert.match(photoUi, /labelTh/);
+    assert.match(photoUi, /fallbackSrc|picture/);
+    assert.match(slots, /\/sale\/pain-barber-cutting\.webp/);
+    assert.match(slots, /\/sale\/solution-customer\.webp/);
+    assert.match(slots, /\/sale\/solution-barber-calm\.webp/);
+    assert.match(slots, /\/sale\/booking-success-barber\.webp/);
+    assert.match(slots, /labelTh/);
+    assert.equal(
+      marketingPhotoSlots.heroDesktop.src,
+      "/marketing/photos/hero-desktop.webp",
     );
-    const phone = readFileSync(
-      resolve(root, "components/marketing/mockups/PhoneFrame.tsx"),
-      "utf8",
-    );
-    const heroFn = mockups.slice(mockups.indexOf("export function HeroProductMockups"));
-    assert.match(heroFn, /HandPhoneComposite/);
-    assert.match(heroFn, /overflow-x-clip|overflow-hidden/);
-    assert.match(heroFn, /max-w-full/);
-    // Mobile hero breaks out of section padding to fill screen width
-    assert.match(heroFn, /calc\(100%\+2rem\)|w-\[calc/);
-    assert.match(hand, /handPhoneHero/);
-    assert.match(hand, /handPhoneHero\.mobile/);
-    assert.match(hand, /handPhoneHero\.desktop/);
-    assert.match(hand, /sizes="100vw"/);
-    assert.match(phone, /Dynamic Island|dynamic island/i);
-    assert.match(phone, /390\s*\/\s*844/);
-    const screens = readFileSync(resolve(root, "lib/marketing/screens.ts"), "utf8");
-    assert.match(screens, /hand-phone-mobile\.webp/);
-    assert.match(screens, /hand-phone-desktop\.webp/);
-    assert.match(screens, /hand-phone-cutout\.webp/);
-    assert.match(screens, /admin-stats\.webp/);
-    assert.match(screens, /mobileWidth:\s*1284/);
-    assert.ok(
-      existsSync(resolve(root, "../public/marketing/hand-phone.webp")),
-      "hand-phone.webp missing",
+    assert.equal(
+      marketingPhotoSlots.heroDesktop.fallbackSrc,
+      "/marketing/photos/hero-desktop.png",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/hero/hand-phone-composited.webp")),
-      "hand-phone-composited.webp missing",
+      existsSync(resolve(root, "../public/marketing/photos/hero-desktop.webp")),
+      "hero-desktop.webp missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/hero/hand-phone-cutout.webp")),
-      "hand-phone-cutout.webp missing",
+      existsSync(resolve(root, "../public/marketing/photos/hero-desktop.png")),
+      "hero-desktop.png missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/choose-slot.webp")),
-      "choose-slot.webp missing",
+      existsSync(resolve(root, "../public/marketing/photos/hero-desktop.ai-source.webp")),
+      "hero-desktop.ai-source.webp missing (rebuild plate)",
+    );
+    assert.equal(
+      marketingPhotoSlots.heroMobile.src,
+      "/marketing/photos/hero-mobile.webp",
+    );
+    assert.equal(
+      marketingPhotoSlots.heroMobile.fallbackSrc,
+      "/marketing/photos/hero-mobile.png",
+    );
+    assert.equal(marketingPhotoSlots.heroMobile.width, 1080);
+    assert.equal(marketingPhotoSlots.heroMobile.height, 1350);
+    assert.equal(marketingPhotoSlots.heroMobile.ratio, "4:5");
+    assert.match(marketingPhotoSlots.heroMobile.artNote, /4:5|design C|1080/);
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-mobile.webp")),
+      "hero-mobile.webp missing",
     );
     assert.ok(
-      existsSync(resolve(root, "../public/marketing/screens/admin-stats.webp")),
-      "admin-stats.webp missing",
+      existsSync(resolve(root, "../public/marketing/photos/hero-mobile.png")),
+      "hero-mobile.png missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/hero-mobile.ai-source.webp")),
+      "hero-mobile.ai-source.webp missing (rebuild plate)",
+    );
+    assert.match(
+      marketingPhotoSlots.heroDesktop.artNote,
+      /hero-composite|booking-success B2/,
+    );
+    assert.ok(
+      existsSync(resolve(root, "../scripts/composite-hero-phone-screens.py")),
+      "hero phone composite script missing",
+    );
+    assert.equal(
+      marketingPhotoSlots.barberDesktop.src,
+      "/marketing/photos/barber-desktop.webp",
+    );
+    assert.equal(
+      marketingPhotoSlots.barberDesktop.fallbackSrc,
+      "/marketing/photos/barber-desktop.png",
+    );
+    assert.equal(marketingPhotoSlots.barberDesktop.width, 1672);
+    assert.equal(marketingPhotoSlots.barberDesktop.height, 941);
+    assert.match(
+      marketingPhotoSlots.barberDesktop.artNote,
+      /barber-ipad|blank black screen/,
+    );
+    assert.equal(
+      marketingPhotoSlots.barberMobile.src,
+      "/marketing/photos/barber-mobile.webp",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-desktop.webp")),
+      "barber-desktop.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-desktop.png")),
+      "barber-desktop.png missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-desktop.ai-source.png")),
+      "barber-desktop.ai-source.png missing (Tommy plate)",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/barber-mobile.webp")),
+      "barber-mobile.webp missing",
+    );
+    assert.equal(marketingPhotoSlots.founder.src, "/marketing/photos/founder.webp");
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/photos/founder.webp")),
+      "founder.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/choose-slot-demo.webp")),
+      "choose-slot-demo.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-queue-demo.webp")),
+      "admin-queue-demo.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/admin-stats-demo.webp")),
+      "admin-stats-demo.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/marketing/screens/queue-ticket.webp")),
+      "queue-ticket.webp missing",
     );
   });
 
@@ -155,49 +358,459 @@ describe("marketing layout split", () => {
     );
   });
 
-  it("pain section uses designer bullets and keeps chat mockup interruption-only", () => {
+  it("try-booking demo is client-side only with ClipperQ Demo barbers", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    const pain = readFileSync(
-      resolve(root, "components/marketing/mockups/PainChatMockup.tsx"),
+    const demo = readFileSync(
+      resolve(root, "components/marketing/TryBookingDemo.tsx"),
       "utf8",
     );
-    assert.match(sales, /PainChatMockup/);
-    assert.match(sales, /marketing\.pain\.bullet/);
-    assert.doesNotMatch(sales, /from: "shop"/);
-    assert.doesNotMatch(pain, /from: "shop"|shopLabel/);
-    assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
+    assert.match(sales, /id="try-booking"/);
+    assert.match(sales, /TryBookingDemo/);
+    assert.match(sales, /marketing\.try\.featureWalkin/);
+    assert.match(sales, /marketing\.try\.featureQr/);
+    assert.match(sales, /marketing\.try\.featurePush/);
+    assert.doesNotMatch(sales, /OwnerSurfacePhone/);
+    assert.match(demo, /DEMO_SHOP_DISPLAY_NAME/);
+    assert.match(demo, /มิกซ์/);
+    assert.match(demo, /โอ๊ต/);
+    assert.match(demo, /นนท์/);
+    assert.doesNotMatch(demo, /นัท|แสบ|ไกด์|ไทด์|Saeb|Tide/);
+    assert.match(demo, /marketing\.try\.disclaimer/);
+    assert.match(demo, /marketing\.try\.tapBarber/);
+    assert.match(demo, /marketing\.try\.tabCustomer/);
+    assert.match(demo, /marketing\.try\.tabShop/);
+    assert.match(demo, /marketing\.try\.seeShop/);
+    assert.match(demo, /marketing\.try\.toastNotified/);
+    assert.match(demo, /marketing\.try\.statusStart/);
+    assert.match(demo, /marketing\.try\.statusDone/);
+    assert.match(demo, /marketing\.try\.statusNoShow/);
+    assert.match(demo, /data-demo-tap-hint/);
+    assert.match(demo, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(demo, /PrimaryTrialCta/);
+    assert.match(demo, /data-demo-reset/);
+    assert.match(demo, /data-demo-toast/);
+    assert.match(demo, /data-demo-summary/);
+    assert.match(demo, /by ClipperQ|brandFooter/);
+    assert.match(demo, /prefers-reduced-motion/);
+    assert.match(demo, /min-h-11|min-h-12|min-h-14/);
+    assert.match(demo, /max-w-\[260px\]/);
+    assert.doesNotMatch(demo, /fetch\(|supabase|insert|createAppointment/i);
+    assert.equal(
+      dictionary.th["marketing.try.disclaimer"],
+      "ตัวอย่าง — ไม่ได้จองจริง",
+    );
+    assert.equal(dictionary.th["marketing.try.tapBarber"], "แตะเลือกช่าง");
+    assert.equal(dictionary.th["marketing.try.reset"], "เริ่มใหม่");
+    assert.match(dictionary.th["marketing.try.toastNotified"], /แจ้งเตือนถึงช่าง/);
+    assert.match(dictionary.en["marketing.try.disclaimer"], /Demo only/i);
   });
 
-  it("sales page follows approved section order with sticky CTA and no chips", () => {
+  it("pain heading uses once-per-view hammer line reveal", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
+    const hammer = readFileSync(
+      resolve(root, "components/marketing/PainHammerTitle.tsx"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    assert.match(sales, /PainHammerTitle/);
+    assert.match(hammer, /marketing\.pain\.titleLead/);
+    assert.match(hammer, /marketing\.pain\.titleRest/);
+    assert.match(hammer, /IntersectionObserver/);
+    assert.match(hammer, /prefers-reduced-motion/);
+    assert.match(hammer, /pain-hammer-hit/);
+    assert.match(hammer, /text-center/);
+    assert.match(hammer, /md:text-left/);
+    assert.match(css, /pain-hammer-in/);
+    assert.match(css, /data-pain-hammer/);
+  });
+
+  it("sales page uses progressive scroll reveals", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const hook = readFileSync(
+      resolve(root, "hooks/useSalesPageReveal.ts"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    assert.match(sales, /useSalesPageReveal/);
+    assert.match(sales, /data-reveal/);
+    assert.match(sales, /data-reveal="emphasis"/);
+    assert.match(hook, /IntersectionObserver/);
+    assert.match(hook, /prefers-reduced-motion/);
+    assert.match(hook, /data-cq-reveal/);
+    assert.match(hook, /classList\.add\("js"\)/);
+    assert.match(hook, /unobserve/);
+    assert.match(css, /html\.js\[data-cq-reveal="on"\]/);
+    assert.match(css, /data-cq-reveal="on"/);
+    assert.match(css, /prefers-reduced-motion: reduce/);
+    // Transform-only progressive reveal — never opacity:0 hide on [data-reveal]
+    assert.doesNotMatch(css, /\[data-reveal\]\s*\{\s*opacity:\s*0/);
+    assert.match(css, /transform:\s*translate3d/);
+  });
+
+  it("pain section uses Option C checklist + notification storm", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const storm = readFileSync(
+      resolve(root, "components/marketing/mockups/PainStormVisual.tsx"),
+      "utf8",
+    );
+    const hammer = readFileSync(
+      resolve(root, "components/marketing/PainHammerTitle.tsx"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    assert.match(sales, /PainStormVisual/);
+    assert.match(sales, /PainHammerTitle/);
+    assert.match(hammer, /marketing\.pain\.titleLead/);
+    assert.match(hammer, /marketing\.pain\.titleRest/);
+    assert.match(sales, /marketing\.pain\.bullet/);
+    assert.match(sales, /marketing\.pain\.punchline/);
+    assert.match(sales, /border-b border-zinc-800/);
+    // Compact auto-height frame — no empty aspect photo box
+    assert.doesNotMatch(storm, /aspect-\[4\/5\]|aspect-\[5\/6\]/);
+    assert.doesNotMatch(storm, /object-cover/);
+    assert.doesNotMatch(storm, /MarketingPhotoSlot|painBarber/);
+    assert.match(storm, /#1A1A1A/);
+    assert.match(storm, /rounded-\[20px\]/);
+    assert.match(storm, /#06C755/);
+    assert.match(storm, /#E5484D/);
+    assert.match(storm, /stormTitle/);
+    assert.match(storm, /stormUnread/);
+    assert.match(storm, /unreadBadge/);
+    assert.match(storm, /STORM_CARDS/);
+    assert.match(storm, /STAGGER_MS = 180/);
+    assert.match(storm, /data-pain-overlap/);
+    assert.match(storm, /pain-storm-card/);
+    assert.match(storm, /sampleBadge/);
+    assert.match(storm, /prefers-reduced-motion/);
+    assert.match(storm, /IntersectionObserver/);
+    assert.match(storm, /classList\.add\("js"\)/);
+    assert.match(css, /pain-storm-card-in/);
+    // Never pre-hide storm cards with opacity:0 (0.7 pile-up opacity is OK)
+    assert.doesNotMatch(
+      css,
+      /html\.js \[data-pain-storm\][^{]*\{[^}]*opacity:\s*0\s*[;}]/,
+    );
+    assert.equal(dictionary.th["marketing.pain.unreadBadge"], "ทั้งวัน");
+    assert.equal(dictionary.en["marketing.pain.unreadBadge"], "All day");
+    assert.doesNotMatch(dictionary.th["marketing.pain.unreadBadge"], /99\+/);
+    assert.match(
+      dictionary.th["marketing.pain.stormTitle"],
+      /แชทเข้าทั้งวัน ระหว่างที่มือคุณตัดผมอยู่/,
+    );
+    assert.match(
+      dictionary.th["marketing.pain.stormUnread"],
+      /ยังไม่ได้ตอบอีกหลายข้อความ/,
+    );
+    assert.doesNotMatch(dictionary.th["marketing.pain.stormUnread"], /\d/);
+    assert.match(dictionary.th["marketing.pain.chat1"], /ว่างกี่โมงครับ/);
+    assert.match(dictionary.th["marketing.pain.chat2"], /วันนี้มีคิวไหม/);
+    assert.match(dictionary.th["marketing.pain.chat3"], /ช่างเจว่างไหมครับ/);
+    assert.match(dictionary.th["marketing.pain.chat4"], /ขอเลื่อนเป็นพรุ่งนี้ได้ไหม/);
+    assert.match(dictionary.th["marketing.pain.chat5"], /เลื่อนเป็นบ่ายได้ไหม/);
+    assert.equal(dictionary.th["marketing.pain.chatTime1"], "09:14");
+    assert.equal(dictionary.th["marketing.pain.chatTime2"], "11:32");
+    assert.equal(dictionary.th["marketing.pain.chatTime3"], "14:05");
+    assert.equal(dictionary.th["marketing.pain.chatTime4"], "17:48");
+    assert.equal(dictionary.th["marketing.pain.chatTime5"], "19:27");
+    assert.ok(dictionary.en["marketing.pain.stormTitle"]);
+    assert.ok(dictionary.en["marketing.pain.stormUnread"]);
+    // BMJ Open + message-cost calculator live in FAQ (faq.5), not line.evidence
+    assert.match(dictionary.th["marketing.faq.5.a"], /BMJ Open/);
+    assert.match(dictionary.th["marketing.faq.5.a"], /เครื่องคำนวณ/);
+    assert.equal(dictionary.th["marketing.line.evidence"], "");
+    assert.doesNotMatch(dictionary.th["marketing.line.evidence"], /BMJ Open/);
+    assert.match(
+      readFileSync(
+        resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
+        "utf8",
+      ),
+      /มิกซ์ · Mix/,
+    );
+    assert.ok(dictionary.th["marketing.pain.photoAlt"]);
+    assert.ok(dictionary.en["marketing.pain.photoAlt"]);
+    assert.equal(dictionary.th["marketing.pain.titleLead"], "ว่างกี่โมงครับ?");
+    assert.doesNotMatch(dictionary.th["marketing.pain.bullet1"], /—/);
+    // Pain Thai mid-word wrap guard (มือถือ / คิวเดียวกัน)
+    assert.match(sales, /PAIN_TH_PHRASES/);
+    assert.match(sales, /PainCopy/);
+    assert.match(sales, /มือไม่ว่างก็ต้องหยิบมือถือ/);
+    assert.match(sales, /เห็นคิวเดียวกัน/);
+    // Catalog assets retained (not rendered in PainStormVisual)
+    assert.equal(
+      marketingPhotoSlots.painBarber.src,
+      "/sale/pain-barber-cutting.webp",
+    );
+    assert.equal(
+      marketingPhotoSlots.painBarber.fallbackSrc,
+      "/sale/pain-barber-cutting.png",
+    );
+    assert.equal(
+      marketingPhotoSlots.painBarber.swapPath,
+      "/sale/pain-barber-cutting.webp",
+    );
+    assert.equal(marketingPhotoSlots.painBarber.width, 1122);
+    assert.equal(marketingPhotoSlots.painBarber.height, 1402);
+    assert.match(marketingPhotoSlots.painBarber.labelTh, /กรรไกรไฟฟ้า/);
+    assert.equal(marketingPhotoSlots.painBarber.ratio, "4:5");
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/pain-barber-cutting.webp")),
+      "pain-barber-cutting.webp missing",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/pain-barber-cutting.png")),
+      "pain-barber-cutting.png missing",
+    );
+    assert.doesNotMatch(sales, /from: "shop"/);
+    assert.doesNotMatch(storm, /from: "shop"|shopLabel/);
+    assert.match(dictionary.th["marketing.pain.title"], /ว่างกี่โมง/);
+    assert.match(dictionary.th["marketing.pain.punchline"], /ค่าตัดผมที่ไม่ได้เก็บ/);
+  });
+
+  it("sales page follows blueprint section order with sticky CTA and no coming-soon", () => {
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    // Hero → pain → try-booking → LineRelief → how → founder → pricing → FAQ → final → footer
     const order = [
+      "ClarityMarketingScript",
       "SalesHero",
       "marketing.pain",
+      'id="try-booking"',
+      "TryBookingDemo",
+      'id="owner"',
+      "LineReliefSection",
       "how-it-works",
-      "CustomerStepPhone",
-      'id="features"',
+      "HowItWorksStrip",
+      'id="founder"',
       'id="pricing"',
       "marketingOffer.tiers",
+      "marketing.trialBox",
       'id="faq"',
       "marketing.final",
-      "marketing.sticky.cta",
+      "MarketingFooter",
+      "sticky_cta_click",
     ];
+    assert.match(sales, /pb-\[calc\(110px\+env\(safe-area-inset-bottom\)\)\]/);
+    assert.match(
+      readFileSync(resolve(root, "components/marketing/SalesHero.tsx"), "utf8"),
+      /href="#try-booking"/,
+    );
     let cursor = 0;
     for (const token of order) {
       const idx = sales.indexOf(token, cursor);
       assert.ok(idx >= 0, `missing ordered token: ${token}`);
       cursor = idx + token.length;
     }
+    assert.doesNotMatch(sales, /id="board"/);
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    assert.match(lineRelief, /id="line-messages"/);
     assert.match(sales, /SHOW_TESTIMONIALS_PLACEHOLDER = false/);
-    assert.match(sales, /h-14/);
+    assert.doesNotMatch(sales, /id="coming-soon"/);
     assert.doesNotMatch(sales, /barber\.chip|BARBER_CHIPS/);
     assert.doesNotMatch(sales, /before-manual-booking\.png/);
+    // Primary trial CTAs: hero + pricing + final + sticky (demo/LINE are see-pricing links)
+    const heroSrc = readFileSync(
+      resolve(root, "components/marketing/SalesHero.tsx"),
+      "utf8",
+    );
+    const ctaJsx =
+      (sales.match(/<PrimaryTrialCta\b/g) ?? []).length +
+      (heroSrc.match(/<PrimaryTrialCta\b/g) ?? []).length;
+    assert.equal(ctaJsx, 4, `expected 4 PrimaryTrialCta JSX uses (3 body + sticky), got ${ctaJsx}`);
+    assert.doesNotMatch(lineRelief, /PrimaryTrialCta/);
+    // Mobile sticky: soft gradient scrim; hide only when hero/pricing/final CTAs visible
+    assert.match(sales, /linear-gradient\(to top/);
+    assert.match(sales, /data-inpage-trial-cta|querySelectorAll.*data-inpage-trial-cta/);
+    assert.doesNotMatch(sales, /querySelectorAll.*data-hide-sticky/);
+    assert.doesNotMatch(sales, /border-t border-zinc-800 bg-zinc-950\/95/);
+    const footer = readFileSync(
+      resolve(root, "components/marketing/MarketingFooter.tsx"),
+      "utf8",
+    );
+    assert.match(footer, /href="\/privacy"/);
+    assert.match(footer, /href="\/terms"/);
+  });
+
+  it("primary CTAs use strong amber style and verified risk-reversal only", () => {
+    const cta = readFileSync(
+      resolve(root, "components/marketing/PrimaryTrialCta.tsx"),
+      "utf8",
+    );
+    const css = readFileSync(resolve(root, "app/globals.css"), "utf8");
+    const hero = readFileSync(
+      resolve(root, "components/marketing/SalesHero.tsx"),
+      "utf8",
+    );
+    assert.match(cta, /PRIMARY_TRIAL_CTA_CLASS/);
+    assert.match(cta, /min-h-11/);
+    assert.match(cta, /md:min-h-14/);
+    assert.match(cta, /px-8/);
+    assert.match(cta, /cta-pulse/);
+    assert.match(cta, /0_4px_14px_rgba\(251,191,36,0\.28\)/);
+    assert.match(cta, /mt-4/);
+    assert.match(cta, /justify-center/);
+    assert.match(cta, /marketing\.risk\.noCard/);
+    assert.match(cta, /marketing\.risk\.cancelAnytime/);
+    assert.match(cta, /marketing\.cta\.afterClick/);
+    assert.doesNotMatch(cta, /ตั้งค่าเสร็จใน 10|setup in 10/i);
+    assert.match(css, /@keyframes cta-pulse/);
+    assert.match(css, /0 4px 14px rgba\(251, 191, 36, 0\.28\)/);
+    assert.match(dictionary.th["marketing.hero.cta"], /สมัครทดลองฟรี \{days\} วัน/);
+    assert.match(dictionary.en["marketing.hero.cta"], /Start a free \{days\}-day trial/);
+    assert.match(dictionary.th["marketing.cta.afterClick"], /Tommy/);
+    assert.match(dictionary.th["marketing.risk.noCard"], /ไม่ต้องผูกบัตร/);
+    assert.match(dictionary.th["marketing.risk.cancelAnytime"], /ยกเลิกได้ทุกเมื่อ/);
+    // Hero: primary CTA + under-CTA risk line (no after-click, no RiskReversalRow)
+    assert.match(hero, /showRisk=\{false\}/);
+    assert.doesNotMatch(hero, /RiskReversalRow|showAfterClick/);
+    assert.match(hero, /marketing\.hero\.underCta/);
+    assert.match(hero, /h-\[52px\]/);
+    assert.match(hero, /marketing\.hero\.secondary/);
+    assert.match(hero, /marketing\.hero\.tryYourself/);
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const tryDemo = readFileSync(
+      resolve(root, "components/marketing/TryBookingDemo.tsx"),
+      "utf8",
+    );
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    // SalesPage: pricing + final + sticky all hide risk row; after-click only on final
+    assert.equal((sales.match(/showRisk=\{false\}/g) ?? []).length, 3);
+    assert.match(sales, /placement="sticky"[\s\S]*?showRisk=\{false\}/);
+    assert.match(sales, /labelKey="marketing\.pricing\.cta"/);
+    assert.match(sales, /labelKey="marketing\.final\.cta"/);
+    assert.match(sales, /showAfterClick/);
+    assert.equal((sales.match(/showAfterClick/g) ?? []).length, 1);
+    assert.match(tryDemo, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(tryDemo, /PrimaryTrialCta/);
+    assert.match(lineRelief, /marketing\.seePricing|#pricing/);
+    assert.doesNotMatch(lineRelief, /PrimaryTrialCta/);
+    assert.match(dictionary.th["marketing.hero.underCta"], /ฟรี \{days\} วัน · ไม่ต้องผูกบัตร · ยกเลิกได้ทุกเมื่อ/);
+    assert.match(dictionary.th["marketing.pricing.riskLine"], /ไม่มีการตัดเงินอัตโนมัติ/);
+    assert.match(dictionary.th["marketing.cta.afterClick"], /Tommy จะทักกลับทาง LINE เพื่อช่วยตั้งค่าให้/);
+    assert.match(dictionary.th["marketing.hero.subtitleShort"], /ยืนยันใน LINE/);
+    assert.match(
+      dictionary.en["marketing.hero.subtitleShort"],
+      /confirmed in LINE/i,
+    );
+  });
+
+  it("feature claims for short leads and self-reschedule default on (toggleable)", () => {
+    assert.equal(marketingClaims.reminderShortLeads, true);
+    assert.equal(marketingClaims.customerSelfReschedule, true);
+    const sales = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    const lineRelief = readFileSync(
+      resolve(root, "components/marketing/LineReliefSection.tsx"),
+      "utf8",
+    );
+    assert.match(lineRelief, /marketingClaims\.customerSelfReschedule/);
+    assert.match(lineRelief, /marketing\.line\.bullet3/);
+    assert.match(lineRelief, /marketing\.line\.bullet1/);
+    assert.match(lineRelief, /marketing\.line\.bullet2/);
+    assert.doesNotMatch(lineRelief, /marketing\.line\.leadsLabel/);
+    assert.doesNotMatch(lineRelief, /marketing\.line\.rescheduleTitle/);
+    // No stock solution photos / evidence quota line on section
+    assert.doesNotMatch(lineRelief, /MarketingPhotoSlot|solutionCustomer|solutionBarberCalm/);
+    assert.doesNotMatch(lineRelief, /marketing\.line\.evidence/);
+    assert.match(lineRelief, /WarmNoteFlexCard/);
+    assert.match(lineRelief, /variant="confirm"/);
+    assert.match(lineRelief, /variant="reminder"/);
+    assert.match(lineRelief, /marketing\.seePricing|#pricing/);
+    assert.match(sales, /LineReliefSection/);
+    const warmNote = readFileSync(
+      resolve(root, "components/marketing/mockups/WarmNoteFlexCard.tsx"),
+      "utf8",
+    );
+    assert.match(warmNote, /ใกล้ถึงคิวของคุณแล้ว/);
+    assert.match(warmNote, /✓ จองคิวเรียบร้อยแล้ว/);
+    assert.match(warmNote, /ดูคิวของฉัน/);
+    assert.match(warmNote, /เลื่อน \/ ยกเลิกนัด/);
+    assert.match(warmNote, /#15803D/);
+    assert.match(warmNote, /#B45309/);
+    assert.match(warmNote, /#A12F3B/);
+    // Catalog assets retained (not rendered on LineReliefSection)
+    assert.equal(marketingPhotoSlots.solutionCustomer.src, "/sale/solution-customer.webp");
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/solution-customer.webp")),
+      "solution-customer.webp missing",
+    );
+    assert.equal(
+      marketingPhotoSlots.solutionBarberCalm.src,
+      "/sale/solution-barber-calm.webp",
+    );
+    assert.ok(
+      existsSync(resolve(root, "../public/sale/solution-barber-calm.webp")),
+      "solution-barber-calm.webp missing",
+    );
+    assert.equal(marketingPhotoSlots.solutionCustomer.swapPath, "/sale/solution-customer.webp");
+    assert.equal(
+      marketingPhotoSlots.solutionBarberCalm.swapPath,
+      "/sale/solution-barber-calm.webp",
+    );
+    assert.equal(marketingPhotoSlots.bookingSuccessBarber.src, null);
+    assert.equal(
+      marketingPhotoSlots.bookingSuccessBarber.swapPath,
+      "/sale/booking-success-barber.webp",
+    );
+    assert.match(marketingPhotoSlots.solutionCustomer.labelTh, /ลูกค้ายิ้ม/);
+    assert.match(marketingPhotoSlots.solutionBarberCalm.labelTh, /ช่างผ่อนคลาย/);
+    assert.match(dictionary.th["marketing.line.title"], /ข้อความเล็ก\s*ๆ ที่ทำให้ลูกค้ารู้สึกว่าร้านใส่ใจ/);
+    assert.match(dictionary.th["marketing.line.bullet1"], /จองปุ๊บ/);
+    assert.match(dictionary.th["marketing.line.bullet2"], /เตือนก่อนถึงคิว/);
+    assert.match(dictionary.th["marketing.line.bullet3"], /เลื่อนเองได้/);
+    assert.match(dictionary.en["marketing.line.title"], /feel the shop cares/);
+    assert.match(dictionary.th["marketing.line.toggleNote"], /เปิด–ปิด/);
+    assert.ok(dictionary.th["marketing.line.customerPhotoAlt"]);
+    assert.ok(dictionary.th["marketing.line.barberCaption"]);
+    assert.equal(marketingOffer.lineFreePushQuota, 300);
+    assert.equal(dictionary.th["marketing.line.evidence"], "");
+    // Quota + BMJ Open live in FAQ message-cost answer
+    assert.match(
+      fillOfferCopy(dictionary.th["marketing.faq.5.a"]),
+      /300/,
+    );
+    assert.doesNotMatch(
+      fillOfferCopy(dictionary.th["marketing.faq.5.a"]),
+      /\{quota\}/,
+    );
+  });
+
+  it("Clarity loads only via marketing script gated on env", () => {
+    const clarity = readFileSync(
+      resolve(root, "components/marketing/ClarityMarketingScript.tsx"),
+      "utf8",
+    );
+    const events = readFileSync(resolve(root, "lib/marketing/events.ts"), "utf8");
+    assert.match(clarity, /NEXT_PUBLIC_CLARITY_PROJECT_ID/);
+    assert.match(clarity, /clarity\.ms\/tag/);
+    assert.match(events, /clarity\("event"/);
+    assert.match(events, /clarity\("set"/);
+    const rootLayout = readFileSync(resolve(root, "app/layout.tsx"), "utf8");
+    assert.doesNotMatch(rootLayout, /ClarityMarketingScript|clarity\.ms/);
   });
 
   it("trial page uses focused chrome without sales nav CTA", () => {
@@ -213,6 +826,7 @@ describe("marketing layout split", () => {
     assert.match(trial, /noValidate/);
     assert.match(trial, /marketing.trial.backHome/);
     assert.match(trial, /marketing.trial.priceExpect/);
+    assert.match(trial, /ClarityMarketingScript/);
     assert.match(trial, /marketing.trial.lineSignup/);
     assert.match(trial, /resolveClipperqSupportLineUrl/);
     assert.match(nav, /variant === "trial"/);
@@ -253,13 +867,42 @@ describe("visible marketing claim locks", () => {
     const enKeys = Object.keys(dictionary.en).filter((k) => k.startsWith("marketing."));
     assert.deepEqual(thKeys.sort(), enKeys.sort());
     assert.equal(thKeys.some((k) => k.includes("barber.chip")), false);
-    assert.ok(dictionary.th["marketing.features.6.title"]);
-    assert.ok(dictionary.th["marketing.features.7.title"]);
-    assert.ok(dictionary.th["marketing.features.8.title"]);
-    assert.ok(dictionary.th["marketing.features.surface.stats.title"]);
-    assert.ok(dictionary.th["marketing.faq.7.q"]);
-    assert.match(dictionary.th["marketing.hero.cta"], /ทดลองใช้ฟรี \{days\} วัน/);
-    assert.match(dictionary.en["marketing.hero.cta"], /free \{days\}-day trial/i);
+    assert.ok(dictionary.th["marketing.line.title"]);
+    assert.ok(dictionary.th["marketing.board.title"]);
+    assert.ok(dictionary.th["marketing.founder.title"]);
+    assert.ok(dictionary.th["marketing.faq.8.q"]);
+    assert.match(dictionary.th["marketing.hero.cta"], /สมัครทดลองฟรี \{days\} วัน/);
+    assert.match(dictionary.en["marketing.hero.cta"], /Start a free \{days\}-day trial/);
+    assert.match(dictionary.th["marketing.hero.eyebrow"], /1–2 ช่าง/);
+    assert.match(dictionary.th["marketing.founder.body"], /ผมช่วยตั้งค่าให้ทุกร้านเอง/);
+    assert.match(dictionary.en["marketing.founder.body"], /I set up every shop myself/i);
+    assert.doesNotMatch(dictionary.th["marketing.founder.body"], /Tommy ช่วยตั้งค่าให้/);
+    assert.doesNotMatch(visibleValues("marketing.", "th"), /ตั้งค่าเองได้ในไม่กี่นาที/);
+    assert.doesNotMatch(visibleValues("marketing.", "en"), /set up yourself in a few minutes/i);
+    assert.match(dictionary.th["marketing.hero.micro"], /\{price\}/);
+    assert.match(dictionary.th["marketing.pricing.title"], /\{price\}/);
+    assert.match(dictionary.th["marketing.pricing.tierSameFeatures"], /ทุกแพ็กฟีเจอร์เหมือนกัน/);
+    assert.match(dictionary.th["marketing.pricing.tier1Badge"], /ร้านเล็ก/);
+    assert.match(dictionary.th["marketing.pricing.micro"], /ฟีเจอร์ใหม่ไม่ขึ้นราคา/);
+    assert.match(dictionary.th["marketing.trialBox.title"], /^ทดลองฟรี \{days\} วัน$/);
+    assert.match(dictionary.th["marketing.trialBox.item1"], /กรอกข้อมูลร้าน/);
+    assert.match(dictionary.th["marketing.trialBox.item2"], /Tommy ทักกลับทาง LINE/);
+    assert.match(dictionary.th["marketing.trialBox.item3"], /เริ่มรับคิวจริง/);
+    assert.match(dictionary.th["marketing.founder.body"], /ไม่ใช่เจ้าของร้าน/);
+    assert.match(dictionary.en["marketing.founder.body"], /not a barber shop owner/i);
+    assert.match(dictionary.th["marketing.faq.2.a"], /Tommy ช่วยตั้งค่าให้/);
+    assert.match(dictionary.th["marketing.seePricing"], /ดูราคา ↓/);
+    const pricingUi = readFileSync(
+      resolve(root, "components/marketing/SalesPage.tsx"),
+      "utf8",
+    );
+    assert.match(pricingUi, /tier1Badge/);
+    assert.match(pricingUi, /isStarter/);
+    assert.match(pricingUi, /tierSameFeatures/);
+    assert.match(pricingUi, /riskLine/);
+    assert.match(pricingUi, /TRIAL_BOX_ITEMS = \[1, 2, 3\]/);
+    assert.match(pricingUi, /PRICING_INCLUDES = \[1, 2, 3, 4, 5\]/);
+    assert.doesNotMatch(pricingUi, /trialBox\.footer/);
   });
 
   it("rejects unverifiable and outdated pricing claims", () => {
@@ -281,26 +924,40 @@ describe("visible marketing claim locks", () => {
     assert.match(th, /3–5/);
     assert.match(th, /6–10/);
     assert.match(th, /เกิน 10|มากกว่า 10/);
-    // Summary/revenue is live (feature 7); configurable reminders are live (feature 8)
-    assert.match(dictionary.th["marketing.features.7.title"], /สรุปยอด|รายได้/);
+    assert.match(th, /ไม่ขึ้นราคา/);
+    assert.match(dictionary.th["marketing.features.7.title"], /รายได้|ไม่มา|ช่วงเวลายุ่ง/);
     assert.match(dictionary.th["marketing.features.8.title"], /แจ้งเตือนก่อนถึงคิว/);
     assert.match(dictionary.th["marketing.features.8.note"], /\{quota\}/);
+    assert.match(dictionary.th["marketing.features.9.title"], /QR/);
+    assert.match(dictionary.th["marketing.board.5.desc"], /สแกน QR|ลำดับคิวสด|ใกล้ถึงคิว/);
+    assert.match(dictionary.th["marketing.owner.metric2"], /ไม่มา/);
+    assert.match(dictionary.th["marketing.owner.metric3"], /ช่วงเวลายุ่ง|ยุ่ง/);
+    assert.doesNotMatch(th, /จอทีวี|TV screen|waiting.?room display/i);
+    assert.doesNotMatch(en, /in-shop TV|waiting.?room (TV|display)/i);
     assert.equal(
       Object.keys(dictionary.th).some((k) => k === "marketing.coming.1.title"),
       false,
     );
   });
 
-  it("FAQ explains LINE quota, Web Push, and tier pricing", () => {
-    assert.match(dictionary.th["marketing.faq.3.a"], /\{quota\}/);
-    assert.match(dictionary.th["marketing.faq.3.a"], /reply|ตอบกลับ/);
-    assert.doesNotMatch(dictionary.th["marketing.faq.3.a"], /เป็นทางเลือก/);
-    assert.match(dictionary.th["marketing.faq.4.a"], /Web Push/);
-    assert.match(dictionary.en["marketing.faq.4.a"], /Web Push/);
-    assert.match(dictionary.th["marketing.faq.7.a"], /1–2 ช่าง \{price\}/);
-    assert.match(dictionary.th["marketing.faq.7.a"], /3–5 ช่าง \{priceMid\}/);
-    assert.match(dictionary.th["marketing.faq.7.a"], /6–10 ช่าง \{priceLarge\}/);
-    assert.match(dictionary.en["marketing.faq.7.a"], /1–2 barbers \{price\}/);
+  it("FAQ states confirm/ticket/reminders are push quota messages", () => {
+    // faq.1 = pricing; faq.5 = message cost / quota (+ BMJ Open)
+    assert.match(dictionary.th["marketing.faq.1.a"], /1–2 ช่าง \{price\}/);
+    assert.match(dictionary.th["marketing.faq.1.a"], /3–5 ช่าง \{price2\}/);
+    assert.match(dictionary.th["marketing.faq.1.a"], /6–10 ช่าง \{price3\}/);
+    assert.match(dictionary.en["marketing.faq.1.a"], /1–2 barbers \{price\}/);
+    assert.match(dictionary.en["marketing.faq.1.a"], /\{price2\}/);
+    assert.match(dictionary.en["marketing.faq.1.a"], /\{price3\}/);
+    assert.match(dictionary.th["marketing.faq.5.a"], /\{quota\}/);
+    assert.match(dictionary.th["marketing.faq.5.a"], /push|เซิร์ฟเวอร์/);
+    assert.match(dictionary.th["marketing.faq.5.a"], /BMJ Open/);
+    assert.doesNotMatch(dictionary.th["marketing.faq.5.a"], /reply|ตอบกลับ \(reply\)/);
+    assert.match(dictionary.en["marketing.faq.5.a"], /server push/i);
+    assert.doesNotMatch(dictionary.en["marketing.faq.5.a"], /reply messages/i);
+    // faq.7 = Web Push to barbers; faq.8 = toggle confirm/reminders
+    assert.match(dictionary.th["marketing.faq.7.a"], /Web Push/);
+    assert.match(dictionary.en["marketing.faq.7.a"], /Web Push/);
+    assert.match(dictionary.th["marketing.faq.8.a"], /เปิด–ปิด|เปิด\/ปิด|เปิด-ปิด/);
   });
 
   it("offer.ts is the only hardcoded public price source for tiers", () => {
@@ -309,7 +966,13 @@ describe("visible marketing claim locks", () => {
     assert.match(offer, /monthlyPriceThb: 399/);
     assert.match(offer, /monthlyPriceThb: 599/);
     assert.match(offer, /monthlyPriceThb: 999/);
+    assert.match(offer, /marketingClaims/);
+    assert.match(offer, /\{price3\}/);
     assert.match(sales, /marketingOffer\.tiers/);
+    // One pricing table — no 3-column card grid
+    assert.doesNotMatch(sales, /lg:grid-cols-3/);
+    assert.match(sales, /tierSameFeatures/);
+    assert.match(sales, /riskLine/);
     assert.doesNotMatch(sales, /฿399|฿599|฿999|monthlyPriceThb:\s*399/);
     assert.equal(marketingOffer.tiers.length, 3);
   });

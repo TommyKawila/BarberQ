@@ -14,7 +14,8 @@ const ROOT = join(__dirname, "..");
 const OUT = join(ROOT, "public/marketing/screens");
 const RAW_OUT = join(OUT, "raw");
 const DEMO_SHOP = "ClipperQ Demo";
-const SHOP = "phinxstudio";
+/** ClipperQ Demo tenant — barbers มิกซ์/โอ๊ต/เจ/นนท์ + seeded sample queues. */
+const SHOP = "clipperqdemo";
 const OWNER = "mock-owner-line-id";
 const VIEW = { width: 390, height: 844 };
 const SCALE = 2;
@@ -104,7 +105,11 @@ async function main() {
   await waitForServer(BASE);
   await renameShop(BASE);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || "/usr/local/bin/google-chrome",
+    headless: true,
+    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+  });
   const context = await browser.newContext({
     viewport: VIEW,
     deviceScaleFactor: SCALE,
@@ -133,13 +138,29 @@ async function main() {
   await hideChrome(page);
   await shot(page, "shop-landing");
 
-  // 2) Choose barber / date / time — scroll to booking steps
+  // 2) Choose barber / date / time — BrandMark header fully visible (sticky),
+  // booking steps in frame below; do not scroll h2 flush to top.
+  // Unlock truncate+leading so shop-name glyph tops aren't clipped in the shot.
+  await page.addStyleTag({
+    content: `
+      header.sticky p.truncate {
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 1.4 !important;
+        padding-top: 2px !important;
+      }
+    `,
+  });
   const barberHeading = page.getByRole("heading", { level: 2 }).first();
   await barberHeading.waitFor({ timeout: 15000 });
   await page.evaluate(() => {
+    const header = document.querySelector("header.sticky") || document.querySelector("header");
+    const headerH = header ? header.getBoundingClientRect().height : 72;
     const headings = [...document.querySelectorAll("h2")];
     const target = headings.find((h) => /ช่าง|Barber|เลือก/i.test(h.textContent || ""));
-    target?.scrollIntoView({ block: "start" });
+    if (!target) return;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo(0, Math.max(0, targetTop - headerH - 16));
   });
   await page.waitForTimeout(300);
 
@@ -149,7 +170,8 @@ async function main() {
       page.locator("button:not([disabled])").filter({ hasText: /^\d{1,2}:\d{2}$/ });
     if ((await slotBtns().count()) > 0) return slotBtns();
     const dayBtns = page.locator("button:not([disabled])").filter({
-      hasText: /\d{1,2}\s*(ต\.ค\.|ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|พ\.ย\.|ธ\.ค\.|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i,
+      hasText:
+        /\d{1,2}\s*(ต\.ค\.|ม\.ค\.|ก\.พ\.|มี\.ค\.|เม\.ย\.|พ\.ค\.|มิ\.ย\.|ก\.ค\.|ส\.ค\.|ก\.ย\.|พ\.ย\.|ธ\.ค\.|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i,
     });
     const n = await dayBtns.count();
     for (let i = 0; i < n; i++) {
@@ -161,7 +183,15 @@ async function main() {
   }
 
   const available = await ensureAvailableSlots();
-  await shot(page, "choose-slot");
+  await page.waitForTimeout(400);
+  await shot(page, "choose-slot-demo");
+  // Compact how-it-works step 1 uses the same frame (BrandMark unlock styles above).
+  await sharp(join(RAW_OUT, "choose-slot-demo.webp")).toFile(join(RAW_OUT, "choose-booking-demo.webp"));
+  await sharp(join(OUT, "choose-slot-demo.webp")).toFile(join(OUT, "choose-booking-demo.webp"));
+  // Keep legacy names in sync for hand-phone composite source.
+  await sharp(join(RAW_OUT, "choose-slot-demo.webp")).toFile(join(RAW_OUT, "choose-slot.webp"));
+  await sharp(join(OUT, "choose-slot-demo.webp")).toFile(join(OUT, "choose-slot.webp"));
+  console.log("wrote", join(RAW_OUT, "choose-booking-demo.webp"));
 
   // 3) Summary — pick first available slot
   await available.first().click();
@@ -213,11 +243,31 @@ async function main() {
     /* best-effort */
   }
 
-  // 5) Admin queue board
+  // 5) Admin queue board — expect seeded sample queues (มิกซ์/โอ๊ต/เจ/นนท์)
   await page.goto(`${BASE}/${SHOP}/admin`, { waitUntil: "networkidle" });
-  await page.waitForTimeout(1200);
+  await page.waitForFunction(
+    () => /มิกซ์|โอ๊ต|นนท์|Mix|Oat/i.test(document.body?.innerText || ""),
+    { timeout: 20000 },
+  );
+  await page.waitForFunction(
+    () => !/ยังไม่มีคิววันนี้/.test(document.body?.innerText || ""),
+    { timeout: 15000 },
+  );
+  await page.waitForTimeout(800);
   await hideChrome(page);
-  await shot(page, "admin-queue");
+  await shot(page, "admin-queue-demo");
+
+  // Compact how-it-works step 3: scroll to the barber column grid.
+  await page.evaluate(() => {
+    const grid = document.querySelector("[data-board], .board, main");
+    const target =
+      [...document.querySelectorAll("h2, h3, p")].find((el) =>
+        /คิว|บอร์ด|วันนี้|Queue|Board/i.test(el.textContent || ""),
+      ) || grid;
+    target?.scrollIntoView({ block: "start" });
+  });
+  await page.waitForTimeout(500);
+  await shot(page, "admin-queue-board-demo");
 
   // 6) Admin team
   await page.goto(`${BASE}/${SHOP}/admin/staff`, { waitUntil: "networkidle" });
@@ -225,15 +275,21 @@ async function main() {
   await hideChrome(page);
   await shot(page, "admin-team");
 
-  // 7) Admin summary / revenue (D5)
-  await page.goto(`${BASE}/${SHOP}/admin/stats`, { waitUntil: "networkidle" });
+  // 7) Admin summary — ?cqSample=1 shows ข้อมูลตัวอย่าง; seeded completed rows give numbers
+  await page.goto(`${BASE}/${SHOP}/admin/stats?cqSample=1`, {
+    waitUntil: "networkidle",
+  });
   await page.waitForFunction(
-    () => /สรุป|Summary|ลูกค้า/i.test(document.body?.innerText || ""),
+    () => /สรุป|Summary|ลูกค้า|ข้อมูลตัวอย่าง/i.test(document.body?.innerText || ""),
     { timeout: 20000 },
+  );
+  await page.waitForFunction(
+    () => !/ยังไม่มีคิวในช่วงนี้/.test(document.body?.innerText || ""),
+    { timeout: 15000 },
   );
   await page.waitForTimeout(800);
   await hideChrome(page);
-  await shot(page, "admin-stats");
+  await shot(page, "admin-stats-demo");
 
   await browser.close();
   console.log("Done. Screens in", OUT);

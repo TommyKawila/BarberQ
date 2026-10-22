@@ -20,7 +20,7 @@ export function ShopNameLockup({
   return (
     <div className={`min-w-0 ${className ?? ""}`}>
       {shopName ? (
-        <p className="truncate text-sm font-bold leading-tight text-zinc-50">{shopName}</p>
+        <p className="truncate text-sm font-bold leading-snug text-zinc-50">{shopName}</p>
       ) : null}
       <PlatformBrand variant={platformVariant} className={shopName ? "mt-0.5" : undefined} />
     </div>

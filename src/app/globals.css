@@ -198,6 +198,38 @@ html {
   }
 }
 
+@keyframes cta-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 14px rgba(251, 191, 36, 0.28);
+  }
+  50% {
+    box-shadow: 0 6px 18px rgba(251, 191, 36, 0.38);
+  }
+}
+
+@keyframes hero-tap-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.25);
+    opacity: 0.55;
+  }
+}
+
+.hero-tap-pulse {
+  animation: hero-tap-pulse 0.7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-tap-pulse {
+    animation: none;
+  }
+}
+
 @keyframes cq-toast-in {
   from {
     opacity: 0;
@@ -206,6 +238,209 @@ html {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/*
+  Sales page scroll reveals — progressive enhancement.
+  Default: fully visible (no opacity:0 hide). JS sets html.js + data-cq-reveal="on";
+  only then unrevealed nodes offset via transform. prefers-reduced-motion = instant.
+*/
+html.js[data-cq-reveal="on"] [data-reveal]:not([data-reveal-in]) {
+  transform: translate3d(0, 14px, 0);
+}
+
+html.js[data-cq-reveal="on"] [data-reveal][data-reveal="soft"]:not([data-reveal-in]) {
+  transform: translate3d(0, 10px, 0);
+}
+
+html.js[data-cq-reveal="on"] [data-reveal][data-reveal="emphasis"]:not([data-reveal-in]) {
+  transform: translate3d(0, 16px, 0) scale(0.985);
+}
+
+html.js[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
+  transform: none;
+  transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: calc(var(--reveal-delay, 0) * 1ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js[data-cq-reveal="on"] [data-reveal],
+  html.js[data-cq-reveal="on"] [data-reveal][data-reveal-in] {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/*
+  LINE relief section — progressive. Visible by default; transform-only under JS.
+  Sequence: heading → bullets (stagger) → check ticks after text → CTA.
+  Soft ease-out, no bounce. prefers-reduced-motion: instant (hook marks all in).
+*/
+html.js[data-cq-line-relief="on"] [data-line-reveal]:not([data-line-reveal-in]) {
+  transform: translate3d(0, 10px, 0);
+}
+
+html.js[data-cq-line-relief="on"] [data-line-reveal="check"]:not([data-line-reveal-in]) {
+  transform: scale(0.7);
+}
+
+html.js[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
+  transform: none;
+  transition: transform var(--line-dur, 450ms) cubic-bezier(0.22, 1, 0.36, 1);
+  transition-delay: var(--line-delay, 0ms);
+}
+
+html.js[data-cq-line-relief="on"] [data-line-reveal="check"][data-line-reveal-in] {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js[data-cq-line-relief="on"] [data-line-reveal],
+  html.js[data-cq-line-relief="on"] [data-line-reveal][data-line-reveal-in] {
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/*
+  Pain H2 hammer — progressive. Lines stay visible (no opacity:0 hide).
+  Transform + filter only when JS arms data-pain-hammer="on".
+*/
+@keyframes pain-hammer-in {
+  0% {
+    transform: scale(1.12) translate3d(0, 3px, 0) rotate(-0.7deg);
+    filter: blur(2px);
+  }
+  40% {
+    transform: scale(1.04) translate3d(-1px, 0, 0) rotate(0.5deg);
+    filter: blur(0.5px);
+  }
+  62% {
+    transform: scale(0.985) translate3d(1px, 0, 0) rotate(-0.35deg);
+    filter: blur(0);
+  }
+  82% {
+    transform: scale(1.012) translate3d(-0.5px, 0, 0) rotate(0.15deg);
+  }
+  100% {
+    transform: scale(1) translate3d(0, 0, 0) rotate(0deg);
+    filter: blur(0);
+  }
+}
+
+[data-pain-hammer="on"] .pain-hammer-line:not(.pain-hammer-hit) {
+  transform: scale(1.08);
+  filter: blur(1.5px);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-pain-hammer="on"] .pain-hammer-line.pain-hammer-hit,
+  [data-pain-hammer="done"] .pain-hammer-line.pain-hammer-hit {
+    animation: pain-hammer-in 0.35s cubic-bezier(0.22, 1.4, 0.36, 1) both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-pain-hammer="on"] .pain-hammer-line,
+  [data-pain-hammer="on"] .pain-hammer-line.pain-hammer-hit,
+  [data-pain-hammer="done"] .pain-hammer-line {
+    transform: none !important;
+    filter: none !important;
+    animation: none !important;
+  }
+}
+
+@keyframes pain-notif-in {
+  0% {
+    transform: translateY(22px) scale(0.82);
+  }
+  55% {
+    transform: translateY(-6px) scale(1.06);
+  }
+  78% {
+    transform: translateY(2px) scale(0.98);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Problem storm cards — visible by default; transform-only stagger under html.js */
+@keyframes pain-storm-card-in {
+  0% {
+    transform: translateY(10px) scale(0.96);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pain-storm-card-in-overlap {
+  0% {
+    transform: translateY(10px) scale(0.96);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(0) scale(0.97);
+    opacity: 0.7;
+  }
+}
+
+html.js [data-pain-storm]:not([data-pain-storm-played]) .pain-storm-card {
+  transform: translateY(10px) scale(0.96);
+}
+
+html.js [data-pain-storm] .pain-storm-card[data-pain-overlap] {
+  margin-top: -8px;
+}
+
+html.js [data-pain-storm-played] .pain-storm-card:not([data-pain-overlap]) {
+  animation: pain-storm-card-in 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--pain-card-delay, 0ms);
+}
+
+html.js [data-pain-storm-played] .pain-storm-card[data-pain-overlap] {
+  animation: pain-storm-card-in-overlap 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: var(--pain-card-delay, 0ms);
+}
+
+/* Without JS motion class: overlap still piles */
+[data-pain-storm] .pain-storm-card[data-pain-overlap] {
+  margin-top: -8px;
+  transform: scale(0.97);
+  opacity: 0.7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js [data-pain-storm] .pain-storm-card,
+  html.js [data-pain-storm-played] .pain-storm-card {
+    animation: none !important;
+  }
+  html.js [data-pain-storm] .pain-storm-card:not([data-pain-overlap]) {
+    transform: none !important;
+  }
+  html.js [data-pain-storm] .pain-storm-card[data-pain-overlap] {
+    transform: scale(0.97) !important;
+    opacity: 0.7 !important;
+  }
+}
+
+@keyframes pain-badge-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.18) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.1) rotate(8deg);
+  }
+  75% {
+    transform: scale(1.14) rotate(-5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
   }
 }
 
@@ -218,7 +453,64 @@ html {
     animation: booking-success-chair-in 0.5s ease-out both;
   }
 
+  .cta-pulse {
+    animation: cta-pulse 2.4s ease-in-out infinite;
+  }
+
   .cq-toast-enter {
     animation: cq-toast-in 0.2s ease-out both;
+  }
+
+  .pain-notif-enter {
+    animation: pain-notif-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+
+  .pain-badge-shake {
+    animation: pain-badge-pop 0.42s ease-out;
+  }
+
+  .cq-demo-card-enter {
+    animation: cq-demo-card-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cq-demo-toast-enter {
+    animation: cq-demo-toast-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .cq-demo-queue-pop {
+    animation: cq-demo-queue-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes cq-demo-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cq-demo-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cq-demo-queue-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }

@@ -76,7 +76,7 @@ function getState(): MemoryState {
   const g = globalThis as GlobalStore;
   if (!g[GLOBAL_KEY]) {
     g[GLOBAL_KEY] = {
-      appointments: [],
+      appointments: buildDemoSampleAppointments(),
       blocks: [],
       shopSettings: {},
       staff: STAFF_SEED.map((row) => ({
@@ -163,7 +163,8 @@ function getState(): MemoryState {
       shopName: "ClipperQ Demo",
       lineUrl: null,
       phone: null,
-      hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
+      // Stay open later so marketing/admin screenshots still show a live board after dinner.
+      hours: DEFAULT_SHOP_HOURS.map((d) => ({ ...d, close: "23:00" })),
       remindersEnabled: false,
       reminderLeadMinutes: 120,
       bookingConfirmPushEnabled: false,
@@ -309,7 +310,8 @@ const barbers: Barber[] = [
     created_at: nowIso(),
     shop_id: DEMO_SHOP_ID,
     role: "owner",
-    line_id: null,
+    // Memory mock-owner can open clipperqdemo admin (marketing screens / local demo).
+    line_id: MOCK_OWNER_LINE_ID,
     is_bookable: true,
     is_active: true,
   },
@@ -329,7 +331,8 @@ const barbers: Barber[] = [
     id: "c1a55e00-d300-4000-a000-000000000013",
     name: "เจ (ตัวอย่าง)",
     slot_duration_minutes: 30,
-    off_days: [3],
+    // No mid-week off — marketing board/summary always show all four demo barbers.
+    off_days: [],
     created_at: nowIso(),
     shop_id: DEMO_SHOP_ID,
     role: "barber",
@@ -350,6 +353,123 @@ const barbers: Barber[] = [
     is_active: true,
   },
 ];
+
+/** Stable demo-shop sample bookings for marketing screens + /demo/board (not real customers). */
+const DEMO_BARBER_IDS = {
+  mix: "c1a55e00-d300-4000-a000-000000000011",
+  oat: "c1a55e00-d300-4000-a000-000000000012",
+  jay: "c1a55e00-d300-4000-a000-000000000013",
+  non: "c1a55e00-d300-4000-a000-000000000014",
+} as const;
+
+function bangkokWallToUtc(y: number, m: number, d: number, hh: number, mm: number): Date {
+  // Asia/Bangkok is UTC+7 year-round (no DST).
+  return new Date(Date.UTC(y, m - 1, d, hh - 7, mm, 0, 0));
+}
+
+function bangkokNowParts(): {
+  y: number;
+  m: number;
+  d: number;
+  hh: number;
+  mm: number;
+} {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(new Date());
+  const get = (type: string) =>
+    Number(parts.find((p) => p.type === type)?.value ?? 0);
+  return {
+    y: get("year"),
+    m: get("month"),
+    d: get("day"),
+    hh: get("hour") === 24 ? 0 : get("hour"),
+    mm: get("minute"),
+  };
+}
+
+function buildDemoSampleAppointments(): Appointment[] {
+  const now = bangkokNowParts();
+  // Anchor upcoming queues ~50 min ahead so the board never looks empty.
+  let baseMin = now.hh * 60 + now.mm + 50;
+  baseMin = Math.ceil(baseMin / 30) * 30;
+  if (baseMin < 11 * 60) baseMin = 11 * 60;
+  // Keep the 4 upcoming slots (upto +90+60min) inside demo close 23:00.
+  if (baseMin + 150 > 23 * 60) baseMin = 21 * 60;
+
+  const wall = (offsetMin: number) => {
+    const total = baseMin + offsetMin;
+    return { hh: Math.floor(total / 60), mm: total % 60 };
+  };
+
+  const slot = (
+    barberId: string,
+    offsetMin: number,
+    durationMin: number,
+    name: string,
+    source: Appointment["source"],
+    status: Appointment["status"],
+    extras: Partial<Appointment> = {},
+  ): Appointment => {
+    const { hh, mm } = wall(offsetMin);
+    const start = bangkokWallToUtc(now.y, now.m, now.d, hh, mm);
+    const end = new Date(start.getTime() + durationMin * 60_000);
+    return {
+      id: uuid(),
+      barber_id: barberId,
+      customer_ref: `demo-sample-${barberId}-${hh}${String(mm).padStart(2, "0")}`,
+      customer_name: name,
+      customer_phone: null,
+      start_time: start.toISOString(),
+      end_time: end.toISOString(),
+      status,
+      created_at: nowIso(),
+      cancel_token: uuid().replace(/-/g, ""),
+      customer_line_id: null,
+      source,
+      reschedule_count: 0,
+      ...extras,
+    };
+  };
+
+  // Two completed earlier today (or just before the window) + four upcoming.
+  const doneA = wall(-120);
+  const doneB = wall(-75);
+  return [
+    {
+      ...slot(DEMO_BARBER_IDS.mix, -120, 30, "คุณเอ (ตัวอย่าง)", "line", "completed", {
+        completed_at: nowIso(),
+        price_baht: 200,
+        service_id: "c1a55e00-d300-4000-a000-000000000021",
+      }),
+      start_time: bangkokWallToUtc(now.y, now.m, now.d, doneA.hh, doneA.mm).toISOString(),
+      end_time: new Date(
+        bangkokWallToUtc(now.y, now.m, now.d, doneA.hh, doneA.mm).getTime() + 30 * 60_000,
+      ).toISOString(),
+    },
+    {
+      ...slot(DEMO_BARBER_IDS.oat, -75, 45, "คุณบี (ตัวอย่าง)", "line", "completed", {
+        completed_at: nowIso(),
+        price_baht: 250,
+        service_id: "c1a55e00-d300-4000-a000-000000000022",
+      }),
+      start_time: bangkokWallToUtc(now.y, now.m, now.d, doneB.hh, doneB.mm).toISOString(),
+      end_time: new Date(
+        bangkokWallToUtc(now.y, now.m, now.d, doneB.hh, doneB.mm).getTime() + 45 * 60_000,
+      ).toISOString(),
+    },
+    slot(DEMO_BARBER_IDS.mix, 0, 30, "คุณซี (ตัวอย่าง)", "line", "confirmed"),
+    slot(DEMO_BARBER_IDS.oat, 30, 45, "คุณดี (ตัวอย่าง)", "walk_in", "confirmed"),
+    slot(DEMO_BARBER_IDS.jay, 60, 30, "คุณอี (ตัวอย่าง)", "line", "confirmed"),
+    slot(DEMO_BARBER_IDS.non, 90, 60, "คุณเอฟ (ตัวอย่าง)", "phone", "confirmed"),
+  ];
+}
 
 function countFutureConfirmedAppointments(barberId: string): number {
   const now = Date.now();

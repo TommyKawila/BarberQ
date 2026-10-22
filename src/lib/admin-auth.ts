@@ -125,10 +125,25 @@ export async function assertStaffForShop(
   shopId: string,
 ): Promise<StaffAuth> {
   const staff = await assertStaff(req);
-  if (staff.shopId !== shopId) {
-    throw new BookingError("FORBIDDEN", "Cannot access this shop", 403);
+  if (staff.shopId === shopId) return staff;
+
+  // Same LINE may own multiple shops (e.g. memory mock-owner on clipperqdemo + phinxstudio).
+  if (staff.lineId) {
+    const barber = await getStore().getBarberByLineIdInShop(staff.lineId, shopId);
+    if (barber && barber.shop_id === shopId && barber.is_active !== false) {
+      const role: ShopStaffRole = barber.role === "owner" ? "owner" : "barber";
+      return {
+        staffId: barber.id,
+        name: barber.name,
+        role,
+        barberId: barber.id,
+        shopId,
+        lineId: staff.lineId,
+      };
+    }
   }
-  return staff;
+
+  throw new BookingError("FORBIDDEN", "Cannot access this shop", 403);
 }
 
 export function assertShopOwner(staff: StaffAuth): void {
