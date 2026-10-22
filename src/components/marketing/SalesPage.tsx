@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import {
   Bell,
   Check,
@@ -21,12 +20,8 @@ import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { SalesHero } from "@/components/marketing/SalesHero";
 import { HowItWorksMobile } from "@/components/marketing/HowItWorksMobile";
 import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
-import {
-  LineConfirmMockup,
-  LineReminderMockup,
-} from "@/components/marketing/mockups/LineReminderMockup";
+import { LineReliefSection } from "@/components/marketing/LineReliefSection";
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
-import { ScheduleBoardMockup } from "@/components/marketing/mockups/ScheduleBoardMockup";
 import { TryBookingDemo } from "@/components/marketing/TryBookingDemo";
 import { PainHammerTitle } from "@/components/marketing/PainHammerTitle";
 import { LiffCallbackRedirect } from "@/components/liff/LiffCallbackRedirect";
@@ -34,10 +29,8 @@ import { useSalesPageReveal } from "@/hooks/useSalesPageReveal";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { trackMarketingEvent } from "@/lib/marketing/events";
-import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 import {
   fillOfferCopy,
-  marketingClaims,
   marketingOffer,
   tierBarberRangeLabel,
   tierPerDayHint,
@@ -178,7 +171,6 @@ export function SalesPage() {
   const heroCtaDesktopRef = useRef<HTMLDivElement | null>(null);
   const finalCtaRef = useRef<HTMLElement | null>(null);
   const pricingRef = useRef<HTMLElement | null>(null);
-  const lineSectionRef = useRef<HTMLElement | null>(null);
   const [showSticky, setShowSticky] = useState(false);
   const [openFaqIds, setOpenFaqIds] = useState<number[]>([]);
 
@@ -225,37 +217,19 @@ export function SalesPage() {
 
   useEffect(() => {
     const pricingEl = pricingRef.current;
-    const lineEl = lineSectionRef.current;
-    const seen = { pricing: false, line: false };
-
-    const observers: IntersectionObserver[] = [];
-    if (pricingEl) {
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting && !seen.pricing) {
-            seen.pricing = true;
-            trackMarketingEvent("pricing_view");
-          }
-        },
-        { threshold: 0.35 },
-      );
-      obs.observe(pricingEl);
-      observers.push(obs);
-    }
-    if (lineEl) {
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting && !seen.line) {
-            seen.line = true;
-            trackMarketingEvent("line_section_view");
-          }
-        },
-        { threshold: 0.3 },
-      );
-      obs.observe(lineEl);
-      observers.push(obs);
-    }
-    return () => observers.forEach((o) => o.disconnect());
+    if (!pricingEl) return;
+    let seen = false;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !seen) {
+          seen = true;
+          trackMarketingEvent("pricing_view");
+        }
+      },
+      { threshold: 0.35 },
+    );
+    obs.observe(pricingEl);
+    return () => obs.disconnect();
   }, []);
 
   const painMessages = [
@@ -276,16 +250,6 @@ export function SalesPage() {
     t("marketing.pain.chatTime6"),
     t("marketing.pain.chatTime7"),
   ];
-
-  const lineBullets = [
-    "marketing.line.bullet1",
-    marketingClaims.reminderShortLeads
-      ? "marketing.line.bullet2ShortLeads"
-      : "marketing.line.bullet2",
-    ...(marketingClaims.customerSelfReschedule
-      ? (["marketing.line.bullet3"] as const)
-      : []),
-  ] as const;
 
   return (
     <div
@@ -402,150 +366,7 @@ export function SalesPage() {
         />
       </section>
 
-      {/* LINE Signature — desktop-first relief: airy, fewer boxes */}
-      <section
-        id="line-messages"
-        ref={lineSectionRef}
-        className="scroll-mt-20 overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/35 to-zinc-950"
-      >
-        <div className="relative mx-auto max-w-[1440px] px-6 py-10 md:px-10 md:py-24 xl:px-12 xl:py-28">
-          <header data-reveal className="relative z-10 max-w-3xl">
-            <p className="text-sm font-medium tracking-wide text-amber-300/80 lg:text-[15px]">
-              {t("marketing.line.eyebrow")}
-            </p>
-            <h2 className="mt-4 text-[1.75rem] font-bold leading-[1.3] tracking-tight text-zinc-50 md:text-[2.35rem] lg:text-[2.75rem] lg:leading-[1.25] xl:text-[3rem]">
-              {t("marketing.line.title")}
-            </h2>
-          </header>
-
-          <div className="relative mt-14 grid items-start gap-12 lg:mt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:mt-20 xl:gap-20">
-            {/* Option B mobile: mood plate behind copy (unchanged) */}
-            {marketingPhotoSlots.solutionCustomer.src ? (
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-x-0 -top-1 z-0 flex h-[400px] items-start justify-center opacity-[0.88] sm:h-[440px] lg:hidden"
-              >
-                <div
-                  className="relative mt-2 aspect-square w-[88%] max-w-[360px] overflow-hidden"
-                  style={{
-                    WebkitMaskImage:
-                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
-                    maskImage:
-                      "linear-gradient(to bottom, transparent 0%, #000 8%, #000 48%, rgba(0,0,0,0.45) 70%, rgba(0,0,0,0.1) 88%, transparent 100%)",
-                  }}
-                >
-                  <Image
-                    src={marketingPhotoSlots.solutionCustomer.src}
-                    alt=""
-                    fill
-                    sizes="90vw"
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-            ) : null}
-
-            <div className="relative z-10 order-2 flex flex-col items-center gap-6 lg:order-1 lg:items-start lg:gap-10 xl:gap-12">
-              {/* Same phones row as 36871e6 — w-full so fluid mocks don't collapse under items-start */}
-              <div
-                data-reveal
-                className="flex w-full shrink-0 flex-col items-center gap-6 sm:flex-row sm:flex-wrap sm:items-end sm:justify-center lg:justify-start lg:gap-5 xl:gap-7"
-              >
-                {/* Option A · Warm Note — real confirm + reminder Flex (same tokens/copy as builders) */}
-                <LineConfirmMockup shopName="ClipperQ Demo" />
-                <LineReminderMockup
-                  shopName="ClipperQ Demo"
-                  whenLabel={t("marketing.line.mockWhen")}
-                />
-              </div>
-            </div>
-
-            <div className="relative z-10 order-1 max-w-xl lg:order-2 lg:max-w-[22rem] lg:pt-1 xl:max-w-[24rem]">
-              {/* Text-only scrim — denser under copy only; photo beyond stays bright */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute -inset-x-6 -inset-y-3 lg:-inset-x-8 lg:-inset-y-5"
-                style={{
-                  background:
-                    "radial-gradient(ellipse 95% 85% at 32% 40%, rgba(9,9,11,0.98) 0%, rgba(9,9,11,0.92) 52%, rgba(9,9,11,0.35) 74%, transparent 90%)",
-                }}
-              />
-              <div className="relative space-y-8">
-                {lineBullets.map((key, i) => (
-                  <p
-                    key={key}
-                    data-reveal
-                    style={{ ["--reveal-delay" as string]: i * 80 }}
-                    className="flex gap-3.5 text-base leading-[1.65] text-zinc-300 md:text-[1.0625rem] lg:text-lg lg:leading-[1.6]"
-                  >
-                    <Check size={20} className="mt-1 shrink-0 text-amber-400/90" />
-                    <span>{td(key as MessageKey)}</span>
-                  </p>
-                ))}
-              </div>
-
-              <div
-                data-reveal
-                style={{ ["--reveal-delay" as string]: 100 }}
-                className="relative mt-12 flex w-full max-w-[440px] flex-col items-stretch gap-3 sm:items-start"
-              >
-                <PrimaryTrialCta
-                  labelKey="marketing.line.cta"
-                  placement="line"
-                  className="w-full justify-center text-center sm:w-auto sm:justify-start sm:text-left"
-                />
-                <LineCta
-                  label={t("marketing.line.lineCta")}
-                  className="w-full sm:w-auto"
-                  placement="line"
-                />
-              </div>
-
-              <div
-                data-reveal="soft"
-                className="relative mt-12 space-y-3 border-t border-zinc-800/80 pt-8"
-              >
-                <p className="max-w-md text-xs leading-relaxed text-zinc-400 lg:text-[13px]">
-                  {t("marketing.line.evidence")}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <figure data-reveal className="mt-20 xl:mt-24">
-            {/* Desktop: callout above the row so phone top/bottom can match the photo */}
-            <p className="mb-3 hidden text-xs font-medium tracking-wide text-amber-300/85 lg:block lg:text-[13px]">
-              {t("marketing.line.queueBoardCallout")}
-            </p>
-            <div className="flex flex-col items-center gap-8 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:items-stretch lg:gap-10 xl:gap-12">
-              {/* Magnified ตาราง (schedule) callout — matches the phone tab in the photo */}
-              <div className="relative w-full max-w-[220px] sm:max-w-[240px] lg:flex lg:h-full lg:w-auto lg:max-w-none lg:items-stretch">
-                <p className="mb-3 text-center text-xs font-medium tracking-wide text-amber-300/85 lg:hidden">
-                  {t("marketing.line.queueBoardCallout")}
-                </p>
-                <div className="w-full lg:hidden">
-                  <ScheduleBoardMockup fluid />
-                </div>
-                <div className="hidden h-full lg:block lg:aspect-[390/844]">
-                  <ScheduleBoardMockup matchHeight />
-                </div>
-                <p className="mt-2 text-center text-[12px] leading-snug text-zinc-400 lg:mt-3">
-                  {t("marketing.line.scheduleTabNote")}
-                </p>
-              </div>
-              <MarketingPhotoSlot
-                slot="solutionBarberCalm"
-                alt={t("marketing.line.barberPhotoAlt")}
-                sizes="(min-width: 1440px) 1000px, (min-width: 1280px) 900px, 92vw"
-                className="w-full min-w-0"
-              />
-            </div>
-            <figcaption className="mt-5 text-center text-sm text-zinc-500 lg:text-base">
-              {t("marketing.line.barberCaption")}
-            </figcaption>
-          </figure>
-        </div>
-      </section>
+      <LineReliefSection />
 
       {/* How it works — mobile compact tabs; desktop 3-column unchanged */}
       <section
