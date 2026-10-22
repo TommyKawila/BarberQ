@@ -62,12 +62,13 @@ describe("marketing layout split", () => {
     assert.match(hero, /PrimaryTrialCta/);
     assert.match(hero, /MarketingPhotoSlot/);
     assert.match(hero, /heroDesktop/);
-    assert.match(hero, /heroMobile/);
+    assert.match(hero, /HeroLineBookingAnim/);
+    assert.match(hero, /marketing\.hero\.tryYourself/);
     assert.match(hero, /linear-gradient\(to right/);
     assert.match(hero, /right center/);
     assert.match(hero, /hidden lg:block/);
     assert.match(hero, /lg:hidden/);
-    // Design C: photo is inline below copy — never absolute behind text on mobile
+    // Design C: anim phone below copy — never absolute behind text on mobile
     assert.doesNotMatch(hero, /absolute inset-0 lg:hidden/);
     assert.match(hero, /subtitleShort/);
     // Mobile title: forced break after LINE so Thai “ไม่ต้อง” stays intact
@@ -78,6 +79,20 @@ describe("marketing layout split", () => {
     assert.match(hero, /marketing\.hero\.setup/);
     assert.match(hero, /min-w-0/);
     assert.match(hero, /max-w-full/);
+    const heroAnim = readFileSync(
+      resolve(root, "components/marketing/mockups/HeroLineBookingAnim.tsx"),
+      "utf8",
+    );
+    assert.match(heroAnim, /IntersectionObserver/);
+    assert.match(heroAnim, /prefers-reduced-motion/);
+    assert.match(heroAnim, /จองคิว/);
+    assert.match(heroAnim, /HOW_DEMO_BOOKING/);
+    assert.match(heroAnim, /ตัวอย่างร้านสาธิต/);
+    assert.match(heroAnim, /booking-success-chair-capture/);
+    assert.match(heroAnim, /min-h-11|h-11/);
+    assert.match(heroAnim, /aria-hidden/);
+    assert.match(dictionary.th["marketing.hero.tryYourself"], /ลองจองเอง/);
+    assert.match(dictionary.en["marketing.hero.tryYourself"], /Try booking yourself/);
     assert.match(nav, /MarketingTrialLink/);
     // Mobile nav trial = gold outline; desktop stays solid amber
     assert.match(nav, /border-amber-400/);
@@ -87,30 +102,23 @@ describe("marketing layout split", () => {
     assert.doesNotMatch(nav, /href="\/trial"/);
   });
 
-  it("how-it-works desktop steps map screens to matching copy", () => {
-    const mockups = readFileSync(
-      resolve(root, "components/marketing/mockups/CustomerJourneyMockups.tsx"),
-      "utf8",
-    );
+  it("how-it-works is a compact text strip without phone mockups", () => {
     const sales = readFileSync(
       resolve(root, "components/marketing/SalesPage.tsx"),
       "utf8",
     );
-    const mobileHow = readFileSync(
-      resolve(root, "components/marketing/HowItWorksMobile.tsx"),
+    const howStrip = readFileSync(
+      resolve(root, "components/marketing/HowItWorksStrip.tsx"),
       "utf8",
     );
-    assert.match(sales, /lg:grid-cols-3/);
-    assert.match(sales, /CustomerStepPhone/);
-    assert.match(sales, /HowItWorksMobile/);
+    assert.match(sales, /HowItWorksStrip/);
+    assert.doesNotMatch(sales, /HowItWorksMobile/);
+    assert.doesNotMatch(sales, /CustomerStepPhone/);
     assert.match(sales, /via-zinc-900\/25/);
-    assert.match(mobileHow, /role="tablist"/);
-    assert.match(mobileHow, /aria-selected/);
-    assert.match(mobileHow, /aria-controls/);
-    assert.match(mobileHow, /prefers-reduced-motion/);
-    assert.match(mobileHow, /IntersectionObserver/);
-    assert.match(mobileHow, /max-w-\[200px\]/);
-    assert.match(mobileHow, /marketing\.how\.eyebrow/);
+    assert.match(howStrip, /marketing\.how\.eyebrow/);
+    assert.match(howStrip, /marketing\.how\.\$\{n\}\.title/);
+    assert.match(howStrip, /marketing\.how\.\$\{n\}\.caption/);
+    assert.doesNotMatch(howStrip, /PhoneFrame|CustomerStepPhone|HowItWorksStepPhone/);
     assert.match(sales, /scroll-mt-\[4\.5rem\]/);
     assert.match(sales, /id="how-it-works"[\s\S]*?data-hide-sticky/);
     assert.match(sales, /LineReliefSection/);
@@ -143,12 +151,7 @@ describe("marketing layout split", () => {
     assert.match(scheduleMock, /เจ/);
     assert.match(scheduleMock, /ตัวอย่าง/);
     assert.doesNotMatch(scheduleMock, /<button/);
-    const stepFn = mockups.slice(mockups.indexOf("export function CustomerStepPhone"));
-    assert.match(stepFn, /HowItWorksStepPhone/);
-    assert.match(stepFn, /compact/);
-    assert.match(mobileHow, /marketing\.how\.\$\{n\}\.caption/);
-    assert.match(mobileHow, /min-h-\[44px\]/);
-    assert.doesNotMatch(mobileHow, /marketing\.how\.micro/);
+    assert.doesNotMatch(howStrip, /marketing\.how\.micro/);
     assert.match(sales, /marketing\.how\.micro/);
     const howPhones = readFileSync(
       resolve(root, "components/marketing/mockups/HowItWorksStepPhones.tsx"),
@@ -527,7 +530,7 @@ describe("marketing layout split", () => {
       "marketing.pain",
       "LineReliefSection",
       "how-it-works",
-      "CustomerStepPhone",
+      "HowItWorksStrip",
       'id="founder"',
       'id="pricing"',
       "marketingOffer.tiers",

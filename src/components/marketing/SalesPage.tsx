@@ -6,10 +6,7 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  CircleCheck,
-  MessageCircle,
   QrCode,
-  Smartphone,
   Users,
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -18,8 +15,7 @@ import { ClarityMarketingScript } from "@/components/marketing/ClarityMarketingS
 import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
 import { PrimaryTrialCta } from "@/components/marketing/PrimaryTrialCta";
 import { SalesHero } from "@/components/marketing/SalesHero";
-import { HowItWorksMobile } from "@/components/marketing/HowItWorksMobile";
-import { CustomerStepPhone } from "@/components/marketing/mockups/CustomerJourneyMockups";
+import { HowItWorksStrip } from "@/components/marketing/HowItWorksStrip";
 import { LineReliefSection } from "@/components/marketing/LineReliefSection";
 import { PainStormVisual } from "@/components/marketing/mockups/PainStormVisual";
 import { TryBookingDemo } from "@/components/marketing/TryBookingDemo";
@@ -36,8 +32,6 @@ import {
   tierPerDayHint,
   tierPricePerMonthLabel,
 } from "@/lib/marketing/offer";
-
-const HOW_ICONS = [MessageCircle, CircleCheck, Smartphone] as const;
 const DEMO_FEATURE_ICONS = [Users, QrCode, Bell] as const;
 const DEMO_FEATURE_KEYS = [
   "marketing.try.featureWalkin",
@@ -162,7 +156,7 @@ function ContactCta({ label, className }: { label: string; className?: string })
   );
 }
 
-export function SalesPage() {
+export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
   const supportLineUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
@@ -263,7 +257,11 @@ export function SalesPage() {
       <ClarityMarketingScript />
       <LiffCallbackRedirect />
       <AttributionCapture />
-      <SalesHero heroCtaRef={heroCtaRef} heroCtaDesktopRef={heroCtaDesktopRef} />
+      <SalesHero
+        heroCtaRef={heroCtaRef}
+        heroCtaDesktopRef={heroCtaDesktopRef}
+        initialScene={heroScene}
+      />
 
       {/* Try booking — client-side demo right under hero; no DB / API */}
       <section
@@ -368,7 +366,7 @@ export function SalesPage() {
 
       <LineReliefSection />
 
-      {/* How it works — mobile compact tabs; desktop 3-column unchanged */}
+      {/* How it works — compact 3-item text strip (no phone images) */}
       <section
         id="how-it-works"
         data-hide-sticky
@@ -376,47 +374,7 @@ export function SalesPage() {
       >
         <div className="mx-auto max-w-[1280px] px-4 pt-6 pb-10 md:px-6 md:py-14">
           <div data-reveal>
-            <HowItWorksMobile />
-          </div>
-
-          <div className="hidden md:block">
-            <h2 data-reveal className="text-[1.75rem] font-bold text-zinc-50 md:text-3xl">
-              {t("marketing.how.title")}
-            </h2>
-            <ol className="mt-8 grid gap-10 lg:grid-cols-3 lg:items-stretch lg:gap-6">
-              {([1, 2, 3] as const).map((n) => {
-                const Icon = HOW_ICONS[n - 1];
-                return (
-                  <li
-                    key={n}
-                    data-reveal
-                    style={{ ["--reveal-delay" as string]: (n - 1) * 90 }}
-                    className="flex h-full flex-col items-center text-center"
-                  >
-                    <span className="flex items-center gap-2 text-xl font-bold tabular-nums text-amber-400 lg:text-3xl">
-                      <Icon size={22} className="shrink-0" strokeWidth={2} />
-                      {String(n).padStart(2, "0")}
-                    </span>
-                    <h3 className="mt-3 text-lg font-bold leading-snug text-zinc-50">
-                      {t(`marketing.how.${n}.title` as MessageKey)}
-                    </h3>
-                    <p className={`mt-1.5 ${BODY}`}>
-                      {t(`marketing.how.${n}.desc` as MessageKey)}
-                    </p>
-                    {/* mt-auto keeps phone bezels aligned across columns (right was sitting low) */}
-                    <div className="mt-5 w-full lg:mt-auto lg:pt-5">
-                      <CustomerStepPhone step={n} />
-                      <p
-                        data-how-caption
-                        className="mt-3 text-center text-[14px] font-medium leading-snug text-zinc-400"
-                      >
-                        {t(`marketing.how.${n}.caption` as MessageKey)}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
+            <HowItWorksStrip />
           </div>
         </div>
       </section>

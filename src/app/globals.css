@@ -208,6 +208,28 @@ html {
   }
 }
 
+@keyframes hero-tap-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.85);
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.25);
+    opacity: 0.55;
+  }
+}
+
+.hero-tap-pulse {
+  animation: hero-tap-pulse 0.7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-tap-pulse {
+    animation: none;
+  }
+}
+
 @keyframes cq-toast-in {
   from {
     opacity: 0;
