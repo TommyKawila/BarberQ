@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import {
   BARBER_TIERS,
+  isOverTier,
   tierRangeLabelTh,
   type BarberTierId,
 } from "@/lib/billing/barber-tier";
+import { overTierFlagLabel } from "@/lib/billing/over-tier-flags";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import type { BarberRole, Shop } from "@/types/booking";
+
+const OVER_TIER_FLAG_PREFIX = "เกินแพ็ก";
 
 export interface ShopStaffSummary {
   id: string;
@@ -87,6 +91,7 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
   );
   const [tierSaving, setTierSaving] = useState(false);
   const [tierError, setTierError] = useState<string | null>(null);
+  const [tierSavedToast, setTierSavedToast] = useState(false);
   const [overTier, setOverTier] = useState(Boolean(shop.overTier));
   const [seatFlags, setSeatFlags] = useState<string[]>(shop.seatFlags ?? []);
   useEffect(() => {
@@ -94,6 +99,27 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
     setOverTier(Boolean(shop.overTier));
     setSeatFlags(shop.seatFlags ?? []);
   }, [shop.barber_tier, shop.overTier, shop.seatFlags]);
+  useEffect(() => {
+    if (!tierSavedToast) return;
+    const timer = window.setTimeout(() => setTierSavedToast(false), 2500);
+    return () => window.clearTimeout(timer);
+  }, [tierSavedToast]);
+
+  function applyTierLocally(next: BarberTierId) {
+    const seats = shop.seatBookableCount ?? 0;
+    const nextOver = isOverTier(seats, next);
+    setBarberTier(next);
+    setOverTier(nextOver);
+    setSeatFlags((prev) => {
+      const withoutOver = prev.filter(
+        (label) =>
+          !label.startsWith(OVER_TIER_FLAG_PREFIX) &&
+          !label.startsWith("เกิน tier"),
+      );
+      if (!nextOver) return withoutOver;
+      return [overTierFlagLabel(seats, next), ...withoutOver];
+    });
+  }
   const expires = shop.subscribed_until
     ? new Date(shop.subscribed_until).toLocaleDateString("th-TH")
     : "—";
@@ -212,6 +238,7 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
     if (!superAdminToken || next === barberTier) return;
     setTierSaving(true);
     setTierError(null);
+    setTierSavedToast(false);
     try {
       const res = await fetch(`/api/superadmin/shops/${shop.id}/barber-tier`, {
         method: "PATCH",
@@ -226,13 +253,15 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
         error?: string;
       };
       if (!res.ok) {
-        setTierError(json.error ?? "อัปเดต tier ไม่สำเร็จ");
+        setTierError(json.error ?? "อัปเดตแพ็กไม่สำเร็จ");
         return;
       }
-      setBarberTier(next);
+      // Recompute badge/flags immediately so dropdown and status never contradict.
+      applyTierLocally(next);
+      setTierSavedToast(true);
       onRegenerated?.();
     } catch {
-      setTierError("อัปเดต tier ไม่สำเร็จ");
+      setTierError("อัปเดตแพ็กไม่สำเร็จ");
     } finally {
       setTierSaving(false);
     }
@@ -263,10 +292,11 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
             <p className="text-xs text-zinc-400">
               Setup: {shop.setupReady ? "ready" : "incomplete"}
               {shop.hasFirstBooking ? " · first booking" : ""}
-              {shop.bookableCount !== undefined ? ` · ${shop.bookableCount} bookable` : ""}
               {shop.seatBookableCount !== undefined
-                ? ` · seats ${shop.seatBookableCount}`
-                : ""}
+                ? ` · จองได้ ${shop.seatBookableCount} คน`
+                : shop.bookableCount !== undefined
+                  ? ` · จองได้ ${shop.bookableCount} คน`
+                  : ""}
             </p>
           ) : null}
           {shop.status === "pending" && inviteExpires ? (
@@ -282,7 +312,7 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
               data-testid="over-tier-badge"
               className="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-300"
             >
-              over tier
+              เกินแพ็ก
             </span>
           ) : null}
         </div>
@@ -290,21 +320,29 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
 
       <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
         <label className="block text-xs font-medium text-zinc-300">
-          Barber tier
+          แพ็กช่าง
           <select
             data-testid="barber-tier-select"
             value={barberTier}
             disabled={!superAdminToken || tierSaving}
             onChange={(e) => void handleTierChange(e.target.value as BarberTierId)}
-            className="mt-1 min-h-10 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-100 disabled:opacity-50"
+            className="mt-1 min-h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-100 disabled:opacity-50"
           >
             {BARBER_TIERS.map((id) => (
               <option key={id} value={id}>
-                {id} · {tierRangeLabelTh(id)}
+                แพ็ก {tierRangeLabelTh(id)}
               </option>
             ))}
           </select>
         </label>
+        {tierSaving ? (
+          <p className="text-xs text-zinc-400">กำลังบันทึก…</p>
+        ) : null}
+        {tierSavedToast ? (
+          <p className="text-xs text-emerald-400" data-testid="tier-saved-toast">
+            บันทึกแล้ว
+          </p>
+        ) : null}
         {tierError ? <p className="text-xs text-red-400">{tierError}</p> : null}
         {seatFlags.length > 0 ? (
           <div data-testid="seat-flags">

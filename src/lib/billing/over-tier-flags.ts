@@ -4,8 +4,17 @@ import {
   countBookableBarberSeats,
   isOverTier,
   normalizeBarberTier,
+  tierRangeLabelTh,
   type BarberTierId,
 } from "@/lib/billing/barber-tier";
+
+/** Consistent Thai label for over-pack flag (superadmin). */
+export function overTierFlagLabel(
+  bookable: number,
+  tier: BarberTierId,
+): string {
+  return `เกินแพ็ก (จองได้ ${bookable} คน · แพ็ก ${tierRangeLabelTh(tier)})`;
+}
 
 /** Suspicious barber display names used as shared/shift seats. */
 const SUSPICIOUS_NAME =
@@ -52,7 +61,7 @@ export function collectShopSeatFlags(input: {
   if (isOverTier(bookable, tier)) {
     flags.push({
       code: "over_tier",
-      label: `เกิน tier (${bookable} bookable · ${tier})`,
+      label: overTierFlagLabel(bookable, tier),
     });
   }
 

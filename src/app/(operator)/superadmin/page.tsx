@@ -1,23 +1,42 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
+import {
+  normalizeBarberTier,
+  tierRangeLabelTh,
+} from "@/lib/billing/barber-tier";
 import {
   readOperatorToken,
   writeOperatorToken,
 } from "@/lib/superadmin/operator-session";
 import type { Shop } from "@/types/booking";
 
+type SuperadminShop = Shop & {
+  overTier?: boolean;
+  seatBookableCount?: number;
+  seatFlags?: string[];
+};
+
 export default function SuperAdminPage() {
   const [token, setToken] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [shops, setShops] = useState<Shop[]>([]);
+  const [shops, setShops] = useState<SuperadminShop[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+  const supportLineUrl =
+    process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL ?? null;
+
+  const outreachShops = useMemo(() => {
+    return shops
+      .filter((s) => s.overTier || (s.seatFlags?.some((f) => f.startsWith("เกินแพ็ก")) ?? false))
+      .slice()
+      .sort((a, b) => (b.seatBookableCount ?? 0) - (a.seatBookableCount ?? 0));
+  }, [shops]);
 
   const loadShops = useCallback(async (authToken: string) => {
     setLoading(true);
@@ -26,7 +45,10 @@ export default function SuperAdminPage() {
       const res = await fetch("/api/superadmin/shops", {
         headers: { "x-superadmin-token": authToken },
       });
-      const json = (await res.json()) as { shops?: Shop[]; error?: string };
+      const json = (await res.json()) as {
+        shops?: SuperadminShop[];
+        error?: string;
+      };
       if (!res.ok) throw new Error(json.error ?? "Invalid token");
       setShops(json.shops ?? []);
       setIsAuthenticated(true);
@@ -93,6 +115,50 @@ export default function SuperAdminPage() {
       </header>
 
       <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />
+
+      <section data-testid="outreach-shops">
+        <h2 className="mb-3 text-xl font-semibold">
+          ร้านที่ควรทัก ({outreachShops.length})
+        </h2>
+        {outreachShops.length === 0 ? (
+          <p className="text-sm text-zinc-500">ยังไม่มีร้านเกินแพ็ก</p>
+        ) : (
+          <ul className="space-y-2">
+            {outreachShops.map((shop) => {
+              const tier = normalizeBarberTier(shop.barber_tier);
+              const seats = shop.seatBookableCount ?? 0;
+              return (
+                <li
+                  key={shop.id}
+                  data-testid="outreach-shop-row"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-rose-500/30 bg-zinc-900 px-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-zinc-100">
+                      {shop.name}
+                    </p>
+                    <p className="text-xs text-zinc-400">
+                      จองได้ {seats} คน · แพ็ก {tierRangeLabelTh(tier)}
+                    </p>
+                  </div>
+                  {supportLineUrl ? (
+                    <a
+                      href={supportLineUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-amber-400 px-3 text-sm font-semibold text-zinc-950"
+                    >
+                      ทักทาง LINE
+                    </a>
+                  ) : (
+                    <span className="text-xs text-zinc-500">ไม่มีลิงก์ LINE</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-4 text-xl font-semibold">LINE OA Install Requests</h2>

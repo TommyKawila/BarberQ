@@ -110,8 +110,12 @@ describe("barber-tier helpers", () => {
     assert.doesNotMatch(result.prompt?.body ?? "", /14\s*วัน/);
     assert.equal(result.prompt?.primaryCta, "เพิ่มช่างต่อ");
     assert.equal(result.prompt?.secondaryCta, "ทัก Tommy ทาง LINE");
+    assert.equal(result.prompt?.signature, "— Tommy");
+    assert.equal(result.prompt?.bodyParagraphs.length, 2);
+    assert.match(result.prompt?.bodyParagraphs[1] ?? "", /฿599/);
     const copy6 = buildOverTierPromptCopy(6);
     assert.match(copy6?.body ?? "", /฿999/);
+    assert.equal(copy6?.bodyParagraphs.length, 2);
   });
 });
 

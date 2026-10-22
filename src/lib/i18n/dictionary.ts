@@ -626,7 +626,7 @@ export const dictionary = {
     "marketing.faq.8.a": "ได้ ร้านเปิด–ปิดข้อความยืนยันการจอง และฟีเจอร์เตือนคิวได้จากตั้งค่า — เมื่อปิด ลูกค้ายังเห็นหน้าจองสำเร็จและคิวใน «คิวของฉัน»",
     "marketing.faq.9.q": "นับจำนวนช่างยังไง?",
     "marketing.faq.9.a":
-      "นับเฉพาะช่างที่ลูกค้าจองได้ เจ้าของหรือผู้จัดการ 1 คนใช้ฟรีทุกแพ็ก ดูคิว ดูยอด และจัดการร้านได้ครบ ถ้าคุณตัดผมด้วย กด «รับคิวด้วย» ในบัญชีเดิมได้เลย (นับเป็นช่าง 1 ที่) ช่างลาออกกดปิดได้ ประวัติคิวและรายได้ยังอยู่ครบ",
+      'นับเฉพาะช่างที่ลูกค้าจองได้ เจ้าของหรือผู้จัดการ 1 คนใช้ฟรีทุกแพ็ก ดูคิว ดูยอด และจัดการร้านได้ครบ ถ้าคุณตัดผมด้วย กด "รับคิวด้วย" ในบัญชีเดิมได้เลย (นับเป็นช่าง 1 ที่) ช่างลาออกกดปิดได้ ประวัติคิวและรายได้ยังอยู่ครบ',
     "marketing.faq.10.q": "ทำไมควรใส่ช่างให้ครบทุกคน?",
     "marketing.faq.10.a":
       "เพราะระบบทำงานรายช่างครับ ใส่ครบแล้วลูกค้าเลือกช่างประจำได้ คิวของแต่ละคนไม่ชนกัน แจ้งเตือนเด้งถึงช่างที่ถูกจองโดยตรง และคุณดูยอดแยกรายช่างได้ ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่างเท่านั้น",
@@ -1053,7 +1053,7 @@ export const dictionary = {
     "admin.removedBarberStatus": "นำออกจากร้านแล้ว",
     "admin.restoreToShop": "นำกลับเข้าร้าน",
     "admin.editBarberTitle": "แก้ไขช่าง",
-    "admin.editBarberSubtitle": "จัดการข้อมูลและการรับคิวของ {name}",
+    "admin.editBarberSubtitle": "จัดการข้อมูลและการรับคิวของ{name}",
     "admin.barberInfoSection": "ข้อมูลช่าง",
     "admin.barberNameHint": "ชื่อนี้จะแสดงให้ลูกค้าเห็นตอนเลือกช่าง",
     "admin.barberRoleLabel": "ตำแหน่ง",
@@ -1074,8 +1074,11 @@ export const dictionary = {
     "admin.openQueueToggle": "เปิดรับคิว",
     "admin.ownerAcceptingOn": "รับคิวด้วย",
     "admin.ownerAcceptingOff": "ไม่รับคิวด้วย",
+    "admin.ownerAcceptingStatusOn": "รับคิว: เปิด",
+    "admin.ownerAcceptingStatusOff": "รับคิว: ปิด",
     "admin.ownerAcceptingOnHint": "ลูกค้าสามารถจองคิวกับบัญชีเจ้าของร้านได้ (นับเป็นช่าง 1 ที่)",
-    "admin.ownerAcceptingOffHint": "บัญชีเจ้าของร้านใช้ฟรี ไม่นับเป็นช่าง — เปิดได้ถ้าคุณตัดผมด้วย",
+    "admin.ownerAcceptingOffHint":
+      "บัญชีเจ้าของร้านใช้ฟรี ไม่นับเป็นช่าง ถ้าคุณตัดผมด้วย เปิดไว้เพื่อให้ลูกค้าจองคุณได้ (นับเป็นช่าง 1 ที่)",
     "admin.ownerAcceptingToggle": "รับคิวด้วย",
     "admin.queueSectionHint": "ปิดรับคิวชั่วคราวได้โดยไม่ต้องนำช่างออกจากร้าน",
     "admin.slotDurationHint": "ระยะเวลาที่กันไว้สำหรับลูกค้า 1 คน",
@@ -2436,8 +2439,11 @@ export const dictionary = {
     "admin.openQueueToggle": "Accepting queue",
     "admin.ownerAcceptingOn": "Accept bookings too",
     "admin.ownerAcceptingOff": "Not accepting bookings",
+    "admin.ownerAcceptingStatusOn": "Accepting: on",
+    "admin.ownerAcceptingStatusOff": "Accepting: off",
     "admin.ownerAcceptingOnHint": "Customers can book the owner account (counts as 1 barber seat)",
-    "admin.ownerAcceptingOffHint": "Owner account is free and does not count as a barber — turn on if you cut hair too",
+    "admin.ownerAcceptingOffHint":
+      "Owner account is free and does not count as a barber. If you cut hair too, turn it on so customers can book you (counts as 1 seat).",
     "admin.ownerAcceptingToggle": "Accept bookings too",
     "admin.queueSectionHint": "Temporarily stop new bookings without removing the barber from the shop",
     "admin.slotDurationHint": "Time reserved for each customer",

@@ -10,6 +10,31 @@ interface OverTierModalProps {
   onClose: () => void;
 }
 
+function ParagraphWithGoldPrice({
+  text,
+  priceLabel,
+}: {
+  text: string;
+  priceLabel: string | null;
+}) {
+  if (!priceLabel || !text.includes(priceLabel)) {
+    return <>{text}</>;
+  }
+  const parts = text.split(priceLabel);
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < parts.length - 1 ? (
+            <span className="font-semibold text-amber-400">{priceLabel}</span>
+          ) : null}
+        </span>
+      ))}
+    </>
+  );
+}
+
 /**
  * Soft over-tier prompt after adding seat #3 / #6 / #11.
  * Never blocks — primary continues; secondary opens Tommy LINE.
@@ -22,6 +47,9 @@ export function OverTierModal({
   onClose,
 }: OverTierModalProps) {
   if (!open || !copy) return null;
+
+  const paragraphs =
+    copy.bodyParagraphs?.length > 0 ? copy.bodyParagraphs : [copy.body];
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 sm:items-center sm:p-4">
@@ -40,7 +68,24 @@ export function OverTierModal({
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
         <h2 className="text-base font-semibold text-zinc-50">{copy.title}</h2>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-300">{copy.body}</p>
+        <div className="mt-2 space-y-2">
+          {paragraphs.map((paragraph) => (
+            <p key={paragraph} className="text-sm leading-relaxed text-zinc-300">
+              <ParagraphWithGoldPrice
+                text={paragraph}
+                priceLabel={copy.nextTierPriceLabel}
+              />
+            </p>
+          ))}
+        </div>
+        {copy.signature ? (
+          <p
+            data-testid="over-tier-signature"
+            className="mt-2 text-right text-[13px] text-zinc-500"
+          >
+            {copy.signature}
+          </p>
+        ) : null}
         <p className="mt-2 text-xs text-zinc-500">{copy.footnote}</p>
         <button
           type="button"

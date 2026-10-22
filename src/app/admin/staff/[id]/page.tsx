@@ -248,21 +248,25 @@ export default function EditBarberPage() {
               {t("admin.editBarberSubtitle").replace("{name}", displayName)}
             </p>
             <p className="mt-2 text-lg font-semibold">{displayName}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
-                {isOwnerBarber
-                  ? isBookable
-                    ? t("admin.ownerAcceptingOn")
-                    : t("admin.ownerAcceptingOff")
-                  : isBookable
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {isOwnerBarber ? (
+                <>
+                  <span className="text-xs text-zinc-500">
+                    {isBookable
+                      ? t("admin.ownerAcceptingStatusOn")
+                      : t("admin.ownerAcceptingStatusOff")}
+                  </span>
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs text-amber-300">
+                    {t("admin.ownerBadge")}
+                  </span>
+                </>
+              ) : (
+                <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
+                  {isBookable
                     ? t("admin.barberBookable")
                     : t("admin.barberNotBookable")}
-              </span>
-              {isOwnerBarber ? (
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs text-amber-300">
-                  {t("admin.ownerBadge")}
                 </span>
-              ) : null}
+              )}
             </div>
           </div>
           <BarberAvatar name={barber.name} imageUrl={barber.profile_image_url} size="lg" />
@@ -363,18 +367,26 @@ export default function EditBarberPage() {
               ? t("admin.ownerAcceptingOffHint")
               : t("admin.queueSectionHint")}
           </p>
-          <label className="mt-4 flex items-center justify-between gap-3 text-sm">
+          <label className="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
             <span>
               {isOwnerBarber
                 ? t("admin.ownerAcceptingToggle")
                 : t("admin.openQueueToggle")}
             </span>
-            <input
-              type="checkbox"
-              checked={isBookable}
-              onChange={(e) => setIsBookable(e.target.checked)}
-              data-testid={isOwnerBarber ? "owner-accepting-toggle" : "barber-bookable-toggle"}
-            />
+            <span className="relative inline-flex shrink-0 items-center">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={isBookable}
+                onChange={(e) => setIsBookable(e.target.checked)}
+                data-testid={
+                  isOwnerBarber
+                    ? "owner-accepting-toggle"
+                    : "barber-bookable-toggle"
+                }
+              />
+              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
+            </span>
           </label>
           {isBookable ? (
             <label className="mt-4 flex flex-col gap-1 text-sm">
