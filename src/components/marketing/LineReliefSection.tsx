@@ -64,7 +64,7 @@ function SampleChatBubble({
           ["--line-dur" as string]: "450ms",
         } as CSSProperties
       }
-      className="w-full max-w-[280px]"
+      className="mx-auto w-full max-w-[280px] lg:mx-0"
     >
       <div className="mb-1.5 flex items-center gap-2">
         <span className="rounded-md border border-amber-500/40 bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-amber-200">
@@ -269,8 +269,8 @@ export function LineReliefSection() {
               {t("marketing.line.toggleNote")}
             </p>
 
-            {/* Mobile chat bubbles under checklist */}
-            <div className="mt-8 flex flex-col gap-5 lg:hidden">
+            {/* Mobile chat bubbles under checklist — centered; desktop column keeps start align */}
+            <div className="mt-8 flex flex-col items-center gap-5 lg:hidden">
               <SampleChatBubble variant="confirm" revealDelayMs={bubbleDelay} />
               <SampleChatBubble
                 variant="reminder"
@@ -287,7 +287,7 @@ export function LineReliefSection() {
                   ["--line-dur" as string]: "400ms",
                 } as CSSProperties
               }
-              className="mt-10 flex w-full max-w-[440px] flex-col items-stretch gap-2 sm:items-start"
+              className="mx-auto mt-10 flex w-full max-w-[440px] flex-col items-center gap-2 lg:mx-0 lg:items-start"
             >
               <PrimaryTrialCta
                 labelKey="marketing.line.cta"

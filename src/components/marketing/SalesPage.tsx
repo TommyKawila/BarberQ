@@ -291,7 +291,7 @@ export function SalesPage() {
           <ul
             id="board"
             data-reveal
-            className="mx-auto mt-10 max-w-xl space-y-3 scroll-mt-[4.5rem] md:mt-12 md:scroll-mt-20"
+            className="mx-auto mt-10 w-fit max-w-xl space-y-3 text-left scroll-mt-[4.5rem] md:mt-12 md:scroll-mt-20"
           >
             {DEMO_FEATURE_KEYS.map((key, i) => {
               const Icon = DEMO_FEATURE_ICONS[i];
@@ -316,7 +316,7 @@ export function SalesPage() {
           <div className="order-2 lg:order-1">
             <PainHammerTitle />
 
-            <ul className="mt-10 lg:mt-10">
+            <ul className="mx-auto mt-10 max-w-xs lg:mx-0 lg:mt-10 lg:max-w-none">
               {PAIN_BULLETS.map((n, i) => (
                 <li
                   key={n}
@@ -448,7 +448,9 @@ export function SalesPage() {
               <h2 className="text-[1.75rem] font-bold text-zinc-50 md:text-3xl">
                 {t("marketing.founder.title")}
               </h2>
-              <p className={`mt-3 ${BODY}`}>{td("marketing.founder.body")}</p>
+              <p className={`mx-auto mt-3 max-w-[34ch] text-left sm:mx-0 sm:max-w-none ${BODY}`}>
+                {td("marketing.founder.body")}
+              </p>
               {process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL ? (
                 <div className="mt-4 flex justify-center sm:justify-start">
                   <LineCta
@@ -475,14 +477,16 @@ export function SalesPage() {
       {/* Pricing — mobile C: single price table; lg+ keeps three-card layout unchanged */}
       <section id="pricing" ref={pricingRef} className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
         <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
-          <div data-reveal>
+          <div data-reveal className="text-center lg:text-left">
             <p className="text-sm font-medium text-amber-400/90">
               {t("marketing.pricing.eyebrow")}
             </p>
             <h2 className="mt-2 text-[1.75rem] font-bold leading-snug text-zinc-50 md:text-3xl">
               {td("marketing.pricing.title")}
             </h2>
-            <p className={`mt-3 max-w-2xl ${BODY}`}>{td("marketing.pricing.support")}</p>
+            <p className={`mx-auto mt-3 max-w-2xl lg:mx-0 ${BODY}`}>
+              {td("marketing.pricing.support")}
+            </p>
           </div>
 
           {/* Mobile: direction C price table */}
@@ -562,7 +566,7 @@ export function SalesPage() {
               ))}
             </ul>
             <div className="mt-5">
-              <p className="mb-3 text-center text-[13px] leading-relaxed text-zinc-400">
+              <p className="mb-3 text-left text-[13px] leading-relaxed text-zinc-400">
                 {t("marketing.how.micro")}
               </p>
               <PrimaryTrialCta
