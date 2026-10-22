@@ -1,9 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { MarketingPhotoSlot } from "@/components/marketing/MarketingPhotoSlot";
-import { marketingPhotoSlots } from "@/lib/marketing/photo-slots";
 
 const MAX_VISIBLE = 3;
 /** Rapid cadence so the storm feels annoying / overwhelming. */
@@ -54,7 +51,10 @@ function bubbleOpacity(index: number, total: number): number {
   return 0.72;
 }
 
-/** Option C — photo with 99+ badge + cycling LINE notification storm. */
+/**
+ * Pain visual — LINE notification storm only (no AI/stock photo).
+ * Real product metaphor: chat piling up while you cut hair.
+ */
 export function PainStormVisual({
   messages,
   times,
@@ -68,7 +68,6 @@ export function PainStormVisual({
   alt: string;
   className?: string;
 }) {
-  const slot = marketingPhotoSlots.painBarber;
   const rootRef = useRef<HTMLDivElement | null>(null);
   const nextIdxRef = useRef(0);
   const idRef = useRef(0);
@@ -136,47 +135,17 @@ export function PainStormVisual({
   return (
     <div
       ref={rootRef}
-      aria-hidden="true"
+      aria-label={alt}
       data-pain-storm
       className={`relative w-full max-w-[420px] justify-self-center lg:max-w-none lg:justify-self-end ${className}`}
     >
-      {/*
-        Mobile: 4:5 ≈ source → full frame (clippers+customer left visible).
-        Desktop 5:6: object-cover + top → crop top/bottom only, keep full width.
-      */}
-      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[28px] bg-zinc-900 lg:aspect-[5/6]">
-        {slot.src ? (
-          <Image
-            src={slot.src}
-            alt={alt}
-            fill
-            sizes="(min-width: 1280px) 44vw, (min-width: 1024px) 420px, 90vw"
-            className="object-cover object-[left_top] lg:object-[center_top]"
-            priority
-          />
-        ) : (
-          <MarketingPhotoSlot
-            slot="painBarber"
-            alt={alt}
-            fill
-            sizes="(min-width: 1280px) 44vw, 90vw"
-            objectPosition="left top"
-            className="h-full w-full rounded-none border-0"
-          />
-        )}
-
-        {/* Mobile gradient (v2): 170px transparent → 75% at 45% → #09090b */}
+      <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[28px] border border-zinc-800 bg-gradient-to-b from-zinc-900 via-zinc-950 to-zinc-950 lg:aspect-[5/6]">
         <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[170px] lg:hidden"
+          className="pointer-events-none absolute inset-0 opacity-40"
           style={{
             background:
-              "linear-gradient(to bottom, transparent 0%, rgba(9,9,11,0.75) 45%, #09090b 100%)",
+              "radial-gradient(ellipse 70% 45% at 50% 20%, rgba(251,191,36,0.08) 0%, transparent 65%)",
           }}
-          aria-hidden
-        />
-        {/* Desktop: bottom fade — notifications sit on apron only */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[38%] bg-gradient-to-t from-zinc-950 via-zinc-950/85 to-transparent lg:block"
           aria-hidden
         />
 
@@ -189,10 +158,6 @@ export function PainStormVisual({
           {unreadLabel}
         </span>
 
-        {/*
-          Shared storm stack — mobile left, desktop right.
-          Max 3 visible; newest at bottom with springy enter.
-        */}
         <div
           className="absolute bottom-4 left-3 z-10 flex w-[min(100%-1.5rem,20.5rem)] flex-col gap-2 lg:left-auto lg:right-5"
           aria-hidden

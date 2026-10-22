@@ -8,6 +8,7 @@ import {
   ChevronRight,
   QrCode,
   Users,
+  XCircle,
 } from "lucide-react";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { AttributionCapture } from "@/components/marketing/AttributionCapture";
@@ -29,15 +30,17 @@ import {
   fillOfferCopy,
   marketingOffer,
   tierBarberRangeLabel,
-  tierPerDayHint,
   tierPricePerMonthLabel,
 } from "@/lib/marketing/offer";
-const DEMO_FEATURE_ICONS = [Users, QrCode, Bell] as const;
+
+const DEMO_FEATURE_ICONS = [Users, QrCode, Bell, XCircle] as const;
 const DEMO_FEATURE_KEYS = [
   "marketing.try.featureWalkin",
   "marketing.try.featureQr",
   "marketing.try.featurePush",
+  "marketing.try.featureCancel",
 ] as const;
+/** FAQ ordered by real objections (pricing → setup → LINE → app → message cost → …). */
 const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5, 6] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
@@ -49,7 +52,6 @@ const SHOW_TESTIMONIALS_PLACEHOLDER = false;
 /**
  * Thai Pain copy: break only between phrase spans so compounds
  * (มือถือ, คิวเดียวกัน, …) never wrap mid-word. EN stays plain.
- * Spans are inert on desktop widths (phrases already fit).
  */
 const PAIN_TH_PHRASES: Partial<Record<MessageKey, readonly string[]>> = {
   "marketing.pain.bullet1": ["ตอบแชทระหว่างตัดผม", "มือไม่ว่างก็ต้องหยิบมือถือ"],
@@ -131,31 +133,6 @@ function FinalMicroLines({ text }: { text: string }) {
   );
 }
 
-function ContactCta({ label, className }: { label: string; className?: string }) {
-  const supportUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL;
-  if (!supportUrl) {
-    return (
-      <PrimaryTrialCta
-        labelKey="marketing.pricing.cta"
-        placement="pricing"
-        fullWidth
-        className={className}
-      />
-    );
-  }
-  return (
-    <a
-      href={supportUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      onClick={() => trackMarketingEvent("support_line_click", { cta_location: "pricing" })}
-      className={`inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-amber-500/50 bg-transparent px-6 py-3 font-semibold text-amber-300 hover:bg-amber-500/10 ${className ?? ""}`}
-    >
-      {label}
-    </a>
-  );
-}
-
 export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
   const { t, locale } = useI18n();
   const td = (key: MessageKey) => fillOfferCopy(t(key));
@@ -175,12 +152,11 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
   }, []);
 
   useEffect(() => {
-    // Hide sticky while hero CTA, pricing CTA, or other in-page CTAs / hide targets are on screen.
+    // Hide sticky while any in-page CTA / hide target is on screen.
     const hideEls = [
       ...document.querySelectorAll<HTMLElement>("[data-inpage-trial-cta]"),
       ...document.querySelectorAll<HTMLElement>("[data-hide-sticky]"),
     ];
-    // Fallback: hero wrappers + pricing section if attribute not yet on a wrapped block
     for (const el of [heroCtaRef.current, heroCtaDesktopRef.current, pricingRef.current]) {
       if (el && !hideEls.includes(el)) hideEls.push(el);
     }
@@ -204,7 +180,6 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
       { threshold: 0, rootMargin: "0px" },
     );
     for (const el of hideEls) obs.observe(el);
-    // Observer delivers an initial callback with current intersection — no eager sync.
 
     return () => obs.disconnect();
   }, []);
@@ -257,19 +232,72 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
       <ClarityMarketingScript />
       <LiffCallbackRedirect />
       <AttributionCapture />
+
+      {/* 1) Hero */}
       <SalesHero
         heroCtaRef={heroCtaRef}
         heroCtaDesktopRef={heroCtaDesktopRef}
         initialScene={heroScene}
       />
 
-      {/* Try booking — client-side demo right under hero; no DB / API */}
+      {/* 2) Problem ≤1 screen */}
+      <section className="overflow-x-clip bg-zinc-950">
+        <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-5 py-8 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:py-12 xl:px-[120px]">
+          <div className="order-2 lg:order-1">
+            <PainHammerTitle />
+
+            <ul className="mx-auto mt-6 max-w-xs lg:mx-0 lg:mt-8 lg:max-w-none">
+              {PAIN_BULLETS.map((n, i) => (
+                <li
+                  key={n}
+                  data-reveal
+                  style={{ ["--reveal-delay" as string]: i * 70 }}
+                  className={`flex items-start gap-3.5 py-3 ${
+                    i < PAIN_BULLETS.length - 1 ? "border-b border-zinc-800" : ""
+                  }`}
+                >
+                  <span
+                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] bg-amber-300 text-zinc-950"
+                    aria-hidden
+                  >
+                    <Check size={14} strokeWidth={3} />
+                  </span>
+                  <p className="text-[1.05rem] font-normal leading-[1.55] text-zinc-300 sm:text-lg lg:text-[20px] lg:leading-[1.5]">
+                    <PainCopy messageKey={`marketing.pain.bullet${n}` as MessageKey} />
+                  </p>
+                </li>
+              ))}
+            </ul>
+
+            <div data-reveal style={{ ["--reveal-delay" as string]: 120 }} className="mt-6">
+              <div className="h-px w-12 bg-amber-300" aria-hidden />
+              <p className="mt-4 text-xl font-extrabold leading-[1.35] tracking-tight text-amber-300 sm:text-2xl lg:text-[28px]">
+                <PainCopy messageKey="marketing.pain.punchline" />
+              </p>
+              <p className="mt-2 max-w-md text-base leading-[1.5] text-zinc-300 lg:text-lg">
+                <PainCopy messageKey="marketing.pain.close" />
+              </p>
+            </div>
+          </div>
+
+          <div className="order-1 lg:order-2">
+            <PainStormVisual
+              messages={painMessages}
+              times={painTimes}
+              unreadLabel={t("marketing.pain.unreadBadge")}
+              alt={t("marketing.pain.photoAlt")}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* 3) Demo — tabs ลูกค้า|ร้าน (queue board in ร้าน) */}
       <section
         id="try-booking"
         data-hide-sticky
         className="scroll-mt-[4.5rem] overflow-x-clip bg-gradient-to-b from-zinc-950 via-zinc-900/30 to-zinc-950 md:scroll-mt-20"
       >
-        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-44 md:px-6 md:py-14 lg:pb-14">
+        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-16 md:px-6 md:py-14">
           <header data-reveal className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-medium tracking-wide text-amber-300/80">
               {t("marketing.try.eyebrow")}
@@ -282,14 +310,13 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
               {t("marketing.try.disclaimer")}
             </p>
           </header>
-          <div data-reveal className="mt-8 md:mt-12">
+          <div data-reveal className="mt-8 md:mt-10">
             <TryBookingDemo />
           </div>
-          {/* Walk-in / QR / Web Push — short list under demo (replaces long board/owner sections) */}
+          {/* Shop-side capabilities under demo (board is inside ร้าน tab) */}
           <ul
-            id="board"
             data-reveal
-            className="mx-auto mt-10 w-fit max-w-xl space-y-3 text-left scroll-mt-[4.5rem] md:mt-12 md:scroll-mt-20"
+            className="mx-auto mt-8 w-fit max-w-xl space-y-2.5 text-left md:mt-10"
           >
             {DEMO_FEATURE_KEYS.map((key, i) => {
               const Icon = DEMO_FEATURE_ICONS[i];
@@ -307,66 +334,10 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
         </div>
       </section>
 
-
-      {/* Pain — Option C: checklist (F-pattern) + notification storm over photo */}
-      <section className="overflow-x-clip bg-zinc-950">
-        <div className="mx-auto grid max-w-[1440px] items-center gap-10 px-5 py-10 sm:px-8 md:px-16 lg:grid-cols-[50fr_44fr] lg:gap-x-[6fr] lg:px-20 lg:pb-16 lg:pt-[112px] xl:px-[120px]">
-          <div className="order-2 lg:order-1">
-            <PainHammerTitle />
-
-            <ul className="mx-auto mt-10 max-w-xs lg:mx-0 lg:mt-10 lg:max-w-none">
-              {PAIN_BULLETS.map((n, i) => (
-                <li
-                  key={n}
-                  data-reveal
-                  style={{ ["--reveal-delay" as string]: i * 70 }}
-                  className={`flex items-start gap-3.5 py-[18px] ${
-                    i < PAIN_BULLETS.length - 1 ? "border-b border-zinc-800" : ""
-                  }`}
-                >
-                  <span
-                    className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-[6px] bg-amber-300 text-zinc-950"
-                    aria-hidden
-                  >
-                    <Check size={14} strokeWidth={3} />
-                  </span>
-                  <p className="text-[1.05rem] font-normal leading-[1.65] text-zinc-300 sm:text-lg lg:text-[22px] lg:leading-[1.6]">
-                    <PainCopy messageKey={`marketing.pain.bullet${n}` as MessageKey} />
-                  </p>
-                </li>
-              ))}
-            </ul>
-
-            <div data-reveal style={{ ["--reveal-delay" as string]: 120 }} className="mt-10">
-              <div className="h-px w-12 bg-amber-300" aria-hidden />
-              <p className="mt-5 text-xl font-extrabold leading-[1.35] tracking-tight text-amber-300 sm:text-2xl lg:text-[32px]">
-                <PainCopy messageKey="marketing.pain.punchline" />
-              </p>
-              <p className="mt-3 max-w-md text-base leading-[1.5] text-zinc-300 lg:text-xl">
-                <PainCopy messageKey="marketing.pain.close" />
-              </p>
-            </div>
-          </div>
-
-          <div className="order-1 lg:order-2">
-            <PainStormVisual
-              messages={painMessages}
-              times={painTimes}
-              unreadLabel={t("marketing.pain.unreadBadge")}
-              alt={t("marketing.pain.photoAlt")}
-            />
-          </div>
-        </div>
-        {/* Desktop-only hand-off fade — mobile kept a blank ~200px band (fade + py stack) */}
-        <div
-          className="pointer-events-none hidden h-[120px] bg-gradient-to-b from-transparent to-zinc-950 lg:block"
-          aria-hidden
-        />
-      </section>
-
+      {/* 4) What customers get in LINE */}
       <LineReliefSection />
 
-      {/* How it works — compact 3-item text strip (no phone images) */}
+      {/* 5) Start in 3 steps — owner view */}
       <section
         id="how-it-works"
         data-hide-sticky
@@ -379,12 +350,12 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
         </div>
       </section>
 
-      {/* Founder — mobile B: centered stack, ~176px photo, amber eyebrow; desktop (sm+) unchanged */}
+      {/* 6) Tommy + transparency / customer data */}
       <section id="founder" className="scroll-mt-20 overflow-x-clip">
         <div
           className={`mx-auto max-w-[800px] px-4 pt-10 md:px-6 md:py-14 ${
             process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL
-              ? "pb-36 md:pb-14"
+              ? "pb-16 md:pb-14"
               : "pb-10"
           }`}
         >
@@ -432,23 +403,22 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
         </section>
       ) : null}
 
-      {/* Pricing — mobile C: single price table; lg+ keeps three-card layout unchanged */}
+      {/* 7) Pricing — one table all breakpoints */}
       <section id="pricing" ref={pricingRef} className="scroll-mt-20 overflow-x-clip bg-zinc-900/30">
-        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
-          <div data-reveal className="text-center lg:text-left">
+        <div className="mx-auto max-w-[720px] px-4 pt-10 pb-16 md:px-6 md:py-14">
+          <div data-reveal className="text-center">
             <p className="text-sm font-medium text-amber-400/90">
               {t("marketing.pricing.eyebrow")}
             </p>
             <h2 className="mt-2 text-[1.75rem] font-bold leading-snug text-zinc-50 md:text-3xl">
               {td("marketing.pricing.title")}
             </h2>
-            <p className={`mx-auto mt-3 max-w-2xl lg:mx-0 ${BODY}`}>
-              {td("marketing.pricing.support")}
+            <p className={`mx-auto mt-3 max-w-2xl ${BODY}`}>
+              {t("marketing.pricing.tierSameFeatures")}
             </p>
           </div>
 
-          {/* Mobile: direction C price table */}
-          <div data-reveal className="mt-8 lg:hidden">
+          <div data-reveal className="mt-8">
             <div className="overflow-hidden rounded-2xl border border-zinc-700">
               {marketingOffer.tiers.map((tier) => {
                 const isStarter = tier.id === "tier1";
@@ -512,10 +482,10 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
               )}
             </div>
 
-            <p className="mt-4 text-sm leading-snug text-zinc-400">
-              {t("marketing.pricing.tierSameFeatures")}
+            <p className="mt-4 text-center text-sm leading-snug text-zinc-400">
+              {t("marketing.pricing.riskLine")}
             </p>
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-4 space-y-2">
               {PRICING_INCLUDES.map((n) => (
                 <li key={n} className={`flex items-start gap-2 ${BODY}`}>
                   <Check size={16} className="mt-1 shrink-0 text-amber-400" />
@@ -523,99 +493,21 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
                 </li>
               ))}
             </ul>
+            <p className="mt-3 text-center text-[13px] text-zinc-500">
+              {td("marketing.pricing.micro")}
+            </p>
             <div className="mt-5">
-              <p className="mb-3 text-left text-[13px] leading-relaxed text-zinc-400">
-                {t("marketing.how.micro")}
-              </p>
               <PrimaryTrialCta
                 labelKey="marketing.pricing.cta"
                 placement="pricing"
                 fullWidth
+                showAfterClick
+                afterClickClassName="text-center"
               />
-              <p className="mt-2 text-center text-[13px] text-zinc-500">
-                {td("marketing.pricing.micro")}
-              </p>
             </div>
           </div>
 
-          {/* Desktop (lg+): three-card layout unchanged */}
-          <div className="mt-8 hidden gap-4 lg:grid lg:grid-cols-3">
-            {marketingOffer.tiers.map((tier, i) => {
-              const perDay = tierPerDayHint(tier, locale);
-              const isStarter = tier.id === "tier1";
-              return (
-                <div
-                  key={tier.id}
-                  data-reveal
-                  style={{ ["--reveal-delay" as string]: i * 90 }}
-                  className={
-                    isStarter
-                      ? "flex flex-col rounded-2xl border-2 border-amber-400/70 bg-zinc-950/60 p-6 md:p-7"
-                      : "flex flex-col rounded-2xl border border-zinc-700 bg-zinc-950/40 p-6 md:p-7"
-                  }
-                >
-                  {isStarter ? (
-                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-300">
-                      {t("marketing.pricing.tier1Badge")}
-                    </p>
-                  ) : null}
-                  <p className="text-sm font-medium text-amber-400/90">
-                    {tierBarberRangeLabel(tier, locale)}
-                  </p>
-                  <p className="mt-2 text-3xl font-bold text-amber-400 md:text-4xl">
-                    {tierPricePerMonthLabel(tier, locale)}
-                  </p>
-                  {perDay ? (
-                    <p className="mt-1 text-sm text-zinc-400">{perDay}</p>
-                  ) : null}
-                  <p className="mt-2 text-sm text-zinc-400">
-                    {t("marketing.pricing.tierSameFeatures")}
-                  </p>
-                  <ul className="mt-5 space-y-2">
-                    {PRICING_INCLUDES.map((n) => (
-                      <li key={n} className={`flex items-start gap-2 ${BODY}`}>
-                        <Check size={16} className="mt-1 shrink-0 text-amber-400" />
-                        {t(`marketing.pricing.include${n}` as MessageKey)}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mt-auto pt-6">
-                    {i === 0 ? (
-                      <p className="mb-3 text-center text-[13px] leading-relaxed text-zinc-400 lg:text-left">
-                        {t("marketing.how.micro")}
-                      </p>
-                    ) : null}
-                    <PrimaryTrialCta
-                      labelKey="marketing.pricing.cta"
-                      placement="pricing"
-                      fullWidth
-                    />
-                    <p className="mt-2 text-center text-[13px] text-zinc-500">
-                      {td("marketing.pricing.micro")}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          <div
-            data-reveal
-            className="mt-4 hidden items-center justify-between gap-4 rounded-2xl border border-zinc-700 bg-zinc-950/40 p-5 md:p-6 lg:flex"
-          >
-            <div>
-              <p className="text-sm font-medium text-zinc-400">
-                {t("marketing.pricing.contactRange")}
-              </p>
-              <p className="mt-1 text-xl font-bold text-zinc-100">
-                {t("marketing.pricing.contactTitle")}
-              </p>
-              <p className={`mt-1 ${BODY}`}>{t("marketing.pricing.contactDesc")}</p>
-            </div>
-            <ContactCta label={t("marketing.pricing.contactCta")} className="sm:w-auto sm:min-w-[180px]" />
-          </div>
-
-          <div data-reveal="soft" className="mt-8 grid gap-6 md:grid-cols-2">
+          <div data-reveal="soft" className="mt-8 grid gap-6 sm:grid-cols-2">
             <div>
               <h3 className="text-sm font-semibold text-zinc-200">
                 {t("marketing.pricing.requiresTitle")}
@@ -630,7 +522,6 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
             </div>
           </div>
 
-          {/* Trial / risk-reversal box */}
           <div
             data-reveal
             className="mt-10 overflow-visible rounded-2xl border border-amber-500/30 bg-amber-400/5 p-5 md:p-7"
@@ -651,9 +542,9 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
         </div>
       </section>
 
-      {/* FAQ — mobile A: compact accordion + sticky clearance; desktop spacing restored at md+ */}
+      {/* 8) FAQ — objections order; message cost / 300 quota here */}
       <section id="faq" className="scroll-mt-20 overflow-x-clip">
-        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-36 md:px-6 md:py-14 lg:pb-14">
+        <div className="mx-auto max-w-[1280px] px-4 pt-10 pb-16 md:px-6 md:py-14">
           <div className="mx-auto max-w-[800px]">
             <div data-reveal>
               <p className="text-sm font-medium text-amber-400/90">{t("marketing.faq.eyebrow")}</p>
@@ -722,7 +613,7 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
         </div>
       </section>
 
-      {/* Final CTA — mobile B: shorter headline/sub, dual CTAs, full-tier micro */}
+      {/* 9) Final CTA + what happens next */}
       <section
         ref={finalCtaRef}
         className="overflow-x-clip border-t border-amber-500/20 bg-zinc-900/60"
@@ -740,17 +631,23 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
               labelKey="marketing.final.cta"
               placement="final"
               fullWidth
+              showAfterClick
+              afterClickClassName="text-center"
               riskClassName="mt-3 justify-center text-[13px] sm:text-sm"
             />
             <LineCta label={t("marketing.final.lineCta")} className="w-full" placement="final" />
           </div>
+          <p className="mx-auto mt-4 max-w-md text-center text-[13px] leading-snug text-zinc-400 md:text-sm">
+            {t("marketing.final.next")}
+          </p>
           <FinalMicroLines text={td("marketing.final.micro")} />
         </div>
       </section>
 
+      {/* 10) Footer with privacy/terms */}
       <MarketingFooter />
 
-      {/* Sticky mobile CTA — soft gradient scrim (no hard top band); fades out when any in-page CTA is visible */}
+      {/* Sticky mobile CTA — hides when another CTA is on screen */}
       <div
         className={`fixed inset-x-0 bottom-0 z-40 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-14 transition-[opacity,transform] duration-300 ease-out md:hidden ${
           showSticky
@@ -768,7 +665,7 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
           placement="sticky"
           eventName="sticky_cta_click"
           fullWidth
-          riskClassName="mt-2 justify-center text-[13px] sm:text-sm"
+          showRisk={false}
         />
       </div>
     </div>

@@ -11,16 +11,26 @@ import type { MarketingEventName } from "@/lib/marketing/events";
 export const PRIMARY_TRIAL_CTA_CLASS =
   "cta-pulse inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-400 px-8 py-3 text-base font-bold text-zinc-950 shadow-[0_4px_14px_rgba(251,191,36,0.28)] ring-1 ring-amber-300/70 hover:bg-amber-300 sm:min-h-12 md:min-h-14 md:text-lg";
 
-const RISK_ITEMS = ["marketing.risk.noCard", "marketing.risk.cancelAnytime"] as const;
+const RISK_ITEMS = [
+  "marketing.risk.noCard",
+  "marketing.risk.noAutoCharge",
+  "marketing.risk.cancelAnytime",
+] as const;
 
 /** Visible risk-reversal under primary CTAs (verified claims only). */
-export function RiskReversalRow({ className = "" }: { className?: string }) {
+export function RiskReversalRow({
+  className = "",
+  items = RISK_ITEMS,
+}: {
+  className?: string;
+  items?: readonly MessageKey[];
+}) {
   const { t } = useI18n();
   return (
     <ul
       className={`mt-4 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm font-medium leading-snug text-zinc-100 sm:justify-start md:text-[15px] ${className}`}
     >
-      {RISK_ITEMS.map((key) => (
+      {items.map((key) => (
         <li key={key} className="inline-flex items-center gap-1.5">
           <Check
             size={16}
@@ -28,7 +38,7 @@ export function RiskReversalRow({ className = "" }: { className?: string }) {
             strokeWidth={2.75}
             aria-hidden
           />
-          <span>{t(key as MessageKey)}</span>
+          <span>{t(key)}</span>
         </li>
       ))}
     </ul>
@@ -43,6 +53,8 @@ export function PrimaryTrialCta({
   eventName = "sales_cta_click",
   showRisk = true,
   riskClassName,
+  showAfterClick = false,
+  afterClickClassName,
 }: {
   labelKey: MessageKey;
   placement: string;
@@ -51,6 +63,9 @@ export function PrimaryTrialCta({
   eventName?: Extract<MarketingEventName, "sales_cta_click" | "sticky_cta_click">;
   showRisk?: boolean;
   riskClassName?: string;
+  /** One line on what happens after clicking (trial form → Tommy LINE). */
+  showAfterClick?: boolean;
+  afterClickClassName?: string;
 }) {
   const { t } = useI18n();
   const label = fillOfferCopy(t(labelKey));
@@ -67,6 +82,13 @@ export function PrimaryTrialCta({
       >
         {label}
       </MarketingTrialLink>
+      {showAfterClick ? (
+        <p
+          className={`mt-2 text-center text-[13px] leading-snug text-zinc-400 sm:text-left ${afterClickClassName ?? ""}`}
+        >
+          {t("marketing.cta.afterClick")}
+        </p>
+      ) : null}
       {showRisk ? <RiskReversalRow className={riskClassName} /> : null}
     </div>
   );
