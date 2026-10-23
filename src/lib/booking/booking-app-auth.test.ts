@@ -88,8 +88,7 @@ describe("BookingApp auth gate wiring", () => {
       resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
       "utf8",
     );
-    assert.match(src, /customerLiffInit/);
-    assert.match(src, /initCustomerLiff/);
+    assert.match(src, /ensureLiffInit/);
     assert.match(src, /resolveCustomerSession/);
     // On init failure, still try an existing LIFF session before showing login.
     assert.match(src, /already initialized|resolveCustomerSession/);

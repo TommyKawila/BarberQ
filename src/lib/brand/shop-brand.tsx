@@ -1,6 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  fetchShopSettingsCached,
+  type PublicShopSettings,
+} from "@/lib/shop/shop-settings-client";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 
 interface ShopBrandContextValue {
@@ -18,10 +22,36 @@ interface ShopBrandContextValue {
   setShopName: (value: string | null) => void;
   setLineUrl: (value: string | null) => void;
   setPhone: (value: string | null) => void;
-  refresh: () => Promise<void>;
+  /** Soft refresh (uses TTL cache). Pass force to bypass TTL. */
+  refresh: (opts?: { force?: boolean }) => Promise<void>;
 }
 
 const ShopBrandContext = createContext<ShopBrandContextValue | null>(null);
+
+function applySettings(
+  json: PublicShopSettings,
+  setters: {
+    setLogoDataUrl: (v: string | null) => void;
+    setCoverImageUrl: (v: string | null) => void;
+    setShopName: (v: string | null) => void;
+    setLineUrl: (v: string | null) => void;
+    setPhone: (v: string | null) => void;
+    setHours: (v: ShopHours) => void;
+    setRemindersEnabled: (v: boolean) => void;
+    setReminderLeadMinutes: (v: number) => void;
+  },
+) {
+  setters.setLogoDataUrl(json.logoDataUrl ?? null);
+  setters.setCoverImageUrl(json.coverImageUrl ?? null);
+  setters.setShopName(json.shopName ?? null);
+  setters.setLineUrl(json.lineUrl ?? null);
+  setters.setPhone(json.phone ?? null);
+  setters.setHours(normalizeShopHours(json.hours));
+  setters.setRemindersEnabled(Boolean(json.remindersEnabled));
+  setters.setReminderLeadMinutes(
+    typeof json.reminderLeadMinutes === "number" ? json.reminderLeadMinutes : 120,
+  );
+}
 
 export function ShopBrandProvider({
   children,
@@ -40,45 +70,35 @@ export function ShopBrandProvider({
   const [reminderLeadMinutes, setReminderLeadMinutes] = useState(120);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    const loadOnce = async () => {
-      const res = await fetch(`/api/${shopSlug}/settings`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`settings_${res.status}`);
-      return (await res.json()) as {
-        logoDataUrl?: string | null;
-        coverImageUrl?: string | null;
-        shopName?: string | null;
-        lineUrl?: string | null;
-        phone?: string | null;
-        hours?: ShopHours | null;
-        remindersEnabled?: boolean;
-        reminderLeadMinutes?: number;
+  const refresh = useCallback(
+    async (opts?: { force?: boolean }) => {
+      const setters = {
+        setLogoDataUrl,
+        setCoverImageUrl,
+        setShopName,
+        setLineUrl,
+        setPhone,
+        setHours,
+        setRemindersEnabled,
+        setReminderLeadMinutes,
       };
-    };
-    try {
-      let json: Awaited<ReturnType<typeof loadOnce>>;
       try {
-        json = await loadOnce();
+        let json: PublicShopSettings;
+        try {
+          json = await fetchShopSettingsCached(shopSlug, opts);
+        } catch {
+          // Cold start / transient failure — one forced retry.
+          json = await fetchShopSettingsCached(shopSlug, { force: true });
+        }
+        applySettings(json, setters);
       } catch {
-        // Cold start / transient failure — one retry so LIFF doesn't stick on defaults.
-        json = await loadOnce();
+        /* keep prior / defaults */
+      } finally {
+        setLoading(false);
       }
-      setLogoDataUrl(json.logoDataUrl ?? null);
-      setCoverImageUrl(json.coverImageUrl ?? null);
-      setShopName(json.shopName ?? null);
-      setLineUrl(json.lineUrl ?? null);
-      setPhone(json.phone ?? null);
-      setHours(normalizeShopHours(json.hours));
-      setRemindersEnabled(Boolean(json.remindersEnabled));
-      setReminderLeadMinutes(
-        typeof json.reminderLeadMinutes === "number" ? json.reminderLeadMinutes : 120,
-      );
-    } catch {
-      /* keep prior / defaults */
-    } finally {
-      setLoading(false);
-    }
-  }, [shopSlug]);
+    },
+    [shopSlug],
+  );
 
   useEffect(() => {
     let cancelled = false;

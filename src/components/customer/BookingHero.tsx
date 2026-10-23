@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { bookingShopTitle } from "@/lib/booking/customer-flow";
 
@@ -11,20 +12,28 @@ interface BookingHeroProps {
   prototypeMode?: boolean;
 }
 
+function isLocalOrDataCover(src: string): boolean {
+  return src.startsWith("/") || src.startsWith("data:");
+}
+
 export function BookingHero({ shopName, coverImageUrl, prototypeMode }: BookingHeroProps) {
   const { t } = useI18n();
   const resolvedShopName = bookingShopTitle(shopName);
   const displayName = resolvedShopName ?? t("booking.title");
   const coverSrc = coverImageUrl ?? DEFAULT_COVER;
+  const unoptimized = isLocalOrDataCover(coverSrc);
 
   return (
     <header className="relative overflow-hidden rounded-2xl">
       <div className="relative h-40 w-full md:h-60">
-        {/* eslint-disable-next-line @next/next/no-img-element -- shop cover from storage or brand default */}
-        <img
+        <Image
           src={coverSrc}
           alt=""
-          className="absolute inset-0 h-full w-full object-cover object-center"
+          fill
+          priority
+          sizes="(max-width: 768px) 100vw, 640px"
+          unoptimized={unoptimized}
+          className="object-cover object-center"
         />
         <div
           className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/55 to-black/25"
