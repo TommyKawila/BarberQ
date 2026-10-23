@@ -6,13 +6,14 @@ import {
   isShopOperatorRole,
 } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
+import { overTierWarningAfterBookableOn } from "@/lib/billing/over-tier-api";
 import { getStore } from "@/lib/data";
 import {
   normalizeOffDays,
   validateOffDays,
   validateSlotDuration,
 } from "@/lib/schedule/validation";
-import { BookingError } from "@/lib/services/booking-service";
+import { BookingError, listBarbers } from "@/lib/services/booking-service";
 
 export const runtime = "nodejs";
 
@@ -91,7 +92,16 @@ export async function PATCH(
       throw new BookingError("INVALID_NAME", "Barber name is required", 400);
     }
 
-    const barber = await getStore().updateBarber(id, {
+    const store = getStore();
+    const shopId = barberRecord.shop_id;
+    const turningBookableOn =
+      isOperator &&
+      body.isBookable === true &&
+      barberRecord.is_bookable === false;
+    const barbersBefore =
+      turningBookableOn && shopId ? await listBarbers(shopId) : [];
+
+    const barber = await store.updateBarber(id, {
       offDays: body.offDays !== undefined ? normalizeOffDays(body.offDays) : undefined,
       slotDuration: body.slotDuration,
       name: isOperator ? body.name?.trim() : undefined,
@@ -99,7 +109,23 @@ export async function PATCH(
       isBookable: isOperator ? body.isBookable : undefined,
       showProfileInBooking: isOperator ? body.showProfileInBooking : undefined,
     });
-    return NextResponse.json({ barber });
+
+    let overTierWarning = null;
+    if (turningBookableOn && shopId) {
+      const shop = (await store.listShops()).find((s) => s.id === shopId);
+      if (shop) {
+        overTierWarning = overTierWarningAfterBookableOn({
+          shop,
+          barbersBefore,
+          updated: barber,
+        });
+      }
+    }
+
+    return NextResponse.json({
+      barber,
+      ...(overTierWarning ? { overTierWarning } : {}),
+    });
   } catch (error) {
     return jsonError(error);
   }

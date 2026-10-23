@@ -28,6 +28,9 @@ export interface Barber {
   show_profile_in_booking?: boolean;
 }
 
+/** Soft seat tier on shops.barber_tier (ClipperQ billing). */
+export type BarberTierId = "tier1" | "tier2" | "tier3" | "contact";
+
 export interface Shop {
   id: string;
   name: string;
@@ -36,6 +39,11 @@ export interface Shop {
   subscribed_until: string | null;
   /** Marketing/demo tenant — no LINE pushes, not billed. */
   is_demo?: boolean;
+  /**
+   * Soft seat tier: only bookable active barbers count.
+   * Owner/manager seat is free unless is_bookable. Never blocks adds.
+   */
+  barber_tier?: BarberTierId;
   invite_token?: string | null;
   invite_expires_at?: string | null;
   created_at: string;

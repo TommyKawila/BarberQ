@@ -2,12 +2,17 @@ import type {
   Appointment,
   AppointmentSource,
   Barber,
+  BarberTierId,
   BusyInterval,
   Shop,
   ShopService,
   TimeBlock,
 } from "@/types/booking";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
+import type {
+  CreateShopCancelFeedbackInput,
+  ShopCancelFeedback,
+} from "@/lib/billing/cancel-feedback";
 
 export type StoreErrorCode =
   | "BARBER_NOT_FOUND"
@@ -359,6 +364,8 @@ export interface BookingStore {
   listShops(): Promise<Shop[]>;
   listShopOwners(): Promise<ShopOwnerSummary[]>;
   createShop(input: CreateShopInput): Promise<Shop>;
+  /** Superadmin soft seat-tier update (never blocks shop usage). */
+  updateShopBarberTier(shopId: string, tier: BarberTierId): Promise<Shop>;
   getShopInvitePreview(token: string): Promise<ShopInvitePreview | null>;
   regenerateOwnerInvite(shopId: string): Promise<Shop>;
   claimOwnerInvite(input: ClaimOwnerInviteInput): Promise<Shop>;
@@ -411,4 +418,8 @@ export interface BookingStore {
   ): Promise<TrialLead>;
   listTrialLeadNotes(leadId: string): Promise<TrialLeadNote[]>;
   createTrialLeadNote(leadId: string, body: string): Promise<TrialLeadNote>;
+  createShopCancelFeedback(
+    input: CreateShopCancelFeedbackInput,
+  ): Promise<ShopCancelFeedback>;
+  listShopCancelFeedback(): Promise<ShopCancelFeedback[]>;
 }

@@ -24,6 +24,12 @@ describe("team queue status UX", () => {
     assert.equal(dictionary.th[getQueueStatusLabelKey(false)], "ปิดรับคิว");
   });
 
+  it("owner bookable uses รับคิวด้วย label", () => {
+    assert.equal(getQueueStatusLabelKey(true, "owner"), "admin.ownerAcceptingOn");
+    assert.equal(dictionary.th[getQueueStatusLabelKey(true, "owner")], "รับคิวด้วย");
+    assert.equal(getQueueStatusLabelKey(false, "owner"), "admin.ownerAcceptingOff");
+  });
+
   it("optimistic apply flips immediately", () => {
     assert.equal(applyOptimisticBookable(true), false);
     assert.equal(applyOptimisticBookable(false), true);

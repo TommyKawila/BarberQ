@@ -33,7 +33,13 @@ export function tierBarberRangeLabel(
   locale: "th" | "en",
 ): string {
   if (locale === "th") {
+    if (tier.id === "tier1") {
+      return "1–2 ช่าง + เจ้าของ/ผู้จัดการ 1 คน";
+    }
     return `${tier.minBarbers}–${tier.maxBarbers} ช่าง`;
+  }
+  if (tier.id === "tier1") {
+    return "1–2 barbers + 1 owner/manager";
   }
   return `${tier.minBarbers}–${tier.maxBarbers} barbers`;
 }

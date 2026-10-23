@@ -4,6 +4,7 @@
  * (e.g. https://…/barberqpilottest + liff.line.me/{id}/bookings).
  */
 
+/** Top-level app routes that must never be treated as a shop slug (or last-shop cookie). */
 const RESERVED_FIRST_SEGMENTS = new Set([
   "admin",
   "bookings",
@@ -18,9 +19,17 @@ const RESERVED_FIRST_SEGMENTS = new Set([
   "c",
   "demo",
   "pricing",
+  "terms",
+  "privacy",
+  "preview",
+  "qa",
   "_next",
   "favicon.ico",
 ]);
+
+export function isReservedShopPathSegment(seg: string): boolean {
+  return RESERVED_FIRST_SEGMENTS.has(seg);
+}
 
 /** Relative liff.state paths that nest under the LIFF endpoint shop. */
 const SHOP_SCOPED_RELATIVE = new Set(["admin", "bookings", "q"]);

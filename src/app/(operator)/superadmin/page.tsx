@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
@@ -11,24 +11,71 @@ import {
 } from "@/lib/superadmin/operator-session";
 import type { Shop } from "@/types/booking";
 
+type SuperadminShop = Shop & {
+  overTier?: boolean;
+  seatBookableCount?: number;
+  seatFlags?: string[];
+  recommendedTier?: string;
+  recommendedTierLabel?: string;
+  recommendedPriceLabel?: string | null;
+  showBillingNotice?: boolean;
+};
+
+type CancelFeedbackRow = {
+  id: string;
+  shop_id: string;
+  shopName: string;
+  shopSlug: string | null;
+  reason: string;
+  reasonLabel: string;
+  detail: string | null;
+  bookable_count: number | null;
+  recommended_tier: string | null;
+  created_at: string;
+};
+
 export default function SuperAdminPage() {
   const [token, setToken] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [shops, setShops] = useState<Shop[]>([]);
+  const [shops, setShops] = useState<SuperadminShop[]>([]);
+  const [cancelFeedback, setCancelFeedback] = useState<CancelFeedbackRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
+
+  const recommendedShops = useMemo(() => {
+    return shops
+      .filter((s) => s.status !== "pending")
+      .slice()
+      .sort((a, b) => (b.seatBookableCount ?? 0) - (a.seatBookableCount ?? 0));
+  }, [shops]);
 
   const loadShops = useCallback(async (authToken: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/superadmin/shops", {
-        headers: { "x-superadmin-token": authToken },
-      });
-      const json = (await res.json()) as { shops?: Shop[]; error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Invalid token");
-      setShops(json.shops ?? []);
+      const [shopsRes, feedbackRes] = await Promise.all([
+        fetch("/api/superadmin/shops", {
+          headers: { "x-superadmin-token": authToken },
+        }),
+        fetch("/api/superadmin/cancel-feedback", {
+          headers: { "x-superadmin-token": authToken },
+        }),
+      ]);
+      const shopsJson = (await shopsRes.json()) as {
+        shops?: SuperadminShop[];
+        error?: string;
+      };
+      if (!shopsRes.ok) throw new Error(shopsJson.error ?? "Invalid token");
+      setShops(shopsJson.shops ?? []);
+      if (feedbackRes.ok) {
+        const fbJson = (await feedbackRes.json()) as {
+          feedback?: CancelFeedbackRow[];
+        };
+        setCancelFeedback(fbJson.feedback ?? []);
+      } else {
+        setCancelFeedback([]);
+      }
       setIsAuthenticated(true);
       writeOperatorToken(authToken);
     } catch (err) {
@@ -93,6 +140,79 @@ export default function SuperAdminPage() {
       </header>
 
       <QuickAddShopForm token={token} onSuccess={() => void loadShops(token)} />
+
+      <section data-testid="recommended-tiers">
+        <h2 className="mb-3 text-xl font-semibold">
+          แพ็กแนะนำตามจำนวนช่าง ({recommendedShops.length})
+        </h2>
+        <p className="mb-3 text-xs text-zinc-500">
+          ระบบแจ้งในแอดมินร้านอัตโนมัติตั้งแต่วันที่ 25 ของทดลอง — ไม่ต้องทักเอง
+        </p>
+        {recommendedShops.length === 0 ? (
+          <p className="text-sm text-zinc-500">ยังไม่มีร้าน</p>
+        ) : (
+          <ul className="space-y-2">
+            {recommendedShops.map((shop) => {
+              const seats = shop.seatBookableCount ?? 0;
+              return (
+                <li
+                  key={shop.id}
+                  data-testid="recommended-tier-row"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-3"
+                >
+                  <p className="text-sm font-semibold text-zinc-100">{shop.name}</p>
+                  <p className="text-xs text-zinc-400">
+                    จองได้ {seats} คน · แนะนำ{" "}
+                    {shop.recommendedTierLabel ?? "—"}
+                    {shop.recommendedPriceLabel
+                      ? ` ${shop.recommendedPriceLabel}/เดือน`
+                      : ""}
+                    {shop.showBillingNotice ? " · แจ้งในแอดมินแล้ว" : ""}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section data-testid="cancel-feedback-list">
+        <h2 className="mb-3 text-xl font-semibold">
+          ความคิดเห็นไม่ใช้ต่อ ({cancelFeedback.length})
+        </h2>
+        {cancelFeedback.length === 0 ? (
+          <p className="text-sm text-zinc-500">ยังไม่มีการส่งความคิดเห็น</p>
+        ) : (
+          <ul className="space-y-2">
+            {cancelFeedback.map((row) => (
+              <li
+                key={row.id}
+                data-testid="cancel-feedback-row"
+                className="rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-3"
+              >
+                <p className="text-sm font-semibold text-zinc-100">
+                  {row.shopName}
+                  <span className="ml-2 text-xs font-normal text-amber-300">
+                    {row.reasonLabel}
+                  </span>
+                </p>
+                {row.detail ? (
+                  <p className="mt-1 text-xs text-zinc-300">{row.detail}</p>
+                ) : null}
+                <p className="mt-1 text-[11px] text-zinc-500">
+                  {new Date(row.created_at).toLocaleString("th-TH")}
+                  {row.bookable_count != null
+                    ? ` · จองได้ ${row.bookable_count} คน`
+                    : ""}
+                  {row.recommended_tier
+                    ? ` · แนะนำ ${row.recommended_tier}`
+                    : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <h2 className="mb-4 text-xl font-semibold">LINE OA Install Requests</h2>

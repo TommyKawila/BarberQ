@@ -881,9 +881,18 @@ describe("visible marketing claim locks", () => {
     assert.doesNotMatch(visibleValues("marketing.", "en"), /set up yourself in a few minutes/i);
     assert.match(dictionary.th["marketing.hero.micro"], /\{price\}/);
     assert.match(dictionary.th["marketing.pricing.title"], /\{price\}/);
-    assert.match(dictionary.th["marketing.pricing.tierSameFeatures"], /ทุกแพ็กฟีเจอร์เหมือนกัน/);
+    assert.match(
+      dictionary.th["marketing.pricing.tierSameFeatures"],
+      /ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่างที่ลูกค้าจองได้ · บัญชีเจ้าของร้านฟรี 1 คน/,
+    );
     assert.match(dictionary.th["marketing.pricing.tier1Badge"], /ร้านเล็ก/);
     assert.match(dictionary.th["marketing.pricing.micro"], /ฟีเจอร์ใหม่ไม่ขึ้นราคา/);
+    assert.match(dictionary.th["marketing.faq.9.q"], /นับจำนวนช่าง/);
+    assert.match(dictionary.th["marketing.faq.9.a"], /รับคิวด้วย/);
+    assert.match(dictionary.th["marketing.faq.10.q"], /ใส่ช่างให้ครบ/);
+    assert.match(dictionary.th["marketing.faq.11.q"], /ทดลองฟรี/);
+    assert.doesNotMatch(dictionary.th["marketing.faq.10.a"], /ไม่ถึง ฿100/);
+    assert.match(dictionary.th["admin.ownerAcceptingOn"], /^รับคิวด้วย$/);
     assert.match(dictionary.th["marketing.trialBox.title"], /^ทดลองฟรี \{days\} วัน$/);
     assert.match(dictionary.th["marketing.trialBox.item1"], /กรอกข้อมูลร้าน/);
     assert.match(dictionary.th["marketing.trialBox.item2"], /Tommy ทักกลับทาง LINE/);

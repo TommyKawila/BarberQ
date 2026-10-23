@@ -6,6 +6,7 @@ import {
   marketingClaims,
   marketingOffer,
   resolveMarketingTierForBarberCount,
+  tierBarberRangeLabel,
   tierPerDayHint,
 } from "@/lib/marketing/offer";
 
@@ -65,5 +66,13 @@ describe("marketingOffer single source of truth", () => {
       fillOfferCopy("{days} / {quota} / {price} / {price2} / {price3}"),
       /30 \/ 300 \/ ฿399 \/ ฿599 \/ ฿999/,
     );
+  });
+
+  it("tier1 pricing row includes free owner/manager seat", () => {
+    assert.equal(
+      tierBarberRangeLabel(marketingOffer.tiers[0], "th"),
+      "1–2 ช่าง + เจ้าของ/ผู้จัดการ 1 คน",
+    );
+    assert.equal(tierBarberRangeLabel(marketingOffer.tiers[1], "th"), "3–5 ช่าง");
   });
 });

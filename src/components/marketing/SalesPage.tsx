@@ -41,7 +41,7 @@ const DEMO_FEATURE_KEYS = [
   "marketing.try.featureCancel",
 ] as const;
 /** FAQ ordered by real objections (pricing → setup → LINE → app → message cost → …). */
-const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const FAQ_ITEMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 const PRICING_INCLUDES = [1, 2, 3, 4, 5] as const;
 const PAIN_BULLETS = [1, 2, 3, 4] as const;
 const TRIAL_BOX_ITEMS = [1, 2, 3] as const;
@@ -400,19 +400,20 @@ export function SalesPage({ heroScene }: { heroScene?: number } = {}) {
                         : "border-b border-zinc-800"
                     }`}
                   >
-                    <p
-                      className={`text-[15px] font-semibold leading-snug ${
-                        isStarter ? "text-amber-200" : "text-zinc-50"
-                      }`}
-                    >
-                      {tierBarberRangeLabel(tier, locale)}
+                    <div className="min-w-0">
+                      <p
+                        className={`text-[15px] font-semibold leading-snug ${
+                          isStarter ? "text-amber-200" : "text-zinc-50"
+                        }`}
+                      >
+                        {tierBarberRangeLabel(tier, locale)}
+                      </p>
                       {isStarter ? (
-                        <span className="font-medium text-amber-400/90">
-                          {" "}
-                          · {t("marketing.pricing.tier1Badge")}
-                        </span>
+                        <p className="mt-0.5 text-[13px] font-medium leading-snug text-amber-400/90">
+                          {t("marketing.pricing.tier1Badge")}
+                        </p>
                       ) : null}
-                    </p>
+                    </div>
                     <p className="shrink-0 text-base font-bold text-amber-400">
                       {tierPricePerMonthLabel(tier, locale)}
                     </p>

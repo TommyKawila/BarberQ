@@ -9,12 +9,12 @@ import {
   validateBarberLineIdDraft,
 } from "@/components/admin/BarberLineLinkCard";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { SlotDurationPicker } from "@/components/admin/SlotDurationPicker";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { formatBreaksSummary, formatOffDaysSummary } from "@/lib/barber/schedule-summary";
 import { fitLogoFile } from "@/lib/image/fit-logo";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import {
   ADMIN_STICKY_SAVE_BAR_CLASS,
   ADMIN_THUMB_BAR_OFFSET_CLASS,
@@ -248,15 +248,25 @@ export default function EditBarberPage() {
               {t("admin.editBarberSubtitle").replace("{name}", displayName)}
             </p>
             <p className="mt-2 text-lg font-semibold">{displayName}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
-                {isBookable ? t("admin.barberBookable") : t("admin.barberNotBookable")}
-              </span>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {isOwnerBarber ? (
-                <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs text-amber-300">
-                  {t("admin.ownerBadge")}
+                <>
+                  <span className="text-xs text-zinc-500">
+                    {isBookable
+                      ? t("admin.ownerAcceptingStatusOn")
+                      : t("admin.ownerAcceptingStatusOff")}
+                  </span>
+                  <span className="rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs text-amber-300">
+                    {t("admin.ownerBadge")}
+                  </span>
+                </>
+              ) : (
+                <span className="rounded-full bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-300">
+                  {isBookable
+                    ? t("admin.barberBookable")
+                    : t("admin.barberNotBookable")}
                 </span>
-              ) : null}
+              )}
             </div>
           </div>
           <BarberAvatar name={barber.name} imageUrl={barber.profile_image_url} size="lg" />
@@ -336,45 +346,61 @@ export default function EditBarberPage() {
             </div>
           </div>
           <p className="mt-3 text-xs text-zinc-500">{t("admin.profilePhotoHint")}</p>
-          <label className="mt-4 flex items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={showProfileInBooking}
-              onChange={(e) => setShowProfileInBooking(e.target.checked)}
-              className="mt-1"
-            />
-            <span>
+          <label className="mt-4 flex min-h-11 cursor-pointer items-start justify-between gap-3 text-sm">
+            <span className="min-w-0 flex-1">
               <span className="font-medium">{t("admin.showProfileInBooking")}</span>
               <p className="mt-1 text-xs text-zinc-500">{t("admin.showProfileInBookingHint")}</p>
+            </span>
+            <span className="relative inline-flex shrink-0 items-center pt-0.5">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={showProfileInBooking}
+                onChange={(e) => setShowProfileInBooking(e.target.checked)}
+                data-testid="show-profile-in-booking-toggle"
+              />
+              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
             </span>
           </label>
         </section>
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4">
           <h2 className="font-semibold">{t("admin.queueSection")}</h2>
-          <p className="mt-1 text-sm text-zinc-400">{t("admin.queueSectionHint")}</p>
-          <label className="mt-4 flex items-center justify-between gap-3 text-sm">
-            <span>{t("admin.openQueueToggle")}</span>
-            <input
-              type="checkbox"
-              checked={isBookable}
-              onChange={(e) => setIsBookable(e.target.checked)}
-            />
+          <p className="mt-1 text-sm text-zinc-400">
+            {isOwnerBarber
+              ? t("admin.ownerAcceptingOffHint")
+              : t("admin.queueSectionHint")}
+          </p>
+          <label className="mt-4 flex min-h-11 scroll-mb-36 cursor-pointer items-center justify-between gap-3 text-sm">
+            <span>
+              {isOwnerBarber
+                ? t("admin.ownerAcceptingToggle")
+                : t("admin.openQueueToggle")}
+            </span>
+            <span className="relative inline-flex shrink-0 items-center">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={isBookable}
+                onChange={(e) => setIsBookable(e.target.checked)}
+                data-testid={
+                  isOwnerBarber
+                    ? "owner-accepting-toggle"
+                    : "barber-bookable-toggle"
+                }
+              />
+              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
+            </span>
           </label>
           {isBookable ? (
-            <label className="mt-4 flex flex-col gap-1 text-sm">
-              {t("admin.slotDuration")}
-              <p className="text-xs text-zinc-500">{t("admin.slotDurationHint")}</p>
-              <select
+            <div className="mt-4 text-sm">
+              <p className="font-medium">{t("admin.slotDuration")}</p>
+              <p className="mt-1 text-xs text-zinc-500">{t("admin.slotDurationHint")}</p>
+              <SlotDurationPicker
                 value={slotDuration}
-                onChange={(e) => setSlotDuration(Number(e.target.value))}
-                className="mt-1 min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3"
-              >
-                {ALLOWED_SLOT_DURATIONS.map((m) => (
-                  <option key={m} value={m}>{m} {t("common.minutes")}</option>
-                ))}
-              </select>
-            </label>
+                onChange={setSlotDuration}
+              />
+            </div>
           ) : null}
         </section>
 

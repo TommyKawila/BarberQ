@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertStaffForShop, assertShopOperator, isAdminAuthRequired } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
+import { overTierWarningAfterCreate } from "@/lib/billing/over-tier-api";
 import { getStore } from "@/lib/data";
 import { isPrototypeMode } from "@/lib/data";
 import { resolveShopParam } from "@/lib/shop/api-route";
@@ -61,7 +62,10 @@ export async function POST(
       if (err) throw new BookingError("INVALID_SLOT_DURATION", err, 400);
     }
 
-    const barber = await getStore().createBarber({
+    const store = getStore();
+    // Soft limit: always create — never block. Optional overTierWarning for UI modal.
+    const barbersBefore = await listBarbers(shop.id);
+    const barber = await store.createBarber({
       shopId: shop.id,
       name,
       lineId: body.lineId ?? null,
@@ -69,7 +73,16 @@ export async function POST(
       isBookable: body.isBookable ?? true,
     });
 
-    return NextResponse.json({ barber }, { status: 201 });
+    const overTierWarning = overTierWarningAfterCreate({
+      shop,
+      barbersBefore,
+      created: barber,
+    });
+
+    return NextResponse.json(
+      { barber, ...(overTierWarning ? { overTierWarning } : {}) },
+      { status: 201 },
+    );
   } catch (error) {
     return jsonError(error);
   }
