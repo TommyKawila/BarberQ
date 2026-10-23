@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
+import { PaymentSlipsReview } from "@/components/superadmin/PaymentSlipsReview";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
 import {
@@ -174,6 +175,10 @@ export default function SuperAdminPage() {
             })}
           </ul>
         )}
+      </section>
+
+      <section>
+        <PaymentSlipsReview token={token} />
       </section>
 
       <section data-testid="cancel-feedback-list">

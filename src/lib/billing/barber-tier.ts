@@ -110,6 +110,8 @@ export interface OverTierPromptCopy {
   footnote: string;
   primaryCta: string;
   secondaryCta: string;
+  /** Link to admin billing (PromptPay QR). */
+  billingCta: string;
   nextTierPriceLabel: string | null;
 }
 
@@ -121,6 +123,7 @@ function buildPrompt(parts: {
   footnote: string;
   primaryCta: string;
   secondaryCta: string;
+  billingCta: string;
   nextTierPriceLabel: string | null;
 }): OverTierPromptCopy {
   return {
@@ -132,6 +135,7 @@ function buildPrompt(parts: {
     footnote: parts.footnote,
     primaryCta: parts.primaryCta,
     secondaryCta: parts.secondaryCta,
+    billingCta: parts.billingCta,
     nextTierPriceLabel: parts.nextTierPriceLabel,
   };
 }
@@ -144,6 +148,9 @@ export function buildOverTierPromptCopy(
   const kind = overTierPromptKindForCount(bookableCount);
   if (!kind) return null;
 
+  const billingCtaEn = "Pay via PromptPay QR";
+  const billingCtaTh = "ไปหน้าชำระเงิน PromptPay";
+
   if (locale === "en") {
     if (kind === "tier2") {
       return buildPrompt({
@@ -151,13 +158,14 @@ export function buildOverTierPromptCopy(
         title: `Your shop now has ${bookableCount} bookable barbers 🎉`,
         paragraphs: [
           "You can keep adding — everything still works. Customers can book the new barber right away, and they get their own queue alerts.",
-          `The 3–5 barber plan is ${formatBaht(599)}/month with the same features. The new plan price starts on your next billing cycle — no extra steps.`,
+          `The 3–5 barber plan is ${formatBaht(599)}/month with the same features. There is no automatic charge — pay via PromptPay QR on the billing page by the due date.`,
         ],
         signature: null,
         footnote:
           'The owner account is free and does not count as a barber unless "Accept bookings too" is on.',
         primaryCta: "Keep adding",
         secondaryCta: "Questions? Message us",
+        billingCta: billingCtaEn,
         nextTierPriceLabel: formatBaht(599),
       });
     }
@@ -167,13 +175,14 @@ export function buildOverTierPromptCopy(
         title: `Your shop now has ${bookableCount} bookable barbers 🎉`,
         paragraphs: [
           "You can keep adding — everything still works. Customers can book the new barber right away, and they get their own queue alerts.",
-          `The 6–10 barber plan is ${formatBaht(999)}/month with the same features. The new plan price starts on your next billing cycle — no extra steps.`,
+          `The 6–10 barber plan is ${formatBaht(999)}/month with the same features. There is no automatic charge — pay via PromptPay QR on the billing page by the due date.`,
         ],
         signature: null,
         footnote:
           'The owner account is free and does not count as a barber unless "Accept bookings too" is on.',
         primaryCta: "Keep adding",
         secondaryCta: "Questions? Message us",
+        billingCta: billingCtaEn,
         nextTierPriceLabel: formatBaht(999),
       });
     }
@@ -181,13 +190,14 @@ export function buildOverTierPromptCopy(
       kind,
       title: `Your shop now has ${bookableCount} bookable barbers 🎉`,
       paragraphs: [
-        "You can keep adding — everything still works. For more than 10 barbers, message us if you have pricing questions. The new plan price starts on your next billing cycle — no extra steps.",
+        "You can keep adding — everything still works. For more than 10 barbers, message us if you have pricing questions. There is no automatic charge — pay via PromptPay QR on the billing page by the due date.",
       ],
       signature: null,
       footnote:
         'The owner account is free and does not count as a barber unless "Accept bookings too" is on.',
       primaryCta: "Keep adding",
       secondaryCta: "Questions? Message us",
+      billingCta: billingCtaEn,
       nextTierPriceLabel: null,
     });
   }
@@ -201,12 +211,13 @@ export function buildOverTierPromptCopy(
       title: `ร้านมีช่าง ${bookableCount} คนแล้ว 🎉`,
       paragraphs: [
         p1,
-        `ร้าน 3–5 ช่างอยู่แพ็ก ${formatBaht(599)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ราคาใหม่เริ่มรอบบิลถัดไป ไม่ต้องทำอะไรเพิ่ม`,
+        `ร้าน 3–5 ช่างอยู่แพ็ก ${formatBaht(599)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ไม่มีการตัดบัตรอัตโนมัติ — ชำระผ่าน QR PromptPay ในหน้าชำระเงินก่อนวันครบกำหนด`,
       ],
       signature: null,
       footnote: 'เจ้าของร้านไม่นับเป็นช่าง ยกเว้นเปิด "รับคิวด้วย"',
       primaryCta: "เพิ่มช่างต่อ",
       secondaryCta: "มีคำถาม? ทักเรา",
+      billingCta: billingCtaTh,
       nextTierPriceLabel: formatBaht(599),
     });
   }
@@ -216,12 +227,13 @@ export function buildOverTierPromptCopy(
       title: `ร้านมีช่าง ${bookableCount} คนแล้ว 🎉`,
       paragraphs: [
         p1,
-        `ร้าน 6–10 ช่างอยู่แพ็ก ${formatBaht(999)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ราคาใหม่เริ่มรอบบิลถัดไป ไม่ต้องทำอะไรเพิ่ม`,
+        `ร้าน 6–10 ช่างอยู่แพ็ก ${formatBaht(999)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ไม่มีการตัดบัตรอัตโนมัติ — ชำระผ่าน QR PromptPay ในหน้าชำระเงินก่อนวันครบกำหนด`,
       ],
       signature: null,
       footnote: 'เจ้าของร้านไม่นับเป็นช่าง ยกเว้นเปิด "รับคิวด้วย"',
       primaryCta: "เพิ่มช่างต่อ",
       secondaryCta: "มีคำถาม? ทักเรา",
+      billingCta: billingCtaTh,
       nextTierPriceLabel: formatBaht(999),
     });
   }
@@ -229,12 +241,13 @@ export function buildOverTierPromptCopy(
     kind,
     title: `ร้านมีช่าง ${bookableCount} คนแล้ว 🎉`,
     paragraphs: [
-      "เพิ่มต่อได้เลยครับ ทุกอย่างใช้ได้ตามปกติ เกิน 10 ช่างมีคำถามทักเราได้ ราคาใหม่เริ่มรอบบิลถัดไป ไม่ต้องทำอะไรเพิ่ม",
+      "เพิ่มต่อได้เลยครับ ทุกอย่างใช้ได้ตามปกติ เกิน 10 ช่างมีคำถามทักเราได้ ไม่มีการตัดบัตรอัตโนมัติ — ชำระผ่าน QR PromptPay ในหน้าชำระเงินก่อนวันครบกำหนด",
     ],
     signature: null,
     footnote: 'เจ้าของร้านไม่นับเป็นช่าง ยกเว้นเปิด "รับคิวด้วย"',
     primaryCta: "เพิ่มช่างต่อ",
     secondaryCta: "มีคำถาม? ทักเรา",
+    billingCta: billingCtaTh,
     nextTierPriceLabel: null,
   });
 }
