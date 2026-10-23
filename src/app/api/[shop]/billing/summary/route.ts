@@ -2,23 +2,20 @@ import { NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
+import { resolveBillingAmountForBookableCount } from "@/lib/billing/billing-amount";
 import {
   countBookableBarberSeats,
   normalizeBarberTier,
-  tierMonthlyPriceThb,
-  tierRangeLabelTh,
 } from "@/lib/billing/barber-tier";
 import {
   isBillingOverdue,
   shopBillingDueAt,
   shopTrialEndsAt,
 } from "@/lib/billing/due-date";
-import { recommendedTierForBookableCount } from "@/lib/billing/tier-notice";
 import {
   buildPromptPayPayload,
   getPromptPayIdFromEnv,
 } from "@/lib/billing/promptpay";
-import { formatBaht } from "@/lib/marketing/offer";
 import { getStore } from "@/lib/data";
 import { resolveShopParam } from "@/lib/shop/api-route";
 
@@ -38,10 +35,8 @@ export async function GET(
     const barbers = await getStore().listBarbersByShop(shop.id);
     const bookableCount = countBookableBarberSeats(barbers);
     const storedTier = normalizeBarberTier(shop.barber_tier);
-    const recommendedTier = recommendedTierForBookableCount(bookableCount);
-    const billingTier =
-      storedTier === "contact" ? recommendedTier : storedTier;
-    const amountThb = tierMonthlyPriceThb(billingTier);
+    const { billingTier, rangeLabel, amountThb, priceLabel } =
+      resolveBillingAmountForBookableCount(bookableCount);
     const dueAt = shopBillingDueAt(shop);
     const trialEndsAt = shopTrialEndsAt(shop);
     const overdue = isBillingOverdue(shop);
@@ -72,11 +67,12 @@ export async function GET(
       shopId: shop.id,
       shopName: shop.name,
       bookableCount,
+      /** Stored soft flag only — display/QR use billingTier from bookable count. */
       barberTier: storedTier,
       billingTier,
-      rangeLabel: tierRangeLabelTh(billingTier),
+      rangeLabel,
       amountThb,
-      priceLabel: amountThb != null ? formatBaht(amountThb) : null,
+      priceLabel,
       dueAt: dueAt.toISOString(),
       trialEndsAt: trialEndsAt.toISOString(),
       paidUntil: shop.subscribed_until,

@@ -140,7 +140,7 @@ export default function AdminBillingPage() {
           <>
             <section className="rounded-2xl border border-zinc-800 bg-zinc-900/60 p-4">
               <p className="text-xs font-medium uppercase tracking-wide text-zinc-500">
-                แพ็กปัจจุบัน
+                แพ็กตามจำนวนช่างรับคิว
               </p>
               <p className="mt-1 text-base font-semibold text-zinc-50">
                 {summary.rangeLabel}
@@ -151,7 +151,7 @@ export default function AdminBillingPage() {
                 )}
               </p>
               <p className="mt-1 text-sm text-zinc-400">
-                ช่างรับคิว {summary.bookableCount} คน
+                ช่างรับคิว {summary.bookableCount} คน · ยอด QR ตามแพ็กนี้
               </p>
               <p className="mt-3 text-sm text-zinc-200">
                 วันครบกำหนด:{" "}

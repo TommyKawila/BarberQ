@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
-import {
-  countBookableBarberSeats,
-  normalizeBarberTier,
-  tierMonthlyPriceThb,
-} from "@/lib/billing/barber-tier";
-import { recommendedTierForBookableCount } from "@/lib/billing/tier-notice";
+import { resolveBillingAmountForBookableCount } from "@/lib/billing/billing-amount";
+import { countBookableBarberSeats } from "@/lib/billing/barber-tier";
 import { uploadPaymentSlipImage } from "@/lib/billing/slip-image-storage";
 import { getStore } from "@/lib/data";
 import { resolveShopParam } from "@/lib/shop/api-route";
@@ -54,11 +50,8 @@ export async function POST(
 
     const barbers = await getStore().listBarbersByShop(shop.id);
     const bookableCount = countBookableBarberSeats(barbers);
-    const storedTier = normalizeBarberTier(shop.barber_tier);
-    const recommended = recommendedTierForBookableCount(bookableCount);
-    const billingTier =
-      storedTier === "contact" ? recommended : storedTier;
-    const amountThb = tierMonthlyPriceThb(billingTier);
+    const { billingTier, amountThb } =
+      resolveBillingAmountForBookableCount(bookableCount);
     if (amountThb == null) {
       return NextResponse.json(
         {
