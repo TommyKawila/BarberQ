@@ -311,7 +311,7 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
               แนะนำแพ็ก: {shop.recommendedTierLabel}
               {shop.recommendedPriceLabel
                 ? ` ${shop.recommendedPriceLabel}/เดือน`
-                : " (ติดต่อคุยราคา)"}
+                : " (มีคำถามทักเรา)"}
               {shop.showBillingNotice ? " · แจ้งในแอดมินแล้ว" : ""}
             </p>
           ) : null}

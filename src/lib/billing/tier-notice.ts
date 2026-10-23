@@ -66,9 +66,9 @@ export function buildTierBillingNoticeCopy(
 
   let message: string;
   if (recommendedTier === "contact" || !priceLabel) {
-    message = `ร้านคุณมีช่างรับคิว ${bookableCount} คน แพ็กที่เหมาะคือ ${rangeLabel} — ติดต่อคุยราคา เริ่มรอบบิลหน้า`;
+    message = `ร้านคุณมีช่างรับคิว ${bookableCount} คน แพ็กที่เหมาะคือ ${rangeLabel} — มีคำถามทักเราได้ ราคาใหม่เริ่มรอบบิลหน้า ไม่ต้องทำอะไรเพิ่ม`;
   } else {
-    message = `ร้านคุณมีช่างรับคิว ${bookableCount} คน แพ็กที่เหมาะคือ ${rangeLabel} ${priceLabel}/เดือน เริ่มรอบบิลหน้า`;
+    message = `ร้านคุณมีช่างรับคิว ${bookableCount} คน แพ็กที่เหมาะคือ ${rangeLabel} ${priceLabel}/เดือน ราคาใหม่เริ่มรอบบิลหน้า ไม่ต้องทำอะไรเพิ่ม`;
   }
 
   return {

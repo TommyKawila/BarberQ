@@ -151,13 +151,13 @@ export function buildOverTierPromptCopy(
         title: `Your shop now has ${bookableCount} bookable barbers 🎉`,
         paragraphs: [
           "You can keep adding — everything still works. Customers can book the new barber right away, and they get their own queue alerts.",
-          `The 3–5 barber plan is ${formatBaht(599)}/month with the same features. The new plan price starts on your next billing cycle. Tommy will message you on LINE to help adjust.`,
+          `The 3–5 barber plan is ${formatBaht(599)}/month with the same features. The new plan price starts on your next billing cycle — no extra steps.`,
         ],
-        signature: "— Tommy",
+        signature: null,
         footnote:
           'The owner account is free and does not count as a barber unless "Accept bookings too" is on.',
         primaryCta: "Keep adding",
-        secondaryCta: "Message Tommy on LINE",
+        secondaryCta: "Questions? Message us",
         nextTierPriceLabel: formatBaht(599),
       });
     }
@@ -167,13 +167,13 @@ export function buildOverTierPromptCopy(
         title: `Your shop now has ${bookableCount} bookable barbers 🎉`,
         paragraphs: [
           "You can keep adding — everything still works. Customers can book the new barber right away, and they get their own queue alerts.",
-          `The 6–10 barber plan is ${formatBaht(999)}/month with the same features. The new plan price starts on your next billing cycle. Tommy will message you on LINE to help adjust.`,
+          `The 6–10 barber plan is ${formatBaht(999)}/month with the same features. The new plan price starts on your next billing cycle — no extra steps.`,
         ],
-        signature: "— Tommy",
+        signature: null,
         footnote:
           'The owner account is free and does not count as a barber unless "Accept bookings too" is on.',
         primaryCta: "Keep adding",
-        secondaryCta: "Message Tommy on LINE",
+        secondaryCta: "Questions? Message us",
         nextTierPriceLabel: formatBaht(999),
       });
     }
@@ -181,13 +181,13 @@ export function buildOverTierPromptCopy(
       kind,
       title: `Your shop now has ${bookableCount} bookable barbers 🎉`,
       paragraphs: [
-        "You can keep adding — everything still works. For more than 10 barbers, Tommy will message you on LINE to discuss pricing. The new plan price starts on your next billing cycle.",
+        "You can keep adding — everything still works. For more than 10 barbers, message us if you have pricing questions. The new plan price starts on your next billing cycle — no extra steps.",
       ],
-      signature: "— Tommy",
+      signature: null,
       footnote:
         'The owner account is free and does not count as a barber unless "Accept bookings too" is on.',
       primaryCta: "Keep adding",
-      secondaryCta: "Message Tommy on LINE",
+      secondaryCta: "Questions? Message us",
       nextTierPriceLabel: null,
     });
   }
@@ -201,12 +201,12 @@ export function buildOverTierPromptCopy(
       title: `ร้านมีช่าง ${bookableCount} คนแล้ว 🎉`,
       paragraphs: [
         p1,
-        `ร้าน 3–5 ช่างอยู่แพ็ก ${formatBaht(599)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ราคาใหม่เริ่มรอบบิลถัดไป เดี๋ยวผมทักไปทาง LINE ช่วยปรับให้ครับ`,
+        `ร้าน 3–5 ช่างอยู่แพ็ก ${formatBaht(599)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ราคาใหม่เริ่มรอบบิลถัดไป ไม่ต้องทำอะไรเพิ่ม`,
       ],
-      signature: "— Tommy",
+      signature: null,
       footnote: 'เจ้าของร้านไม่นับเป็นช่าง ยกเว้นเปิด "รับคิวด้วย"',
       primaryCta: "เพิ่มช่างต่อ",
-      secondaryCta: "ทัก Tommy ทาง LINE",
+      secondaryCta: "มีคำถาม? ทักเรา",
       nextTierPriceLabel: formatBaht(599),
     });
   }
@@ -216,12 +216,12 @@ export function buildOverTierPromptCopy(
       title: `ร้านมีช่าง ${bookableCount} คนแล้ว 🎉`,
       paragraphs: [
         p1,
-        `ร้าน 6–10 ช่างอยู่แพ็ก ${formatBaht(999)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ราคาใหม่เริ่มรอบบิลถัดไป เดี๋ยวผมทักไปทาง LINE ช่วยปรับให้ครับ`,
+        `ร้าน 6–10 ช่างอยู่แพ็ก ${formatBaht(999)}/เดือน ฟีเจอร์เหมือนเดิมทุกอย่าง ราคาใหม่เริ่มรอบบิลถัดไป ไม่ต้องทำอะไรเพิ่ม`,
       ],
-      signature: "— Tommy",
+      signature: null,
       footnote: 'เจ้าของร้านไม่นับเป็นช่าง ยกเว้นเปิด "รับคิวด้วย"',
       primaryCta: "เพิ่มช่างต่อ",
-      secondaryCta: "ทัก Tommy ทาง LINE",
+      secondaryCta: "มีคำถาม? ทักเรา",
       nextTierPriceLabel: formatBaht(999),
     });
   }
@@ -229,12 +229,12 @@ export function buildOverTierPromptCopy(
     kind,
     title: `ร้านมีช่าง ${bookableCount} คนแล้ว 🎉`,
     paragraphs: [
-      "เพิ่มต่อได้เลยครับ ทุกอย่างใช้ได้ตามปกติ เกิน 10 ช่างเดี๋ยวผมทักไปคุยราคาให้ครับ ราคาใหม่เริ่มรอบบิลถัดไป",
+      "เพิ่มต่อได้เลยครับ ทุกอย่างใช้ได้ตามปกติ เกิน 10 ช่างมีคำถามทักเราได้ ราคาใหม่เริ่มรอบบิลถัดไป ไม่ต้องทำอะไรเพิ่ม",
     ],
-    signature: "— Tommy",
+    signature: null,
     footnote: 'เจ้าของร้านไม่นับเป็นช่าง ยกเว้นเปิด "รับคิวด้วย"',
     primaryCta: "เพิ่มช่างต่อ",
-    secondaryCta: "ทัก Tommy ทาง LINE",
+    secondaryCta: "มีคำถาม? ทักเรา",
     nextTierPriceLabel: null,
   });
 }

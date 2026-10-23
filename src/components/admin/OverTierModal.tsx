@@ -37,7 +37,7 @@ function ParagraphWithGoldPrice({
 
 /**
  * Soft over-tier prompt after adding seat #3 / #6 / #11.
- * Never blocks — primary continues; secondary opens Tommy LINE.
+ * Never blocks — primary continues; secondary opens support LINE (owner-initiated).
  */
 export function OverTierModal({
   open,
