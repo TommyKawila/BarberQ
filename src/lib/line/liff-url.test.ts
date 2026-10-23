@@ -2,9 +2,12 @@ import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import {
   buildCustomerCancelUrl,
+  buildShopBookingsCustomerUrl,
   buildShopCustomerUrl,
   buildShopLiffUrl,
   buildShopWebUrl,
+  CLIPPERQ_PROD_LIFF_ID,
+  resolveCustomerLiffId,
 } from "@/lib/line/liff-url";
 
 describe("liff customer URLs", () => {
@@ -23,6 +26,10 @@ describe("liff customer URLs", () => {
     process.env.NEXT_PUBLIC_APP_URL = "https://barberq-qa.vercel.app";
     assert.equal(
       buildShopCustomerUrl("barberqpilottest", "/bookings"),
+      "https://liff.line.me/2011971303-hdy1isos/barberqpilottest/bookings",
+    );
+    assert.equal(
+      buildShopBookingsCustomerUrl("barberqpilottest"),
       "https://liff.line.me/2011971303-hdy1isos/barberqpilottest/bookings",
     );
     assert.equal(
@@ -45,7 +52,7 @@ describe("liff customer URLs", () => {
     );
   });
 
-  it("falls back to web URL when LIFF id is missing", () => {
+  it("falls back to web URL when LIFF id is missing on non-prod", () => {
     delete process.env.NEXT_PUBLIC_LIFF_ID;
     process.env.NEXT_PUBLIC_APP_URL = "https://barberq-qa.vercel.app";
     assert.equal(
@@ -53,5 +60,17 @@ describe("liff customer URLs", () => {
       "https://barberq-qa.vercel.app/demo/bookings",
     );
     assert.equal(buildShopWebUrl("demo"), "https://barberq-qa.vercel.app/demo");
+  });
+
+  it("prod APP_URL without LIFF env still uses prod LIFF for /bookings (not barber-q-pi web)", () => {
+    delete process.env.NEXT_PUBLIC_LIFF_ID;
+    process.env.NEXT_PUBLIC_APP_URL = "https://barber-q-pi.vercel.app";
+    assert.equal(resolveCustomerLiffId(), CLIPPERQ_PROD_LIFF_ID);
+    const url = buildShopBookingsCustomerUrl("phinxstudio");
+    assert.equal(
+      url,
+      `https://liff.line.me/${CLIPPERQ_PROD_LIFF_ID}/phinxstudio/bookings`,
+    );
+    assert.doesNotMatch(url, /barber-q-pi\.vercel\.app/);
   });
 });

@@ -1,6 +1,9 @@
 import { getStore } from "@/lib/data";
 import { buildCustomerRescheduleTicketFlex } from "@/lib/line/flex-messages";
-import { buildCustomerCancelUrl, buildShopCustomerUrl } from "@/lib/line/liff-url";
+import {
+  buildCustomerCancelUrl,
+  buildShopBookingsCustomerUrl,
+} from "@/lib/line/liff-url";
 import { hasSuccessfulCustomerRescheduleTicket } from "@/lib/line/message-log";
 import { pushMessagesForShop, type PushResult } from "@/lib/line/push-message";
 import type { Appointment, Shop } from "@/types/booking";
@@ -39,7 +42,7 @@ export async function notifyCustomerSelfRescheduleTicket(
 
   const store = getStore();
   const barber = await store.getBarber(after.barber_id);
-  const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
+  const myBookingsUrl = buildShopBookingsCustomerUrl(shop.slug);
   const cancelUrl = after.cancel_token
     ? buildCustomerCancelUrl(after.cancel_token)
     : null;

@@ -3,7 +3,10 @@ import {
   buildBookingConfirmFlex,
   buildQueueTicketFlex,
 } from "@/lib/line/flex-messages";
-import { buildCustomerCancelUrl, buildShopCustomerUrl } from "@/lib/line/liff-url";
+import {
+  buildCustomerCancelUrl,
+  buildShopBookingsCustomerUrl,
+} from "@/lib/line/liff-url";
 import { hasSuccessfulBookingConfirm } from "@/lib/line/message-log";
 import { pushMessagesForShop, type PushResult } from "@/lib/line/push-message";
 import type { Appointment, Shop } from "@/types/booking";
@@ -26,7 +29,7 @@ export async function buildBookingConfirmFlexPair(
   const barber = await store.getBarber(appointment.barber_id);
   const settings = await store.getShopSettings(shop.id);
   const showBrandFooter = settings.showFlexBrandFooter !== false;
-  const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
+  const myBookingsUrl = buildShopBookingsCustomerUrl(shop.slug);
   const cancelUrl = appointment.cancel_token
     ? buildCustomerCancelUrl(appointment.cancel_token)
     : myBookingsUrl;

@@ -1,6 +1,9 @@
 import { getStore } from "@/lib/data";
 import { buildAppointmentReminderFlex } from "@/lib/line/flex-messages";
-import { buildCustomerCancelUrl, buildShopCustomerUrl } from "@/lib/line/liff-url";
+import {
+  buildCustomerCancelUrl,
+  buildShopBookingsCustomerUrl,
+} from "@/lib/line/liff-url";
 import { pushMessagesForShop, type PushResult } from "@/lib/line/push-message";
 import type { DueReminderRow } from "@/lib/reminders/reminder-store";
 import type { Shop } from "@/types/booking";
@@ -33,7 +36,7 @@ export async function sendAppointmentReminderPush(
   const barber = await store.getBarber(row.barber_id);
   const appointment = await store.getAppointment(row.id);
   const settings = await store.getShopSettings(shop.id);
-  const myBookingsUrl = buildShopCustomerUrl(shop.slug, "/bookings");
+  const myBookingsUrl = buildShopBookingsCustomerUrl(shop.slug);
   // Same cancel_token link as booking confirm; builder hides link when <60 min.
   const cancelUrl = reminderCancelUrl(appointment?.cancel_token);
 
