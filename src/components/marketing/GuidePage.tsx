@@ -288,12 +288,23 @@ export function GuidePage() {
               </div>
               <div>
                 <dt className="font-semibold text-zinc-100">เข้าหน้าร้านของฉันจากไหน?</dt>
-                <dd className="mt-1 text-zinc-400">
-                  จากเมนู LINE OA ClipperQ กด「เข้าหน้าร้านของฉัน」 หรือเปิด{" "}
-                  <Link href="/owner" className="text-[#F6AD34] underline">
-                    /owner
-                  </Link>{" "}
-                  — ล็อกอิน LINE แล้วไปบอร์ดร้าน (หลายร้านให้เลือก; ไม่มีร้านจะพาไป /trial)
+                <dd className="mt-1 space-y-2 text-zinc-400">
+                  <p>
+                    <span className="font-medium text-zinc-200">มือถือ:</span>{" "}
+                    จากเมนู LINE OA ClipperQ กด「เข้าหน้าร้านของฉัน」
+                  </p>
+                  <p>
+                    <span className="font-medium text-zinc-200">คอมพิวเตอร์:</span> เปิด{" "}
+                    <Link href="/owner" className="text-[#F6AD34] underline">
+                      {abs("/owner") || "/owner"}
+                    </Link>{" "}
+                    → ล็อกอินด้วย LINE (สแกน QR หรืออีเมล) → บุ๊กมาร์ก{" "}
+                    <code className="text-[#F6AD34]">{"/{slug}/admin"}</code>{" "}
+                    สำหรับครั้งถัดไป
+                  </p>
+                  <p className="text-zinc-500">
+                    หลายร้านให้เลือก; ยังไม่มีร้านจะพาไป /trial
+                  </p>
                 </dd>
               </div>
             </dl>

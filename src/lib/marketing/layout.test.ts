@@ -840,7 +840,10 @@ describe("marketing layout split", () => {
     );
     assert.match(guide, /เมนู LINE OA ClipperQ/);
     assert.match(guide, /เข้าหน้าร้านของฉัน/);
+    assert.match(guide, /มือถือ:/);
+    assert.match(guide, /คอมพิวเตอร์:/);
     assert.match(guide, /\/owner/);
+    assert.match(guide, /\/\{slug\}\/admin/);
   });
 
   it("ships stable OA rich-menu routes", () => {
