@@ -100,7 +100,7 @@ export function TierBillingNotice() {
         <>
           <p className="text-sm leading-relaxed text-zinc-100">{notice.message}</p>
           <p className="mt-1 text-xs text-zinc-500">
-            ใช้ได้ตามปกติ · ราคาเริ่มรอบบิลหน้า · ไม่ล็อกร้าน
+            ใช้ได้ตามปกติ · ไม่ล็อกร้าน · ไม่ต้องทำอะไรเพิ่ม
           </p>
           <div className="mt-3 flex flex-col gap-2 sm:flex-row">
             <button
