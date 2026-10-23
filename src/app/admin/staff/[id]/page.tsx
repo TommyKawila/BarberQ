@@ -367,7 +367,7 @@ export default function EditBarberPage() {
               ? t("admin.ownerAcceptingOffHint")
               : t("admin.queueSectionHint")}
           </p>
-          <label className="mt-4 flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
+          <label className="mt-4 flex min-h-11 scroll-mb-36 cursor-pointer items-center justify-between gap-3 text-sm">
             <span>
               {isOwnerBarber
                 ? t("admin.ownerAcceptingToggle")

@@ -9,6 +9,10 @@ import type {
   TimeBlock,
 } from "@/types/booking";
 import type { AppointmentOutcome } from "@/lib/appointment-status";
+import type {
+  CreateShopCancelFeedbackInput,
+  ShopCancelFeedback,
+} from "@/lib/billing/cancel-feedback";
 
 export type StoreErrorCode =
   | "BARBER_NOT_FOUND"
@@ -414,4 +418,8 @@ export interface BookingStore {
   ): Promise<TrialLead>;
   listTrialLeadNotes(leadId: string): Promise<TrialLeadNote[]>;
   createTrialLeadNote(leadId: string, body: string): Promise<TrialLeadNote>;
+  createShopCancelFeedback(
+    input: CreateShopCancelFeedbackInput,
+  ): Promise<ShopCancelFeedback>;
+  listShopCancelFeedback(): Promise<ShopCancelFeedback[]>;
 }

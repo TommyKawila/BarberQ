@@ -31,6 +31,10 @@ interface ShopCardProps {
     seatBookableCount?: number;
     overTier?: boolean;
     seatFlags?: string[];
+    recommendedTier?: string;
+    recommendedTierLabel?: string;
+    recommendedPriceLabel?: string | null;
+    showBillingNotice?: boolean;
     staff?: ShopStaffSummary[];
   };
   superAdminToken?: string;
@@ -297,6 +301,18 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
                 : shop.bookableCount !== undefined
                   ? ` · จองได้ ${shop.bookableCount} คน`
                   : ""}
+            </p>
+          ) : null}
+          {shop.recommendedTierLabel ? (
+            <p
+              className="text-xs text-amber-200/90"
+              data-testid="recommended-tier"
+            >
+              แนะนำแพ็ก: {shop.recommendedTierLabel}
+              {shop.recommendedPriceLabel
+                ? ` ${shop.recommendedPriceLabel}/เดือน`
+                : " (ติดต่อคุยราคา)"}
+              {shop.showBillingNotice ? " · แจ้งในแอดมินแล้ว" : ""}
             </p>
           ) : null}
           {shop.status === "pending" && inviteExpires ? (

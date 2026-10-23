@@ -6,6 +6,10 @@ import {
   normalizeBarberTier,
 } from "@/lib/billing/barber-tier";
 import { collectShopSeatFlags } from "@/lib/billing/over-tier-flags";
+import {
+  buildTierBillingNoticeCopy,
+  shouldShowTierBillingNotice,
+} from "@/lib/billing/tier-notice";
 import { getStore } from "@/lib/data";
 import { EnvConfigError } from "@/lib/env";
 import { getShopActivationSummary } from "@/lib/onboarding/shop-activation-service";
@@ -57,6 +61,7 @@ export async function GET(req: Request) {
           barbers: shopBarbers,
           hours,
         });
+        const recommended = buildTierBillingNoticeCopy(seatBookableCount);
         return {
           ...shop,
           barber_tier: tier,
@@ -68,6 +73,10 @@ export async function GET(req: Request) {
           seatBookableCount,
           overTier: isOverTier(seatBookableCount, tier),
           seatFlags: flags.map((f) => f.label),
+          recommendedTier: recommended.recommendedTier,
+          recommendedTierLabel: recommended.rangeLabel,
+          recommendedPriceLabel: recommended.priceLabel,
+          showBillingNotice: shouldShowTierBillingNotice(shop),
           staff: staffByShop.get(shop.id) ?? [],
         };
       }),

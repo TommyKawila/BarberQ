@@ -27,9 +27,10 @@ export const ADMIN_NAV_OFFSET_CLASS =
   "pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:pb-6";
 export const ADMIN_NAV_STICKY_BOTTOM_CLASS =
   "bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:bottom-4";
-/** Extra offset when a sticky action bar sits above the bottom nav (AD-16 / AD-19). */
+/** Extra offset when a sticky action bar sits above the bottom nav (AD-16 / AD-19).
+ *  Mobile padding keeps sticky save from covering form controls (e.g. รับคิวด้วย) at 390px. */
 export const ADMIN_THUMB_BAR_OFFSET_CLASS =
-  "pb-[calc(10.5rem+env(safe-area-inset-bottom,0px))] lg:pb-24";
+  "pb-[calc(13rem+env(safe-area-inset-bottom,0px))] lg:pb-24";
 export const ADMIN_NAV_BAR_PADDING_CLASS =
   "pb-[env(safe-area-inset-bottom,0px)]";
 

@@ -36,6 +36,10 @@ import {
   type TrialLeadNote,
   type TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
+import type {
+  CreateShopCancelFeedbackInput,
+  ShopCancelFeedback,
+} from "@/lib/billing/cancel-feedback";
 import type { Appointment, Barber, BusyInterval, Shop, ShopService, TimeBlock } from "@/types/booking";
 import {
   countBreaksForWeekday,
@@ -68,6 +72,7 @@ interface MemoryState {
   shopManagers: ShopManager[];
   shopManagerInvites: ShopManagerInvite[];
   barberLineInvites: BarberLineInvite[];
+  shopCancelFeedback: ShopCancelFeedback[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -95,6 +100,7 @@ function getState(): MemoryState {
       shopManagers: [],
       shopManagerInvites: [],
       barberLineInvites: [],
+      shopCancelFeedback: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
@@ -104,7 +110,7 @@ function getState(): MemoryState {
           subscribed_until: null,
           is_demo: false,
           barber_tier: "tier1",
-          created_at: nowIso(),
+          created_at: trialDay26Iso(),
           updated_at: nowIso(),
         },
         {
@@ -115,7 +121,7 @@ function getState(): MemoryState {
           subscribed_until: null,
           is_demo: true,
           barber_tier: "tier1",
-          created_at: nowIso(),
+          created_at: trialDay26Iso(),
           updated_at: nowIso(),
         },
       ],
@@ -187,7 +193,7 @@ function getState(): MemoryState {
         subscribed_until: null,
         is_demo: false,
         barber_tier: "tier1",
-        created_at: nowIso(),
+        created_at: trialDay26Iso(),
         updated_at: nowIso(),
       },
       {
@@ -198,7 +204,7 @@ function getState(): MemoryState {
         subscribed_until: null,
         is_demo: true,
         barber_tier: "tier1",
-        created_at: nowIso(),
+        created_at: trialDay26Iso(),
         updated_at: nowIso(),
       },
     ];
@@ -211,9 +217,12 @@ function getState(): MemoryState {
       subscribed_until: null,
       is_demo: true,
       barber_tier: "tier1",
-      created_at: nowIso(),
+      created_at: trialDay26Iso(),
       updated_at: nowIso(),
     });
+  }
+  if (!g[GLOBAL_KEY].shopCancelFeedback) {
+    g[GLOBAL_KEY].shopCancelFeedback = [];
   }
   if (!g[GLOBAL_KEY].lineOaInstallRequests) {
     g[GLOBAL_KEY].lineOaInstallRequests = [];
@@ -286,6 +295,11 @@ function withBarberLock<T>(barberId: string, fn: () => Promise<T>): Promise<T> {
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+/** ~day 27 of a 30-day trial — billing notice visible in local prototype. */
+function trialDay26Iso(): string {
+  return new Date(Date.now() - 26 * 24 * 60 * 60 * 1000).toISOString();
 }
 
 function uuid(): string {
@@ -1772,5 +1786,28 @@ export const memoryStore: BookingStore = {
     };
     getState().trialLeadNotes.push(row);
     return { ...row };
+  },
+
+  async createShopCancelFeedback(input: CreateShopCancelFeedbackInput) {
+    const shop = getState().shops.find((s) => s.id === input.shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const row: ShopCancelFeedback = {
+      id: uuid(),
+      shop_id: input.shopId,
+      reason: input.reason,
+      detail: input.detail?.trim() ? input.detail.trim() : null,
+      bookable_count: input.bookableCount ?? null,
+      recommended_tier: input.recommendedTier ?? null,
+      created_by_barber_id: input.createdByBarberId ?? null,
+      created_at: nowIso(),
+    };
+    getState().shopCancelFeedback.push(row);
+    return { ...row };
+  },
+
+  async listShopCancelFeedback() {
+    return [...getState().shopCancelFeedback]
+      .map((r) => ({ ...r }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
   },
 };
