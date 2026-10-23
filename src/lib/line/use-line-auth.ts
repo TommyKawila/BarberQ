@@ -6,6 +6,7 @@ import {
   buildLiffLoginRedirectUri,
   saveLiffReturnPath,
 } from "@/lib/line/liff-return";
+import { canUseCustomerBookingSession } from "@/lib/line/line-auth-session";
 
 const REF_KEY = "barberq_customer_ref";
 
@@ -34,6 +35,14 @@ function startLiffLogin() {
   liff.login({ redirectUri: buildLiffLoginRedirectUri() });
 }
 
+function readLiffAccessToken(): string | null {
+  try {
+    return liff.getAccessToken() || null;
+  } catch {
+    return null;
+  }
+}
+
 export function useLineAuth() {
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
   const mockMode = !liffId;
@@ -57,7 +66,17 @@ export function useLineAuth() {
       .then(async () => {
         if (cancelled) return;
         setIsInClient(liff.isInClient());
-        if (liff.isLoggedIn()) {
+        const loggedIn = liff.isLoggedIn();
+        const accessToken = readLiffAccessToken();
+        // Profile without access token (plain /{slug} in LINE browser) cannot
+        // call booking APIs — show login instead of a doomed submit.
+        if (
+          canUseCustomerBookingSession({
+            mockMode: false,
+            loggedIn,
+            accessToken,
+          })
+        ) {
           const p = await liff.getProfile();
           if (cancelled) return;
           setProfile({

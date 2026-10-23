@@ -63,10 +63,11 @@ export async function POST(
       event: "new_booking",
     }).catch(() => {});
 
-    // LINE confirm/ticket: server push after commit (same Messaging API path as
-    // shop-cancel). Must not depend on liff.sendMessages / client confirm-notify —
-    // those never reliably fire in LIFF rich-menu. Await so Vercel does not kill
-    // the work; errors are logged and never fail the booking response.
+    // LINE confirm Flex: server push after commit (same Messaging API path as
+    // shop-cancel). Online appointments get confirm only (no queue-ticket Flex).
+    // Must not depend on liff.sendMessages / client confirm-notify — those never
+    // reliably fire in LIFF rich-menu. Await so Vercel does not kill the work;
+    // errors are logged and never fail the booking response.
     const forPush: Appointment = {
       ...appointment,
       customer_line_id: appointment.customer_line_id ?? customer.userId,

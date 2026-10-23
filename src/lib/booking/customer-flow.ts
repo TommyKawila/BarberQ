@@ -64,6 +64,7 @@ export function bookingErrorI18nKey(code: string | undefined): MessageKey {
     case "INVALID_NAME":
       return "booking.invalidName";
     case "UNAUTHORIZED":
+    case "INVALID_CUSTOMER":
       return "booking.unauthorized";
     case "SLOT_PAST":
       return "booking.slotPast";
@@ -75,6 +76,14 @@ export function bookingErrorI18nKey(code: string | undefined): MessageKey {
       return "booking.rescheduleLimit";
     case "NOT_RESCHEDULABLE":
       return "booking.rescheduleFailed";
+    case "BARBER_NOT_FOUND":
+    case "INVALID_BARBER":
+      return "booking.barberNotFound";
+    case "SHOP_INACTIVE":
+    case "SHOP_NOT_FOUND":
+      return "booking.shopUnavailable";
+    case "INTERNAL":
+      return "booking.failedCheckMine";
     default:
       return "booking.failed";
   }

@@ -5,7 +5,10 @@ import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { RescheduleFlow } from "@/components/customer/RescheduleFlow";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
-import { cancelPageActions } from "@/lib/booking/cancel-page-actions";
+import {
+  cancelBlockedDetailKey,
+  cancelPageActions,
+} from "@/lib/booking/cancel-page-actions";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
@@ -160,8 +163,8 @@ export function CancelClient({
               </button>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-amber-400">
-                  {t("booking.cancelTooLateDetail").replace(
+                <p className="text-sm text-amber-400" data-testid="cancel-blocked-detail">
+                  {t(cancelBlockedDetailKey(current)).replace(
                     "{minutes}",
                     String(CANCEL_LEAD_MINUTES),
                   )}

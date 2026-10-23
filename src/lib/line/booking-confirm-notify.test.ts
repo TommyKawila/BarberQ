@@ -2,7 +2,10 @@ import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { getStore } from "@/lib/data";
 import {
+  buildBookingConfirmFlexPair,
+  messagesForBookingConfirm,
   pushBookingConfirmFallback,
+  shouldIncludeQueueTicketWithConfirm,
   shouldSendLineBookingConfirmPush,
 } from "@/lib/line/booking-confirm-notify";
 import {
@@ -141,5 +144,35 @@ describe("pushBookingConfirmFallback", () => {
     assert.equal(result.sent, false);
     assert.equal(result.skippedReason, "disabled");
     assert.equal(await countCountedPushesThisMonth(SHOP_ID), 0);
+  });
+});
+
+describe("online booking confirm must not include queue-ticket Flex", () => {
+  it("gates ticket on via_qr only", () => {
+    assert.equal(shouldIncludeQueueTicketWithConfirm({ via_qr: false }), false);
+    assert.equal(shouldIncludeQueueTicketWithConfirm({}), false);
+    assert.equal(shouldIncludeQueueTicketWithConfirm({ via_qr: true }), true);
+  });
+
+  it("buildBookingConfirmFlexPair omits ticket for online LINE appointments", async () => {
+    const pair = await buildBookingConfirmFlexPair(shop(), apt({ via_qr: false }));
+    assert.ok(pair);
+    assert.equal(pair!.ticket, null);
+    const messages = messagesForBookingConfirm(pair!);
+    assert.equal(messages.length, 1);
+    assert.equal(messages[0], pair!.confirm);
+  });
+
+  it("buildBookingConfirmFlexPair includes ticket only for via_qr", async () => {
+    const pair = await buildBookingConfirmFlexPair(
+      shop(),
+      apt({ via_qr: true, source: "walk_in" }),
+    );
+    assert.ok(pair);
+    assert.ok(pair!.ticket);
+    const messages = messagesForBookingConfirm(pair!);
+    assert.equal(messages.length, 2);
+    assert.equal(messages[0], pair!.confirm);
+    assert.equal(messages[1], pair!.ticket);
   });
 });

@@ -20,6 +20,7 @@ import {
   canShowOwnerTools,
   canSubmitBooking,
   defaultBookableBarberId,
+  findOwnBookingForSlot,
   isCustomerDateDisabled,
   isShopClosedOnDate,
   maskPhone,
@@ -38,6 +39,7 @@ import {
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { useLineAuth } from "@/lib/line/use-line-auth";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
+import { buildAdminCustomerBookingUrl, isLiffCustomerUrl } from "@/lib/line/liff-url";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import {
@@ -69,7 +71,7 @@ interface SuccessState {
 
 export function BookingApp() {
   const { t, locale } = useI18n();
-  const { shopApi, shopPath } = useShopSlug();
+  const { shopSlug, shopApi, shopPath } = useShopSlug();
   const {
     shopName,
     coverImageUrl,
@@ -472,6 +474,13 @@ export function BookingApp() {
   async function submitBooking() {
     if (!barberId || !selectedStart || !profile) return;
     if (!canSubmitBooking(submittingRef.current)) return;
+    const authHeaders = getLineAuthHeaders(mockMode ? profile.userId : undefined);
+    if (!mockMode && !("Authorization" in authHeaders)) {
+      // Plain web / stale LIFF session: profile may show but API needs a token.
+      setMessage(t("booking.unauthorized"));
+      login();
+      return;
+    }
     submittingRef.current = true;
     setSubmitting(true);
     setMessage(null);
@@ -480,7 +489,7 @@ export function BookingApp() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...getLineAuthHeaders(mockMode ? profile.userId : undefined),
+          ...authHeaders,
         },
         body: JSON.stringify({
           barberId,
@@ -498,22 +507,18 @@ export function BookingApp() {
       } & ApiError;
       if (!res.ok || !json.appointment) {
         const code = json.error?.code;
-        // Retry after a "false failure": booking may already exist for this slot.
-        if (
-          (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") &&
-          barberId &&
-          selectedStart
-        ) {
+        // False failure: row may already be committed (slot race, or legacy
+        // post-create patch error on DBs missing appointments.source).
+        if (barberId && selectedStart) {
           try {
             const mineRes = await fetch(shopApi("/bookings"), {
               headers: getLineAuthHeaders(mockMode ? profile.userId : undefined),
             });
             const mineJson = (await mineRes.json()) as { appointments?: Appointment[] };
-            const existing = (mineJson.appointments ?? []).find(
-              (a) =>
-                a.status === "confirmed" &&
-                a.barber_id === barberId &&
-                a.start_time === selectedStart,
+            const existing = findOwnBookingForSlot(
+              mineJson.appointments ?? [],
+              barberId,
+              selectedStart,
             );
             if (existing) {
               setPhone(normalizeCustomerPhone(phone ?? ""));
@@ -526,8 +531,10 @@ export function BookingApp() {
               return;
             }
           } catch {
-            /* fall through to slot-taken UI */
+            /* fall through to error UI */
           }
+        }
+        if (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") {
           setMessage(t("booking.slotTaken"));
           setSelectedStart(null);
           void silentRefresh();
@@ -564,7 +571,7 @@ export function BookingApp() {
         });
       }
     } catch {
-      setMessage(t("booking.failed"));
+      setMessage(t("booking.failedCheckMine"));
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -586,10 +593,13 @@ export function BookingApp() {
   }
 
   if (!profile && !mockMode) {
+    const liffEntry = buildAdminCustomerBookingUrl(shopSlug);
+    const showLiffOpen = isLiffCustomerUrl(liffEntry);
     return (
       <section className="flex flex-col gap-4 px-4 py-8">
         <BookingHero shopName={shopName} coverImageUrl={coverImageUrl} prototypeMode={prototypeMode} />
         <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
+        <p className="text-xs text-zinc-500">{t("booking.lineLoginHint")}</p>
         <button
           type="button"
           onClick={login}
@@ -597,6 +607,14 @@ export function BookingApp() {
         >
           {t("booking.loginWithLine")}
         </button>
+        {showLiffOpen ? (
+          <a
+            href={liffEntry}
+            className="flex min-h-12 items-center justify-center rounded-xl border border-zinc-700 text-sm font-semibold text-zinc-100"
+          >
+            {t("booking.openInLiff")}
+          </a>
+        ) : null}
       </section>
     );
   }

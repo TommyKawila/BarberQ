@@ -11,8 +11,8 @@ export const dynamic = "force-dynamic";
 
 /**
  * Fallback when liff.sendMessages is unavailable/fails (rich menu / scope /
- * outside OA chat). Pushes confirm + queue ticket Flex under the shop OA
- * (counts toward the 300 monthly push quota).
+ * outside OA chat). Pushes confirm Flex under the shop OA (queue-ticket Flex
+ * only when via_qr). Counts toward the 300 monthly push quota.
  */
 export async function POST(
   req: Request,

@@ -8,6 +8,7 @@ import liff from "@line/liff";
 import { RescheduleFlow } from "@/components/customer/RescheduleFlow";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { ReminderLeadChips } from "@/components/customer/ReminderLeadChips";
+import { cancelBlockedDetailKey } from "@/lib/booking/cancel-page-actions";
 import {
   isAppointmentUpcoming,
   partitionCustomerAppointments,
@@ -298,8 +299,8 @@ export default function MyBookingsPage() {
           </div>
         ) : isUpcoming && apt.status === "confirmed" ? (
           <div className="mt-3 space-y-2">
-            <p className="text-xs text-amber-400">
-              {t("booking.cancelTooLateDetail").replace(
+            <p className="text-xs text-amber-400" data-testid="cancel-blocked-detail">
+              {t(cancelBlockedDetailKey(apt)).replace(
                 "{minutes}",
                 String(CANCEL_LEAD_MINUTES),
               )}

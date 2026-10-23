@@ -1,12 +1,14 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildAdminCustomerBookingUrl,
   buildCustomerCancelUrl,
   buildShopBookingsCustomerUrl,
   buildShopCustomerUrl,
   buildShopLiffUrl,
   buildShopWebUrl,
   CLIPPERQ_PROD_LIFF_ID,
+  isLiffCustomerUrl,
   resolveCustomerLiffId,
 } from "@/lib/line/liff-url";
 
@@ -72,5 +74,13 @@ describe("liff customer URLs", () => {
       `https://liff.line.me/${CLIPPERQ_PROD_LIFF_ID}/phinxstudio/bookings`,
     );
     assert.doesNotMatch(url, /barber-q-pi\.vercel\.app/);
+  });
+
+  it("admin customer booking entry prefers LIFF over plain /{slug}", () => {
+    process.env.NEXT_PUBLIC_LIFF_ID = "2011489694-gV1vPUNC";
+    const url = buildAdminCustomerBookingUrl("barberqpilottest");
+    assert.equal(url, "https://liff.line.me/2011489694-gV1vPUNC/barberqpilottest");
+    assert.equal(isLiffCustomerUrl(url), true);
+    assert.equal(isLiffCustomerUrl("/barberqpilottest"), false);
   });
 });
