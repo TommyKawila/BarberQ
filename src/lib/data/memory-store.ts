@@ -163,6 +163,7 @@ function getState(): MemoryState {
       bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
       showFlexBrandFooter: true,
+      bookingAdvanceDays: 30,
     };
     g[GLOBAL_KEY].shopSettings[DEMO_SHOP_ID] = {
       shopId: DEMO_SHOP_ID,
@@ -178,6 +179,7 @@ function getState(): MemoryState {
       bookingConfirmPushEnabled: false,
       queueAheadPushEnabled: false,
       showFlexBrandFooter: true,
+      bookingAdvanceDays: 30,
     };
   }
   if (!g[GLOBAL_KEY].recurringBreaks) {
@@ -254,6 +256,7 @@ function getState(): MemoryState {
         bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
       showFlexBrandFooter: true,
+      bookingAdvanceDays: 30,
       },
     };
   }
@@ -980,6 +983,7 @@ export const memoryStore: BookingStore = {
         bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
       showFlexBrandFooter: true,
+      bookingAdvanceDays: 30,
       }
     );
   },
@@ -999,6 +1003,7 @@ export const memoryStore: BookingStore = {
       bookingConfirmPushEnabled: input.bookingConfirmPushEnabled,
       queueAheadPushEnabled: input.queueAheadPushEnabled !== false,
       showFlexBrandFooter: input.showFlexBrandFooter !== false,
+      bookingAdvanceDays: input.bookingAdvanceDays,
     };
   },
 
@@ -1230,6 +1235,7 @@ export const memoryStore: BookingStore = {
         bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
       showFlexBrandFooter: true,
+      bookingAdvanceDays: 30,
       };
       return shop;
     }
@@ -1266,6 +1272,7 @@ export const memoryStore: BookingStore = {
       bookingConfirmPushEnabled: true,
       queueAheadPushEnabled: true,
       showFlexBrandFooter: true,
+      bookingAdvanceDays: 30,
     };
 
     barbers.push({

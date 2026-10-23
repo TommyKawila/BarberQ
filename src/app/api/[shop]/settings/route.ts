@@ -19,6 +19,10 @@ import {
   DEFAULT_SHOP_REMINDER_LEAD_MINUTES,
   isReminderLeadPreset,
 } from "@/lib/reminders/presets";
+import {
+  clampBookingAdvanceDays,
+  DEFAULT_BOOKING_ADVANCE_DAYS,
+} from "@/lib/services/slot-service";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -69,6 +73,7 @@ export async function PUT(
       bookingConfirmPushEnabled?: boolean;
       queueAheadPushEnabled?: boolean;
       showFlexBrandFooter?: boolean;
+      bookingAdvanceDays?: number;
     }>(req);
 
     const current = await getStore().getShopSettings(shop.id);
@@ -84,6 +89,9 @@ export async function PUT(
       bookingConfirmPushEnabled: current.bookingConfirmPushEnabled !== false,
       queueAheadPushEnabled: current.queueAheadPushEnabled !== false,
       showFlexBrandFooter: current.showFlexBrandFooter !== false,
+      bookingAdvanceDays: clampBookingAdvanceDays(
+        current.bookingAdvanceDays ?? DEFAULT_BOOKING_ADVANCE_DAYS,
+      ),
     };
 
     if ("logoDataUrl" in body) {
@@ -148,6 +156,10 @@ export async function PUT(
 
     if ("showFlexBrandFooter" in body) {
       next.showFlexBrandFooter = Boolean(body.showFlexBrandFooter);
+    }
+
+    if ("bookingAdvanceDays" in body) {
+      next.bookingAdvanceDays = clampBookingAdvanceDays(body.bookingAdvanceDays);
     }
 
     await getStore().setShopSettings(shop.id, next);

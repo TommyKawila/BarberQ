@@ -6,6 +6,10 @@ import {
   type PublicShopSettings,
 } from "@/lib/shop/shop-settings-client";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
+import {
+  clampBookingAdvanceDays,
+  DEFAULT_BOOKING_ADVANCE_DAYS,
+} from "@/lib/services/slot-service";
 
 interface ShopBrandContextValue {
   logoDataUrl: string | null;
@@ -16,6 +20,7 @@ interface ShopBrandContextValue {
   hours: ShopHours;
   remindersEnabled: boolean;
   reminderLeadMinutes: number;
+  bookingAdvanceDays: number;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
   setCoverImageUrl: (value: string | null) => void;
@@ -39,6 +44,7 @@ function applySettings(
     setHours: (v: ShopHours) => void;
     setRemindersEnabled: (v: boolean) => void;
     setReminderLeadMinutes: (v: number) => void;
+    setBookingAdvanceDays: (v: number) => void;
   },
 ) {
   setters.setLogoDataUrl(json.logoDataUrl ?? null);
@@ -50,6 +56,9 @@ function applySettings(
   setters.setRemindersEnabled(Boolean(json.remindersEnabled));
   setters.setReminderLeadMinutes(
     typeof json.reminderLeadMinutes === "number" ? json.reminderLeadMinutes : 120,
+  );
+  setters.setBookingAdvanceDays(
+    clampBookingAdvanceDays(json.bookingAdvanceDays ?? DEFAULT_BOOKING_ADVANCE_DAYS),
   );
 }
 
@@ -68,6 +77,7 @@ export function ShopBrandProvider({
   const [hours, setHours] = useState<ShopHours>(() => normalizeShopHours(null));
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderLeadMinutes, setReminderLeadMinutes] = useState(120);
+  const [bookingAdvanceDays, setBookingAdvanceDays] = useState(DEFAULT_BOOKING_ADVANCE_DAYS);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(
@@ -81,6 +91,7 @@ export function ShopBrandProvider({
         setHours,
         setRemindersEnabled,
         setReminderLeadMinutes,
+        setBookingAdvanceDays,
       };
       try {
         let json: PublicShopSettings;
@@ -122,6 +133,7 @@ export function ShopBrandProvider({
       hours,
       remindersEnabled,
       reminderLeadMinutes,
+      bookingAdvanceDays,
       loading,
       setLogoDataUrl,
       setCoverImageUrl,
@@ -139,6 +151,7 @@ export function ShopBrandProvider({
       hours,
       remindersEnabled,
       reminderLeadMinutes,
+      bookingAdvanceDays,
       loading,
       refresh,
     ],

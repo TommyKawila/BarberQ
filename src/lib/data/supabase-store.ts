@@ -5,6 +5,10 @@ import {
   nextAppointmentCreatePatch,
 } from "@/lib/data/appointment-create-patch";
 import {
+  clampBookingAdvanceDays,
+  DEFAULT_BOOKING_ADVANCE_DAYS,
+} from "@/lib/services/slot-service";
+import {
   StoreConflict,
   type BookingStore,
   type CreateBarberInput,
@@ -681,6 +685,8 @@ export const supabaseStore: BookingStore = {
 
   async getShopSettings(shopId) {
     const supabase = createServiceClient();
+    const advanceSelect =
+      "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes, booking_confirm_push_enabled, queue_ahead_push_enabled, show_flex_brand_footer, booking_advance_days";
     const brandFooterSelect =
       "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours, reminders_enabled, reminder_lead_minutes, booking_confirm_push_enabled, queue_ahead_push_enabled, show_flex_brand_footer";
     const p8Select =
@@ -693,6 +699,19 @@ export const supabaseStore: BookingStore = {
       "shop_id, logo_data_url, cover_image_url, shop_name, shop_line_url, shop_phone, hours";
     let data: Record<string, unknown> | null = null;
     {
+      const withAdvance = await supabase
+        .from("shop_settings")
+        .select(advanceSelect)
+        .eq("shop_id", shopId)
+        .maybeSingle();
+      if (!withAdvance.error) {
+        data = (withAdvance.data as Record<string, unknown> | null) ?? null;
+      } else {
+      const advMsg = withAdvance.error.message ?? "";
+      const missingAdvance =
+        withAdvance.error.code === "42703" || advMsg.includes("booking_advance_days");
+      if (!missingAdvance) throw new Error(withAdvance.error.message);
+
       const first = await supabase
         .from("shop_settings")
         .select(brandFooterSelect)
@@ -773,6 +792,7 @@ export const supabaseStore: BookingStore = {
       } else {
         data = (first.data as Record<string, unknown> | null) ?? null;
       }
+      } // end missing-advance fallback
     }
     const leadRaw = data?.reminder_lead_minutes;
     const leadMinutes =
@@ -797,6 +817,9 @@ export const supabaseStore: BookingStore = {
       brandFooterRaw === undefined || brandFooterRaw === null
         ? true
         : Boolean(brandFooterRaw);
+    const bookingAdvanceDays = clampBookingAdvanceDays(
+      data?.booking_advance_days ?? DEFAULT_BOOKING_ADVANCE_DAYS,
+    );
     return {
       shopId,
       logoDataUrl: (data?.logo_data_url as string | null) ?? null,
@@ -812,6 +835,7 @@ export const supabaseStore: BookingStore = {
       bookingConfirmPushEnabled,
       queueAheadPushEnabled,
       showFlexBrandFooter,
+      bookingAdvanceDays,
     };
   },
 
@@ -830,6 +854,7 @@ export const supabaseStore: BookingStore = {
       booking_confirm_push_enabled: input.bookingConfirmPushEnabled,
       queue_ahead_push_enabled: input.queueAheadPushEnabled !== false,
       show_flex_brand_footer: input.showFlexBrandFooter !== false,
+      booking_advance_days: input.bookingAdvanceDays,
       updated_at: new Date().toISOString(),
     };
     const { error } = await supabase.from("shop_settings").upsert(payload);
@@ -839,8 +864,12 @@ export const supabaseStore: BookingStore = {
         error.code === "42703" ||
         msg.includes("queue_ahead_push_enabled") ||
         msg.includes("booking_confirm_push_enabled") ||
-        msg.includes("show_flex_brand_footer")
+        msg.includes("show_flex_brand_footer") ||
+        msg.includes("booking_advance_days")
       ) {
+        if (msg.includes("booking_advance_days")) {
+          delete payload.booking_advance_days;
+        }
         if (msg.includes("show_flex_brand_footer")) {
           delete payload.show_flex_brand_footer;
         }

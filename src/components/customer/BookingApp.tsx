@@ -81,13 +81,17 @@ export function BookingApp() {
     hours,
     remindersEnabled: brandRemindersEnabled,
     reminderLeadMinutes: brandReminderLead,
+    bookingAdvanceDays,
     loading: brandLoading,
   } = useShopBrand();
   // Prefer brand (TTL-cached /settings) — no per-slot re-download of ~100KB logo.
   const remindersEnabled = brandRemindersEnabled;
   const shopReminderLead = brandReminderLead;
   const { ready, profile, login, mockMode } = useLineAuth();
-  const dates = useMemo(() => getBookableDates(), []);
+  const dates = useMemo(
+    () => getBookableDates(new Date(), bookingAdvanceDays),
+    [bookingAdvanceDays],
+  );
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [barbersLoading, setBarbersLoading] = useState(true);
   const [staff, setStaff] = useState<ShopStaffMe | null>(null);

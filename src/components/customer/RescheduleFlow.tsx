@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { BarberSelector } from "@/components/customer/BarberSelector";
@@ -10,10 +10,12 @@ import {
   bookingErrorI18nKey,
   isShopClosedOnDate,
 } from "@/lib/booking/customer-flow";
+import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 import {
+  DEFAULT_BOOKING_ADVANCE_DAYS,
   formatSlotTime,
   getBookableDates,
   SHOP_TIMEZONE,
@@ -41,6 +43,7 @@ export function RescheduleFlow({
 }: RescheduleFlowProps) {
   const { locale, t } = useI18n();
   const { shopApi } = useShopSlug();
+  const { bookingAdvanceDays } = useShopBrand();
   const [barberId, setBarberId] = useState<string | null>(appointment.barber_id);
   const [dateISO, setDateISO] = useState<string | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -49,7 +52,14 @@ export function RescheduleFlow({
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const dates = getBookableDates();
+  const dates = useMemo(
+    () =>
+      getBookableDates(
+        new Date(),
+        bookingAdvanceDays ?? DEFAULT_BOOKING_ADVANCE_DAYS,
+      ),
+    [bookingAdvanceDays],
+  );
   const shopHours = normalizeShopHours(hours);
   const barber = barbers.find((b) => b.id === barberId) ?? null;
   const dateLocale = locale === "th" ? th : enUS;

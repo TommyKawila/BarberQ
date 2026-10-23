@@ -72,6 +72,7 @@ interface SettingsResponse {
   lineUrl?: string | null;
   phone?: string | null;
   hours?: ShopHours | null;
+  bookingAdvanceDays?: number;
 }
 
 interface CoverImageResponse {
@@ -223,7 +224,10 @@ export default function AdminSettingsPage() {
   const [hoursBaseline, setHoursBaseline] = useState<ShopDayHours[]>(() =>
     DEFAULT_SHOP_HOURS.map((d) => ({ ...d })),
   );
-  const hoursDirty = !hoursEqual(hours, hoursBaseline);
+  const [advanceDays, setAdvanceDays] = useState(30);
+  const [advanceDaysBaseline, setAdvanceDaysBaseline] = useState(30);
+  const hoursDirty =
+    !hoursEqual(hours, hoursBaseline) || advanceDays !== advanceDaysBaseline;
   const [savingHours, setSavingHours] = useState(false);
   const [hoursMessage, setHoursMessage] = useState<string | null>(null);
   const [hoursError, setHoursError] = useState<string | null>(null);
@@ -271,6 +275,10 @@ export default function AdminSettingsPage() {
         const next = normalizeShopHours(json.hours);
         setHours(next);
         setHoursBaseline(next.map((d) => ({ ...d })));
+      }
+      if (typeof json.bookingAdvanceDays === "number") {
+        setAdvanceDays(json.bookingAdvanceDays);
+        setAdvanceDaysBaseline(json.bookingAdvanceDays);
       }
     })();
   }, [authHeaders, profile, ready, shopApi]);
@@ -349,6 +357,7 @@ export default function AdminSettingsPage() {
       lineUrl?: string | null;
       phone?: string | null;
       hours?: ShopHours;
+      bookingAdvanceDays?: number;
     }) => {
       const headers: HeadersInit = { "Content-Type": "application/json", ...authHeaders };
       const res = await fetch(shopApi("/settings"), {
@@ -455,21 +464,25 @@ export default function AdminSettingsPage() {
     setHoursMessage(null);
     try {
       const next = normalizeShopHours(hours);
-      await putSettings({ hours: next });
+      const days = Math.min(90, Math.max(1, Math.round(advanceDays) || 30));
+      await putSettings({ hours: next, bookingAdvanceDays: days });
       setHours(next);
       setHoursBaseline(next.map((d) => ({ ...d })));
+      setAdvanceDays(days);
+      setAdvanceDaysBaseline(days);
       setHoursMessage(t("admin.shopHoursSaved"));
     } catch (err) {
       setHoursError(err instanceof Error ? err.message : t("admin.updateFailed"));
     } finally {
       setSavingHours(false);
     }
-  }, [hours, putSettings, t]);
+  }, [hours, advanceDays, putSettings, t]);
 
   const discardHours = useCallback(() => {
     setHours(hoursBaseline.map((d) => ({ ...d })));
+    setAdvanceDays(advanceDaysBaseline);
     setHoursError(null);
-  }, [hoursBaseline]);
+  }, [hoursBaseline, advanceDaysBaseline]);
 
   function updateHour(index: number, patch: Partial<ShopDayHours>) {
     setHours((current) => current.map((day, i) => (i === index ? { ...day, ...patch } : day)));
@@ -839,6 +852,21 @@ export default function AdminSettingsPage() {
               <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionHours")}</h2>
               <div className={CARD}>
                 <p className="text-sm text-zinc-400">{t("admin.shopHoursHint")}</p>
+                <label className="mt-4 flex flex-col gap-1.5">
+                  <span className="text-sm font-medium text-zinc-200">
+                    {t("admin.bookingAdvanceDays")}
+                  </span>
+                  <span className="text-xs text-zinc-500">{t("admin.bookingAdvanceDaysHint")}</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={90}
+                    value={advanceDays}
+                    onChange={(e) => setAdvanceDays(Number(e.target.value) || 1)}
+                    className="mt-1 h-11 w-28 rounded-lg bg-zinc-800 px-3 text-sm tabular-nums text-zinc-100"
+                    data-testid="booking-advance-days"
+                  />
+                </label>
                 <div className="mt-4 overflow-hidden rounded-xl bg-zinc-950">
                   {WEEKDAYS.map((day, index) => {
                     const row = hours[day.value];
