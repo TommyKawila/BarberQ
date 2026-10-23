@@ -10,7 +10,9 @@ import {
   TeamListSkeleton,
 } from "@/components/admin/AdminContentSkeleton";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { OverTierModal } from "@/components/admin/OverTierModal";
 import { StaffActionsSheet } from "@/components/admin/StaffActionsSheet";
+import type { OverTierPromptCopy } from "@/lib/billing/barber-tier";
 import { OfflineBanner } from "@/components/ui/OfflineBanner";
 import { useToast } from "@/components/ui/ToastProvider";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
@@ -63,6 +65,8 @@ export default function AdminStaffPage() {
   const [pendingBookableIds, setPendingBookableIds] = useState<string[]>([]);
   const [bookableErrors, setBookableErrors] = useState<Record<string, string>>({});
   const [todayCounts, setTodayCounts] = useState<Record<string, number>>({});
+  const [overTierPrompt, setOverTierPrompt] = useState<OverTierPromptCopy | null>(null);
+  const supportLineUrl = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL ?? null;
 
   const loadBarbers = useCallback(async () => {
     setLoadingBarbers(true);
@@ -133,7 +137,9 @@ export default function AdminStaffPage() {
           slotDuration,
         }),
       });
-      const json = (await res.json()) as ApiError;
+      const json = (await res.json()) as ApiError & {
+        overTierWarning?: { prompt?: OverTierPromptCopy };
+      };
       if (!res.ok) {
         setError(json.error?.message ?? t("admin.updateFailed"));
         return;
@@ -141,6 +147,9 @@ export default function AdminStaffPage() {
       setFormMessage(t("admin.barberCreated"));
       resetForm();
       await loadBarbers();
+      if (json.overTierWarning?.prompt) {
+        setOverTierPrompt(json.overTierWarning.prompt);
+      }
     } catch {
       setError(t("admin.networkError"));
     } finally {
@@ -169,9 +178,14 @@ export default function AdminStaffPage() {
         headers: { "Content-Type": "application/json", ...authHeaders },
         body: JSON.stringify({ isBookable: next }),
       });
-      const json = (await res.json()) as ApiError;
+      const json = (await res.json()) as ApiError & {
+        overTierWarning?: { prompt?: OverTierPromptCopy };
+      };
       if (!res.ok) {
         throw new Error(json.error?.message ?? t("admin.saveBookableFailed"));
+      }
+      if (json.overTierWarning?.prompt) {
+        setOverTierPrompt(json.overTierWarning.prompt);
       }
     } catch {
       setBarbers((current) =>
@@ -430,8 +444,8 @@ export default function AdminStaffPage() {
               const displayName = barberLabel(barber.name, locale);
               const bookable = isBarberBookable(barber);
               const isPending = pendingBookableIds.includes(barber.id);
-              const statusLabelKey = getQueueStatusLabelKey(bookable);
-              const statusHintKey = getQueueStatusHintKey(bookable);
+              const statusLabelKey = getQueueStatusLabelKey(bookable, barber.role);
+              const statusHintKey = getQueueStatusHintKey(bookable, barber.role);
               const cardError = bookableErrors[barber.id];
 
               return (
@@ -561,6 +575,13 @@ export default function AdminStaffPage() {
             setConfirmAction({ type: "remove", barber: menuBarber });
             setMenuBarber(null);
           }}
+        />
+        <OverTierModal
+          open={Boolean(overTierPrompt)}
+          copy={overTierPrompt}
+          supportLineUrl={supportLineUrl}
+          onContinue={() => setOverTierPrompt(null)}
+          onClose={() => setOverTierPrompt(null)}
         />
       </div>
     </AdminShell>

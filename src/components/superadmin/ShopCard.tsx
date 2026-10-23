@@ -1,9 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  BARBER_TIERS,
+  isOverTier,
+  tierRangeLabelTh,
+  type BarberTierId,
+} from "@/lib/billing/barber-tier";
+import { overTierFlagLabel } from "@/lib/billing/over-tier-flags";
 import { buildShopLiffUrl, buildShopWebUrl } from "@/lib/line/liff-url";
 import { buildOwnerInviteUrl } from "@/lib/owner/invite-url";
 import type { BarberRole, Shop } from "@/types/booking";
+
+const OVER_TIER_FLAG_PREFIX = "เกินแพ็ก";
 
 export interface ShopStaffSummary {
   id: string;
@@ -19,6 +28,13 @@ interface ShopCardProps {
     setupReady?: boolean;
     hasFirstBooking?: boolean;
     bookableCount?: number;
+    seatBookableCount?: number;
+    overTier?: boolean;
+    seatFlags?: string[];
+    recommendedTier?: string;
+    recommendedTierLabel?: string;
+    recommendedPriceLabel?: string | null;
+    showBillingNotice?: boolean;
     staff?: ShopStaffSummary[];
   };
   superAdminToken?: string;
@@ -74,6 +90,40 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
   const [unlinkError, setUnlinkError] = useState<string | null>(null);
   const [unlinkSuccess, setUnlinkSuccess] = useState<string | null>(null);
+  const [barberTier, setBarberTier] = useState<BarberTierId>(
+    (shop.barber_tier as BarberTierId) ?? "tier1",
+  );
+  const [tierSaving, setTierSaving] = useState(false);
+  const [tierError, setTierError] = useState<string | null>(null);
+  const [tierSavedToast, setTierSavedToast] = useState(false);
+  const [overTier, setOverTier] = useState(Boolean(shop.overTier));
+  const [seatFlags, setSeatFlags] = useState<string[]>(shop.seatFlags ?? []);
+  useEffect(() => {
+    setBarberTier((shop.barber_tier as BarberTierId) ?? "tier1");
+    setOverTier(Boolean(shop.overTier));
+    setSeatFlags(shop.seatFlags ?? []);
+  }, [shop.barber_tier, shop.overTier, shop.seatFlags]);
+  useEffect(() => {
+    if (!tierSavedToast) return;
+    const timer = window.setTimeout(() => setTierSavedToast(false), 2500);
+    return () => window.clearTimeout(timer);
+  }, [tierSavedToast]);
+
+  function applyTierLocally(next: BarberTierId) {
+    const seats = shop.seatBookableCount ?? 0;
+    const nextOver = isOverTier(seats, next);
+    setBarberTier(next);
+    setOverTier(nextOver);
+    setSeatFlags((prev) => {
+      const withoutOver = prev.filter(
+        (label) =>
+          !label.startsWith(OVER_TIER_FLAG_PREFIX) &&
+          !label.startsWith("เกิน tier"),
+      );
+      if (!nextOver) return withoutOver;
+      return [overTierFlagLabel(seats, next), ...withoutOver];
+    });
+  }
   const expires = shop.subscribed_until
     ? new Date(shop.subscribed_until).toLocaleDateString("th-TH")
     : "—";
@@ -188,6 +238,39 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
     }
   }
 
+  async function handleTierChange(next: BarberTierId) {
+    if (!superAdminToken || next === barberTier) return;
+    setTierSaving(true);
+    setTierError(null);
+    setTierSavedToast(false);
+    try {
+      const res = await fetch(`/api/superadmin/shops/${shop.id}/barber-tier`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-superadmin-token": superAdminToken,
+        },
+        body: JSON.stringify({ barberTier: next }),
+      });
+      const json = (await res.json()) as {
+        shop?: Shop;
+        error?: string;
+      };
+      if (!res.ok) {
+        setTierError(json.error ?? "อัปเดตแพ็กไม่สำเร็จ");
+        return;
+      }
+      // Recompute badge/flags immediately so dropdown and status never contradict.
+      applyTierLocally(next);
+      setTierSavedToast(true);
+      onRegenerated?.();
+    } catch {
+      setTierError("อัปเดตแพ็กไม่สำเร็จ");
+    } finally {
+      setTierSaving(false);
+    }
+  }
+
   const statusClass =
     shop.status === "active"
       ? "bg-emerald-700/30 text-emerald-300"
@@ -196,7 +279,10 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
         : "bg-zinc-700 text-zinc-300";
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+    <div
+      className="rounded-xl border border-zinc-800 bg-zinc-900 p-4"
+      data-testid="superadmin-shop-card"
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="font-semibold">{shop.name}</h3>
@@ -210,16 +296,84 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
             <p className="text-xs text-zinc-400">
               Setup: {shop.setupReady ? "ready" : "incomplete"}
               {shop.hasFirstBooking ? " · first booking" : ""}
-              {shop.bookableCount !== undefined ? ` · ${shop.bookableCount} bookable` : ""}
+              {shop.seatBookableCount !== undefined
+                ? ` · จองได้ ${shop.seatBookableCount} คน`
+                : shop.bookableCount !== undefined
+                  ? ` · จองได้ ${shop.bookableCount} คน`
+                  : ""}
+            </p>
+          ) : null}
+          {shop.recommendedTierLabel ? (
+            <p
+              className="text-xs text-amber-200/90"
+              data-testid="recommended-tier"
+            >
+              แนะนำแพ็ก: {shop.recommendedTierLabel}
+              {shop.recommendedPriceLabel
+                ? ` ${shop.recommendedPriceLabel}/เดือน`
+                : " (มีคำถามทักเรา)"}
+              {shop.showBillingNotice ? " · แจ้งในแอดมินแล้ว" : ""}
             </p>
           ) : null}
           {shop.status === "pending" && inviteExpires ? (
             <p className="text-xs text-amber-400">Invite expires: {inviteExpires}</p>
           ) : null}
         </div>
-        <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${statusClass}`}>
-          {shop.status}
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <span className={`rounded-full px-2 py-0.5 text-xs ${statusClass}`}>
+            {shop.status}
+          </span>
+          {overTier ? (
+            <span
+              data-testid="over-tier-badge"
+              className="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-300"
+            >
+              เกินแพ็ก
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2 border-t border-zinc-800 pt-3">
+        <label className="block text-xs font-medium text-zinc-300">
+          แพ็กช่าง
+          <select
+            data-testid="barber-tier-select"
+            value={barberTier}
+            disabled={!superAdminToken || tierSaving}
+            onChange={(e) => void handleTierChange(e.target.value as BarberTierId)}
+            className="mt-1 min-h-11 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-sm text-zinc-100 disabled:opacity-50"
+          >
+            {BARBER_TIERS.map((id) => (
+              <option key={id} value={id}>
+                แพ็ก {tierRangeLabelTh(id)}
+              </option>
+            ))}
+          </select>
+        </label>
+        {tierSaving ? (
+          <p className="text-xs text-zinc-400">กำลังบันทึก…</p>
+        ) : null}
+        {tierSavedToast ? (
+          <p className="text-xs text-emerald-400" data-testid="tier-saved-toast">
+            บันทึกแล้ว
+          </p>
+        ) : null}
+        {tierError ? <p className="text-xs text-red-400">{tierError}</p> : null}
+        {seatFlags.length > 0 ? (
+          <div data-testid="seat-flags">
+            <p className="text-xs font-medium text-zinc-300">Flags (read-only)</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-[11px] text-amber-200/90">
+              {seatFlags.map((label) => (
+                <li key={label}>{label}</li>
+              ))}
+            </ul>
+          </div>
+        ) : (
+          <p className="text-[11px] text-zinc-500" data-testid="seat-flags-empty">
+            Flags: none
+          </p>
+        )}
       </div>
       {shop.slug ? (
         <div className="mt-3 space-y-3 border-t border-zinc-800 pt-3">

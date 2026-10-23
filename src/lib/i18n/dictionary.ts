@@ -586,7 +586,8 @@ export const dictionary = {
     "marketing.pricing.title": "ร้านเล็ก ๆ 1–2 ช่าง เริ่ม {price}/เดือน — ได้ทุกฟีเจอร์",
     "marketing.pricing.support": "ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่าง · ทดลองฟรี {days} วัน",
     "marketing.pricing.tier1Badge": "แนะนำสำหรับร้านเล็ก ๆ",
-    "marketing.pricing.tierSameFeatures": "ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่าง",
+    "marketing.pricing.tierSameFeatures":
+      "ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่างที่ลูกค้าจองได้ · บัญชีเจ้าของร้านฟรี 1 คน",
     "marketing.pricing.riskLine":
       "ไม่ต้องผูกบัตร ไม่มีการตัดเงินอัตโนมัติ — ครบ {days} วันค่อยเลือกว่าจะใช้ต่อไหม",
     "marketing.pricing.include1": "จองผ่าน LINE",
@@ -614,7 +615,7 @@ export const dictionary = {
     "marketing.faq.eyebrow": "คำถาม",
     "marketing.faq.title": "คำถามที่พบบ่อย",
     "marketing.faq.1.q": "คิดราคายังไง / หลัง {days} วันเกิดอะไรขึ้น?",
-    "marketing.faq.1.a": "1–2 ช่าง {price}/เดือน · 3–5 ช่าง {price2}/เดือน · 6–10 ช่าง {price3}/เดือน · เกิน 10 ติดต่อเรา · ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่าง · ทดลองฟรี {days} วันไม่ต้องผูกบัตร ไม่มีการตัดเงินอัตโนมัติ ยกเลิกได้ทุกเมื่อ — ถ้าอยากใช้ต่อค่อยเลือกแพ็กเกจ",
+    "marketing.faq.1.a": "1–2 ช่าง {price}/เดือน · 3–5 ช่าง {price2}/เดือน · 6–10 ช่าง {price3}/เดือน · เกิน 10 ติดต่อเรา · ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่างที่ลูกค้าจองได้ · ทดลองฟรี {days} วันไม่ต้องผูกบัตร ไม่มีการตัดเงินอัตโนมัติ ยกเลิกได้ทุกเมื่อ — ถ้าอยากใช้ต่อค่อยเลือกแพ็กเกจ",
     "marketing.faq.2.q": "ตั้งค่ายากไหม?",
     "marketing.faq.2.a": "Tommy ช่วยตั้งค่าให้ เชื่อม LINE OA ของร้านได้ เราไม่ขอรหัสผ่าน LINE OA ของร้าน ติดขัดทักทีมทาง LINE ได้เลย",
     "marketing.faq.3.q": "ต้องเปลี่ยน LINE OA ไหม?",
@@ -629,6 +630,15 @@ export const dictionary = {
     "marketing.faq.7.a": "ช่างและเจ้าของได้แจ้งเตือนผ่าน Web Push บนมือถือ เมื่อมีคิวใหม่ — ไม่กินโควตา LINE เจ้าของเลือกได้ว่าจะรับเฉพาะคิวของตัวเองหรือทั้งร้าน",
     "marketing.faq.8.q": "ปิดข้อความยืนยันหรือเตือนได้ไหม?",
     "marketing.faq.8.a": "ได้ ร้านเปิด–ปิดข้อความยืนยันการจอง และฟีเจอร์เตือนคิวได้จากตั้งค่า — เมื่อปิด ลูกค้ายังเห็นหน้าจองสำเร็จและคิวใน «คิวของฉัน»",
+    "marketing.faq.9.q": "นับจำนวนช่างยังไง?",
+    "marketing.faq.9.a":
+      'นับเฉพาะช่างที่ลูกค้าจองได้ เจ้าของหรือผู้จัดการ 1 คนใช้ฟรีทุกแพ็ก ดูคิว ดูยอด และจัดการร้านได้ครบ ถ้าคุณตัดผมด้วย กด "รับคิวด้วย" ในบัญชีเดิมได้เลย (นับเป็นช่าง 1 ที่) ช่างลาออกกดปิดได้ ประวัติคิวและรายได้ยังอยู่ครบ',
+    "marketing.faq.10.q": "ทำไมควรใส่ช่างให้ครบทุกคน?",
+    "marketing.faq.10.a":
+      "เพราะระบบทำงานรายช่างครับ ใส่ครบแล้วลูกค้าเลือกช่างประจำได้ คิวของแต่ละคนไม่ชนกัน แจ้งเตือนเด้งถึงช่างที่ถูกจองโดยตรง และคุณดูยอดแยกรายช่างได้ ทุกแพ็กฟีเจอร์เหมือนกัน จ่ายตามจำนวนช่างเท่านั้น",
+    "marketing.faq.11.q": "ทดลองฟรีเป็นยังไง?",
+    "marketing.faq.11.a":
+      "ใช้ฟรี {days} วัน ไม่ต้องผูกบัตร ไม่มีการตัดเงินอัตโนมัติ ใส่ช่างได้ทั้งทีม ผมช่วยตั้งค่าให้เอง ครบแล้วค่อยเลือกแพ็กตามจำนวนช่างจริง",
     "marketing.final.title": "ให้ LINE ของร้านจองคิวแทนคุณ",
     "marketing.final.sub": "ร้านเล็ก ๆ ใช้ได้ครบ · ลูกค้าจองเอง ได้ยืนยันและเตือนในนามร้าน · ทั้งร้านเห็นคิวเดียวกัน",
     "marketing.final.cta": "สมัครทดลองฟรี {days} วัน",
@@ -1049,7 +1059,7 @@ export const dictionary = {
     "admin.removedBarberStatus": "นำออกจากร้านแล้ว",
     "admin.restoreToShop": "นำกลับเข้าร้าน",
     "admin.editBarberTitle": "แก้ไขช่าง",
-    "admin.editBarberSubtitle": "จัดการข้อมูลและการรับคิวของ {name}",
+    "admin.editBarberSubtitle": "จัดการข้อมูลและการรับคิวของ{name}",
     "admin.barberInfoSection": "ข้อมูลช่าง",
     "admin.barberNameHint": "ชื่อนี้จะแสดงให้ลูกค้าเห็นตอนเลือกช่าง",
     "admin.barberRoleLabel": "ตำแหน่ง",
@@ -1068,6 +1078,14 @@ export const dictionary = {
     "admin.savingBookable": "กำลังบันทึก...",
     "admin.saveBookableFailed": "บันทึกไม่สำเร็จ กรุณาลองอีกครั้ง",
     "admin.openQueueToggle": "เปิดรับคิว",
+    "admin.ownerAcceptingOn": "รับคิวด้วย",
+    "admin.ownerAcceptingOff": "ไม่รับคิวด้วย",
+    "admin.ownerAcceptingStatusOn": "รับคิว: เปิด",
+    "admin.ownerAcceptingStatusOff": "รับคิว: ปิด",
+    "admin.ownerAcceptingOnHint": "ลูกค้าสามารถจองคิวกับบัญชีเจ้าของร้านได้ (นับเป็นช่าง 1 ที่)",
+    "admin.ownerAcceptingOffHint":
+      "บัญชีเจ้าของร้านใช้ฟรี ไม่นับเป็นช่าง ถ้าคุณตัดผมด้วย เปิดไว้เพื่อให้ลูกค้าจองคุณได้ (นับเป็นช่าง 1 ที่)",
+    "admin.ownerAcceptingToggle": "รับคิวด้วย",
     "admin.queueSectionHint": "ปิดรับคิวชั่วคราวได้โดยไม่ต้องนำช่างออกจากร้าน",
     "admin.slotDurationHint": "ระยะเวลาที่กันไว้สำหรับลูกค้า 1 คน",
     "admin.lineAdminSection": "LINE สำหรับเข้าระบบ",
@@ -1939,7 +1957,8 @@ export const dictionary = {
     "marketing.pricing.title": "Small shops (1–2 barbers) from {price}/month — every feature included",
     "marketing.pricing.support": "Same features on every plan — you pay by barber count · free {days}-day trial",
     "marketing.pricing.tier1Badge": "Best for small shops",
-    "marketing.pricing.tierSameFeatures": "Same features on every plan — you pay by barber count",
+    "marketing.pricing.tierSameFeatures":
+      "Same features on every plan — pay by bookable barber count · 1 free owner account",
     "marketing.pricing.riskLine":
       "No card required, no automatic charge — after {days} days you choose whether to continue",
     "marketing.pricing.include1": "Book through LINE",
@@ -1982,6 +2001,15 @@ export const dictionary = {
     "marketing.faq.7.a": "Barbers and owners get Web Push alerts on their phone when a new booking arrives — without using LINE quota. Owners can choose alerts for only their own queue or the whole shop.",
     "marketing.faq.8.q": "Can I turn confirmation or reminders off?",
     "marketing.faq.8.a": "Yes. Shops can toggle booking confirmation pushes and the reminder feature in settings. When confirmation is off, customers still see the success screen and the booking in My queue.",
+    "marketing.faq.9.q": "How are barbers counted?",
+    "marketing.faq.9.a":
+      "Only barbers customers can book count. One owner/manager account is free on every plan — view queues, revenue, and manage the shop. If you cut hair too, turn on “Accept bookings too” on the same account (counts as 1 seat). Deactivate leaving barbers anytime — booking and revenue history stays.",
+    "marketing.faq.10.q": "Why add every barber?",
+    "marketing.faq.10.a":
+      "The system works per barber: customers pick their regular, queues don’t collide, alerts go to the booked barber, and you see revenue by person. Same features on every plan — you only pay by barber count.",
+    "marketing.faq.11.q": "How does the free trial work?",
+    "marketing.faq.11.a":
+      "Free for {days} days — no card, no automatic charge. Add the whole team. Tommy helps you set up. Then pick a plan by your real barber count.",
     "marketing.final.title": "Let your shop’s LINE take bookings for you",
     "marketing.final.sub": "Small shops get the full product · Customers book themselves with confirmations and reminders under your shop name · One shared queue",
     "marketing.final.cta": "Start a free {days}-day trial",
@@ -2421,6 +2449,14 @@ export const dictionary = {
     "admin.savingBookable": "Saving...",
     "admin.saveBookableFailed": "Could not save. Please try again.",
     "admin.openQueueToggle": "Accepting queue",
+    "admin.ownerAcceptingOn": "Accept bookings too",
+    "admin.ownerAcceptingOff": "Not accepting bookings",
+    "admin.ownerAcceptingStatusOn": "Accepting: on",
+    "admin.ownerAcceptingStatusOff": "Accepting: off",
+    "admin.ownerAcceptingOnHint": "Customers can book the owner account (counts as 1 barber seat)",
+    "admin.ownerAcceptingOffHint":
+      "Owner account is free and does not count as a barber. If you cut hair too, turn it on so customers can book you (counts as 1 seat).",
+    "admin.ownerAcceptingToggle": "Accept bookings too",
     "admin.queueSectionHint": "Temporarily stop new bookings without removing the barber from the shop",
     "admin.slotDurationHint": "Time reserved for each customer",
     "admin.lineAdminSection": "LINE admin access",

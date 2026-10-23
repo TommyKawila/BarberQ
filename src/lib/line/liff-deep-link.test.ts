@@ -16,6 +16,17 @@ describe("liff deep-link path resolution", () => {
     assert.equal(shopSlugFromPath("/"), null);
   });
 
+  it("never treats legal/marketing routes as shop slugs (last-shop cookie)", () => {
+    assert.equal(shopSlugFromPath("/terms"), null);
+    assert.equal(shopSlugFromPath("/privacy"), null);
+    assert.equal(shopSlugFromPath("/preview/hero-booking"), null);
+    assert.equal(shopSlugFromPath("/qa/e2e"), null);
+    assert.equal(
+      resolveBareShopPath("/admin/staff", "terms", "phinxstudio"),
+      "/phinxstudio/admin/staff",
+    );
+  });
+
   it("nests relative liff.state under current shop (QA rich-menu /bookings)", () => {
     assert.equal(
       resolveLiffStateTarget("/barberqpilottest", "bookings"),

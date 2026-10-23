@@ -30,6 +30,10 @@ import {
   type TrialLeadNote,
   type TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
+import type {
+  CreateShopCancelFeedbackInput,
+  ShopCancelFeedback,
+} from "@/lib/billing/cancel-feedback";
 import {
   countBreaksForWeekday,
   normalizeOffDays,
@@ -1101,6 +1105,18 @@ export const supabaseStore: BookingStore = {
     return (data ?? []) as Shop[];
   },
 
+  async updateShopBarberTier(shopId, tier) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shops")
+      .update({ barber_tier: tier, updated_at: new Date().toISOString() })
+      .eq("id", shopId)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Shop;
+  },
+
   async listShopOwners() {
     const supabase = createServiceClient();
     const { data, error } = await supabase
@@ -1765,5 +1781,33 @@ export const supabaseStore: BookingStore = {
       .single();
     if (error) throw new Error(error.message);
     return data as TrialLeadNote;
+  },
+
+  async createShopCancelFeedback(input: CreateShopCancelFeedbackInput) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_cancel_feedback")
+      .insert({
+        shop_id: input.shopId,
+        reason: input.reason,
+        detail: input.detail?.trim() ? input.detail.trim() : null,
+        bookable_count: input.bookableCount ?? null,
+        recommended_tier: input.recommendedTier ?? null,
+        created_by_barber_id: input.createdByBarberId ?? null,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as ShopCancelFeedback;
+  },
+
+  async listShopCancelFeedback() {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_cancel_feedback")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data as ShopCancelFeedback[]) ?? [];
   },
 };
