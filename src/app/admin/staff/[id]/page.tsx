@@ -9,12 +9,12 @@ import {
   validateBarberLineIdDraft,
 } from "@/components/admin/BarberLineLinkCard";
 import { AdminShell } from "@/components/admin/AdminShell";
+import { SlotDurationPicker } from "@/components/admin/SlotDurationPicker";
 import { useAdminPageAuth } from "@/lib/admin/use-admin-line-auth";
 import { isShopOperatorRole } from "@/lib/admin-auth";
 import { formatBreaksSummary, formatOffDaysSummary } from "@/lib/barber/schedule-summary";
 import { fitLogoFile } from "@/lib/image/fit-logo";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { ALLOWED_SLOT_DURATIONS } from "@/lib/schedule/validation";
 import {
   ADMIN_STICKY_SAVE_BAR_CLASS,
   ADMIN_THUMB_BAR_OFFSET_CLASS,
@@ -393,19 +393,14 @@ export default function EditBarberPage() {
             </span>
           </label>
           {isBookable ? (
-            <label className="mt-4 flex flex-col gap-1 text-sm">
-              {t("admin.slotDuration")}
-              <p className="text-xs text-zinc-500">{t("admin.slotDurationHint")}</p>
-              <select
+            <div className="mt-4 text-sm">
+              <p className="font-medium">{t("admin.slotDuration")}</p>
+              <p className="mt-1 text-xs text-zinc-500">{t("admin.slotDurationHint")}</p>
+              <SlotDurationPicker
                 value={slotDuration}
-                onChange={(e) => setSlotDuration(Number(e.target.value))}
-                className="mt-1 min-h-11 rounded-lg border border-zinc-700 bg-zinc-950 px-3"
-              >
-                {ALLOWED_SLOT_DURATIONS.map((m) => (
-                  <option key={m} value={m}>{m} {t("common.minutes")}</option>
-                ))}
-              </select>
-            </label>
+                onChange={setSlotDuration}
+              />
+            </div>
           ) : null}
         </section>
 
