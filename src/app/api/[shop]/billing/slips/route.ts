@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
-import { resolveBillingAmountForBookableCount } from "@/lib/billing/billing-amount";
+import {
+  normalizeBillingPeriod,
+  resolveBillingAmountForPeriod,
+} from "@/lib/billing/billing-amount";
 import { countBookableBarberSeats } from "@/lib/billing/barber-tier";
 import { uploadPaymentSlipImage } from "@/lib/billing/slip-image-storage";
 import { getStore } from "@/lib/data";
@@ -47,11 +50,14 @@ export async function POST(
     const noteRaw = form.get("note");
     const note =
       typeof noteRaw === "string" && noteRaw.trim() ? noteRaw.trim() : null;
+    const period = normalizeBillingPeriod(form.get("period"));
 
     const barbers = await getStore().listBarbersByShop(shop.id);
     const bookableCount = countBookableBarberSeats(barbers);
-    const { billingTier, amountThb } =
-      resolveBillingAmountForBookableCount(bookableCount);
+    const { billingTier, amountThb } = resolveBillingAmountForPeriod(
+      bookableCount,
+      period,
+    );
     if (amountThb == null) {
       return NextResponse.json(
         {
@@ -90,6 +96,7 @@ export async function POST(
       shopId: shop.id,
       amountThb,
       tier: billingTier,
+      period,
       storagePath: uploaded.path,
       contentType: uploaded.contentType,
       note,

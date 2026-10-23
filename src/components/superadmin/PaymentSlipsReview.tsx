@@ -9,10 +9,16 @@ interface SlipRow {
   shopSlug: string | null;
   amount_thb: number;
   tier: string;
+  period?: string;
   status: string;
   created_at: string;
   paidUntil: string | null;
 }
+
+const PERIOD_TH: Record<string, string> = {
+  monthly: "รายเดือน",
+  yearly: "รายปี (−20%)",
+};
 
 export function PaymentSlipsReview({ token }: { token: string }) {
   const [slips, setSlips] = useState<SlipRow[]>([]);
@@ -97,6 +103,12 @@ export function PaymentSlipsReview({ token }: { token: string }) {
                 ฿{Number(slip.amount_thb).toLocaleString("th-TH")} · {slip.tier}
               </span>
             </p>
+            <p
+              className="mt-1 text-xs text-zinc-300"
+              data-testid="payment-slip-period"
+            >
+              รอบชำระ: {PERIOD_TH[slip.period ?? "monthly"] ?? slip.period}
+            </p>
             <p className="mt-1 text-[11px] text-zinc-500">
               {new Date(slip.created_at).toLocaleString("th-TH")}
               {slip.shopSlug ? ` · /${slip.shopSlug}` : ""}
@@ -116,7 +128,9 @@ export function PaymentSlipsReview({ token }: { token: string }) {
                 className="min-h-10 rounded-lg bg-emerald-500/90 px-3 text-xs font-semibold text-zinc-950 disabled:opacity-50"
                 onClick={() => void review(slip.id, "paid")}
               >
-                อนุมัติ (ต่ออายุ 1 เดือน)
+                {slip.period === "yearly"
+                  ? "อนุมัติ (ต่ออายุ 12 เดือน)"
+                  : "อนุมัติ (ต่ออายุ 1 เดือน)"}
               </button>
               <button
                 type="button"

@@ -127,12 +127,14 @@ export function graceDaysRemaining(
 }
 
 /**
- * Extend paid-through (shops.subscribed_until) by 1 calendar month
+ * Extend paid-through (shops.subscribed_until) by `months` calendar months
  * from max(now, current subscribed_until, trial end).
+ * Monthly slip → 1; yearly slip → 12.
  */
 export function nextSubscribedUntilAfterPayment(
   shop: Pick<Shop, "created_at" | "subscribed_until">,
   now: Date = new Date(),
+  months: number = 1,
 ): Date {
   const trialEnd = shopTrialEndsAt(shop);
   const current = shop.subscribed_until
@@ -145,6 +147,7 @@ export function nextSubscribedUntilAfterPayment(
   );
   const base = new Date(baseMs);
   const next = new Date(base);
-  next.setUTCMonth(next.getUTCMonth() + 1);
+  const add = Number.isFinite(months) && months > 0 ? Math.floor(months) : 1;
+  next.setUTCMonth(next.getUTCMonth() + add);
   return next;
 }

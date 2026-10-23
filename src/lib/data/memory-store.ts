@@ -1831,6 +1831,7 @@ export const memoryStore: BookingStore = {
       shop_id: input.shopId,
       amount_thb: input.amountThb,
       tier: input.tier,
+      period: input.period === "yearly" ? "yearly" : "monthly",
       status: "pending",
       storage_path: input.storagePath,
       content_type: input.contentType,
@@ -1888,7 +1889,8 @@ export const memoryStore: BookingStore = {
     slip.updated_at = nowIso();
 
     if (status === "paid") {
-      const until = nextSubscribedUntilAfterPayment(shop);
+      const months = slip.period === "yearly" ? 12 : 1;
+      const until = nextSubscribedUntilAfterPayment(shop, new Date(), months);
       shop.subscribed_until = until.toISOString();
       shop.updated_at = nowIso();
     }

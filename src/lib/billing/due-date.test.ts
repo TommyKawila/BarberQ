@@ -95,4 +95,10 @@ describe("billing due date", () => {
     assert.equal(isBillingOverdue(paid, now), false);
     assert.equal(isPastBillingGrace(paid, now), false);
   });
+
+  it("yearly payment extends subscribed_until by 12 months", () => {
+    const now = new Date("2026-10-05T00:00:00.000Z");
+    const next = nextSubscribedUntilAfterPayment(shop, now, 12);
+    assert.equal(next.toISOString(), "2027-10-05T00:00:00.000Z");
+  });
 });
