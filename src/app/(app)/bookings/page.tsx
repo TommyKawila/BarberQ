@@ -13,6 +13,7 @@ import {
   partitionCustomerAppointments,
   PAST_HISTORY_PAGE_SIZE,
 } from "@/lib/booking/customer-flow";
+import { myBookingsAuthPhase } from "@/lib/booking/my-bookings-auth";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useLineAuth } from "@/lib/line/use-line-auth";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
@@ -310,27 +311,54 @@ export default function MyBookingsPage() {
     );
   }
 
-  if (!ready || loading) {
+  const stickyBookAnother = (
+    <div
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-950 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]"
+      data-testid="book-another-sticky"
+    >
+      <Link
+        href={shopPath("/")}
+        className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 text-center text-sm font-semibold text-zinc-950"
+      >
+        {t("booking.bookAnother")}
+      </Link>
+    </div>
+  );
+
+  const authPhase = myBookingsAuthPhase({
+    ready,
+    hasProfile: Boolean(profile),
+    mockMode,
+    listLoading: loading,
+  });
+
+  // Match BookingApp: never couple list loading to the login CTA.
+  if (authPhase === "auth-loading") {
     return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
   }
 
-  if (!profile && !mockMode) {
+  if (authPhase === "login") {
     return (
-      <section className="flex flex-col gap-4 px-4 py-8">
-        <h1 className="text-2xl font-semibold">{t("booking.myBookings")}</h1>
-        <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
-        <button
-          type="button"
-          onClick={login}
-          className="min-h-12 rounded-xl bg-[#06C755] font-semibold text-white"
-        >
-          {t("booking.loginWithLine")}
-        </button>
-      </section>
+      <div className="flex flex-col gap-4 px-4 pt-8 pb-[max(7.5rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))]">
+        <section className="flex flex-col gap-4" data-testid="my-bookings-login">
+          <h1 className="text-2xl font-semibold">{t("booking.myBookings")}</h1>
+          {shopName ? <p className="text-sm text-zinc-400">{shopName}</p> : null}
+          <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
+          <button
+            type="button"
+            onClick={login}
+            data-testid="my-bookings-line-login"
+            className="min-h-12 rounded-xl bg-[#06C755] font-semibold text-white"
+          >
+            {t("booking.loginWithLine")}
+          </button>
+        </section>
+        {stickyBookAnother}
+      </div>
     );
   }
 
-  if (!profile) {
+  if (authPhase === "list-loading") {
     return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
   }
 
@@ -410,17 +438,7 @@ export default function MyBookingsPage() {
         </div>
       ) : null}
 
-      <div
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-950 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]"
-        data-testid="book-another-sticky"
-      >
-        <Link
-          href={shopPath("/")}
-          className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 text-center text-sm font-semibold text-zinc-950"
-        >
-          {t("booking.bookAnother")}
-        </Link>
-      </div>
+      {stickyBookAnother}
 
       {rescheduleApt ? (
         <RescheduleFlow

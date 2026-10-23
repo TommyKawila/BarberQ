@@ -9,6 +9,9 @@ import {
 
 const REF_KEY = "barberq_customer_ref";
 
+/** If LIFF in-client auto-login never returns, unblock the UI so users can tap login. */
+export const LIFF_LOGIN_HANDOFF_TIMEOUT_MS = 8_000;
+
 export interface LineProfile {
   userId: string;
   displayName: string;
@@ -48,6 +51,7 @@ export function useLineAuth() {
     }
 
     let cancelled = false;
+    let loginHandoffTimer: ReturnType<typeof setTimeout> | undefined;
     void liff
       .init({ liffId })
       .then(async () => {
@@ -70,6 +74,11 @@ export function useLineAuth() {
           setReady(true);
           return;
         }
+        // In-client LIFF redirects for login; if the handoff stalls, unblock UI.
+        loginHandoffTimer = setTimeout(() => {
+          if (cancelled) return;
+          setReady(true);
+        }, LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
         startLiffLogin();
       })
       .catch((err: unknown) => {
@@ -80,6 +89,7 @@ export function useLineAuth() {
 
     return () => {
       cancelled = true;
+      if (loginHandoffTimer) clearTimeout(loginHandoffTimer);
     };
   }, [liffId, mockMode]);
 

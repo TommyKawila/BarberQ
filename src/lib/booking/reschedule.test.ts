@@ -315,6 +315,7 @@ describe("P6 customer self-reschedule", () => {
     const auth = readFileSync(resolve(root, "lib/line/use-line-auth.ts"), "utf8");
     assert.match(auth, /isInClient\(\)/);
     assert.match(auth, /setReady\(true\)/);
+    assert.match(auth, /LIFF_LOGIN_HANDOFF_TIMEOUT_MS/);
   });
 
   it("customer self-reschedule route pushes ticket (separate from shop flex)", () => {
