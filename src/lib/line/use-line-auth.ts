@@ -7,6 +7,10 @@ import {
   saveLiffReturnPath,
 } from "@/lib/line/liff-return";
 import { canUseCustomerBookingSession } from "@/lib/line/line-auth-session";
+import {
+  __resetSharedLiffInitForTests,
+  ensureLiffInit,
+} from "@/lib/line/liff-init";
 
 const REF_KEY = "barberq_customer_ref";
 
@@ -19,19 +23,9 @@ export interface LineProfile {
   pictureUrl?: string;
 }
 
-/** Shared across remounts — re-calling liff.init() rejects when already initialized. */
-let customerLiffInit: Promise<void> | null = null;
-
-function initCustomerLiff(liffId: string): Promise<void> {
-  if (!customerLiffInit) {
-    customerLiffInit = liff.init({ liffId }).then(() => undefined);
-  }
-  return customerLiffInit;
-}
-
-/** @internal tests */
+/** @internal tests — shared with admin via liff-init. */
 export function __resetCustomerLiffInitForTests() {
-  customerLiffInit = null;
+  __resetSharedLiffInitForTests();
 }
 
 function loadMockProfile(): LineProfile {
@@ -108,7 +102,7 @@ export function useLineAuth() {
 
     void (async () => {
       try {
-        await initCustomerLiff(liffId);
+        await ensureLiffInit(liffId);
         if (cancelled) return;
         const session = await resolveCustomerSession();
         if (cancelled) return;

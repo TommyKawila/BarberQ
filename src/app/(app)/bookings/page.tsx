@@ -20,7 +20,6 @@ import { useLineAuth } from "@/lib/line/use-line-auth";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
-import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
 import {
   canCancelAt,
   canCustomerReschedule,
@@ -72,10 +71,11 @@ export default function MyBookingsPage() {
     lineUrl,
     phone: shopPhone,
     remindersEnabled,
+    hours: brandHours,
   } = useShopBrand();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [hours, setHours] = useState<ShopHours>(normalizeShopHours(null));
+  const hours = brandHours;
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
@@ -90,20 +90,18 @@ export default function MyBookingsPage() {
     if (!ready || !profile) return;
     let cancelled = false;
     void (async () => {
-      const [bookingsRes, barbersRes, settingsRes] = await Promise.all([
+      // Hours/reminders come from ShopBrand (TTL-cached /settings) — skip ~100KB re-fetch.
+      const [bookingsRes, barbersRes] = await Promise.all([
         fetch(shopApi("/bookings"), {
           headers: getLineAuthHeaders(mockMode ? profile.userId : undefined),
         }),
         fetch(shopApi("/barbers")),
-        fetch(shopApi("/settings")),
       ]);
       if (cancelled) return;
       const bookingsJson = (await bookingsRes.json()) as { appointments?: Appointment[] };
       const barbersJson = (await barbersRes.json()) as { barbers?: Barber[] };
-      const settingsJson = (await settingsRes.json()) as { hours?: ShopHours | null };
       setAppointments(bookingsJson.appointments ?? []);
       setBarbers(barbersJson.barbers ?? []);
-      setHours(normalizeShopHours(settingsJson.hours ?? null));
       setLoading(false);
     })();
     return () => {

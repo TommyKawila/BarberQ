@@ -17,6 +17,7 @@ import {
   buildLiffLoginRedirectUri,
   saveLiffReturnPath,
 } from "@/lib/line/liff-return";
+import { ensureLiffInit } from "@/lib/line/liff-init";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -88,23 +89,44 @@ export function useAdminLineAuth() {
     }
 
     let cancelled = false;
-    void liff
-      .init({ liffId })
-      .then(async () => {
+    void (async () => {
+      try {
+        await ensureLiffInit(liffId);
         if (cancelled) return;
         if (!liff.isLoggedIn()) {
           setReady(true);
           return;
         }
         const lineProfile = await liff.getProfile();
-        await loadProfile(lineProfile.userId, lineProfile.displayName, lineProfile.pictureUrl);
+        await loadProfile(
+          lineProfile.userId,
+          lineProfile.displayName,
+          lineProfile.pictureUrl,
+        );
         if (!cancelled) setReady(true);
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
+        if (cancelled) return;
+        // Already-initialized / remount: try session before failing closed.
+        try {
+          if (liff.isLoggedIn()) {
+            const lineProfile = await liff.getProfile();
+            if (cancelled) return;
+            await loadProfile(
+              lineProfile.userId,
+              lineProfile.displayName,
+              lineProfile.pictureUrl,
+            );
+            if (!cancelled) setReady(true);
+            return;
+          }
+        } catch {
+          /* fall through */
+        }
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "LIFF init failed");
         setReady(true);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;

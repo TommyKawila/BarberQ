@@ -81,14 +81,11 @@ export function BookingApp() {
     hours,
     remindersEnabled: brandRemindersEnabled,
     reminderLeadMinutes: brandReminderLead,
-    refresh: refreshBrand,
+    loading: brandLoading,
   } = useShopBrand();
-  const [reminderSettings, setReminderSettings] = useState<{
-    enabled: boolean;
-    leadMinutes: number;
-  } | null>(null);
-  const remindersEnabled = reminderSettings?.enabled ?? brandRemindersEnabled;
-  const shopReminderLead = reminderSettings?.leadMinutes ?? brandReminderLead;
+  // Prefer brand (TTL-cached /settings) — no per-slot re-download of ~100KB logo.
+  const remindersEnabled = brandRemindersEnabled;
+  const shopReminderLead = brandReminderLead;
   const { ready, profile, login, mockMode } = useLineAuth();
   const dates = useMemo(() => getBookableDates(), []);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -138,39 +135,13 @@ export function BookingApp() {
     }
   }, [profile, customerName]);
 
-  // Re-fetch reminder flags when a slot is chosen (avoid stale default false).
+  // Default chip from shop brand when a slot is chosen (no /settings re-fetch).
   useEffect(() => {
-    if (!selectedStart) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        await refreshBrand();
-        const res = await fetch(shopApi("/settings"), { cache: "no-store" });
-        if (!res.ok || cancelled) return;
-        const json = (await res.json()) as {
-          remindersEnabled?: boolean;
-          reminderLeadMinutes?: number;
-        };
-        if (cancelled) return;
-        const leadMinutes =
-          typeof json.reminderLeadMinutes === "number"
-            ? json.reminderLeadMinutes
-            : brandReminderLead;
-        setReminderSettings({
-          enabled: Boolean(json.remindersEnabled),
-          leadMinutes,
-        });
-        setReminderLeadOverride(
-          defaultCustomerReminderChip(leadMinutes, new Date(selectedStart)),
-        );
-      } catch {
-        /* keep brand values */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [selectedStart, shopApi, refreshBrand, brandReminderLead]);
+    if (!selectedStart || brandLoading) return;
+    setReminderLeadOverride(
+      defaultCustomerReminderChip(brandReminderLead, new Date(selectedStart)),
+    );
+  }, [selectedStart, brandLoading, brandReminderLead]);
 
   const reminderLead: ReminderLeadOption | null = (() => {
     if (!remindersEnabled || !selectedStart) return null;
@@ -412,18 +383,22 @@ export function BookingApp() {
     };
   }, [activeDate, barbers, hours, shopApi, applySlots]);
 
-  // Load / refresh the selected barber+date; abort in-flight work on switch.
+  // Load selected barber+date only when bulk cache misses (avoid duplicate /slots).
   useEffect(() => {
     if (!barberId || !activeDate) return;
     if (isCustomerDateDisabled(activeDate, hours, selectedBarber?.off_days ?? [])) return;
     const key = slotAvailabilityKey(barberId, activeDate);
-    const hasCache = slotsCacheRef.current.has(key);
+    const cached = slotsCacheRef.current.get(key);
+    if (cached) {
+      applySlots(key, cached, { reconcileSelection: false });
+      return;
+    }
     const ac = new AbortController();
-    void loadSlots(barberId, activeDate, hasCache, ac.signal);
+    void loadSlots(barberId, activeDate, false, ac.signal);
     return () => {
       ac.abort();
     };
-  }, [barberId, activeDate, selectedBarber, loadSlots, hours]);
+  }, [barberId, activeDate, selectedBarber, loadSlots, hours, applySlots]);
 
   useEffect(() => {
     if (!barberId || !activeDate || success) return;
@@ -709,6 +684,7 @@ export function BookingApp() {
 
       <Link
         href={shopPath("/bookings")}
+        prefetch
         className="flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800/80"
       >
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
@@ -726,6 +702,7 @@ export function BookingApp() {
           <p className="text-xs text-zinc-400">{t("booking.ownerToolsEyebrow")}</p>
           <Link
             href={shopPath("/admin")}
+            prefetch
             className="flex min-h-16 items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900 px-4 py-3 transition hover:bg-zinc-800/80"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-400/15 text-amber-400">
@@ -863,7 +840,7 @@ export function BookingApp() {
 
           {/* Sticky: chips immediately above confirm — <select> is often invisible in LINE LIFF iOS. */}
           <div className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-950 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]">
-            {selectedStart && reminderSettings == null && !remindersEnabled ? (
+            {selectedStart && brandLoading ? (
               <p className="mb-2 text-xs text-zinc-500" data-testid="reminder-lead-loading">
                 {t("booking.reminderLoading")}
               </p>
