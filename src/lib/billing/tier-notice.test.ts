@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildOverdueBillingNotice,
   buildTierBillingNoticeCopy,
   recommendedTierForBookableCount,
   shouldShowTierBillingNotice,
@@ -9,7 +10,7 @@ import {
 } from "@/lib/billing/tier-notice";
 
 describe("tier billing notice", () => {
-  it("shows from trial day 25 onward", () => {
+  it("shows from trial day 25 onward and keeps showing after day 30", () => {
     const now = new Date("2026-10-22T12:00:00+07:00");
     const day24 = {
       created_at: new Date(now.getTime() - 23 * 24 * 60 * 60 * 1000).toISOString(),
@@ -17,11 +18,35 @@ describe("tier billing notice", () => {
     const day25 = {
       created_at: new Date(now.getTime() - 24 * 24 * 60 * 60 * 1000).toISOString(),
     };
+    const day35 = {
+      created_at: new Date(now.getTime() - 34 * 24 * 60 * 60 * 1000).toISOString(),
+    };
     assert.equal(shopTrialDayNumber(day24, now), 24);
     assert.equal(shouldShowTierBillingNotice(day24, now), false);
     assert.equal(shopTrialDayNumber(day25, now), 25);
     assert.equal(shouldShowTierBillingNotice(day25, now), true);
+    assert.equal(shopTrialDayNumber(day35, now), 35);
+    assert.equal(shouldShowTierBillingNotice(day35, now), true);
     assert.equal(TIER_NOTICE_FROM_TRIAL_DAY, 25);
+  });
+
+  it("overdue notice uses เลยกำหนดชำระแล้ว + grace days", () => {
+    const shop = {
+      created_at: "2026-09-01T00:00:00.000Z",
+      subscribed_until: null as string | null,
+    };
+    const duringGrace = new Date("2026-10-03T12:00:00.000Z");
+    const overdue = buildOverdueBillingNotice(shop, duringGrace);
+    assert.equal(overdue.overdue, true);
+    assert.equal(overdue.headline, "เลยกำหนดชำระแล้ว");
+    assert.ok(overdue.graceDaysLeft > 0);
+    assert.match(overdue.message, /ผ่อนผัน/);
+
+    const paid = buildOverdueBillingNotice(
+      { ...shop, subscribed_until: "2026-11-01T00:00:00.000Z" },
+      duringGrace,
+    );
+    assert.equal(paid.overdue, false);
   });
 
   it("recommends pack and builds Thai copy for 5 bookable seats", () => {

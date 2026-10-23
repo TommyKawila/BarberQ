@@ -35,6 +35,9 @@ interface ShopCardProps {
     recommendedTierLabel?: string;
     recommendedPriceLabel?: string | null;
     showBillingNotice?: boolean;
+    billingOverdue?: boolean;
+    billingPastGrace?: boolean;
+    billingGraceDaysLeft?: number;
     staff?: ShopStaffSummary[];
   };
   superAdminToken?: string;
@@ -329,6 +332,18 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
               className="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-semibold text-rose-300"
             >
               เกินแพ็ก
+            </span>
+          ) : null}
+          {shop.billingOverdue ? (
+            <span
+              data-testid="billing-overdue-badge"
+              className="rounded-full bg-red-500/25 px-2 py-0.5 text-xs font-semibold text-red-300"
+            >
+              {shop.billingPastGrace
+                ? "เลยกำหนด · ปิดจอง"
+                : shop.billingGraceDaysLeft != null && shop.billingGraceDaysLeft > 0
+                  ? `เลยกำหนด · ผ่อนผัน ${shop.billingGraceDaysLeft} วัน`
+                  : "เลยกำหนดชำระ"}
             </span>
           ) : null}
         </div>

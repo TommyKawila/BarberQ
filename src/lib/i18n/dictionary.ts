@@ -43,6 +43,10 @@ export const dictionary = {
     "booking.contactShop": "ติดต่อร้าน",
     "booking.shopLine": "LINE ร้าน",
     "booking.callShop": "โทรหาร้าน",
+    "booking.onlineClosedTitle": "ร้านปิดรับจองออนไลน์ชั่วคราว",
+    "booking.onlineClosedBody":
+      "ขณะนี้ร้านยังไม่เปิดรับจองผ่านระบบออนไลน์ กรุณาติดต่อร้านโดยตรงเพื่อนัดหมาย",
+    "booking.billingClosed": "ร้านปิดรับจองออนไลน์ชั่วคราว",
     "booking.slotUnavailable": "ช่วงเวลาที่เลือกไม่ว่างแล้ว กรุณาเลือกเวลาใหม่",
     "booking.slotTaken": "เวลานี้เพิ่งถูกจองไปแล้ว กรุณาเลือกเวลาใหม่",
     "booking.failed": "จองไม่สำเร็จ",
@@ -1416,6 +1420,10 @@ export const dictionary = {
     "booking.contactShop": "Contact the shop",
     "booking.shopLine": "Shop LINE",
     "booking.callShop": "Call shop",
+    "booking.onlineClosedTitle": "Online booking is temporarily closed",
+    "booking.onlineClosedBody":
+      "This shop is not accepting new online bookings right now. Please contact the shop directly to book.",
+    "booking.billingClosed": "Online booking is temporarily closed",
     "booking.slotUnavailable": "Selected time is no longer available. Please pick another.",
     "booking.slotTaken": "This time slot was just taken. Please pick another.",
     "booking.failed": "Booking failed",

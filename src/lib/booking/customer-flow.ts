@@ -75,6 +75,8 @@ export function bookingErrorI18nKey(code: string | undefined): MessageKey {
       return "booking.rescheduleLimit";
     case "NOT_RESCHEDULABLE":
       return "booking.rescheduleFailed";
+    case "BILLING_BOOKING_CLOSED":
+      return "booking.billingClosed";
     default:
       return "booking.failed";
   }

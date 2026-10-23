@@ -5,6 +5,11 @@ import {
   isOverTier,
   normalizeBarberTier,
 } from "@/lib/billing/barber-tier";
+import {
+  graceDaysRemaining,
+  isBillingOverdue,
+  isPastBillingGrace,
+} from "@/lib/billing/due-date";
 import { collectShopSeatFlags } from "@/lib/billing/over-tier-flags";
 import {
   buildTierBillingNoticeCopy,
@@ -62,6 +67,8 @@ export async function GET(req: Request) {
           hours,
         });
         const recommended = buildTierBillingNoticeCopy(seatBookableCount);
+        const overdue = !shop.is_demo && isBillingOverdue(shop);
+        const pastGrace = overdue && isPastBillingGrace(shop);
         return {
           ...shop,
           barber_tier: tier,
@@ -77,6 +84,9 @@ export async function GET(req: Request) {
           recommendedTierLabel: recommended.rangeLabel,
           recommendedPriceLabel: recommended.priceLabel,
           showBillingNotice: shouldShowTierBillingNotice(shop),
+          billingOverdue: overdue,
+          billingPastGrace: pastGrace,
+          billingGraceDaysLeft: overdue ? graceDaysRemaining(shop) : 0,
           staff: staffByShop.get(shop.id) ?? [],
         };
       }),

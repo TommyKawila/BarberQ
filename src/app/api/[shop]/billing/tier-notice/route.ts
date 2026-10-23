@@ -3,6 +3,7 @@ import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { countBookableBarberSeats } from "@/lib/billing/barber-tier";
 import {
+  buildOverdueBillingNotice,
   buildTierBillingNoticeCopy,
   shouldShowTierBillingNotice,
 } from "@/lib/billing/tier-notice";
@@ -27,10 +28,15 @@ export async function GET(
     const bookableCount = countBookableBarberSeats(barbers);
     const show = shouldShowTierBillingNotice(shop);
     const copy = buildTierBillingNoticeCopy(bookableCount);
+    const overdue = buildOverdueBillingNotice(shop);
 
     return NextResponse.json({
-      show,
+      show: show || overdue.overdue,
       ...copy,
+      overdue: overdue.overdue,
+      graceDaysLeft: overdue.graceDaysLeft,
+      overdueHeadline: overdue.headline,
+      overdueMessage: overdue.message,
     });
   } catch (error) {
     return jsonError(error);
