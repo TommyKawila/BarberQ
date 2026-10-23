@@ -132,8 +132,9 @@ export function OwnerEntry() {
         saveLiffReturnPath("/owner");
         liff.login({ redirectUri: buildLiffLoginRedirectUri() });
       } catch {
+        // Match My Bookings: init failure must not spin forever — show login CTA.
         if (cancelled) return;
-        setError("เริ่ม LINE Login ไม่สำเร็จ");
+        setLoggedIn(false);
         setReady(true);
       }
     }
