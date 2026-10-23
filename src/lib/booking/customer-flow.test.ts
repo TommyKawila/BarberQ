@@ -15,6 +15,9 @@ import {
   isValidCustomerPhone,
   maskPhone,
   normalizeCustomerPhone,
+  isAppointmentUpcoming,
+  partitionCustomerAppointments,
+  PAST_HISTORY_PAGE_SIZE,
   sortAppointmentsUpcomingFirst,
   staffIdentityKey,
 } from "@/lib/booking/customer-flow";
@@ -159,6 +162,40 @@ describe("customer flow helpers", () => {
       new Date("2026-01-01T00:00:00Z"),
     );
     assert.equal(sorted[0].start_time, "2099-01-01T10:00:00.000Z");
+  });
+
+  it("isAppointmentUpcoming is false after start", () => {
+    const now = new Date("2026-06-01T12:00:00.000Z");
+    assert.equal(
+      isAppointmentUpcoming({ start_time: "2026-06-01T11:00:00.000Z" }, now),
+      false,
+    );
+    assert.equal(
+      isAppointmentUpcoming({ start_time: "2026-06-01T13:00:00.000Z" }, now),
+      true,
+    );
+  });
+
+  it("partitionCustomerAppointments sorts upcoming soonest and past newest", () => {
+    const now = new Date("2026-06-01T12:00:00.000Z");
+    const { upcoming, past } = partitionCustomerAppointments(
+      [
+        { start_time: "2026-05-01T10:00:00.000Z", id: "old" },
+        { start_time: "2026-05-20T10:00:00.000Z", id: "newer-past" },
+        { start_time: "2026-07-01T10:00:00.000Z", id: "later" },
+        { start_time: "2026-06-15T10:00:00.000Z", id: "soon" },
+      ],
+      now,
+    );
+    assert.deepEqual(
+      upcoming.map((a) => a.id),
+      ["soon", "later"],
+    );
+    assert.deepEqual(
+      past.map((a) => a.id),
+      ["newer-past", "old"],
+    );
+    assert.equal(PAST_HISTORY_PAGE_SIZE, 5);
   });
 });
 

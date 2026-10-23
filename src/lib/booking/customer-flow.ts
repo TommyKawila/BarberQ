@@ -138,3 +138,39 @@ export function sortAppointmentsUpcomingFirst<T extends { start_time: string }>(
     return new Date(a.start_time).getTime() - new Date(b.start_time).getTime();
   });
 }
+
+/** True when the appointment start is still in the future (or now). */
+export function isAppointmentUpcoming(
+  appointment: { start_time: string },
+  now = new Date(),
+): boolean {
+  return new Date(appointment.start_time).getTime() >= now.getTime();
+}
+
+export const PAST_HISTORY_PAGE_SIZE = 5;
+
+/**
+ * Split customer bookings for "คิวของฉัน":
+ * - upcoming: soonest first
+ * - past: newest first (for history)
+ */
+export function partitionCustomerAppointments<T extends { start_time: string }>(
+  appointments: T[],
+  now = new Date(),
+): { upcoming: T[]; past: T[] } {
+  const upcoming: T[] = [];
+  const past: T[] = [];
+  for (const apt of appointments) {
+    if (isAppointmentUpcoming(apt, now)) upcoming.push(apt);
+    else past.push(apt);
+  }
+  upcoming.sort(
+    (a, b) =>
+      new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+  );
+  past.sort(
+    (a, b) =>
+      new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
+  );
+  return { upcoming, past };
+}
