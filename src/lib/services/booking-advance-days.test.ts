@@ -33,18 +33,41 @@ describe("booking advance days", () => {
     assert.equal(clampBookingAdvanceDays(14.6), 15);
   });
 
-  it("ships migration + DateSelector picker for long windows", () => {
+  it("ships migration 0050 + DateSelector picker for long windows", () => {
     const mig = readFileSync(
-      resolve(process.cwd(), "supabase/migrations/0047_booking_advance_days.sql"),
+      resolve(process.cwd(), "supabase/migrations/0050_booking_advance_days.sql"),
       "utf8",
     );
     assert.match(mig, /booking_advance_days/);
     assert.match(mig, /default 30/);
+    const catchup = readFileSync(
+      resolve(process.cwd(), "supabase/scripts/prod_catchup_0050_booking_advance_days.sql"),
+      "utf8",
+    );
+    assert.match(catchup, /booking_advance_days/);
     const selector = readFileSync(
       resolve(process.cwd(), "src/components/customer/DateSelector.tsx"),
       "utf8",
     );
     assert.match(selector, /pickOtherDate/);
     assert.match(selector, /type="date"/);
+  });
+
+  it("degrades safely when booking_advance_days column is missing", () => {
+    const store = readFileSync(
+      resolve(process.cwd(), "src/lib/data/supabase-store.ts"),
+      "utf8",
+    );
+    // SELECT falls back on Postgres undefined_column (42703) / column name in message
+    assert.match(store, /missingAdvance/);
+    assert.match(store, /42703/);
+    assert.match(store, /booking_advance_days/);
+    // Returned settings use DEFAULT_BOOKING_ADVANCE_DAYS when column absent
+    assert.match(
+      store,
+      /bookingAdvanceDays = clampBookingAdvanceDays\(\s*data\?\.booking_advance_days \?\? DEFAULT_BOOKING_ADVANCE_DAYS/,
+    );
+    // UPSERT strips the column and retries if DB rejects it
+    assert.match(store, /delete payload\.booking_advance_days/);
   });
 });
