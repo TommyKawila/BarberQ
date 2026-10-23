@@ -1,3 +1,4 @@
+import { isAppointmentUpcoming } from "@/lib/booking/customer-flow";
 import {
   canCancelAt,
   canCustomerReschedule,
@@ -43,4 +44,18 @@ export function cancelPageActions(
   }
 
   return { cancellable, reschedulable, rescheduleBlock };
+}
+
+/**
+ * Copy when self-cancel is blocked:
+ * - still before start but inside the 60-min cutoff → within-cutoff message
+ * - start already passed → past (“เลยกำหนด”) message
+ */
+export function cancelBlockedDetailKey(
+  apt: { start_time: string },
+  now: Date = new Date(),
+): "booking.cancelWithinCutoffDetail" | "booking.cancelTooLateDetail" {
+  return isAppointmentUpcoming(apt, now)
+    ? "booking.cancelWithinCutoffDetail"
+    : "booking.cancelTooLateDetail";
 }

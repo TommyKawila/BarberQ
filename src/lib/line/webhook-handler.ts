@@ -3,7 +3,10 @@ import {
   appointmentMatchesCode,
   parseBookingCodeFromText,
 } from "@/lib/line/booking-code";
-import { buildBookingConfirmFlexPair } from "@/lib/line/booking-confirm-notify";
+import {
+  buildBookingConfirmFlexPair,
+  messagesForBookingConfirm,
+} from "@/lib/line/booking-confirm-notify";
 import { claimWebhookEvent, recordLineMessage } from "@/lib/line/message-log";
 import { replyMessages } from "@/lib/line/messaging-api";
 import { getShopLineChannelSecrets } from "@/lib/line/shop-channel";
@@ -102,10 +105,8 @@ async function replyBookingConfirm(input: {
   const pair = await buildBookingConfirmFlexPair(input.shop, appointment);
   if (!pair) return;
 
-  const ok = await replyMessages(input.accessToken, input.replyToken, [
-    pair.confirm,
-    pair.ticket,
-  ]);
+  const messages = messagesForBookingConfirm(pair);
+  const ok = await replyMessages(input.accessToken, input.replyToken, messages);
   await recordLineMessage({
     shopId: input.shopId,
     kind: "reply_confirm",
@@ -114,12 +115,15 @@ async function replyBookingConfirm(input: {
     appointmentId: appointment.id,
     success: ok,
   });
-  await recordLineMessage({
-    shopId: input.shopId,
-    kind: "reply_ticket",
-    counted: false,
-    recipientLineId: input.lineUserId,
-    appointmentId: appointment.id,
-    success: ok,
-  });
+  // Queue ticket Flex is via_qr only — do not log reply_ticket for online bookings.
+  if (pair.ticket) {
+    await recordLineMessage({
+      shopId: input.shopId,
+      kind: "reply_ticket",
+      counted: false,
+      recipientLineId: input.lineUserId,
+      appointmentId: appointment.id,
+      success: ok,
+    });
+  }
 }

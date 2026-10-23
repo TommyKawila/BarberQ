@@ -34,4 +34,19 @@ describe("cancel page UI wiring (/c/{token})", () => {
     assert.equal(dictionary.th["booking.cancel"], "ยกเลิกการจอง");
     assert.equal(dictionary.th["booking.rescheduleUsed"], "เลื่อนคิวแล้ว (ครบ 1 ครั้ง)");
   });
+
+  it("splits within-cutoff vs past (เลยกำหนด) cancel-blocked copy", () => {
+    assert.match(
+      dictionary.th["booking.cancelWithinCutoffDetail"],
+      /เหลือไม่ถึง \{minutes\} นาที/,
+    );
+    assert.equal(
+      dictionary.th["booking.cancelTooLateDetail"],
+      "นัดนี้เลยกำหนดแล้ว กรุณาติดต่อร้าน",
+    );
+    assert.doesNotMatch(
+      dictionary.th["booking.cancelWithinCutoffDetail"],
+      /เลยกำหนด/,
+    );
+  });
 });

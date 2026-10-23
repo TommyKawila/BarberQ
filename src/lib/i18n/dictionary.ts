@@ -96,7 +96,9 @@ export const dictionary = {
     "booking.reminderLead.60": "1 ชม.",
     "booking.reminderLead.30": "30 นาที",
     "booking.reminderLead.0": "ไม่ต้องเตือน",
-    "booking.cancelTooLateDetail": "ยกเลิกได้ถึงก่อนเวลานัด {minutes} นาที · นัดนี้เลยกำหนดแล้ว กรุณาติดต่อร้าน",
+    "booking.cancelWithinCutoffDetail":
+      "เหลือไม่ถึง {minutes} นาที ยกเลิกเองไม่ได้ กรุณาติดต่อร้าน",
+    "booking.cancelTooLateDetail": "นัดนี้เลยกำหนดแล้ว กรุณาติดต่อร้าน",
     "booking.successTitle": "จองคิวสำเร็จแล้ว!",
     "booking.successSubtitle": "คิวของคุณถูกบันทึกเรียบร้อย — ไม่ต้องทำอะไรเพิ่ม",
     "booking.successSeeYou": "แล้วเจอกันที่ร้านนะครับ",
@@ -1472,7 +1474,9 @@ export const dictionary = {
     "booking.reminderLead.60": "1 hr",
     "booking.reminderLead.30": "30 min",
     "booking.reminderLead.0": "No reminder",
-    "booking.cancelTooLateDetail": "Cancel until {minutes} minutes before start · this booking is past that cutoff — contact the shop",
+    "booking.cancelWithinCutoffDetail":
+      "Less than {minutes} minutes left — you can’t cancel yourself. Please contact the shop",
+    "booking.cancelTooLateDetail": "This appointment time has passed — please contact the shop",
     "booking.successTitle": "Booking confirmed!",
     "booking.successSubtitle": "Your appointment is saved — nothing else to do",
     "booking.successSeeYou": "See you at the shop",

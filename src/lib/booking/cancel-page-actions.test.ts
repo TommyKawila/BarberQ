@@ -1,7 +1,10 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { addMinutes } from "date-fns";
-import { cancelPageActions } from "@/lib/booking/cancel-page-actions";
+import {
+  cancelBlockedDetailKey,
+  cancelPageActions,
+} from "@/lib/booking/cancel-page-actions";
 
 const token = "tok-abc";
 
@@ -71,5 +74,29 @@ describe("cancelPageActions (/c/{token})", () => {
     assert.equal(a.reschedulable, false);
     assert.equal(a.cancellable, false);
     assert.equal(a.rescheduleBlock, "not_confirmed");
+  });
+});
+
+describe("cancelBlockedDetailKey", () => {
+  it("uses within-cutoff copy when start is still upcoming", () => {
+    const now = new Date("2030-06-01T10:00:00.000Z");
+    assert.equal(
+      cancelBlockedDetailKey(
+        { start_time: addMinutes(now, 30).toISOString() },
+        now,
+      ),
+      "booking.cancelWithinCutoffDetail",
+    );
+  });
+
+  it("uses past (เลยกำหนด) copy only after start has passed", () => {
+    const now = new Date("2030-06-01T10:00:00.000Z");
+    assert.equal(
+      cancelBlockedDetailKey(
+        { start_time: addMinutes(now, -1).toISOString() },
+        now,
+      ),
+      "booking.cancelTooLateDetail",
+    );
   });
 });
