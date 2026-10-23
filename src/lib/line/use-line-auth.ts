@@ -19,6 +19,21 @@ export interface LineProfile {
   pictureUrl?: string;
 }
 
+/** Shared across remounts — re-calling liff.init() rejects when already initialized. */
+let customerLiffInit: Promise<void> | null = null;
+
+function initCustomerLiff(liffId: string): Promise<void> {
+  if (!customerLiffInit) {
+    customerLiffInit = liff.init({ liffId }).then(() => undefined);
+  }
+  return customerLiffInit;
+}
+
+/** @internal tests */
+export function __resetCustomerLiffInitForTests() {
+  customerLiffInit = null;
+}
+
 function loadMockProfile(): LineProfile {
   try {
     const stored = window.localStorage.getItem(REF_KEY);
@@ -43,6 +58,35 @@ function readLiffAccessToken(): string | null {
   }
 }
 
+async function resolveCustomerSession(): Promise<
+  | { ok: true; profile: LineProfile; isInClient: boolean }
+  | { ok: false; isInClient: boolean; needsLoginHandoff: boolean }
+> {
+  const isInClient = liff.isInClient();
+  const loggedIn = liff.isLoggedIn();
+  const accessToken = readLiffAccessToken();
+  if (
+    canUseCustomerBookingSession({
+      mockMode: false,
+      loggedIn,
+      accessToken,
+    })
+  ) {
+    const p = await liff.getProfile();
+    return {
+      ok: true,
+      isInClient,
+      profile: {
+        userId: p.userId,
+        displayName: p.displayName,
+        pictureUrl: p.pictureUrl,
+      },
+    };
+  }
+  // Flex / plain web: show login CTA. In-client: redirect handoff.
+  return { ok: false, isInClient, needsLoginHandoff: isInClient };
+}
+
 export function useLineAuth() {
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
   const mockMode = !liffId;
@@ -61,50 +105,58 @@ export function useLineAuth() {
 
     let cancelled = false;
     let loginHandoffTimer: ReturnType<typeof setTimeout> | undefined;
-    void liff
-      .init({ liffId })
-      .then(async () => {
+
+    void (async () => {
+      try {
+        await initCustomerLiff(liffId);
         if (cancelled) return;
-        setIsInClient(liff.isInClient());
-        const loggedIn = liff.isLoggedIn();
-        const accessToken = readLiffAccessToken();
-        // Profile without access token (plain /{slug} in LINE browser) cannot
-        // call booking APIs — show login instead of a doomed submit.
-        if (
-          canUseCustomerBookingSession({
-            mockMode: false,
-            loggedIn,
-            accessToken,
-          })
-        ) {
-          const p = await liff.getProfile();
-          if (cancelled) return;
-          setProfile({
-            userId: p.userId,
-            displayName: p.displayName,
-            pictureUrl: p.pictureUrl,
-          });
+        const session = await resolveCustomerSession();
+        if (cancelled) return;
+        setIsInClient(session.isInClient);
+        if (session.ok) {
+          setProfile(session.profile);
           setReady(true);
           return;
         }
-        // Flex / plain web opens LINE's in-app browser (not LIFF). Auto-login
-        // there often never returns → permanent "กำลังโหลด…". Show login CTA.
-        if (!liff.isInClient()) {
+        if (!session.needsLoginHandoff) {
           setReady(true);
           return;
         }
-        // In-client LIFF redirects for login; if the handoff stalls, unblock UI.
         loginHandoffTimer = setTimeout(() => {
           if (cancelled) return;
           setReady(true);
         }, LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
         startLiffLogin();
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
+        if (cancelled) return;
+        // Re-init after remount often rejects "already initialized" — still try session.
+        try {
+          const session = await resolveCustomerSession();
+          if (cancelled) return;
+          setIsInClient(session.isInClient);
+          if (session.ok) {
+            setProfile(session.profile);
+            setReady(true);
+            return;
+          }
+          if (!session.needsLoginHandoff) {
+            setReady(true);
+            return;
+          }
+          loginHandoffTimer = setTimeout(() => {
+            if (cancelled) return;
+            setReady(true);
+          }, LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
+          startLiffLogin();
+          return;
+        } catch {
+          /* fall through to logged-out ready */
+        }
         if (cancelled) return;
         setError(err instanceof Error ? err.message : "LIFF init failed");
         setReady(true);
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;

@@ -14,6 +14,7 @@ import { DateSelector } from "@/components/customer/DateSelector";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { SlotPicker } from "@/components/customer/SlotPicker";
 import { useShopBrand } from "@/lib/brand/shop-brand";
+import { bookingAppAuthPhase } from "@/lib/booking/booking-app-auth";
 import {
   bookingErrorI18nKey,
   bookingSummaryReady,
@@ -588,15 +589,31 @@ export function BookingApp() {
     }
   }
 
-  if (!ready) {
-    return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
+  const authPhase = bookingAppAuthPhase({
+    ready,
+    hasProfile: Boolean(profile),
+    mockMode,
+    hasSuccess: Boolean(success),
+    submitting,
+  });
+
+  // Auth resolving / submit blip: loading only — never the green Login CTA.
+  if (authPhase === "auth-loading") {
+    return (
+      <p
+        className="px-4 py-16 text-center text-sm text-zinc-400"
+        data-testid="booking-auth-loading"
+      >
+        {t("common.loading")}
+      </p>
+    );
   }
 
-  if (!profile && !mockMode) {
+  if (authPhase === "login") {
     const liffEntry = buildAdminCustomerBookingUrl(shopSlug);
     const showLiffOpen = isLiffCustomerUrl(liffEntry);
     return (
-      <section className="flex flex-col gap-4 px-4 py-8">
+      <section className="flex flex-col gap-4 px-4 py-8" data-testid="booking-line-login">
         <BookingHero shopName={shopName} coverImageUrl={coverImageUrl} prototypeMode={prototypeMode} />
         <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
         <p className="text-xs text-zinc-500">{t("booking.lineLoginHint")}</p>
@@ -619,11 +636,7 @@ export function BookingApp() {
     );
   }
 
-  if (!profile) {
-    return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
-  }
-
-  if (success) {
+  if (authPhase === "success" && success) {
     return (
       <BookingSuccess
         appointment={success.appointment}
@@ -633,6 +646,14 @@ export function BookingApp() {
         friendship={friendship}
         onBackToShop={resetBooking}
       />
+    );
+  }
+
+  if (!profile) {
+    return (
+      <p className="px-4 py-16 text-center text-sm text-zinc-400" data-testid="booking-auth-loading">
+        {t("common.loading")}
+      </p>
     );
   }
 
