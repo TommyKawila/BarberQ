@@ -232,6 +232,37 @@ describe("customer booking service", () => {
     assert.equal(apt.barber_id, SAEB_ID);
   });
 
+  it("createBooking still succeeds when post-insert side effect throws (prod false failure)", async () => {
+    const available = await firstFutureSlot(TIDE_ID);
+    assert.ok(available);
+    const original = memoryStore.getShopSettings;
+    let settingsCalls = 0;
+    memoryStore.getShopSettings = async (shopId: string) => {
+      settingsCalls += 1;
+      // Slot validation needs hours; fail only the post-insert settings read.
+      if (settingsCalls === 1) return original(shopId);
+      throw new Error(
+        "Could not find the 'source' column of 'appointments' in the schema cache",
+      );
+    };
+    try {
+      const apt = await createBooking({
+        barberId: TIDE_ID,
+        startTime: available!.startTime,
+        customerName: "SideEffectSafe",
+        customerPhone: "0897553362",
+        customerRef: "line-side-effect-safe",
+        customerLineId: "line-side-effect-safe",
+      });
+      assert.equal(apt.customer_name, "SideEffectSafe");
+      assert.equal(apt.status, "confirmed");
+      assert.ok(apt.id);
+      assert.ok(settingsCalls >= 2, "post-insert settings read should run");
+    } finally {
+      memoryStore.getShopSettings = original;
+    }
+  });
+
   it("conflict rejects second booking on same slot", async () => {
     const available = await firstFutureSlot(TIDE_ID);
     assert.ok(available);

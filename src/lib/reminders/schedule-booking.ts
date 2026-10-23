@@ -33,11 +33,21 @@ export async function scheduleBookingReminder(input: {
 
   if (!canRemind) {
     if (recompute) {
-      await patchAppointmentReminder(appointment.id, shopId, appointment, {
-        leadMinutes: null,
-        dueAt: null,
-        clearSentAt: true,
-      });
+      try {
+        await patchAppointmentReminder(appointment.id, shopId, appointment, {
+          leadMinutes: null,
+          dueAt: null,
+          clearSentAt: true,
+        });
+      } catch (error) {
+        console.warn(
+          JSON.stringify({
+            event: "booking_reminder_patch_skipped",
+            appointmentId: appointment.id,
+            message: error instanceof Error ? error.message : String(error),
+          }),
+        );
+      }
       return {
         ...appointment,
         reminder_lead_minutes: null,
@@ -49,11 +59,23 @@ export async function scheduleBookingReminder(input: {
   }
 
   const schedule = computeReminderSchedule(preferredLeadMinutes, new Date(appointment.start_time), now);
-  await patchAppointmentReminder(appointment.id, shopId, appointment, {
-    leadMinutes: schedule?.leadMinutes ?? null,
-    dueAt: schedule?.dueAt ?? null,
-    clearSentAt: recompute,
-  });
+  try {
+    await patchAppointmentReminder(appointment.id, shopId, appointment, {
+      leadMinutes: schedule?.leadMinutes ?? null,
+      dueAt: schedule?.dueAt ?? null,
+      clearSentAt: recompute,
+    });
+  } catch (error) {
+    // Appointment already exists — never fail create/reschedule on reminder patch.
+    console.warn(
+      JSON.stringify({
+        event: "booking_reminder_patch_skipped",
+        appointmentId: appointment.id,
+        message: error instanceof Error ? error.message : String(error),
+      }),
+    );
+    return appointment;
+  }
 
   return {
     ...appointment,

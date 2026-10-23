@@ -14,6 +14,7 @@ import {
 } from "@/lib/services/slot-service";
 import { isBlockingStatus } from "@/lib/appointment-status";
 import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
+import { runBookingSideEffect } from "@/lib/booking/booking-side-effects";
 import { scheduleBookingReminder } from "@/lib/reminders/schedule-booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
@@ -281,24 +282,35 @@ export async function createBooking(
       source,
     });
 
+    // Row is committed — settings/reminder/schema patches must not fail the
+    // booking response (prod false 「จองไม่สำเร็จ」 with confirmed rows).
     const shopId = shopIdHint ?? barber.shop_id ?? null;
     if (!shopId) return appointment;
-    const settings = await store.getShopSettings(shopId);
-    const preferred =
-      input.reminderLeadMinutes === undefined
-        ? settings.reminderLeadMinutes
-        : input.reminderLeadMinutes;
-    // Prefer request identity fields — RPC payloads may omit source/line id keys.
-    return scheduleBookingReminder({
-      shopId,
-      shopRemindersEnabled: settings.remindersEnabled,
-      appointment: {
-        ...appointment,
-        source: appointment.source ?? source,
-        customer_line_id: appointment.customer_line_id ?? input.customerLineId ?? null,
+    return runBookingSideEffect(
+      appointment,
+      async () => {
+        const settings = await store.getShopSettings(shopId);
+        const preferred =
+          input.reminderLeadMinutes === undefined
+            ? settings.reminderLeadMinutes
+            : input.reminderLeadMinutes;
+        // Prefer request identity fields — RPC payloads may omit source/line id keys.
+        return scheduleBookingReminder({
+          shopId,
+          shopRemindersEnabled: settings.remindersEnabled,
+          appointment: {
+            ...appointment,
+            source: appointment.source ?? source,
+            customer_line_id: appointment.customer_line_id ?? input.customerLineId ?? null,
+          },
+          preferredLeadMinutes: preferred,
+        });
       },
-      preferredLeadMinutes: preferred,
-    });
+      {
+        appointmentId: appointment.id,
+        event: "booking_post_insert_side_effect_error",
+      },
+    );
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
