@@ -1,6 +1,10 @@
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateStaffToken } from "@/lib/data/staff-seed";
 import {
+  type AppointmentCreatePatch,
+  nextAppointmentCreatePatch,
+} from "@/lib/data/appointment-create-patch";
+import {
   StoreConflict,
   type BookingStore,
   type CreateBarberInput,
@@ -235,6 +239,41 @@ export const supabaseStore: BookingStore = {
       return { ...appointment, via_qr: true };
     }
 
+    /** Best-effort UPDATE after legacy RPC. Booking row is already committed. */
+    async function patchCreatedAppointment(
+      appointment: Appointment,
+      initialPatch: AppointmentCreatePatch,
+    ): Promise<Appointment> {
+      let patch: AppointmentCreatePatch | null = initialPatch;
+      let lastError: { code?: string; message?: string } | null = null;
+      while (patch) {
+        const { data: patched, error: patchError } = await supabase
+          .from("appointments")
+          .update(patch)
+          .eq("id", appointment.id)
+          .select("*")
+          .maybeSingle();
+        if (!patchError) {
+          return withViaQr((patched as Appointment | null) ?? appointment);
+        }
+        lastError = patchError;
+        const next = nextAppointmentCreatePatch(patch, patchError);
+        if (!next) break;
+        patch = next;
+      }
+      // Never turn a committed booking into a client-facing failure (prod lag on
+      // appointments.source / migration 0026 caused false 「จองไม่สำเร็จ」).
+      console.warn(
+        JSON.stringify({
+          event: "appointment_create_patch_skipped",
+          appointmentId: appointment.id,
+          message: lastError?.message ?? "unknown",
+          code: lastError?.code ?? null,
+        }),
+      );
+      return withViaQr(appointment);
+    }
+
     const { data, error } = await supabase.rpc("create_appointment", {
       p_barber_id: input.barberId,
       p_customer_ref: input.customerRef ?? null,
@@ -268,20 +307,13 @@ export const supabaseStore: BookingStore = {
       const appointment = legacy as Appointment;
       if (!input.customerLineId && source === "line") return withViaQr(appointment);
 
-      const { data: patched, error: patchError } = await supabase
-        .from("appointments")
-        .update({
-          customer_line_id: input.customerLineId ?? null,
-          source,
-          end_time: input.endTime.toISOString(),
-          customer_ref: input.customerRef ?? null,
-          customer_phone: input.customerPhone ?? null,
-        })
-        .eq("id", appointment.id)
-        .select("*")
-        .maybeSingle();
-      if (patchError) throw new Error(patchError.message);
-      return withViaQr((patched as Appointment | null) ?? appointment);
+      return patchCreatedAppointment(appointment, {
+        customer_line_id: input.customerLineId ?? null,
+        source,
+        end_time: input.endTime.toISOString(),
+        customer_ref: input.customerRef ?? null,
+        customer_phone: input.customerPhone ?? null,
+      });
     }
 
     // Migration 0026 not applied yet: fall back to 0013 signature + patch
@@ -295,19 +327,12 @@ export const supabaseStore: BookingStore = {
     });
     if (midError) mapRpcError(midError);
     const appointment = mid as Appointment;
-    const { data: patched, error: patchError } = await supabase
-      .from("appointments")
-      .update({
-        source,
-        end_time: input.endTime.toISOString(),
-        customer_ref: input.customerRef ?? null,
-        customer_phone: input.customerPhone ?? null,
-      })
-      .eq("id", appointment.id)
-      .select("*")
-      .maybeSingle();
-    if (patchError) throw new Error(patchError.message);
-    return withViaQr((patched as Appointment | null) ?? appointment);
+    return patchCreatedAppointment(appointment, {
+      source,
+      end_time: input.endTime.toISOString(),
+      customer_ref: input.customerRef ?? null,
+      customer_phone: input.customerPhone ?? null,
+    });
   },
 
   async cancelAppointment(appointmentId, customerRef) {

@@ -20,6 +20,7 @@ import {
   canShowOwnerTools,
   canSubmitBooking,
   defaultBookableBarberId,
+  findOwnBookingForSlot,
   isCustomerDateDisabled,
   isShopClosedOnDate,
   maskPhone,
@@ -498,22 +499,18 @@ export function BookingApp() {
       } & ApiError;
       if (!res.ok || !json.appointment) {
         const code = json.error?.code;
-        // Retry after a "false failure": booking may already exist for this slot.
-        if (
-          (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") &&
-          barberId &&
-          selectedStart
-        ) {
+        // False failure: row may already be committed (slot race, or legacy
+        // post-create patch error on DBs missing appointments.source).
+        if (barberId && selectedStart) {
           try {
             const mineRes = await fetch(shopApi("/bookings"), {
               headers: getLineAuthHeaders(mockMode ? profile.userId : undefined),
             });
             const mineJson = (await mineRes.json()) as { appointments?: Appointment[] };
-            const existing = (mineJson.appointments ?? []).find(
-              (a) =>
-                a.status === "confirmed" &&
-                a.barber_id === barberId &&
-                a.start_time === selectedStart,
+            const existing = findOwnBookingForSlot(
+              mineJson.appointments ?? [],
+              barberId,
+              selectedStart,
             );
             if (existing) {
               setPhone(normalizeCustomerPhone(phone ?? ""));
@@ -526,8 +523,10 @@ export function BookingApp() {
               return;
             }
           } catch {
-            /* fall through to slot-taken UI */
+            /* fall through to error UI */
           }
+        }
+        if (code === "SLOT_TAKEN" || code === "SLOT_BLOCKED") {
           setMessage(t("booking.slotTaken"));
           setSelectedStart(null);
           void silentRefresh();
@@ -564,7 +563,7 @@ export function BookingApp() {
         });
       }
     } catch {
-      setMessage(t("booking.failed"));
+      setMessage(t("booking.failedCheckMine"));
     } finally {
       submittingRef.current = false;
       setSubmitting(false);

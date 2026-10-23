@@ -84,6 +84,13 @@ describe("customer flow helpers", () => {
     assert.equal(bookingErrorI18nKey("INVALID_PHONE"), "booking.invalidPhone");
   });
 
+  it("maps INTERNAL and shop/barber errors to specific keys not generic failed", () => {
+    assert.equal(bookingErrorI18nKey("INTERNAL"), "booking.failedCheckMine");
+    assert.equal(bookingErrorI18nKey("BARBER_NOT_FOUND"), "booking.barberNotFound");
+    assert.equal(bookingErrorI18nKey("SHOP_INACTIVE"), "booking.shopUnavailable");
+    assert.notEqual(bookingErrorI18nKey("INTERNAL"), "booking.failed");
+  });
+
   it("canSubmitBooking blocks duplicate submit", () => {
     assert.equal(canSubmitBooking(false), true);
     assert.equal(canSubmitBooking(true), false);
