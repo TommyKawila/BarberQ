@@ -1,6 +1,9 @@
 import { getStore } from "@/lib/data";
 import { buildShopRescheduleFlex } from "@/lib/line/flex-messages";
-import { buildCustomerCancelUrl, buildShopCustomerUrl } from "@/lib/line/liff-url";
+import {
+  buildCustomerCancelUrl,
+  buildShopBookingsCustomerUrl,
+} from "@/lib/line/liff-url";
 import { pushMessagesForShop } from "@/lib/line/push-message";
 import type { Appointment, Shop } from "@/types/booking";
 
@@ -18,7 +21,7 @@ export function shouldSendLineReschedulePush(
  * There is no separate accept-reschedule API; both CTAs open My Bookings.
  */
 export function shopRescheduleBookingsUrl(shopSlug: string): string {
-  return buildShopCustomerUrl(shopSlug, "/bookings");
+  return buildShopBookingsCustomerUrl(shopSlug);
 }
 
 export async function notifyCustomerShopReschedule(

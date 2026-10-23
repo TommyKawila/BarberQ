@@ -309,7 +309,7 @@ describe("P6 customer self-reschedule", () => {
       resolve(root, "lib/line/shop-reschedule-notify.ts"),
       "utf8",
     );
-    assert.match(notify, /buildShopCustomerUrl/);
+    assert.match(notify, /buildShopBookingsCustomerUrl/);
     assert.match(notify, /shopRescheduleBookingsUrl/);
     assert.doesNotMatch(notify, /buildShopWebUrl/);
     const auth = readFileSync(resolve(root, "lib/line/use-line-auth.ts"), "utf8");
