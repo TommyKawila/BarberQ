@@ -682,7 +682,10 @@ export const dictionary = {
     "marketing.trial.err.barberCount": "กรุณาระบุจำนวนช่างให้ถูกต้อง",
     "marketing.trial.successTitle": "เราได้รับข้อมูลร้านแล้ว",
     "marketing.trial.successBody": "ทีม ClipperQ จะติดต่อเพื่อช่วยเริ่มทดลองใช้และรับฟีดแบ็กจากร้านของคุณ",
-    "marketing.trial.line": "คุยกับทีม ClipperQ ทาง LINE",
+    "marketing.trial.enterShop": "เข้าหน้าร้านของฉัน",
+    "marketing.trial.enterShopHint":
+      "ครั้งถัดไปเข้าผ่านเมนู LINE OA ClipperQ 「เข้าหน้าร้านของฉัน」 หรือบุ๊กมาร์กลิงก์นี้",
+    "marketing.trial.line": "คุยกับทีมทาง LINE",
     "marketing.trial.lineSignup": "สมัครผ่าน LINE",
     "marketing.trial.lineSignupHint": "หรือแชทกับทีมใน LINE OA ClipperQ — ไม่ต้องผูกบัตร",
     "marketing.trial.backHome": "กลับหน้าหลัก",
@@ -2053,7 +2056,10 @@ export const dictionary = {
     "marketing.trial.err.barberCount": "Please enter a valid barber count",
     "marketing.trial.successTitle": "We received your shop details",
     "marketing.trial.successBody": "The ClipperQ team will contact you to help start the trial and collect feedback from your shop.",
-    "marketing.trial.line": "Chat with ClipperQ on LINE",
+    "marketing.trial.enterShop": "เข้าหน้าร้านของฉัน",
+    "marketing.trial.enterShopHint":
+      "Next time, open via the ClipperQ LINE OA menu 「เข้าหน้าร้านของฉัน」, or bookmark this link.",
+    "marketing.trial.line": "คุยกับทีมทาง LINE",
     "marketing.trial.lineSignup": "Sign up via LINE",
     "marketing.trial.lineSignupHint": "Or chat with the ClipperQ LINE OA team — no card required",
     "marketing.trial.backHome": "Back to home",

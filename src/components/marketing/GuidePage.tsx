@@ -289,6 +289,7 @@ export function GuidePage() {
               <div>
                 <dt className="font-semibold text-zinc-100">เข้าหน้าร้านของฉันจากไหน?</dt>
                 <dd className="mt-1 text-zinc-400">
+                  จากเมนู LINE OA ClipperQ กด「เข้าหน้าร้านของฉัน」 หรือเปิด{" "}
                   <Link href="/owner" className="text-[#F6AD34] underline">
                     /owner
                   </Link>{" "}

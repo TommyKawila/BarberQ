@@ -825,11 +825,22 @@ describe("marketing layout split", () => {
     assert.match(trial, /variant="trial"/);
     assert.match(trial, /noValidate/);
     assert.match(trial, /marketing.trial.backHome/);
+    assert.match(trial, /marketing.trial.enterShop/);
+    assert.match(trial, /marketing.trial.enterShopHint/);
+    assert.match(trial, /\/owner/);
+    assert.match(trial, /\$\{successSlug\}\/admin/);
     assert.match(trial, /marketing.trial.priceExpect/);
     assert.match(trial, /ClarityMarketingScript/);
     assert.match(trial, /marketing.trial.lineSignup/);
     assert.match(trial, /resolveClipperqSupportLineUrl/);
     assert.match(nav, /variant === "trial"/);
+    const guide = readFileSync(
+      resolve(root, "components/marketing/GuidePage.tsx"),
+      "utf8",
+    );
+    assert.match(guide, /เมนู LINE OA ClipperQ/);
+    assert.match(guide, /เข้าหน้าร้านของฉัน/);
+    assert.match(guide, /\/owner/);
   });
 
   it("ships stable OA rich-menu routes", () => {
