@@ -346,16 +346,20 @@ export default function EditBarberPage() {
             </div>
           </div>
           <p className="mt-3 text-xs text-zinc-500">{t("admin.profilePhotoHint")}</p>
-          <label className="mt-4 flex items-start gap-3 text-sm">
-            <input
-              type="checkbox"
-              checked={showProfileInBooking}
-              onChange={(e) => setShowProfileInBooking(e.target.checked)}
-              className="mt-1"
-            />
-            <span>
+          <label className="mt-4 flex min-h-11 cursor-pointer items-start justify-between gap-3 text-sm">
+            <span className="min-w-0 flex-1">
               <span className="font-medium">{t("admin.showProfileInBooking")}</span>
               <p className="mt-1 text-xs text-zinc-500">{t("admin.showProfileInBookingHint")}</p>
+            </span>
+            <span className="relative inline-flex shrink-0 items-center pt-0.5">
+              <input
+                type="checkbox"
+                className="peer sr-only"
+                checked={showProfileInBooking}
+                onChange={(e) => setShowProfileInBooking(e.target.checked)}
+                data-testid="show-profile-in-booking-toggle"
+              />
+              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
             </span>
           </label>
         </section>
