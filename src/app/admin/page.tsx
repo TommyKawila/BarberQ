@@ -1004,7 +1004,9 @@ export default function AdminPage() {
             onRescheduleStart={(id, slot) => onRescheduleStart(id, slot)}
             onUnblock={(id, slot) => requestUnblock(id, slot)}
             reschedulePickMode={Boolean(rescheduleFrom)}
-            bookingHref={shopPath("/")}
+            bookingHref={
+              bookingUrl || buildShopLiffUrl(shopSlug) || buildShopWebUrl(shopSlug) || shopPath("/")
+            }
             onCopyBookingLink={() => void copyBookingLink()}
             bookingLinkCopied={bookingLinkCopied}
           />

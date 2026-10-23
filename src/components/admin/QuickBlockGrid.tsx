@@ -159,12 +159,22 @@ export function QuickBlockGrid({
           </button>
         ) : null}
         {bookingHref ? (
-          <Link
-            href={bookingHref}
-            className="min-h-11 rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200"
-          >
-            {t("admin.nav.booking")}
-          </Link>
+          /^https?:\/\//i.test(bookingHref) ? (
+            <a
+              href={bookingHref}
+              className="min-h-11 rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200"
+              data-testid="admin-empty-booking-link"
+            >
+              {t("admin.nav.booking")}
+            </a>
+          ) : (
+            <Link
+              href={bookingHref}
+              className="min-h-11 rounded-xl border border-zinc-700 px-4 py-2 text-sm text-zinc-200"
+            >
+              {t("admin.nav.booking")}
+            </Link>
+          )
         ) : null}
       </section>
     );

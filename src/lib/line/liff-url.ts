@@ -61,6 +61,18 @@ export function buildShopLiffUrl(slug: string, pathSuffix = ""): string | null {
 }
 
 /**
+ * Admin "หน้าจองลูกค้า" / empty-board CTA: prefer LIFF so LINE in-app browser
+ * opens a real LIFF session (access token) instead of plain /{slug}.
+ */
+export function buildAdminCustomerBookingUrl(slug: string): string {
+  return buildShopCustomerUrl(slug);
+}
+
+export function isLiffCustomerUrl(url: string): boolean {
+  return /^https:\/\/liff\.line\.me\//i.test(url.trim());
+}
+
+/**
  * Customer-facing URIs inside LINE Flex / push messages.
  * Prefer LIFF so taps stay in LINE (logged in); fall back to web only when
  * LIFF id cannot be resolved (non-prod without env).

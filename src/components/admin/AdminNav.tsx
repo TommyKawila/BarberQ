@@ -27,6 +27,10 @@ import {
 } from "@/lib/admin/admin-nav-items";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
+import {
+  buildAdminCustomerBookingUrl,
+  isLiffCustomerUrl,
+} from "@/lib/line/liff-url";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
 const NAV_LABELS: Record<AdminNavItemId, MessageKey> = {
@@ -75,7 +79,7 @@ function navItemClass(active: boolean, side: boolean) {
 
 export function AdminNav({ role }: { role: ShopStaffRole }) {
   const { t } = useI18n();
-  const { shopPath } = useShopSlug();
+  const { shopSlug, shopPath } = useShopSlug();
   const pathname = usePathname() ?? "";
   const items = primaryAdminNavItems(role);
   const moreItems = moreAdminNavItems(role);
@@ -89,6 +93,9 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
   const titleId = useId();
   const subtitleId = useId();
 
+  const bookingHref = buildAdminCustomerBookingUrl(shopSlug);
+  const bookingExternal = isLiffCustomerUrl(bookingHref);
+
   const hrefs = {
     board: shopPath(ADMIN_NAV_PATHS.board),
     team: shopPath(ADMIN_NAV_PATHS.team),
@@ -96,7 +103,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
     stats: shopPath(ADMIN_NAV_PATHS.stats),
     settings: shopPath(ADMIN_NAV_PATHS.settings),
     notifications: shopPath(ADMIN_NAV_PATHS.notifications),
-    booking: shopPath(ADMIN_NAV_PATHS.booking),
+    booking: bookingHref,
   };
 
   const activePath = pendingPath ?? pathname;
@@ -229,7 +236,24 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
       const href = hrefs[item];
       const hintKey = MORE_HINTS[item];
       const active = isMoreDestinationPath(activePath, item, hrefs);
+      const external = item === "booking" && bookingExternal;
       if (compact) {
+        if (external) {
+          return (
+            <a
+              key={item}
+              href={href}
+              onClick={() => closeMore("side")}
+              className="cq-press flex min-h-10 items-center gap-2 rounded-lg px-3 py-2 text-sm text-zinc-300 hover:bg-zinc-900"
+              data-testid="admin-nav-booking"
+            >
+              <span className="text-amber-400/90">
+                <NavIcon id={item} />
+              </span>
+              <span className="min-w-0 truncate">{t(NAV_LABELS[item])}</span>
+            </a>
+          );
+        }
         return (
           <Link
             key={item}
@@ -249,6 +273,28 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             </span>
             <span className="min-w-0 truncate">{t(NAV_LABELS[item])}</span>
           </Link>
+        );
+      }
+      if (external) {
+        return (
+          <a
+            key={item}
+            href={href}
+            onClick={() => closeMore("mobile")}
+            className="cq-press flex min-h-14 items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-3 py-3 text-left"
+            data-testid="admin-nav-booking"
+          >
+            <span className="text-amber-400">
+              <NavIcon id={item} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold">{t(NAV_LABELS[item])}</span>
+              {hintKey ? (
+                <span className="mt-0.5 block text-xs text-zinc-400">{t(hintKey)}</span>
+              ) : null}
+            </span>
+            <ExternalLink size={18} className="shrink-0 text-zinc-500" />
+          </a>
         );
       }
       return (
