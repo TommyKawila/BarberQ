@@ -580,6 +580,7 @@ export default function AdminStaffPage() {
           open={Boolean(overTierPrompt)}
           copy={overTierPrompt}
           supportLineUrl={supportLineUrl}
+          billingHref={shopPath("/admin/settings/billing")}
           onContinue={() => setOverTierPrompt(null)}
           onClose={() => setOverTierPrompt(null)}
         />

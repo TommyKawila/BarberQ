@@ -1,11 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import type { OverTierPromptCopy } from "@/lib/billing/barber-tier";
 
 interface OverTierModalProps {
   open: boolean;
   copy: OverTierPromptCopy | null;
   supportLineUrl?: string | null;
+  /** Shop-scoped billing page, e.g. /{slug}/admin/settings/billing */
+  billingHref?: string | null;
   onContinue: () => void;
   onClose: () => void;
 }
@@ -43,6 +46,7 @@ export function OverTierModal({
   open,
   copy,
   supportLineUrl,
+  billingHref,
   onContinue,
   onClose,
 }: OverTierModalProps) {
@@ -87,11 +91,25 @@ export function OverTierModal({
           </p>
         ) : null}
         <p className="mt-2 text-xs text-zinc-500">{copy.footnote}</p>
+        {billingHref ? (
+          <Link
+            href={billingHref}
+            data-testid="over-tier-billing"
+            onClick={onClose}
+            className="cq-press mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+          >
+            {copy.billingCta}
+          </Link>
+        ) : null}
         <button
           type="button"
           data-testid="over-tier-continue"
           onClick={onContinue}
-          className="cq-press mt-4 flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+          className={`cq-press flex min-h-12 w-full items-center justify-center rounded-xl text-sm font-semibold ${
+            billingHref
+              ? "mt-2 border border-zinc-600 text-zinc-200"
+              : "mt-4 bg-amber-400 text-zinc-950"
+          }`}
         >
           {copy.primaryCta}
         </button>

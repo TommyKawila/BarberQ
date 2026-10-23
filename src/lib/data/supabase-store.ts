@@ -34,6 +34,12 @@ import type {
   CreateShopCancelFeedbackInput,
   ShopCancelFeedback,
 } from "@/lib/billing/cancel-feedback";
+import { nextSubscribedUntilAfterPayment } from "@/lib/billing/due-date";
+import type {
+  CreatePaymentSlipInput,
+  PaymentSlipStatus,
+  ShopPaymentSlip,
+} from "@/lib/billing/payment-slips";
 import {
   countBreaksForWeekday,
   normalizeOffDays,
@@ -1810,4 +1816,128 @@ export const supabaseStore: BookingStore = {
     if (error) throw new Error(error.message);
     return (data as ShopCancelFeedback[]) ?? [];
   },
+
+  async createPaymentSlip(input: CreatePaymentSlipInput) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_payment_slips")
+      .insert({
+        shop_id: input.shopId,
+        amount_thb: input.amountThb,
+        tier: input.tier,
+        status: "pending",
+        storage_path: input.storagePath,
+        content_type: input.contentType,
+        note: input.note?.trim() ? input.note.trim() : null,
+        uploaded_by_barber_id: input.uploadedByBarberId ?? null,
+      })
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return mapPaymentSlip(data as Record<string, unknown>);
+  },
+
+  async listPaymentSlipsByShop(shopId: string) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_payment_slips")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return ((data as Record<string, unknown>[] | null) ?? []).map(mapPaymentSlip);
+  },
+
+  async listPaymentSlips(status?: PaymentSlipStatus) {
+    const supabase = createServiceClient();
+    let q = supabase
+      .from("shop_payment_slips")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (status) q = q.eq("status", status);
+    const { data, error } = await q;
+    if (error) throw new Error(error.message);
+    return ((data as Record<string, unknown>[] | null) ?? []).map(mapPaymentSlip);
+  },
+
+  async getPaymentSlip(id: string) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shop_payment_slips")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return data ? mapPaymentSlip(data as Record<string, unknown>) : null;
+  },
+
+  async extendShopSubscribedUntil(shopId: string, until: Date) {
+    const supabase = createServiceClient();
+    const { data, error } = await supabase
+      .from("shops")
+      .update({
+        subscribed_until: until.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", shopId)
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+    return data as Shop;
+  },
+
+  async reviewPaymentSlip(
+    id: string,
+    status: Exclude<PaymentSlipStatus, "pending">,
+    reviewedNote?: string | null,
+  ) {
+    const supabase = createServiceClient();
+    const existing = await this.getPaymentSlip(id);
+    if (!existing) throw new StoreConflict("NOT_FOUND");
+    if (existing.status !== "pending") throw new StoreConflict("INVALID_RANGE");
+
+    const shopRow = await this.listShops().then((shops) =>
+      shops.find((s) => s.id === existing.shop_id),
+    );
+    if (!shopRow) throw new StoreConflict("NOT_FOUND");
+
+    const { data, error } = await supabase
+      .from("shop_payment_slips")
+      .update({
+        status,
+        reviewed_at: new Date().toISOString(),
+        reviewed_note: reviewedNote?.trim() ? reviewedNote.trim() : null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .eq("status", "pending")
+      .select("*")
+      .single();
+    if (error) throw new Error(error.message);
+
+    let shop = shopRow;
+    if (status === "paid") {
+      const until = nextSubscribedUntilAfterPayment(shopRow);
+      shop = await this.extendShopSubscribedUntil(shopRow.id, until);
+    }
+    return { slip: mapPaymentSlip(data as Record<string, unknown>), shop };
+  },
 };
+
+function mapPaymentSlip(row: Record<string, unknown>): ShopPaymentSlip {
+  return {
+    id: String(row.id),
+    shop_id: String(row.shop_id),
+    amount_thb: Number(row.amount_thb),
+    tier: row.tier as ShopPaymentSlip["tier"],
+    status: row.status as ShopPaymentSlip["status"],
+    storage_path: String(row.storage_path),
+    content_type: (row.content_type as string | null) ?? null,
+    note: (row.note as string | null) ?? null,
+    uploaded_by_barber_id: (row.uploaded_by_barber_id as string | null) ?? null,
+    reviewed_at: (row.reviewed_at as string | null) ?? null,
+    reviewed_note: (row.reviewed_note as string | null) ?? null,
+    created_at: String(row.created_at),
+    updated_at: String(row.updated_at),
+  };
+}

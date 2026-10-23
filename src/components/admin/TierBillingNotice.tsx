@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import {
   CANCEL_FEEDBACK_REASONS,
@@ -27,7 +28,7 @@ type Panel = "notice" | "form" | "thanks";
  */
 export function TierBillingNotice() {
   const { ready, profile, authHeaders } = useAdminAuth();
-  const { shopApi } = useShopSlug();
+  const { shopApi, shopPath } = useShopSlug();
   const [notice, setNotice] = useState<NoticePayload | null>(null);
   const [panel, setPanel] = useState<Panel>("notice");
   const [reason, setReason] = useState<CancelFeedbackReason | null>(null);
@@ -100,37 +101,46 @@ export function TierBillingNotice() {
         <>
           <p className="text-sm leading-relaxed text-zinc-100">{notice.message}</p>
           <p className="mt-1 text-xs text-zinc-500">
-            ใช้ได้ตามปกติ · ไม่ล็อกร้าน · ไม่ต้องทำอะไรเพิ่ม
+            ใช้ได้ตามปกติ · ไม่ล็อกร้าน · ไม่มีการตัดบัตรอัตโนมัติ
           </p>
-          <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              data-testid="tier-notice-continue"
-              onClick={() => {
-                try {
-                  sessionStorage.setItem(dismissKey, "1");
-                } catch {
-                  /* ignore */
-                }
-                setDismissed(true);
-              }}
-              className="flex min-h-11 flex-1 items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+          <div className="mt-3 flex flex-col gap-2">
+            <Link
+              href={shopPath("/admin/settings/billing")}
+              data-testid="tier-notice-billing"
+              className="flex min-h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
             >
-              รับทราบ
-            </button>
-            <button
-              type="button"
-              data-testid="tier-notice-cancel"
-              onClick={() => {
-                setPanel("form");
-                setReason(null);
-                setDetail("");
-                setError(null);
-              }}
-              className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
-            >
-              ไม่ใช้บริการต่อ
-            </button>
+              ไปหน้าชำระเงิน PromptPay
+            </Link>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                data-testid="tier-notice-continue"
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem(dismissKey, "1");
+                  } catch {
+                    /* ignore */
+                  }
+                  setDismissed(true);
+                }}
+                className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
+              >
+                รับทราบ
+              </button>
+              <button
+                type="button"
+                data-testid="tier-notice-cancel"
+                onClick={() => {
+                  setPanel("form");
+                  setReason(null);
+                  setDetail("");
+                  setError(null);
+                }}
+                className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
+              >
+                ไม่ใช้บริการต่อ
+              </button>
+            </div>
           </div>
         </>
       ) : null}

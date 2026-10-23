@@ -292,6 +292,12 @@ export type {
   TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
 
+export type {
+  CreatePaymentSlipInput,
+  PaymentSlipStatus,
+  ShopPaymentSlip,
+} from "@/lib/billing/payment-slips";
+
 import type {
   CreateLineOaInstallRequestInput,
   LineOaInstallRequest,
@@ -304,6 +310,12 @@ import type {
   TrialLeadNote,
   TrialLeadStatus,
 } from "@/lib/marketing/trial-leads";
+
+import type {
+  CreatePaymentSlipInput,
+  PaymentSlipStatus,
+  ShopPaymentSlip,
+} from "@/lib/billing/payment-slips";
 
 export interface BookingStore {
   getShopBySlug(slug: string): Promise<Shop | null>;
@@ -422,4 +434,14 @@ export interface BookingStore {
     input: CreateShopCancelFeedbackInput,
   ): Promise<ShopCancelFeedback>;
   listShopCancelFeedback(): Promise<ShopCancelFeedback[]>;
+  createPaymentSlip(input: CreatePaymentSlipInput): Promise<ShopPaymentSlip>;
+  listPaymentSlipsByShop(shopId: string): Promise<ShopPaymentSlip[]>;
+  listPaymentSlips(status?: PaymentSlipStatus): Promise<ShopPaymentSlip[]>;
+  getPaymentSlip(id: string): Promise<ShopPaymentSlip | null>;
+  reviewPaymentSlip(
+    id: string,
+    status: Exclude<PaymentSlipStatus, "pending">,
+    reviewedNote?: string | null,
+  ): Promise<{ slip: ShopPaymentSlip; shop: Shop }>;
+  extendShopSubscribedUntil(shopId: string, until: Date): Promise<Shop>;
 }

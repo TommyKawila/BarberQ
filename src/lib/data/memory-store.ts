@@ -40,6 +40,12 @@ import type {
   CreateShopCancelFeedbackInput,
   ShopCancelFeedback,
 } from "@/lib/billing/cancel-feedback";
+import { nextSubscribedUntilAfterPayment } from "@/lib/billing/due-date";
+import type {
+  CreatePaymentSlipInput,
+  PaymentSlipStatus,
+  ShopPaymentSlip,
+} from "@/lib/billing/payment-slips";
 import type { Appointment, Barber, BusyInterval, Shop, ShopService, TimeBlock } from "@/types/booking";
 import {
   countBreaksForWeekday,
@@ -73,6 +79,7 @@ interface MemoryState {
   shopManagerInvites: ShopManagerInvite[];
   barberLineInvites: BarberLineInvite[];
   shopCancelFeedback: ShopCancelFeedback[];
+  paymentSlips: import("@/lib/billing/payment-slips").ShopPaymentSlip[];
 }
 
 type GlobalStore = typeof globalThis & { [GLOBAL_KEY]?: MemoryState };
@@ -101,6 +108,7 @@ function getState(): MemoryState {
       shopManagerInvites: [],
       barberLineInvites: [],
       shopCancelFeedback: [],
+      paymentSlips: [],
       shops: [
         {
           id: DEFAULT_SHOP_ID,
@@ -223,6 +231,9 @@ function getState(): MemoryState {
   }
   if (!g[GLOBAL_KEY].shopCancelFeedback) {
     g[GLOBAL_KEY].shopCancelFeedback = [];
+  }
+  if (!g[GLOBAL_KEY].paymentSlips) {
+    g[GLOBAL_KEY].paymentSlips = [];
   }
   if (!g[GLOBAL_KEY].lineOaInstallRequests) {
     g[GLOBAL_KEY].lineOaInstallRequests = [];
@@ -1809,5 +1820,78 @@ export const memoryStore: BookingStore = {
     return [...getState().shopCancelFeedback]
       .map((r) => ({ ...r }))
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+
+  async createPaymentSlip(input: CreatePaymentSlipInput) {
+    const shop = getState().shops.find((s) => s.id === input.shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    const now = nowIso();
+    const row: ShopPaymentSlip = {
+      id: uuid(),
+      shop_id: input.shopId,
+      amount_thb: input.amountThb,
+      tier: input.tier,
+      status: "pending",
+      storage_path: input.storagePath,
+      content_type: input.contentType,
+      note: input.note?.trim() ? input.note.trim() : null,
+      uploaded_by_barber_id: input.uploadedByBarberId ?? null,
+      reviewed_at: null,
+      reviewed_note: null,
+      created_at: now,
+      updated_at: now,
+    };
+    getState().paymentSlips.push(row);
+    return { ...row };
+  },
+
+  async listPaymentSlipsByShop(shopId: string) {
+    return getState()
+      .paymentSlips.filter((s) => s.shop_id === shopId)
+      .map((s) => ({ ...s }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+
+  async listPaymentSlips(status?: PaymentSlipStatus) {
+    return getState()
+      .paymentSlips.filter((s) => (status ? s.status === status : true))
+      .map((s) => ({ ...s }))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  },
+
+  async getPaymentSlip(id: string) {
+    return getState().paymentSlips.find((s) => s.id === id) ?? null;
+  },
+
+  async extendShopSubscribedUntil(shopId: string, until: Date) {
+    const shop = getState().shops.find((s) => s.id === shopId);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+    shop.subscribed_until = until.toISOString();
+    shop.updated_at = nowIso();
+    return { ...shop };
+  },
+
+  async reviewPaymentSlip(
+    id: string,
+    status: Exclude<PaymentSlipStatus, "pending">,
+    reviewedNote?: string | null,
+  ) {
+    const slip = getState().paymentSlips.find((s) => s.id === id);
+    if (!slip) throw new StoreConflict("NOT_FOUND");
+    if (slip.status !== "pending") throw new StoreConflict("INVALID_RANGE");
+    const shop = getState().shops.find((s) => s.id === slip.shop_id);
+    if (!shop) throw new StoreConflict("NOT_FOUND");
+
+    slip.status = status;
+    slip.reviewed_at = nowIso();
+    slip.reviewed_note = reviewedNote?.trim() ? reviewedNote.trim() : null;
+    slip.updated_at = nowIso();
+
+    if (status === "paid") {
+      const until = nextSubscribedUntilAfterPayment(shop);
+      shop.subscribed_until = until.toISOString();
+      shop.updated_at = nowIso();
+    }
+    return { slip: { ...slip }, shop: { ...shop } };
   },
 };

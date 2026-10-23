@@ -30,8 +30,9 @@ describe("tier billing notice", () => {
     assert.match(copy.message, /ช่างรับคิว 5 คน/);
     assert.match(copy.message, /3–5 ช่าง/);
     assert.match(copy.message, /฿599/);
-    assert.match(copy.message, /รอบบิลหน้า/);
-    assert.match(copy.message, /ไม่ต้องทำอะไรเพิ่ม/);
+    assert.match(copy.message, /ไม่มีการตัดบัตรอัตโนมัติ/);
+    assert.match(copy.message, /PromptPay/);
+    assert.doesNotMatch(copy.message, /ไม่ต้องทำอะไรเพิ่ม/);
     assert.doesNotMatch(copy.message, /Tommy|ทักไป/);
   });
 
@@ -42,7 +43,8 @@ describe("tier billing notice", () => {
     assert.equal(recommendedTierForBookableCount(11), "contact");
     const contact = buildTierBillingNoticeCopy(11);
     assert.match(contact.message, /มีคำถามทักเราได้/);
-    assert.match(contact.message, /ไม่ต้องทำอะไรเพิ่ม/);
+    assert.match(contact.message, /PromptPay/);
+    assert.doesNotMatch(contact.message, /ไม่ต้องทำอะไรเพิ่ม/);
     assert.doesNotMatch(contact.message, /Tommy|ทักไป/);
   });
 });

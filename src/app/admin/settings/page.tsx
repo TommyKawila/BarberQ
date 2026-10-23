@@ -970,6 +970,12 @@ export default function AdminSettingsPage() {
               <h2 className="text-base font-semibold text-zinc-100">{t("admin.sectionQueuePricing")}</h2>
               <SettingsRowGroup>
                 <SettingsRow
+                  href={shopPath("/admin/settings/billing")}
+                  icon={CircleDollarSign}
+                  title={t("admin.settingsBilling")}
+                  subtitle={t("admin.settingsBillingHint")}
+                />
+                <SettingsRow
                   href={shopPath("/admin/settings/qr-queue")}
                   icon={QrCode}
                   title={t("admin.settingsQrQueue")}

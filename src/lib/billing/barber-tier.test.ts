@@ -106,13 +106,15 @@ describe("barber-tier helpers", () => {
       bookableCountAfter: 3,
     });
     assert.equal(result.showPrompt, true);
-    assert.match(result.prompt?.body ?? "", /รอบบิลถัดไป/);
+    assert.match(result.prompt?.body ?? "", /ไม่มีการตัดบัตรอัตโนมัติ/);
+    assert.match(result.prompt?.body ?? "", /PromptPay/);
     assert.doesNotMatch(result.prompt?.body ?? "", /14\s*วัน/);
+    assert.doesNotMatch(result.prompt?.body ?? "", /ไม่ต้องทำอะไรเพิ่ม/);
     assert.equal(result.prompt?.primaryCta, "เพิ่มช่างต่อ");
     assert.equal(result.prompt?.secondaryCta, "มีคำถาม? ทักเรา");
+    assert.equal(result.prompt?.billingCta, "ไปหน้าชำระเงิน PromptPay");
     assert.equal(result.prompt?.signature, null);
     assert.doesNotMatch(result.prompt?.body ?? "", /ทักไปทาง LINE|Tommy/);
-    assert.match(result.prompt?.body ?? "", /ไม่ต้องทำอะไรเพิ่ม/);
     assert.equal(result.prompt?.bodyParagraphs.length, 2);
     assert.match(result.prompt?.bodyParagraphs[1] ?? "", /฿599/);
     const copy6 = buildOverTierPromptCopy(6);
