@@ -8,7 +8,11 @@ import liff from "@line/liff";
 import { RescheduleFlow } from "@/components/customer/RescheduleFlow";
 import { ShopContactLinks } from "@/components/customer/ShopContactLinks";
 import { ReminderLeadChips } from "@/components/customer/ReminderLeadChips";
-import { sortAppointmentsUpcomingFirst } from "@/lib/booking/customer-flow";
+import {
+  isAppointmentUpcoming,
+  partitionCustomerAppointments,
+  PAST_HISTORY_PAGE_SIZE,
+} from "@/lib/booking/customer-flow";
 import { useShopBrand } from "@/lib/brand/shop-brand";
 import { useLineAuth } from "@/lib/line/use-line-auth";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
@@ -32,8 +36,16 @@ interface ApiError {
   error?: { message?: string };
 }
 
-function statusLabel(status: AppointmentStatus, t: (key: MessageKey) => string): string {
-  switch (status) {
+function statusLabel(
+  apt: Pick<Appointment, "status" | "start_time">,
+  t: (key: MessageKey) => string,
+  now = new Date(),
+): string {
+  // Past confirmed bookings must not read as upcoming "ยืนยันแล้ว".
+  if (apt.status === "confirmed" && !isAppointmentUpcoming(apt, now)) {
+    return t("booking.statusPast");
+  }
+  switch (apt.status as AppointmentStatus) {
     case "confirmed":
       return t("booking.statusConfirmed");
     case "cancelled":
@@ -45,7 +57,7 @@ function statusLabel(status: AppointmentStatus, t: (key: MessageKey) => string):
     case "left":
       return t("booking.statusLeft");
     default:
-      return status;
+      return apt.status;
   }
 }
 
@@ -68,6 +80,8 @@ export default function MyBookingsPage() {
   const [rescheduleApt, setRescheduleApt] = useState<Appointment | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [showAddFriend, setShowAddFriend] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [pastVisibleCount, setPastVisibleCount] = useState(PAST_HISTORY_PAGE_SIZE);
   const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
 
   useEffect(() => {
@@ -114,10 +128,12 @@ export default function MyBookingsPage() {
     };
   }, [ready, mockMode, addFriendUrl]);
 
-  const sortedAppointments = useMemo(
-    () => sortAppointmentsUpcomingFirst(appointments),
+  const { upcoming, past } = useMemo(
+    () => partitionCustomerAppointments(appointments),
     [appointments],
   );
+  const visiblePast = past.slice(0, pastVisibleCount);
+  const hasMorePast = pastVisibleCount < past.length;
 
   async function handleCancel(apt: Appointment) {
     if (!apt.cancel_token) return;
@@ -173,6 +189,127 @@ export default function MyBookingsPage() {
 
   const dateLocale = locale === "th" ? th : enUS;
 
+  function renderCard(apt: Appointment, upcomingCard: boolean) {
+    const barber = barbers.find((b) => b.id === apt.barber_id);
+    const isUpcoming = upcomingCard && isAppointmentUpcoming(apt);
+    const cancellable =
+      isUpcoming && canCancelAt(apt.start_time) && apt.status === "confirmed";
+    const reschedulable = isUpcoming && canCustomerReschedule(apt);
+    const dateLabel = formatInTimeZone(
+      new Date(apt.start_time),
+      SHOP_TIMEZONE,
+      "EEEE d MMM yyyy",
+      { locale: dateLocale },
+    );
+
+    return (
+      <div key={apt.id} className="rounded-xl bg-zinc-900 p-4" data-testid="my-booking-card">
+        {shopName ? <p className="text-xs text-zinc-500">{shopName}</p> : null}
+        <h3 className="font-semibold">
+          {barber ? barberLabel(barber.name, locale) : "—"}
+        </h3>
+        <p className="text-sm text-zinc-400">{dateLabel}</p>
+        <p className="text-lg font-semibold">
+          {formatSlotTime(apt.start_time)} – {formatSlotTime(apt.end_time)}
+        </p>
+        <p
+          className={`mt-1 text-xs ${isUpcoming ? "text-zinc-500" : "text-zinc-600"}`}
+          data-testid="my-booking-status"
+        >
+          {statusLabel(apt, t)}
+        </p>
+        {isUpcoming && (apt.reschedule_count ?? 0) >= 1 && apt.status === "confirmed" ? (
+          <p className="mt-1 text-xs text-zinc-500">{t("booking.rescheduleUsed")}</p>
+        ) : null}
+        {isUpcoming
+          ? (() => {
+              const key = reminderDisplayMessageKey(apt.reminder_lead_minutes);
+              const canEditReminder =
+                remindersEnabled &&
+                apt.status === "confirmed" &&
+                !apt.reminder_sent_at &&
+                new Date(apt.start_time).getTime() > Date.now();
+              if (editingReminderId === apt.id && canEditReminder) {
+                const stored = apt.reminder_lead_minutes;
+                const current: ReminderLeadOption =
+                  stored == null || stored === 0
+                    ? 0
+                    : defaultCustomerReminderChip(stored, new Date(apt.start_time));
+                return (
+                  <div className="mt-3" data-testid="my-queue-reminder-edit">
+                    <ReminderLeadChips
+                      startTimeIso={apt.start_time}
+                      value={current}
+                      onChange={(lead) => void handleReminderChange(apt, lead)}
+                      label={t("booking.reminderLead")}
+                      hint={t("booking.reminderLeadHint")}
+                      t={t}
+                    />
+                  </div>
+                );
+              }
+              return (
+                <div className="mt-1 flex flex-wrap items-center gap-2">
+                  {key ? (
+                    <p className="text-xs text-amber-200/90">
+                      {t("booking.reminderChosen").replace("{lead}", t(key as MessageKey))}
+                    </p>
+                  ) : remindersEnabled && canEditReminder ? (
+                    <p className="text-xs text-zinc-500">{t("booking.reminderLead.0")}</p>
+                  ) : null}
+                  {canEditReminder ? (
+                    <button
+                      type="button"
+                      disabled={submittingId === apt.id}
+                      onClick={() => setEditingReminderId(apt.id)}
+                      className="text-xs font-medium text-amber-400 underline-offset-2 hover:underline"
+                    >
+                      {t("booking.reminderChange")}
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })()
+          : null}
+        {cancellable && apt.cancel_token ? (
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {reschedulable ? (
+              <button
+                type="button"
+                disabled={submittingId === apt.id}
+                onClick={() => setRescheduleApt(apt)}
+                className="min-h-11 rounded-lg border border-amber-400/70 text-sm font-semibold text-amber-300 disabled:opacity-50"
+                data-testid="reschedule-btn"
+              >
+                {t("booking.reschedule")}
+              </button>
+            ) : (
+              <div />
+            )}
+            <button
+              type="button"
+              disabled={submittingId === apt.id}
+              onClick={() => void handleCancel(apt)}
+              className="min-h-11 rounded-lg bg-red-500 text-sm font-semibold disabled:opacity-50"
+            >
+              {submittingId === apt.id ? t("booking.cancelling") : t("booking.cancel")}
+            </button>
+          </div>
+        ) : isUpcoming && apt.status === "confirmed" ? (
+          <div className="mt-3 space-y-2">
+            <p className="text-xs text-amber-400">
+              {t("booking.cancelTooLateDetail").replace(
+                "{minutes}",
+                String(CANCEL_LEAD_MINUTES),
+              )}
+            </p>
+            <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   if (!ready || loading) {
     return <p className="px-4 py-16 text-center text-sm text-zinc-400">{t("common.loading")}</p>;
   }
@@ -198,7 +335,7 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-8 pb-24">
+    <div className="flex flex-col gap-4 px-4 pt-8 pb-[max(7.5rem,calc(5.5rem+env(safe-area-inset-bottom,0px)))]">
       <header>
         <h1 className="text-2xl font-semibold">{t("booking.myBookings")}</h1>
         {shopName ? <p className="text-sm text-zinc-400">{shopName}</p> : null}
@@ -206,123 +343,58 @@ export default function MyBookingsPage() {
 
       {message ? <p className="text-sm text-red-400">{message}</p> : null}
 
-      {sortedAppointments.length === 0 ? (
-        <p className="text-center text-zinc-500">{t("booking.noBookings")}</p>
-      ) : (
-        <div className="flex flex-col gap-3">
-          {sortedAppointments.map((apt) => {
-            const barber = barbers.find((b) => b.id === apt.barber_id);
-            const cancellable = canCancelAt(apt.start_time) && apt.status === "confirmed";
-            const reschedulable = canCustomerReschedule(apt);
-            const dateLabel = formatInTimeZone(
-              new Date(apt.start_time),
-              SHOP_TIMEZONE,
-              "EEEE d MMM yyyy",
-              { locale: dateLocale },
-            );
+      <section aria-labelledby="upcoming-bookings-heading" data-testid="upcoming-bookings">
+        <h2 id="upcoming-bookings-heading" className="text-sm font-semibold text-zinc-300">
+          {t("booking.upcomingSection")}
+        </h2>
+        {upcoming.length === 0 ? (
+          <p className="mt-3 text-center text-sm text-zinc-500">{t("booking.noUpcoming")}</p>
+        ) : (
+          <div className="mt-3 flex flex-col gap-3">
+            {upcoming.map((apt) => renderCard(apt, true))}
+          </div>
+        )}
+      </section>
 
-            return (
-              <div key={apt.id} className="rounded-xl bg-zinc-900 p-4" data-testid="my-booking-card">
-                {shopName ? <p className="text-xs text-zinc-500">{shopName}</p> : null}
-                <h3 className="font-semibold">
-                  {barber ? barberLabel(barber.name, locale) : "—"}
-                </h3>
-                <p className="text-sm text-zinc-400">{dateLabel}</p>
-                <p className="text-lg font-semibold">
-                  {formatSlotTime(apt.start_time)} – {formatSlotTime(apt.end_time)}
-                </p>
-                <p className="mt-1 text-xs text-zinc-500">{statusLabel(apt.status, t)}</p>
-                {(apt.reschedule_count ?? 0) >= 1 && apt.status === "confirmed" ? (
-                  <p className="mt-1 text-xs text-zinc-500">{t("booking.rescheduleUsed")}</p>
-                ) : null}
-                {(() => {
-                  const key = reminderDisplayMessageKey(apt.reminder_lead_minutes);
-                  const canEditReminder =
-                    remindersEnabled &&
-                    apt.status === "confirmed" &&
-                    !apt.reminder_sent_at &&
-                    new Date(apt.start_time).getTime() > Date.now();
-                  if (editingReminderId === apt.id && canEditReminder) {
-                    const stored = apt.reminder_lead_minutes;
-                    const current: ReminderLeadOption =
-                      stored == null || stored === 0
-                        ? 0
-                        : defaultCustomerReminderChip(stored, new Date(apt.start_time));
-                    return (
-                      <div className="mt-3" data-testid="my-queue-reminder-edit">
-                        <ReminderLeadChips
-                          startTimeIso={apt.start_time}
-                          value={current}
-                          onChange={(lead) => void handleReminderChange(apt, lead)}
-                          label={t("booking.reminderLead")}
-                          hint={t("booking.reminderLeadHint")}
-                          t={t}
-                        />
-                      </div>
-                    );
+      {past.length > 0 ? (
+        <section aria-labelledby="past-bookings-heading" data-testid="past-bookings">
+          <button
+            type="button"
+            id="past-bookings-heading"
+            data-testid="toggle-history"
+            aria-expanded={historyOpen}
+            onClick={() => {
+              setHistoryOpen((open) => {
+                if (open) setPastVisibleCount(PAST_HISTORY_PAGE_SIZE);
+                return !open;
+              });
+            }}
+            className="flex min-h-11 w-full items-center justify-between rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 text-sm font-medium text-zinc-200"
+          >
+            <span>{historyOpen ? t("booking.hideHistory") : t("booking.viewHistory")}</span>
+            <span className="text-xs text-zinc-500">{past.length}</span>
+          </button>
+          {historyOpen ? (
+            <div className="mt-3 flex flex-col gap-3">
+              {visiblePast.map((apt) => renderCard(apt, false))}
+              {hasMorePast ? (
+                <button
+                  type="button"
+                  data-testid="load-more-history"
+                  onClick={() =>
+                    setPastVisibleCount((n) => n + PAST_HISTORY_PAGE_SIZE)
                   }
-                  return (
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      {key ? (
-                        <p className="text-xs text-amber-200/90">
-                          {t("booking.reminderChosen").replace("{lead}", t(key as MessageKey))}
-                        </p>
-                      ) : remindersEnabled && canEditReminder ? (
-                        <p className="text-xs text-zinc-500">{t("booking.reminderLead.0")}</p>
-                      ) : null}
-                      {canEditReminder ? (
-                        <button
-                          type="button"
-                          disabled={submittingId === apt.id}
-                          onClick={() => setEditingReminderId(apt.id)}
-                          className="text-xs font-medium text-amber-400 underline-offset-2 hover:underline"
-                        >
-                          {t("booking.reminderChange")}
-                        </button>
-                      ) : null}
-                    </div>
-                  );
-                })()}
-                {cancellable && apt.cancel_token ? (
-                  <div className="mt-3 grid grid-cols-2 gap-2">
-                    {reschedulable ? (
-                      <button
-                        type="button"
-                        disabled={submittingId === apt.id}
-                        onClick={() => setRescheduleApt(apt)}
-                        className="min-h-11 rounded-lg border border-amber-400/70 text-sm font-semibold text-amber-300 disabled:opacity-50"
-                        data-testid="reschedule-btn"
-                      >
-                        {t("booking.reschedule")}
-                      </button>
-                    ) : (
-                      <div />
-                    )}
-                    <button
-                      type="button"
-                      disabled={submittingId === apt.id}
-                      onClick={() => void handleCancel(apt)}
-                      className="min-h-11 rounded-lg bg-red-500 text-sm font-semibold disabled:opacity-50"
-                    >
-                      {submittingId === apt.id ? t("booking.cancelling") : t("booking.cancel")}
-                    </button>
-                  </div>
-                ) : apt.status === "confirmed" ? (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-xs text-amber-400">
-                      {t("booking.cancelTooLateDetail").replace(
-                        "{minutes}",
-                        String(CANCEL_LEAD_MINUTES),
-                      )}
-                    </p>
-                    <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
-                  </div>
-                ) : null}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  className="min-h-11 rounded-xl border border-zinc-700 text-sm font-medium text-zinc-300"
+                >
+                  {t("booking.loadMoreHistory")}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </section>
+      ) : appointments.length === 0 ? (
+        <p className="text-center text-zinc-500">{t("booking.noBookings")}</p>
+      ) : null}
 
       {showAddFriend && addFriendUrl ? (
         <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4">
@@ -338,12 +410,17 @@ export default function MyBookingsPage() {
         </div>
       ) : null}
 
-      <Link
-        href={shopPath("/")}
-        className="mt-4 flex min-h-11 items-center justify-center rounded-xl bg-amber-400 text-center text-sm font-semibold text-zinc-950"
+      <div
+        className="fixed inset-x-0 bottom-0 z-20 border-t border-zinc-800 bg-zinc-950 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-3 shadow-[0_-8px_24px_rgba(0,0,0,0.45)]"
+        data-testid="book-another-sticky"
       >
-        {t("booking.bookAnother")}
-      </Link>
+        <Link
+          href={shopPath("/")}
+          className="flex min-h-12 items-center justify-center rounded-xl bg-amber-400 text-center text-sm font-semibold text-zinc-950"
+        >
+          {t("booking.bookAnother")}
+        </Link>
+      </div>
 
       {rescheduleApt ? (
         <RescheduleFlow
