@@ -1,4 +1,5 @@
 import { addMinutes } from "date-fns";
+import { isPastBillingGrace } from "@/lib/billing/due-date";
 import { getStore, StoreConflict } from "@/lib/data";
 import {
   canCancelAt,
@@ -30,6 +31,26 @@ import type {
   Slot,
   TimeBlock,
 } from "@/types/booking";
+
+/**
+ * After billing grace expires, block NEW customer online bookings only.
+ * Staff walk-in / phone bookings and existing appointments stay open.
+ * Demo shops are never blocked. Paying (subscribed_until extended) restores immediately.
+ */
+async function assertCustomerOnlineBookingAllowed(shopId: string): Promise<void> {
+  const shops = await getStore().listShops();
+  const shop = shops.find((s) => s.id === shopId);
+  if (!shop) {
+    throw new BookingError("NOT_FOUND", "Shop not found", 404);
+  }
+  if (shop.is_demo) return;
+  if (!isPastBillingGrace(shop)) return;
+  throw new BookingError(
+    "BILLING_BOOKING_CLOSED",
+    "ร้านปิดรับจองออนไลน์ชั่วคราว",
+    403,
+  );
+}
 
 export class BookingError extends Error {
   readonly code: string;
@@ -475,6 +496,7 @@ export async function createBookingForShop(
   input: CreateBookingInput,
 ): Promise<Appointment> {
   await assertBarberInShop(input.barberId, shopId);
+  await assertCustomerOnlineBookingAllowed(shopId);
   return createBooking(input, shopId);
 }
 

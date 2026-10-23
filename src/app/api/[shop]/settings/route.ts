@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertStaffForShop, assertShopOperator } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
+import { isPastBillingGrace } from "@/lib/billing/due-date";
 import { getStore } from "@/lib/data";
 import type { ShopSettings } from "@/lib/data/types";
 import { isValidLogoDataUrl } from "@/lib/image/fit-logo";
@@ -36,8 +37,14 @@ export async function GET(
     // Brand display: settings override, else shops.name (never leave blank for customers).
     const shopName =
       (publicSettings.shopName ?? "").trim() || shop.name || null;
+    const onlineBookingClosed =
+      !shop.is_demo && isPastBillingGrace(shop);
     return NextResponse.json(
-      { ...publicSettings, shopName },
+      {
+        ...publicSettings,
+        shopName,
+        onlineBookingClosed,
+      },
       {
         headers: {
           "Cache-Control": "private, no-store, no-cache, must-revalidate",

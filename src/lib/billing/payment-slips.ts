@@ -1,3 +1,4 @@
+import type { BillingPeriod } from "@/lib/billing/billing-amount";
 import type { BarberTierId } from "@/lib/billing/barber-tier";
 
 export const PAYMENT_SLIP_STATUSES = ["pending", "paid", "rejected"] as const;
@@ -10,6 +11,7 @@ export interface ShopPaymentSlip {
   shop_id: string;
   amount_thb: number;
   tier: BarberTierId;
+  period: BillingPeriod;
   status: PaymentSlipStatus;
   storage_path: string;
   content_type: string | null;
@@ -25,6 +27,7 @@ export interface CreatePaymentSlipInput {
   shopId: string;
   amountThb: number;
   tier: BarberTierId;
+  period?: BillingPeriod;
   storagePath: string;
   contentType: string | null;
   note?: string | null;

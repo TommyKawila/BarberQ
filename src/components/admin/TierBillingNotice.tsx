@@ -18,6 +18,10 @@ interface NoticePayload {
   recommendedTier: string;
   rangeLabel: string;
   priceLabel: string | null;
+  overdue?: boolean;
+  graceDaysLeft?: number;
+  overdueHeadline?: string;
+  overdueMessage?: string;
 }
 
 type Panel = "notice" | "form" | "thanks";
@@ -90,57 +94,95 @@ export function TierBillingNotice() {
     }
   }
 
-  if (!notice || (dismissed && panel === "notice")) return null;
+  const overdue = Boolean(notice?.overdue);
+  // Overdue red banner cannot be session-dismissed — keep showing after day 30.
+  if (!notice || (dismissed && panel === "notice" && !overdue)) return null;
+
+  const shellClass = overdue
+    ? "mx-4 mt-3 rounded-2xl border border-red-500/50 bg-red-950/40 px-4 py-3 lg:mx-0"
+    : "mx-4 mt-3 rounded-2xl border border-amber-500/35 bg-zinc-900 px-4 py-3 lg:mx-0";
+  const ctaClass = overdue
+    ? "flex min-h-11 w-full items-center justify-center rounded-xl bg-red-500 text-sm font-semibold text-white"
+    : "flex min-h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950";
 
   return (
     <section
       data-testid="tier-billing-notice"
-      className="mx-4 mt-3 rounded-2xl border border-amber-500/35 bg-zinc-900 px-4 py-3 lg:mx-0"
+      data-overdue={overdue ? "true" : "false"}
+      className={shellClass}
     >
       {panel === "notice" ? (
         <>
-          <p className="text-sm leading-relaxed text-zinc-100">{notice.message}</p>
-          <p className="mt-1 text-xs text-zinc-500">
-            ใช้ได้ตามปกติ · ไม่ล็อกร้าน · ไม่มีการตัดบัตรอัตโนมัติ
-          </p>
+          {overdue ? (
+            <>
+              <p
+                className="text-sm font-semibold text-red-300"
+                data-testid="tier-notice-overdue-headline"
+              >
+                {notice.overdueHeadline || "เลยกำหนดชำระแล้ว"}
+              </p>
+              {notice.graceDaysLeft != null && notice.graceDaysLeft > 0 ? (
+                <p
+                  className="mt-1 text-sm text-red-200/90"
+                  data-testid="tier-notice-grace-days"
+                >
+                  เหลือเวลาผ่อนผัน {notice.graceDaysLeft} วัน
+                </p>
+              ) : null}
+              <p className="mt-1 text-sm leading-relaxed text-zinc-100">
+                {notice.overdueMessage || notice.message}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm leading-relaxed text-zinc-100">
+                {notice.message}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                ใช้ได้ตามปกติ · ไม่ล็อกร้าน · ไม่มีการตัดบัตรอัตโนมัติ
+              </p>
+            </>
+          )}
           <div className="mt-3 flex flex-col gap-2">
             <Link
               href={shopPath("/admin/settings/billing")}
               data-testid="tier-notice-billing"
-              className="flex min-h-11 w-full items-center justify-center rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950"
+              className={ctaClass}
             >
-              ไปหน้าชำระเงิน PromptPay
+              {overdue ? "ชำระเงินเลย" : "ไปหน้าชำระเงิน PromptPay"}
             </Link>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                data-testid="tier-notice-continue"
-                onClick={() => {
-                  try {
-                    sessionStorage.setItem(dismissKey, "1");
-                  } catch {
-                    /* ignore */
-                  }
-                  setDismissed(true);
-                }}
-                className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
-              >
-                รับทราบ
-              </button>
-              <button
-                type="button"
-                data-testid="tier-notice-cancel"
-                onClick={() => {
-                  setPanel("form");
-                  setReason(null);
-                  setDetail("");
-                  setError(null);
-                }}
-                className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
-              >
-                ไม่ใช้บริการต่อ
-              </button>
-            </div>
+            {!overdue ? (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  data-testid="tier-notice-continue"
+                  onClick={() => {
+                    try {
+                      sessionStorage.setItem(dismissKey, "1");
+                    } catch {
+                      /* ignore */
+                    }
+                    setDismissed(true);
+                  }}
+                  className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
+                >
+                  รับทราบ
+                </button>
+                <button
+                  type="button"
+                  data-testid="tier-notice-cancel"
+                  onClick={() => {
+                    setPanel("form");
+                    setReason(null);
+                    setDetail("");
+                    setError(null);
+                  }}
+                  className="flex min-h-11 flex-1 items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-200"
+                >
+                  ไม่ใช้บริการต่อ
+                </button>
+              </div>
+            ) : null}
           </div>
         </>
       ) : null}

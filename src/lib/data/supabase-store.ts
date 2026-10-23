@@ -1825,6 +1825,7 @@ export const supabaseStore: BookingStore = {
         shop_id: input.shopId,
         amount_thb: input.amountThb,
         tier: input.tier,
+        period: input.period === "yearly" ? "yearly" : "monthly",
         status: "pending",
         storage_path: input.storagePath,
         content_type: input.contentType,
@@ -1917,7 +1918,8 @@ export const supabaseStore: BookingStore = {
 
     let shop = shopRow;
     if (status === "paid") {
-      const until = nextSubscribedUntilAfterPayment(shopRow);
+      const months = existing.period === "yearly" ? 12 : 1;
+      const until = nextSubscribedUntilAfterPayment(shopRow, new Date(), months);
       shop = await this.extendShopSubscribedUntil(shopRow.id, until);
     }
     return { slip: mapPaymentSlip(data as Record<string, unknown>), shop };
@@ -1930,6 +1932,7 @@ function mapPaymentSlip(row: Record<string, unknown>): ShopPaymentSlip {
     shop_id: String(row.shop_id),
     amount_thb: Number(row.amount_thb),
     tier: row.tier as ShopPaymentSlip["tier"],
+    period: row.period === "yearly" ? "yearly" : "monthly",
     status: row.status as ShopPaymentSlip["status"],
     storage_path: String(row.storage_path),
     content_type: (row.content_type as string | null) ?? null,

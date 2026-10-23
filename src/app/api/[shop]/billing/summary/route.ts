@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import QRCode from "qrcode";
 import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
-import { resolveBillingAmountForBookableCount } from "@/lib/billing/billing-amount";
+import {
+  normalizeBillingPeriod,
+  resolveBillingAmountForPeriod,
+} from "@/lib/billing/billing-amount";
 import {
   countBookableBarberSeats,
   normalizeBarberTier,
@@ -32,11 +35,14 @@ export async function GET(
     const staff = await assertStaffForShop(req, shop.id);
     assertShopOperator(staff);
 
+    const period = normalizeBillingPeriod(
+      new URL(req.url).searchParams.get("period"),
+    );
+
     const barbers = await getStore().listBarbersByShop(shop.id);
     const bookableCount = countBookableBarberSeats(barbers);
     const storedTier = normalizeBarberTier(shop.barber_tier);
-    const { billingTier, rangeLabel, amountThb, priceLabel } =
-      resolveBillingAmountForBookableCount(bookableCount);
+    const billing = resolveBillingAmountForPeriod(bookableCount, period);
     const dueAt = shopBillingDueAt(shop);
     const trialEndsAt = shopTrialEndsAt(shop);
     const overdue = isBillingOverdue(shop);
@@ -46,11 +52,11 @@ export async function GET(
     let qrError: string | null = null;
     if (!promptPayId) {
       qrError = "PROMPTPAY_NOT_CONFIGURED";
-    } else if (amountThb == null) {
+    } else if (billing.amountThb == null) {
       qrError = "CONTACT_FOR_PRICE";
     } else {
       try {
-        const payload = buildPromptPayPayload(promptPayId, amountThb);
+        const payload = buildPromptPayPayload(promptPayId, billing.amountThb);
         qrDataUrl = await QRCode.toDataURL(payload, {
           margin: 1,
           width: 280,
@@ -69,10 +75,17 @@ export async function GET(
       bookableCount,
       /** Stored soft flag only — display/QR use billingTier from bookable count. */
       barberTier: storedTier,
-      billingTier,
-      rangeLabel,
-      amountThb,
-      priceLabel,
+      billingTier: billing.billingTier,
+      rangeLabel: billing.rangeLabel,
+      period: billing.period,
+      amountThb: billing.amountThb,
+      priceLabel: billing.priceLabel,
+      monthlyAmountThb: billing.monthlyAmountThb,
+      monthlyPriceLabel: billing.monthlyPriceLabel,
+      yearlyAmountThb: billing.yearlyAmountThb,
+      yearlyPriceLabel: billing.yearlyPriceLabel,
+      yearlySavingsThb: billing.yearlySavingsThb,
+      yearlySavingsLabel: billing.yearlySavingsLabel,
       dueAt: dueAt.toISOString(),
       trialEndsAt: trialEndsAt.toISOString(),
       paidUntil: shop.subscribed_until,
@@ -83,6 +96,7 @@ export async function GET(
         id: s.id,
         status: s.status,
         amount_thb: s.amount_thb,
+        period: s.period,
         created_at: s.created_at,
         reviewed_at: s.reviewed_at,
       })),

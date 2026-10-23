@@ -84,6 +84,7 @@ export function BookingApp() {
     enabled: boolean;
     leadMinutes: number;
   } | null>(null);
+  const [onlineBookingClosed, setOnlineBookingClosed] = useState(false);
   const remindersEnabled = reminderSettings?.enabled ?? brandRemindersEnabled;
   const shopReminderLead = reminderSettings?.leadMinutes ?? brandReminderLead;
   const { ready, profile, login, mockMode } = useLineAuth();
@@ -135,6 +136,35 @@ export function BookingApp() {
     }
   }, [profile, customerName]);
 
+  // Public settings: billing lockout + reminder defaults.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(shopApi("/settings"), { cache: "no-store" });
+        if (!res.ok || cancelled) return;
+        const json = (await res.json()) as {
+          remindersEnabled?: boolean;
+          reminderLeadMinutes?: number;
+          onlineBookingClosed?: boolean;
+        };
+        if (cancelled) return;
+        setOnlineBookingClosed(Boolean(json.onlineBookingClosed));
+        if (typeof json.reminderLeadMinutes === "number") {
+          setReminderSettings({
+            enabled: Boolean(json.remindersEnabled),
+            leadMinutes: json.reminderLeadMinutes,
+          });
+        }
+      } catch {
+        /* keep defaults */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [shopApi]);
+
   // Re-fetch reminder flags when a slot is chosen (avoid stale default false).
   useEffect(() => {
     if (!selectedStart) return;
@@ -147,8 +177,10 @@ export function BookingApp() {
         const json = (await res.json()) as {
           remindersEnabled?: boolean;
           reminderLeadMinutes?: number;
+          onlineBookingClosed?: boolean;
         };
         if (cancelled) return;
+        setOnlineBookingClosed(Boolean(json.onlineBookingClosed));
         const leadMinutes =
           typeof json.reminderLeadMinutes === "number"
             ? json.reminderLeadMinutes
@@ -615,6 +647,24 @@ export function BookingApp() {
         friendship={friendship}
         onBackToShop={resetBooking}
       />
+    );
+  }
+
+  if (onlineBookingClosed) {
+    return (
+      <section
+        className="flex flex-col gap-4 px-4 py-8"
+        data-testid="booking-closed-billing"
+      >
+        <BookingHero shopName={shopName} coverImageUrl={coverImageUrl} prototypeMode={prototypeMode} />
+        <p className="text-base font-semibold text-zinc-100">
+          {t("booking.onlineClosedTitle")}
+        </p>
+        <p className="text-sm leading-relaxed text-zinc-400">
+          {t("booking.onlineClosedBody")}
+        </p>
+        <ShopContactLinks lineUrl={lineUrl} phone={shopPhone} />
+      </section>
     );
   }
 

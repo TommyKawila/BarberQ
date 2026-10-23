@@ -8,6 +8,10 @@ import {
   type BarberTierId,
   tierRangeLabelTh,
 } from "@/lib/billing/barber-tier";
+import {
+  graceDaysRemaining,
+  isBillingOverdue,
+} from "@/lib/billing/due-date";
 
 /** First trial day when the in-app billing notice may appear (1 = created day). */
 export const TIER_NOTICE_FROM_TRIAL_DAY = 25;
@@ -26,7 +30,7 @@ export function shopTrialDayNumber(
 }
 
 /**
- * Persistent admin notice from trial day 25 onward.
+ * Persistent admin notice from trial day 25 onward (keeps showing after day 30).
  * Content always reflects current bookable count (updates when seats cross tiers).
  */
 export function shouldShowTierBillingNotice(
@@ -34,6 +38,33 @@ export function shouldShowTierBillingNotice(
   now: Date = new Date(),
 ): boolean {
   return shopTrialDayNumber(shop, now) >= TIER_NOTICE_FROM_TRIAL_DAY;
+}
+
+/** Overdue red banner state (still shown after day 30 / during grace / past grace). */
+export function buildOverdueBillingNotice(
+  shop: Pick<Shop, "created_at" | "subscribed_until">,
+  now: Date = new Date(),
+): {
+  overdue: boolean;
+  graceDaysLeft: number;
+  headline: string;
+  message: string;
+} {
+  const overdue = isBillingOverdue(shop, now);
+  const graceDaysLeft = graceDaysRemaining(shop, now);
+  if (!overdue) {
+    return { overdue: false, graceDaysLeft: 0, headline: "", message: "" };
+  }
+  const graceLine =
+    graceDaysLeft > 0
+      ? `เหลือเวลาผ่อนผัน ${graceDaysLeft} วันก่อนระบบจะปิดรับจองออนไลน์จากลูกค้าใหม่`
+      : "เลยช่วงผ่อนผันแล้ว — ลูกค้าใหม่จองออนไลน์ไม่ได้จนกว่าจะชำระ";
+  return {
+    overdue: true,
+    graceDaysLeft,
+    headline: "เลยกำหนดชำระแล้ว",
+    message: graceLine,
+  };
 }
 
 /** Recommended pack for a bookable-seat count (owner free unless bookable). */
