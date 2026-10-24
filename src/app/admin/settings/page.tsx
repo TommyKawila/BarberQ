@@ -464,7 +464,7 @@ export default function AdminSettingsPage() {
     setHoursMessage(null);
     try {
       const next = normalizeShopHours(hours);
-      const days = Math.min(90, Math.max(1, Math.round(advanceDays) || 30));
+      const days = Math.min(30, Math.max(1, Math.round(advanceDays) || 30));
       await putSettings({ hours: next, bookingAdvanceDays: days });
       setHours(next);
       setHoursBaseline(next.map((d) => ({ ...d })));
@@ -860,7 +860,7 @@ export default function AdminSettingsPage() {
                   <input
                     type="number"
                     min={1}
-                    max={90}
+                    max={30}
                     value={advanceDays}
                     onChange={(e) => setAdvanceDays(Number(e.target.value) || 1)}
                     className="mt-1 h-11 w-28 rounded-lg bg-zinc-800 px-3 text-sm tabular-nums text-zinc-100"

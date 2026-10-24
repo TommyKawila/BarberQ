@@ -12,7 +12,7 @@ export const SHOP_TIMEZONE = "Asia/Bangkok";
 /** Default customer advance-booking window (calendar days, including today). */
 export const DEFAULT_BOOKING_ADVANCE_DAYS = 30;
 export const MIN_BOOKING_ADVANCE_DAYS = 1;
-export const MAX_BOOKING_ADVANCE_DAYS = 90;
+export const MAX_BOOKING_ADVANCE_DAYS = 30;
 /**
  * @deprecated Use DEFAULT_BOOKING_ADVANCE_DAYS — was hardcoded 7; kept as alias
  * so older tests/imports keep compiling.

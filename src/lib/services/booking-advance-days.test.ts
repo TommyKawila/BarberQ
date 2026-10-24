@@ -26,9 +26,11 @@ describe("booking advance days", () => {
     assert.equal(dates[6], "2026-10-29");
   });
 
-  it("clamps invalid values", () => {
+  it("clamps invalid values (cap 1–30)", () => {
+    assert.equal(MAX_BOOKING_ADVANCE_DAYS, 30);
     assert.equal(clampBookingAdvanceDays(null), DEFAULT_BOOKING_ADVANCE_DAYS);
     assert.equal(clampBookingAdvanceDays(0), MIN_BOOKING_ADVANCE_DAYS);
+    assert.equal(clampBookingAdvanceDays(90), MAX_BOOKING_ADVANCE_DAYS);
     assert.equal(clampBookingAdvanceDays(999), MAX_BOOKING_ADVANCE_DAYS);
     assert.equal(clampBookingAdvanceDays(14.6), 15);
   });
@@ -40,17 +42,22 @@ describe("booking advance days", () => {
     );
     assert.match(mig, /booking_advance_days/);
     assert.match(mig, /default 30/);
+    assert.match(mig, /booking_advance_days <= 30/);
+    assert.match(mig, /drop constraint if exists shop_settings_booking_advance_days_check/);
+    assert.match(mig, /booking_advance_days > 30/);
     const catchup = readFileSync(
       resolve(process.cwd(), "supabase/scripts/prod_catchup_0050_booking_advance_days.sql"),
       "utf8",
     );
-    assert.match(catchup, /booking_advance_days/);
+    assert.match(catchup, /booking_advance_days <= 30/);
+    assert.match(catchup, /drop constraint if exists shop_settings_booking_advance_days_check/);
     const selector = readFileSync(
       resolve(process.cwd(), "src/components/customer/DateSelector.tsx"),
       "utf8",
     );
     assert.match(selector, /pickOtherDate/);
     assert.match(selector, /type="date"/);
+    assert.match(selector, /max=\{lastDate\}/);
   });
 
   it("degrades safely when booking_advance_days column is missing", () => {

@@ -122,7 +122,7 @@ export interface ShopSettings {
   showFlexBrandFooter: boolean;
   /**
    * How many calendar days ahead customers may book (including today).
-   * Default 30; clamped 1–90. Replaces the old hardcoded 7-day window.
+   * Default 30; clamped 1–30. Replaces the old hardcoded 7-day window.
    */
   bookingAdvanceDays: number;
 }
