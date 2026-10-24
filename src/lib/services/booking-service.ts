@@ -5,6 +5,7 @@ import {
   CANCEL_LEAD_MINUTES,
   dateISOFromInstant,
   dayRangeUtc,
+  DEFAULT_BOOKING_ADVANCE_DAYS,
   generateSlots,
   getBookableDates,
   intervalsOverlap,
@@ -122,11 +123,6 @@ export async function getAvailableSlots(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
     throw new BookingError("INVALID_DATE", "Date must be YYYY-MM-DD", 400);
   }
-  const bookable = getBookableDates(now);
-  if (!bookable.includes(dateISO)) {
-    throw new BookingError("OUT_OF_WINDOW", "Date is outside the 7-day booking window", 400);
-  }
-
   try {
     const store = getStore();
     const barber = await store.getBarber(barberId);
@@ -134,7 +130,19 @@ export async function getAvailableSlots(
     if (!isBarberBookable(barber)) {
       throw new BookingError("BARBER_NOT_FOUND", "Barber not found", 404);
     }
-    const shopHours = await shopHoursForBarber(barber);
+    const settings = barber.shop_id
+      ? await store.getShopSettings(barber.shop_id)
+      : null;
+    const advanceDays = settings?.bookingAdvanceDays ?? DEFAULT_BOOKING_ADVANCE_DAYS;
+    const bookable = getBookableDates(now, advanceDays);
+    if (!bookable.includes(dateISO)) {
+      throw new BookingError(
+        "OUT_OF_WINDOW",
+        `Date is outside the ${advanceDays}-day booking window`,
+        400,
+      );
+    }
+    const shopHours = normalizeShopHours(settings?.hours ?? null);
     const range = dayRangeUtc(dateISO);
     const [busyRaw, recurringBreaks] = await Promise.all([
       store.getBusyIntervals(barberId, range.from, range.to),
@@ -169,17 +177,20 @@ export async function getAvailableSlotsForShop(
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) {
     throw new BookingError("INVALID_DATE", "Date must be YYYY-MM-DD", 400);
   }
-  const bookable = getBookableDates(now);
-  if (!bookable.includes(dateISO)) {
-    throw new BookingError("OUT_OF_WINDOW", "Date is outside the 7-day booking window", 400);
-  }
-
   try {
     const store = getStore();
     const barbers = await listBookableBarbers(shopId);
     if (barbers.length === 0) return {};
 
     const settings = await store.getShopSettings(shopId);
+    const bookable = getBookableDates(now, settings.bookingAdvanceDays);
+    if (!bookable.includes(dateISO)) {
+      throw new BookingError(
+        "OUT_OF_WINDOW",
+        `Date is outside the ${settings.bookingAdvanceDays}-day booking window`,
+        400,
+      );
+    }
     const shopHours = normalizeShopHours(settings.hours);
     const range = dayRangeUtc(dateISO);
     const barberIds = new Set(barbers.map((barber) => barber.id));

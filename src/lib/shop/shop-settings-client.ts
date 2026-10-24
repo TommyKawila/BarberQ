@@ -16,6 +16,7 @@ export type PublicShopSettings = {
   bookingConfirmPushEnabled?: boolean;
   queueAheadPushEnabled?: boolean;
   showFlexBrandFooter?: boolean;
+  bookingAdvanceDays?: number;
 };
 
 type CacheEntry = {

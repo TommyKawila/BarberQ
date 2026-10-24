@@ -9,7 +9,15 @@ import {
 import type { Barber, BusyInterval, Slot } from "@/types/booking";
 
 export const SHOP_TIMEZONE = "Asia/Bangkok";
-export const BOOKING_WINDOW_DAYS = 7;
+/** Default customer advance-booking window (calendar days, including today). */
+export const DEFAULT_BOOKING_ADVANCE_DAYS = 30;
+export const MIN_BOOKING_ADVANCE_DAYS = 1;
+export const MAX_BOOKING_ADVANCE_DAYS = 30;
+/**
+ * @deprecated Use DEFAULT_BOOKING_ADVANCE_DAYS — was hardcoded 7; kept as alias
+ * so older tests/imports keep compiling.
+ */
+export const BOOKING_WINDOW_DAYS = DEFAULT_BOOKING_ADVANCE_DAYS;
 export const CANCEL_LEAD_MINUTES = 60;
 /** Max customer self-reschedules per booking (app + DB). */
 export const MAX_RESCHEDULE_COUNT = 1;
@@ -39,10 +47,27 @@ export function resolveShopHoursForDate(
   return { open: day.open, close: day.close };
 }
 
-export function getBookableDates(now: Date = new Date()): string[] {
+export function clampBookingAdvanceDays(raw: unknown): number {
+  if (raw === null || raw === undefined || raw === "") {
+    return DEFAULT_BOOKING_ADVANCE_DAYS;
+  }
+  const n = typeof raw === "number" ? raw : Number(raw);
+  if (!Number.isFinite(n)) return DEFAULT_BOOKING_ADVANCE_DAYS;
+  return Math.min(
+    MAX_BOOKING_ADVANCE_DAYS,
+    Math.max(MIN_BOOKING_ADVANCE_DAYS, Math.round(n)),
+  );
+}
+
+/** Bookable calendar dates in shop TZ: today … today+(advanceDays-1). */
+export function getBookableDates(
+  now: Date = new Date(),
+  advanceDays: number = DEFAULT_BOOKING_ADVANCE_DAYS,
+): string[] {
+  const days = clampBookingAdvanceDays(advanceDays);
   const today = formatInTimeZone(now, SHOP_TIMEZONE, "yyyy-MM-dd");
   const dates: string[] = [];
-  for (let i = 0; i < BOOKING_WINDOW_DAYS; i += 1) {
+  for (let i = 0; i < days; i += 1) {
     const day = addDays(fromZonedTime(`${today}T12:00:00`, SHOP_TIMEZONE), i);
     dates.push(formatInTimeZone(day, SHOP_TIMEZONE, "yyyy-MM-dd"));
   }
