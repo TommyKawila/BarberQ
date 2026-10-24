@@ -56,8 +56,11 @@ describe("booking advance days", () => {
       "utf8",
     );
     assert.match(selector, /pickOtherDate/);
-    assert.match(selector, /type="date"/);
-    assert.match(selector, /max=\{lastDate\}/);
+    // iOS LINE ignores <input type="date" min/max> — custom calendar only.
+    assert.doesNotMatch(selector, /type=["']date["']/);
+    assert.match(selector, /booking-date-calendar/);
+    assert.match(selector, /bookableSet/);
+    assert.match(selector, /resolveSafeDate/);
   });
 
   it("degrades safely when booking_advance_days column is missing", () => {
