@@ -82,6 +82,7 @@ export function BookingApp() {
     remindersEnabled: brandRemindersEnabled,
     reminderLeadMinutes: brandReminderLead,
     bookingAdvanceDays,
+    lineAddFriendUrl,
     loading: brandLoading,
   } = useShopBrand();
   // Prefer brand (TTL-cached /settings) — no per-slot re-download of ~100KB logo.
@@ -119,7 +120,7 @@ export function BookingApp() {
   const missingAddUrlWarned = useRef(false);
   const slotsCacheRef = useRef(slotsCache);
   const desiredSlotsKeyRef = useRef<string | null>(null);
-  const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
+  const addFriendUrl = lineAddFriendUrl?.trim() ?? "";
 
   useEffect(() => {
     selectedStartRef.current = selectedStart;
@@ -432,7 +433,7 @@ export function BookingApp() {
     if (!addFriendUrl) {
       if (!missingAddUrlWarned.current) {
         missingAddUrlWarned.current = true;
-        console.warn("Add Friend skipped: NEXT_PUBLIC_LINE_OA_ADD_URL is unset");
+        console.warn("Add Friend skipped: shop OA add-friend URL is unset");
       }
       return;
     }
@@ -623,6 +624,7 @@ export function BookingApp() {
         shopName={shopName}
         barber={selectedBarber}
         friendship={friendship}
+        addFriendUrl={addFriendUrl}
         onBackToShop={resetBooking}
       />
     );

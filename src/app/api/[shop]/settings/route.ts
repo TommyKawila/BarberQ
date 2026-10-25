@@ -4,6 +4,8 @@ import { jsonError, readJson } from "@/lib/api-response";
 import { getStore } from "@/lib/data";
 import type { ShopSettings } from "@/lib/data/types";
 import { isValidLogoDataUrl } from "@/lib/image/fit-logo";
+import { resolveShopAddFriendUrl } from "@/lib/line/add-friend-url";
+import { getShopLineChannel } from "@/lib/line/shop-channel";
 import { resolveShopParam } from "@/lib/shop/api-route";
 import { isValidShopName, normalizeShopName } from "@/lib/shop/shop-name";
 import {
@@ -40,8 +42,13 @@ export async function GET(
     // Brand display: settings override, else shops.name (never leave blank for customers).
     const shopName =
       (publicSettings.shopName ?? "").trim() || shop.name || null;
+    const channel = await getShopLineChannel(shop.id);
+    const lineAddFriendUrl = resolveShopAddFriendUrl({
+      oaBasicId: channel?.oaBasicId,
+      globalFallback: process.env.NEXT_PUBLIC_LINE_OA_ADD_URL,
+    });
     return NextResponse.json(
-      { ...publicSettings, shopName },
+      { ...publicSettings, shopName, lineAddFriendUrl },
       {
         headers: {
           "Cache-Control": "private, no-store, no-cache, must-revalidate",

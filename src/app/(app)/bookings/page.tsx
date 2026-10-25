@@ -72,6 +72,7 @@ export default function MyBookingsPage() {
     phone: shopPhone,
     remindersEnabled,
     hours: brandHours,
+    lineAddFriendUrl,
   } = useShopBrand();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
@@ -84,7 +85,7 @@ export default function MyBookingsPage() {
   const [showAddFriend, setShowAddFriend] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [pastVisibleCount, setPastVisibleCount] = useState(PAST_HISTORY_PAGE_SIZE);
-  const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
+  const addFriendUrl = lineAddFriendUrl?.trim() ?? "";
 
   useEffect(() => {
     if (!ready || !profile) return;

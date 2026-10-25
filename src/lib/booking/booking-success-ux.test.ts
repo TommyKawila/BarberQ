@@ -47,7 +47,8 @@ describe("booking success source", () => {
     assert.match(success, /bookingSuccessBarber/);
     assert.match(success, /successWhenLabel|successWhereLabel|successNextHint/);
     assert.doesNotMatch(success, /https:\/\/line\.me/);
-    assert.match(success, /NEXT_PUBLIC_LINE_OA_ADD_URL/);
+    assert.doesNotMatch(success, /NEXT_PUBLIC_LINE_OA_ADD_URL/);
+    assert.match(success, /addFriendUrl/);
     assert.match(success, /shopPath\("\/bookings"\)/);
     assert.match(success, /booking.viewMyBookings/);
     assert.match(success, /booking.backToShop/);

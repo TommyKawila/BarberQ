@@ -21,6 +21,8 @@ interface ShopBrandContextValue {
   remindersEnabled: boolean;
   reminderLeadMinutes: number;
   bookingAdvanceDays: number;
+  /** Shop OA add-friend link (basicId), else global demo fallback. */
+  lineAddFriendUrl: string | null;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;
   setCoverImageUrl: (value: string | null) => void;
@@ -45,6 +47,7 @@ function applySettings(
     setRemindersEnabled: (v: boolean) => void;
     setReminderLeadMinutes: (v: number) => void;
     setBookingAdvanceDays: (v: number) => void;
+    setLineAddFriendUrl: (v: string | null) => void;
   },
 ) {
   setters.setLogoDataUrl(json.logoDataUrl ?? null);
@@ -60,6 +63,7 @@ function applySettings(
   setters.setBookingAdvanceDays(
     clampBookingAdvanceDays(json.bookingAdvanceDays ?? DEFAULT_BOOKING_ADVANCE_DAYS),
   );
+  setters.setLineAddFriendUrl(json.lineAddFriendUrl?.trim() || null);
 }
 
 export function ShopBrandProvider({
@@ -78,6 +82,7 @@ export function ShopBrandProvider({
   const [remindersEnabled, setRemindersEnabled] = useState(false);
   const [reminderLeadMinutes, setReminderLeadMinutes] = useState(120);
   const [bookingAdvanceDays, setBookingAdvanceDays] = useState(DEFAULT_BOOKING_ADVANCE_DAYS);
+  const [lineAddFriendUrl, setLineAddFriendUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(
@@ -92,6 +97,7 @@ export function ShopBrandProvider({
         setRemindersEnabled,
         setReminderLeadMinutes,
         setBookingAdvanceDays,
+        setLineAddFriendUrl,
       };
       try {
         let json: PublicShopSettings;
@@ -134,6 +140,7 @@ export function ShopBrandProvider({
       remindersEnabled,
       reminderLeadMinutes,
       bookingAdvanceDays,
+      lineAddFriendUrl,
       loading,
       setLogoDataUrl,
       setCoverImageUrl,
@@ -152,6 +159,7 @@ export function ShopBrandProvider({
       remindersEnabled,
       reminderLeadMinutes,
       bookingAdvanceDays,
+      lineAddFriendUrl,
       loading,
       refresh,
     ],
