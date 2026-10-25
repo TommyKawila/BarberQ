@@ -17,6 +17,8 @@ export type PublicShopSettings = {
   queueAheadPushEnabled?: boolean;
   showFlexBrandFooter?: boolean;
   bookingAdvanceDays?: number;
+  /** Per-shop LINE add-friend URL (from OA basicId), else platform demo fallback. */
+  lineAddFriendUrl?: string | null;
 };
 
 type CacheEntry = {
