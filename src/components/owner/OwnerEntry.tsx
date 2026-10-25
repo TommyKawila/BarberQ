@@ -8,10 +8,19 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
-import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  buildOwnerEntryLoginRedirectUri,
+  clearLiffCallbackGuard,
+  isLiffOAuthCallback,
+  isOwnerBrowserMismatchSearch,
+  saveLiffReturnPath,
+} from "@/lib/line/liff-return";
 import type { OwnerShopSummary } from "@/lib/owner/owner-shops";
 
-type Phase = "loading" | "login" | "empty" | "pick" | "error";
+type Phase = "loading" | "login" | "empty" | "pick" | "error" | "browser_mismatch";
+
+const BROWSER_MISMATCH_MESSAGE =
+  "ล็อกอินไม่สำเร็จ เพราะเปิดคนละเบราว์เซอร์ กดล็อกอินใหม่ในเบราว์เซอร์เดียวกัน";
 
 export function OwnerEntry() {
   const router = useRouter();
@@ -51,20 +60,43 @@ export function OwnerEntry() {
   useEffect(() => {
     let cancelled = false;
     async function boot() {
+      if (typeof window !== "undefined" && isOwnerBrowserMismatchSearch(window.location.search)) {
+        setPhase("browser_mismatch");
+        setError(BROWSER_MISMATCH_MESSAGE);
+        // Drop the flag so a successful retry does not stick on this screen.
+        const url = new URL(window.location.href);
+        url.searchParams.delete("login_error");
+        window.history.replaceState({}, "", url.pathname + url.search);
+        return;
+      }
+
       if (mockMode) {
         await loadShops(MOCK_OWNER_LINE_ID);
         return;
       }
       try {
+        const hadOAuthCallback = isLiffOAuthCallback(window.location.search);
         await liff.init({ liffId: liffId! });
         if (cancelled) return;
         if (!liff.isLoggedIn()) {
+          // OAuth landed here (or was forwarded) but session is missing —
+          // typical when LINE opened the callback in a different browser.
+          if (hadOAuthCallback) {
+            setError(BROWSER_MISMATCH_MESSAGE);
+            setPhase("browser_mismatch");
+            return;
+          }
           setPhase("login");
           return;
         }
         await loadShops();
       } catch {
         if (cancelled) return;
+        if (isLiffOAuthCallback(window.location.search)) {
+          setError(BROWSER_MISMATCH_MESSAGE);
+          setPhase("browser_mismatch");
+          return;
+        }
         setError("เริ่ม LINE Login ไม่สำเร็จ");
         setPhase("error");
       }
@@ -80,8 +112,13 @@ export function OwnerEntry() {
       void loadShops(MOCK_OWNER_LINE_ID);
       return;
     }
+    clearLiffCallbackGuard();
+    setError(null);
+    setPhase("loading");
     saveLiffReturnPath("/owner");
-    liff.login({ redirectUri: `${window.location.origin}/owner` });
+    // Path-specific redirectUri: callback can complete on /owner without the
+    // Safari cookie when LINE honors this URI (Endpoint URL + /owner).
+    liff.login({ redirectUri: buildOwnerEntryLoginRedirectUri() });
   }
 
   return (
@@ -104,9 +141,26 @@ export function OwnerEntry() {
             type="button"
             onClick={onLogin}
             className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
+            data-testid="owner-entry-line-login"
           >
             เข้าสู่ระบบด้วย LINE
           </button>
+        ) : null}
+
+        {phase === "browser_mismatch" ? (
+          <div className="mt-8 space-y-4" data-testid="owner-entry-browser-mismatch">
+            <p className="rounded-xl border border-amber-500/40 bg-amber-400/10 p-4 text-[15px] text-amber-100" role="alert">
+              {error ?? BROWSER_MISMATCH_MESSAGE}
+            </p>
+            <button
+              type="button"
+              onClick={onLogin}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
+              data-testid="owner-entry-line-login-retry"
+            >
+              เข้าสู่ระบบด้วย LINE
+            </button>
+          </div>
         ) : null}
 
         {phase === "empty" ? (
