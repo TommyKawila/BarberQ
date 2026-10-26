@@ -44,5 +44,8 @@ describe("owner shops entry", () => {
     const owner = readFileSync(resolve(root, "components/owner/OwnerEntry.tsx"), "utf8");
     assert.match(owner, /\/trial/);
     assert.match(owner, /\/api\/owner\/shops/);
+    assert.match(owner, /buildOwnerEntryLoginRedirectUri/);
+    assert.match(owner, /browser_mismatch/);
+    assert.match(owner, /คนละเบราว์เซอร์/);
   });
 });
