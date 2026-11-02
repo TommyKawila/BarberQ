@@ -10,13 +10,12 @@ import { getBookedCardActions } from "@/lib/admin/board-card-actions";
 import { blockedSlotLabel, isStaffBlockReason } from "@/lib/admin/block-time";
 import { NO_SHOW_WARNING_THRESHOLD } from "@/lib/admin/customer-no-show";
 import { lateMinutesSinceStart } from "@/lib/admin/free-status-copy";
-import { useI18n } from "@/lib/i18n/locale-provider";
 import {
-  dateISOFromInstant,
-  formatSlotTime,
-  resolveShopHoursForDate,
-  SHOP_TIMEZONE,
-} from "@/lib/services/slot-service";
+  analyzePreOpen,
+  shouldHideUnderPreOpenCollapse,
+} from "@/lib/admin/pre-open-row";
+import { useI18n } from "@/lib/i18n/locale-provider";
+import { dateISOFromInstant, formatSlotTime } from "@/lib/services/slot-service";
 import type { ShopHours } from "@/lib/shop/shop-hours";
 import {
   barberLabel,
@@ -24,7 +23,6 @@ import {
   type AdminSlot,
   type AppointmentSource,
 } from "@/types/booking";
-import { fromZonedTime } from "date-fns-tz";
 
 interface QuickBlockGridProps {
   columns: AdminColumn[];
@@ -38,11 +36,6 @@ interface QuickBlockGridProps {
   dateISO?: string | null;
   onFreeSlot: (barberId: string, slot: AdminSlot) => void;
   onWalkInQuick?: (barberId: string) => void;
-  /**
-   * When set, sticky Walk-in is gated (reason shown in page sticky area).
-   * Per-column Walk-in buttons are removed in Round 1.
-   */
-  walkInDisabledReason?: (barberId: string) => string | null;
   /** Optional shop-level banner shown once above the grid (e.g. before open). */
   walkInShopBanner?: string | null;
   onOutcome?: (
@@ -90,7 +83,7 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
       return "border border-zinc-700 bg-cq-fill-strong text-zinc-300 line-through";
     }
     // Active booked — gold left rail on raised surface (no green / no solid sky fill)
-    return "border border-zinc-700 bg-zinc-800 text-zinc-50 shadow-[inset_3px_0_0_0_#F6AD34]";
+    return "border border-zinc-700 bg-zinc-800 text-zinc-50 shadow-[inset_3px_0_0_0_var(--cq-amber)]";
   }
   if (slot.kind === "blocked") {
     if (slot.reason === "break" || slot.reason === "day_off") {
@@ -100,31 +93,6 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
   }
   // Free / available — dashed outline #857C70 (= zinc-700 / cq-border-strong)
   return "border border-dashed border-zinc-700 bg-transparent text-zinc-400";
-}
-
-function preOpenRange(
-  columns: AdminColumn[],
-  shopHours: ShopHours | null | undefined,
-  dateISO: string,
-): { from: string; to: string; openMs: number } | null {
-  const day = resolveShopHoursForDate(shopHours, dateISO);
-  if (!day) return null;
-  const openAt = fromZonedTime(`${dateISO}T${day.open}:00`, SHOP_TIMEZONE);
-  const openMs = openAt.getTime();
-  let earliest: number | null = null;
-  for (const col of columns) {
-    for (const slot of col.slots ?? []) {
-      const start = new Date(slot.startTime).getTime();
-      if (!Number.isFinite(start) || start >= openMs) continue;
-      if (earliest == null || start < earliest) earliest = start;
-    }
-  }
-  if (earliest == null) return null;
-  return {
-    from: formatSlotTime(new Date(earliest).toISOString()),
-    to: day.open,
-    openMs,
-  };
 }
 
 export function QuickBlockGrid({
@@ -153,9 +121,11 @@ export function QuickBlockGrid({
   const now = Date.now();
   const boardDate = dateISO ?? dateISOFromInstant(new Date());
   const preOpen = useMemo(
-    () => preOpenRange(columns, shopHours, boardDate),
+    () => analyzePreOpen(columns, shopHours, boardDate),
     [columns, shopHours, boardDate],
   );
+  /** Expand collapsed all-free pre-open row so staff can tap free slots. */
+  const [preOpenExpanded, setPreOpenExpanded] = useState(false);
   const [sheet, setSheet] = useState<{
     barberId: string;
     barberName: string;
@@ -240,12 +210,25 @@ export function QuickBlockGrid({
       </p>
     ) : null}
     {preOpen ? (
-      <div
-        className="mb-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-center text-xs font-medium text-zinc-400"
-        data-testid="pre-open-row"
-      >
-        {t("admin.preOpenRow").replace("{from}", preOpen.from).replace("{to}", preOpen.to)}
-      </div>
+      preOpen.allFree ? (
+        <button
+          type="button"
+          className="mb-1.5 w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-center text-xs font-medium text-zinc-400"
+          data-testid="pre-open-row"
+          aria-expanded={preOpenExpanded}
+          onClick={() => setPreOpenExpanded((v) => !v)}
+        >
+          {t("admin.preOpenRow").replace("{from}", preOpen.from).replace("{to}", preOpen.to)}
+          {preOpenExpanded ? " · ▴" : " · ▾"}
+        </button>
+      ) : (
+        <div
+          className="mb-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-center text-xs font-medium text-zinc-400"
+          data-testid="pre-open-row"
+        >
+          {t("admin.preOpenRow").replace("{from}", preOpen.from).replace("{to}", preOpen.to)}
+        </div>
+      )
     ) : null}
     <div
       className="grid gap-1.5 pb-1"
@@ -254,10 +237,9 @@ export function QuickBlockGrid({
       {columns.map((column) => {
         const canEdit =
           editableBarberId === null || column.barber.id === editableBarberId;
-        const visibleSlots = (column.slots ?? []).filter((slot) => {
-          if (!preOpen) return true;
-          return new Date(slot.startTime).getTime() >= preOpen.openMs;
-        });
+        const visibleSlots = (column.slots ?? []).filter(
+          (slot) => !shouldHideUnderPreOpenCollapse(slot, preOpen, preOpenExpanded),
+        );
         return (
           <div key={column.barber.id} className="flex min-w-0 flex-col gap-1.5">
             <div className="rounded-lg bg-zinc-900 px-1 py-2 text-center">
@@ -334,13 +316,12 @@ export function QuickBlockGrid({
                         </div>
                       ) : null}
                       {slot.isLate ? (
-                        <div className="mt-0.5 inline-flex rounded-full bg-[#FB923C] px-1.5 py-0.5 text-[9px] font-semibold text-zinc-950">
+                        <div className="mt-0.5 inline-flex rounded-full bg-[var(--cq-warning-chip)] px-1.5 py-0.5 text-[9px] font-semibold text-zinc-950">
                           {slot.lateCalledAt
                             ? t("admin.called")
-                            : t("admin.lateMinutesChip").replace(
-                                "{n}",
-                                String(Math.max(lateN, 1)),
-                              )}
+                            : lateN < 1
+                              ? t("admin.lateChip")
+                              : t("admin.lateMinutesChip").replace("{n}", String(lateN))}
                         </div>
                       ) : null}
                       {(slot.noShowCount ?? 0) > 0 ? (

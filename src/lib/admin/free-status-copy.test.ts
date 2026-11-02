@@ -27,7 +27,7 @@ describe("buildFreeStatusCopy", () => {
     const next = fromZonedTime("2026-11-02T11:30:00", SHOP_TIMEZONE).toISOString();
     const closeGap = fromZonedTime("2026-11-02T20:00:00", SHOP_TIMEZONE).toISOString();
     const copy = buildFreeStatusCopy({
-      freeUntilIso: closeGap,
+      freeUntilIso: next,
       nextStartIso: next,
       shopCloseHHmm: "20:00",
       now,
@@ -36,13 +36,47 @@ describe("buildFreeStatusCopy", () => {
     assert.equal(copy.mode, "until_next");
     assert.equal(copy.line, "ว่าง 28 นาที · ถัดไป 11:30");
     assert.doesNotMatch(copy.line, /659|รับได้ถึง/);
+    void closeGap;
   });
 
-  it("uses approximate hours until close when there is no next booking", () => {
-    const now = fromZonedTime("2026-11-02T11:02:00", SHOP_TIMEZONE);
-    const close = fromZonedTime("2026-11-02T20:00:00", SHOP_TIMEZONE).toISOString();
+  it("counts free minutes with min(freeUntil, nextStart) when a break is before next", () => {
+    const now = fromZonedTime("2026-11-02T11:00:00", SHOP_TIMEZONE);
+    // Free stretch ends at break 12:00; next booking is 14:00
+    const freeUntil = fromZonedTime("2026-11-02T12:00:00", SHOP_TIMEZONE).toISOString();
+    const next = fromZonedTime("2026-11-02T14:00:00", SHOP_TIMEZONE).toISOString();
     const copy = buildFreeStatusCopy({
-      freeUntilIso: close,
+      freeUntilIso: freeUntil,
+      nextStartIso: next,
+      shopCloseHHmm: "20:00",
+      now,
+      labels,
+    });
+    assert.equal(copy.mode, "until_next");
+    assert.equal(copy.line, "ว่าง 60 นาที · ถัดไป 14:00");
+    assert.doesNotMatch(copy.line, /ว่าง 180/);
+  });
+
+  it("uses freeUntil time (not shop close) when there is no next booking", () => {
+    const now = fromZonedTime("2026-11-02T11:00:00", SHOP_TIMEZONE);
+    // Free stretch ends at break / last free cell — not shop close
+    const freeUntil = fromZonedTime("2026-11-02T12:00:00", SHOP_TIMEZONE).toISOString();
+    const copy = buildFreeStatusCopy({
+      freeUntilIso: freeUntil,
+      nextStartIso: null,
+      shopCloseHHmm: "20:00",
+      now,
+      labels,
+    });
+    assert.equal(copy.mode, "until_close");
+    assert.match(copy.line, /รับได้ถึง 12:00 \(อีกประมาณ 1 ชม\.\)/);
+    assert.doesNotMatch(copy.line, /20:00/);
+  });
+
+  it("uses approximate hours until freeUntil when remaining >= 60", () => {
+    const now = fromZonedTime("2026-11-02T11:02:00", SHOP_TIMEZONE);
+    const freeUntil = fromZonedTime("2026-11-02T20:00:00", SHOP_TIMEZONE).toISOString();
+    const copy = buildFreeStatusCopy({
+      freeUntilIso: freeUntil,
       nextStartIso: null,
       shopCloseHHmm: "20:00",
       now,
@@ -53,11 +87,11 @@ describe("buildFreeStatusCopy", () => {
     assert.doesNotMatch(copy.line, /ว่าง \d+ นาที/);
   });
 
-  it("uses minutes when remaining until close is under 60", () => {
+  it("uses minutes when remaining until freeUntil is under 60", () => {
     const now = fromZonedTime("2026-11-02T19:25:00", SHOP_TIMEZONE);
-    const close = fromZonedTime("2026-11-02T20:00:00", SHOP_TIMEZONE).toISOString();
+    const freeUntil = fromZonedTime("2026-11-02T20:00:00", SHOP_TIMEZONE).toISOString();
     const copy = buildFreeStatusCopy({
-      freeUntilIso: close,
+      freeUntilIso: freeUntil,
       nextStartIso: null,
       shopCloseHHmm: "20:00",
       now,

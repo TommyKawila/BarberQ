@@ -44,15 +44,26 @@ function formatHHmm(iso: string): string {
   return formatInTimeZone(new Date(iso), SHOP_TIMEZONE, "HH:mm");
 }
 
+/** Earlier of two ISO instants (ignores invalid). */
+function earlierIso(a: string, b: string): string {
+  const am = new Date(a).getTime();
+  const bm = new Date(b).getTime();
+  if (!Number.isFinite(am)) return b;
+  if (!Number.isFinite(bm)) return a;
+  return am <= bm ? a : b;
+}
+
 /**
  * Round-1 free-barber copy:
  * - next booking → "ว่าง N นาที · ถัดไป HH:MM"
- * - no next → "รับได้ถึง HH:MM (อีกประมาณ X ชม.|นาที)" — never "659 นาที" alone
+ *   N uses min(freeUntil, nextStart) so a break before the next booking is not counted as free.
+ * - no next → "รับได้ถึง {freeUntil} (อีกประมาณ X ชม.|นาที)" — time must match freeUntil, not shop close.
  */
 export function buildFreeStatusCopy(opts: {
   freeUntilIso: string;
   nextStartIso: string | null | undefined;
-  shopCloseHHmm: string | null | undefined;
+  /** @deprecated unused for display — kept for call-site compatibility */
+  shopCloseHHmm?: string | null | undefined;
   now?: Date;
   labels: {
     /** "ว่าง {n} นาที · ถัดไป {time}" */
@@ -67,7 +78,8 @@ export function buildFreeStatusCopy(opts: {
   const nextIso = opts.nextStartIso?.trim() || null;
 
   if (nextIso) {
-    const n = Math.max(1, minutesUntil(nextIso, now));
+    const freeSpanEnd = earlierIso(opts.freeUntilIso, nextIso);
+    const n = Math.max(1, minutesUntil(freeSpanEnd, now));
     const time = formatHHmm(nextIso);
     return {
       mode: "until_next",
@@ -75,22 +87,21 @@ export function buildFreeStatusCopy(opts: {
     };
   }
 
-  const closeLabel =
-    (opts.shopCloseHHmm?.trim() || null) ?? formatHHmm(opts.freeUntilIso);
+  const untilLabel = formatHHmm(opts.freeUntilIso);
   const remaining = minutesUntil(opts.freeUntilIso, now);
   if (remaining >= 60) {
     const hours = Math.max(1, Math.round(remaining / 60));
     return {
       mode: "until_close",
       line: opts.labels.untilCloseHours
-        .replace("{time}", closeLabel)
+        .replace("{time}", untilLabel)
         .replace("{n}", String(hours)),
     };
   }
   return {
     mode: "until_close",
     line: opts.labels.untilCloseMinutes
-      .replace("{time}", closeLabel)
+      .replace("{time}", untilLabel)
       .replace("{n}", String(Math.max(1, remaining || 1))),
   };
 }

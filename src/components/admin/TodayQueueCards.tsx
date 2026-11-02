@@ -46,10 +46,12 @@ function LateChip({ slot }: { slot: AdminSlot }) {
   const start = slot.appointmentStart ?? slot.startTime;
   const n = lateMinutesSinceStart(start);
   return (
-    <span className="inline-flex items-center rounded-full bg-[#FB923C] px-2 py-0.5 text-[11px] font-semibold text-zinc-950">
+    <span className="inline-flex items-center rounded-full bg-[var(--cq-warning-chip)] px-2 py-0.5 text-[11px] font-semibold text-zinc-950">
       {slot.lateCalledAt
         ? t("admin.called")
-        : t("admin.lateMinutesChip").replace("{n}", String(Math.max(n, 1)))}
+        : n < 1
+          ? t("admin.lateChip")
+          : t("admin.lateMinutesChip").replace("{n}", String(n))}
     </span>
   );
 }
@@ -173,7 +175,7 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                     card.state === "cutting"
                       ? "bg-amber-400"
                       : card.state === "free"
-                        ? "bg-[#6EE7B7]"
+                        ? "bg-emerald-400"
                         : "bg-cq-fill-outline"
                   }`}
                   aria-hidden

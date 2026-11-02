@@ -47,7 +47,6 @@ import {
 import {
   assessWalkInQuick,
   findNextFreeBoardSlot,
-  walkInDisabledReason,
   type WalkInOffer,
 } from "@/lib/admin/walk-in-quick";
 import { isShopOperatorRole } from "@/lib/admin-auth";
@@ -675,13 +674,6 @@ export default function AdminPage() {
     });
   }
 
-  function walkInButtonDisabledReason(barberId: string): string | null {
-    const column = columns.find((c) => c.barber.id === barberId);
-    const gate = walkInDisabledReason(column, shopHours, new Date());
-    if (!gate) return null;
-    return walkInDisabledLabel(gate, t);
-  }
-
   const walkInShopBanner = useMemo(() => {
     if (!profile) return null;
     const editableId = isShopOperatorRole(profile.role) ? null : profile.barberId;
@@ -991,7 +983,6 @@ export default function AdminPage() {
             shopHours={shopHours}
             dateISO={dateISO}
             onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
-            walkInDisabledReason={walkInButtonDisabledReason}
             walkInShopBanner={walkInShopBanner}
             onOutcome={(id, slot, outcome) => {
               if (outcome === "completed") requestComplete(id, slot);
