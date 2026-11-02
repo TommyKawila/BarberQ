@@ -1,6 +1,12 @@
 "use client";
 
 import { MoreHorizontal } from "lucide-react";
+import { CqIcon } from "@/components/icons/CqIcon";
+import {
+  buildFreeStatusCopy,
+  lateMinutesSinceStart,
+  shopCloseHHmmForNow,
+} from "@/lib/admin/free-status-copy";
 import {
   bookedDisplayTimes,
   deriveTodayQueueCards,
@@ -32,6 +38,22 @@ function stateLabelKey(state: TodayQueueCardModel["state"]) {
   if (state === "off") return "admin.offToday" as const;
   if (state === "done") return "admin.shiftEnded" as const;
   return "admin.idleNow" as const;
+}
+
+function LateChip({ slot }: { slot: AdminSlot }) {
+  const { t } = useI18n();
+  if (!slot.isLate) return null;
+  const start = slot.appointmentStart ?? slot.startTime;
+  const n = lateMinutesSinceStart(start);
+  return (
+    <span className="inline-flex items-center rounded-full bg-[var(--cq-warning-chip)] px-2 py-0.5 text-[11px] font-semibold text-zinc-950">
+      {slot.lateCalledAt
+        ? t("admin.called")
+        : n < 1
+          ? t("admin.lateChip")
+          : t("admin.lateMinutesChip").replace("{n}", String(n))}
+    </span>
+  );
 }
 
 function CardActions({
@@ -79,9 +101,10 @@ function CardActions({
       <button
         type="button"
         onClick={() => onWalkInBarber(card.barberId)}
-        className="cq-press mt-3 flex min-h-11 w-full items-center justify-center rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
+        className="cq-press mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-zinc-600 text-sm font-medium text-zinc-100"
       >
-        + {t("admin.queueWithBarber").replace("{name}", card.barberName)}
+        <CqIcon name="clipper" size={18} />
+        {t("admin.queueWithBarber").replace("{name}", card.barberName)}
       </button>
     );
   }
@@ -91,7 +114,9 @@ function CardActions({
 
 export function TodayQueueCards(props: TodayQueueCardsProps) {
   const { locale, t } = useI18n();
-  const cards = deriveTodayQueueCards(props.columns, new Date(), props.shopHours);
+  const now = new Date();
+  const cards = deriveTodayQueueCards(props.columns, now, props.shopHours);
+  const shopClose = shopCloseHHmmForNow(props.shopHours, now);
   const sourceLabels = {
     line: t("admin.sourceLine"),
     walkIn: t("admin.sourceWalkIn"),
@@ -119,6 +144,22 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
         const pending =
           props.outcomePendingKey === currentKey || props.latePendingKey === currentKey;
         const muted = card.state === "off" || card.state === "done";
+        const freeCopy =
+          card.state === "free" && card.freeUntil
+            ? buildFreeStatusCopy({
+                freeUntilIso: card.freeUntil,
+                nextStartIso: card.next
+                  ? (card.next.appointmentStart ?? card.next.startTime)
+                  : null,
+                shopCloseHHmm: shopClose,
+                now,
+                labels: {
+                  untilNext: t("admin.freeUntilNext"),
+                  untilCloseHours: t("admin.acceptUntilHours"),
+                  untilCloseMinutes: t("admin.acceptUntilMinutes"),
+                },
+              })
+            : null;
 
         return (
           <article
@@ -168,9 +209,12 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
 
             {card.state === "cutting" && card.current ? (
               <div className="mt-3">
-                <p className="font-heading text-2xl font-semibold text-zinc-50">
-                  {card.current.customerName}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-heading text-2xl font-semibold text-zinc-50">
+                    {card.current.customerName}
+                  </p>
+                  <LateChip slot={card.current} />
+                </div>
                 <p className="mt-1 text-xs text-zinc-400">
                   {formatSlotTime(bookedDisplayTimes(card.current).start)}–
                   {formatSlotTime(bookedDisplayTimes(card.current).end)} ·{" "}
@@ -189,19 +233,10 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
               </div>
             ) : null}
 
-            {card.state === "free" ? (
+            {card.state === "free" && freeCopy ? (
               <div className="mt-3">
-                <p className="font-heading text-2xl font-semibold text-zinc-50">
-                  {t("admin.freeUntil").replace(
-                    "{time}",
-                    card.freeUntil ? formatSlotTime(card.freeUntil) : "—",
-                  )}
-                </p>
-                <p className="mt-1 text-xs text-zinc-400">
-                  {t("admin.walkInReadyMinutes").replace(
-                    "{n}",
-                    String(card.freeMinutes ?? 0),
-                  )}
+                <p className="font-heading text-lg font-semibold leading-snug text-zinc-50">
+                  {freeCopy.line}
                 </p>
               </div>
             ) : null}
@@ -231,15 +266,18 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
               <button
                 type="button"
                 onClick={() => props.onOpenNext?.(card.barberId, card.next!)}
-                className="mt-3 flex min-h-11 w-full items-center justify-between border-t border-zinc-800 pt-3 text-left text-sm text-zinc-300"
+                className="mt-3 flex min-h-11 w-full items-center justify-between gap-2 border-t border-zinc-800 pt-3 text-left text-sm text-zinc-300"
               >
-                <span>
+                <span className="min-w-0">
                   {t("admin.nextUp")}{" "}
                   {formatSlotTime(bookedDisplayTimes(card.next).start)}{" "}
                   {nextRowCustomerLabel(card.next, sourceLabels)}
                 </span>
-                <span className="text-zinc-500" aria-hidden>
-                  ›
+                <span className="flex shrink-0 items-center gap-2">
+                  <LateChip slot={card.next} />
+                  <span className="text-zinc-500" aria-hidden>
+                    ›
+                  </span>
                 </span>
               </button>
             ) : null}
