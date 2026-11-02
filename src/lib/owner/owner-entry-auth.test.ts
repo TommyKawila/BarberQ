@@ -91,16 +91,19 @@ describe("ownerEntryPhase", () => {
 });
 
 describe("OwnerEntry LIFF gate", () => {
-  it("gates on ready vs login vs shops; uses origin redirect_uri + handoff timeout", () => {
+  it("gates on ready vs login vs shops; path-specific /owner redirectUri + handoff timeout", () => {
     const owner = readFileSync(
       resolve(process.cwd(), "src/components/owner/OwnerEntry.tsx"),
       "utf8",
     );
     assert.match(owner, /ownerEntryPhase/);
-    assert.match(owner, /buildLiffLoginRedirectUri/);
+    // Keep #50 path-specific /owner URI (not origin-only buildLiffLoginRedirectUri).
+    assert.match(owner, /buildOwnerEntryLoginRedirectUri/);
+    assert.doesNotMatch(owner, /buildLiffLoginRedirectUri/);
     assert.match(owner, /OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS/);
     assert.match(owner, /OWNER_LIFF_INIT_TIMEOUT_MS/);
     assert.match(owner, /isInClient/);
     assert.doesNotMatch(owner, /redirectUri:\s*`\$\{window\.location\.origin\}\/owner`/);
   });
 });
+

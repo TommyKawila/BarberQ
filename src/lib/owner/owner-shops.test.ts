@@ -45,7 +45,7 @@ describe("owner shops entry", () => {
     assert.match(owner, /\/trial/);
     assert.match(owner, /\/api\/owner\/shops/);
     assert.match(owner, /buildOwnerEntryLoginRedirectUri/);
-    assert.match(owner, /browser_mismatch/);
+    assert.match(owner, /browserMismatch|browser-mismatch/);
     assert.match(owner, /คนละเบราว์เซอร์/);
   });
 });
