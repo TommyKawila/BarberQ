@@ -988,8 +988,9 @@ export default function AdminPage() {
             latePendingKey={latePendingKey}
             cancelPendingKey={cancelPendingKey}
             editableBarberId={editableBarberId}
+            shopHours={shopHours}
+            dateISO={dateISO}
             onFreeSlot={(id, slot) => handleFreeSlot(id, slot)}
-            onWalkInQuick={(id) => onWalkInQuick(id)}
             walkInDisabledReason={walkInButtonDisabledReason}
             walkInShopBanner={walkInShopBanner}
             onOutcome={(id, slot, outcome) => {

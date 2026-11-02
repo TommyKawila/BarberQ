@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   BookedSlotActionsSheet,
@@ -9,14 +9,22 @@ import {
 import { getBookedCardActions } from "@/lib/admin/board-card-actions";
 import { blockedSlotLabel, isStaffBlockReason } from "@/lib/admin/block-time";
 import { NO_SHOW_WARNING_THRESHOLD } from "@/lib/admin/customer-no-show";
+import { lateMinutesSinceStart } from "@/lib/admin/free-status-copy";
 import { useI18n } from "@/lib/i18n/locale-provider";
-import { formatSlotTime } from "@/lib/services/slot-service";
+import {
+  dateISOFromInstant,
+  formatSlotTime,
+  resolveShopHoursForDate,
+  SHOP_TIMEZONE,
+} from "@/lib/services/slot-service";
+import type { ShopHours } from "@/lib/shop/shop-hours";
 import {
   barberLabel,
   type AdminColumn,
   type AdminSlot,
   type AppointmentSource,
 } from "@/types/booking";
+import { fromZonedTime } from "date-fns-tz";
 
 interface QuickBlockGridProps {
   columns: AdminColumn[];
@@ -25,11 +33,14 @@ interface QuickBlockGridProps {
   latePendingKey?: string | null;
   cancelPendingKey?: string | null;
   editableBarberId?: string | null;
+  shopHours?: ShopHours | null;
+  /** Board day (yyyy-MM-dd Bangkok). Defaults to today. */
+  dateISO?: string | null;
   onFreeSlot: (barberId: string, slot: AdminSlot) => void;
   onWalkInQuick?: (barberId: string) => void;
   /**
-   * When set, Walk-in is gated: visible reason under the button + tap still
-   * fires onWalkInQuick (iPad — no tooltip). Return null when Walk-in is allowed.
+   * When set, sticky Walk-in is gated (reason shown in page sticky area).
+   * Per-column Walk-in buttons are removed in Round 1.
    */
   walkInDisabledReason?: (barberId: string) => string | null;
   /** Optional shop-level banner shown once above the grid (e.g. before open). */
@@ -57,31 +68,63 @@ function sourceBadge(
   viaQr?: boolean,
 ): string {
   if (source === "walk_in") {
-    return viaQr ? `🚶 ${t("admin.sourceWalkIn")} · QR` : `🚶 ${t("admin.sourceWalkIn")}`;
+    return viaQr ? `${t("admin.sourceWalkIn")} · QR` : t("admin.sourceWalkIn");
   }
-  if (source === "phone") return `📞 ${t("admin.sourcePhone")}`;
-  if (source === "chat") return `💬 ${t("admin.sourceChat")}`;
+  if (source === "phone") return t("admin.sourcePhone");
+  if (source === "chat") return t("admin.sourceChat");
   return t("admin.sourceLine");
 }
 
+/** Round-1 slot surfaces: free = dashed outline; booked = raised + gold rail. */
 function slotClass(slot: AdminSlot, pending: boolean): string {
   if (pending) return "bg-amber-300 text-zinc-950";
   if (!slot.available && slot.kind === "free") {
-    return "bg-zinc-900 text-zinc-600";
+    return "border border-transparent bg-zinc-950 text-zinc-600";
   }
   if (slot.kind === "booked") {
-    if (slot.status === "completed") return "bg-cq-fill-outline text-zinc-100";
-    if (slot.status === "no_show") return "bg-orange-700 text-white";
-    if (slot.status === "left") return "bg-cq-fill-strong text-zinc-300 line-through";
-    if (slot.isLate) return "bg-yellow-500 text-zinc-950";
-    if (slot.source === "walk_in") return "bg-rose-700 text-white";
-    if (slot.source === "phone") return "bg-teal-700 text-white";
-    if (slot.source === "chat") return "bg-indigo-700 text-white";
-    return "bg-sky-700 text-white";
+    if (slot.status === "completed") {
+      return "border border-zinc-700 bg-cq-fill-outline text-zinc-100";
+    }
+    if (slot.status === "no_show") return "border border-orange-500/60 bg-orange-950 text-orange-50";
+    if (slot.status === "left") {
+      return "border border-zinc-700 bg-cq-fill-strong text-zinc-300 line-through";
+    }
+    // Active booked — gold left rail on raised surface (no green / no solid sky fill)
+    return "border border-zinc-700 bg-zinc-800 text-zinc-50 shadow-[inset_3px_0_0_0_#F6AD34]";
   }
-  // Blocked: distinct from walk-in (rose solid) — dark red + border
-  if (slot.kind === "blocked") return "border border-red-400/70 bg-red-950 text-red-100";
-  return "bg-emerald-700 text-white";
+  if (slot.kind === "blocked") {
+    if (slot.reason === "break" || slot.reason === "day_off") {
+      return "border border-zinc-700 bg-zinc-950 text-zinc-500";
+    }
+    return "border border-red-400/70 bg-red-950 text-red-100";
+  }
+  // Free / available — dashed outline #857C70 (= zinc-700 / cq-border-strong)
+  return "border border-dashed border-zinc-700 bg-transparent text-zinc-400";
+}
+
+function preOpenRange(
+  columns: AdminColumn[],
+  shopHours: ShopHours | null | undefined,
+  dateISO: string,
+): { from: string; to: string; openMs: number } | null {
+  const day = resolveShopHoursForDate(shopHours, dateISO);
+  if (!day) return null;
+  const openAt = fromZonedTime(`${dateISO}T${day.open}:00`, SHOP_TIMEZONE);
+  const openMs = openAt.getTime();
+  let earliest: number | null = null;
+  for (const col of columns) {
+    for (const slot of col.slots ?? []) {
+      const start = new Date(slot.startTime).getTime();
+      if (!Number.isFinite(start) || start >= openMs) continue;
+      if (earliest == null || start < earliest) earliest = start;
+    }
+  }
+  if (earliest == null) return null;
+  return {
+    from: formatSlotTime(new Date(earliest).toISOString()),
+    to: day.open,
+    openMs,
+  };
 }
 
 export function QuickBlockGrid({
@@ -91,10 +134,9 @@ export function QuickBlockGrid({
   latePendingKey = null,
   cancelPendingKey = null,
   editableBarberId = null,
+  shopHours = null,
+  dateISO = null,
   onFreeSlot,
-  onWalkInQuick,
-  walkInDisabledReason,
-  walkInShopBanner = null,
   onOutcome,
   onChangeService,
   onLateCalled,
@@ -105,9 +147,15 @@ export function QuickBlockGrid({
   bookingHref,
   onCopyBookingLink,
   bookingLinkCopied = false,
+  walkInShopBanner = null,
 }: QuickBlockGridProps) {
   const { locale, t } = useI18n();
   const now = Date.now();
+  const boardDate = dateISO ?? dateISOFromInstant(new Date());
+  const preOpen = useMemo(
+    () => preOpenRange(columns, shopHours, boardDate),
+    [columns, shopHours, boardDate],
+  );
   const [sheet, setSheet] = useState<{
     barberId: string;
     barberName: string;
@@ -191,6 +239,14 @@ export function QuickBlockGrid({
         {walkInShopBanner}
       </p>
     ) : null}
+    {preOpen ? (
+      <div
+        className="mb-1.5 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-center text-xs font-medium text-zinc-400"
+        data-testid="pre-open-row"
+      >
+        {t("admin.preOpenRow").replace("{from}", preOpen.from).replace("{to}", preOpen.to)}
+      </div>
+    ) : null}
     <div
       className="grid gap-1.5 pb-1"
       style={{ gridTemplateColumns: `repeat(${colCount}, minmax(0, 1fr))` }}
@@ -198,6 +254,10 @@ export function QuickBlockGrid({
       {columns.map((column) => {
         const canEdit =
           editableBarberId === null || column.barber.id === editableBarberId;
+        const visibleSlots = (column.slots ?? []).filter((slot) => {
+          if (!preOpen) return true;
+          return new Date(slot.startTime).getTime() >= preOpen.openMs;
+        });
         return (
           <div key={column.barber.id} className="flex min-w-0 flex-col gap-1.5">
             <div className="rounded-lg bg-zinc-900 px-1 py-2 text-center">
@@ -207,46 +267,11 @@ export function QuickBlockGrid({
               <div className="text-xs text-zinc-400">
                 {column.barber.slot_duration_minutes} {t("common.minutes")}
               </div>
-              {canEdit && onWalkInQuick ? (
-                (() => {
-                  const disabledReason = walkInDisabledReason?.(column.barber.id) ?? null;
-                  const gated = Boolean(disabledReason);
-                  return (
-                    <div className="mt-1 flex flex-col items-stretch gap-1">
-                      <button
-                        type="button"
-                        aria-disabled={gated}
-                        aria-label={
-                          gated
-                            ? `${t("admin.addWalkIn")} — ${disabledReason}`
-                            : t("admin.addWalkIn")
-                        }
-                        onClick={() => onWalkInQuick(column.barber.id)}
-                        className={
-                          gated
-                            ? "cq-press min-h-11 w-full rounded-md border border-zinc-600 bg-zinc-950/80 px-1 py-1 text-xs font-semibold text-zinc-300"
-                            : "cq-press min-h-11 w-full rounded-md border border-zinc-600 bg-transparent px-1 py-1 text-xs font-semibold text-zinc-100"
-                        }
-                      >
-                        {t("admin.addWalkIn")}
-                      </button>
-                      {gated ? (
-                        <p
-                          className="px-0.5 text-[11px] font-medium leading-snug text-amber-200 sm:text-xs"
-                          data-testid={`walk-in-reason-${column.barber.id}`}
-                        >
-                          {disabledReason}
-                        </p>
-                      ) : null}
-                    </div>
-                  );
-                })()
-              ) : null}
             </div>
-            {column.slots.length === 0 ? (
+            {visibleSlots.length === 0 ? (
               <p className="px-1 text-center text-xs text-zinc-500">{t("admin.off")}</p>
             ) : (
-              column.slots.map((slot) => {
+              visibleSlots.map((slot) => {
                 const key = `${column.barber.id}:${slot.startTime}`;
                 const pending = pendingKey === key;
                 const outcomePending = outcomePendingKey === key;
@@ -261,6 +286,11 @@ export function QuickBlockGrid({
                 const sheetOpenable =
                   actions.canOpenSheet &&
                   Boolean(onOutcome || onCancel || onLateCalled || onChangeService);
+                const freeLabel = t("admin.freeSlotPlus");
+                const lateN =
+                  slot.isLate && slot.kind === "booked"
+                    ? lateMinutesSinceStart(slot.appointmentStart ?? slot.startTime)
+                    : 0;
                 const label =
                   slot.kind === "booked"
                     ? slot.status === "completed"
@@ -271,12 +301,10 @@ export function QuickBlockGrid({
                         ? `${slot.customerName} · ${t("admin.noShow")}`
                         : slot.status === "left"
                           ? `${slot.customerName} · ${t("admin.left")}`
-                          : slot.isLate
-                            ? `${slot.customerName} · ${slot.lateCalledAt ? t("admin.called") : t("admin.late")}`
-                            : slot.customerName
+                          : slot.customerName
                     : slot.kind === "blocked"
                       ? blockedSlotLabel(slot.reason, (k) => t(k as Parameters<typeof t>[0]))
-                      : t("admin.free");
+                      : freeLabel;
 
                 if (sheetOpenable) {
                   return (
@@ -301,8 +329,18 @@ export function QuickBlockGrid({
                         {slot.customerName}
                       </div>
                       {slot.source ? (
-                        <div className="truncate text-[9px] opacity-90">
+                        <div className="truncate text-[9px] text-zinc-400">
                           {sourceBadge(slot.source, t, slot.viaQr)}
+                        </div>
+                      ) : null}
+                      {slot.isLate ? (
+                        <div className="mt-0.5 inline-flex rounded-full bg-[#FB923C] px-1.5 py-0.5 text-[9px] font-semibold text-zinc-950">
+                          {slot.lateCalledAt
+                            ? t("admin.called")
+                            : t("admin.lateMinutesChip").replace(
+                                "{n}",
+                                String(Math.max(lateN, 1)),
+                              )}
                         </div>
                       ) : null}
                       {(slot.noShowCount ?? 0) > 0 ? (
