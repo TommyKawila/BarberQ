@@ -45,7 +45,6 @@ function LateChip({ slot }: { slot: AdminSlot }) {
   if (!slot.isLate) return null;
   const start = slot.appointmentStart ?? slot.startTime;
   const n = lateMinutesSinceStart(start);
-  if (n <= 0 && !slot.lateCalledAt) return null;
   return (
     <span className="inline-flex items-center rounded-full bg-[#FB923C] px-2 py-0.5 text-[11px] font-semibold text-zinc-950">
       {slot.lateCalledAt
