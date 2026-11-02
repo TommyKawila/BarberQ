@@ -1,10 +1,5 @@
 import { formatInTimeZone } from "date-fns-tz";
-import {
-  dateISOFromInstant,
-  resolveShopHoursForDate,
-  SHOP_TIMEZONE,
-} from "@/lib/services/slot-service";
-import type { ShopHours } from "@/lib/shop/shop-hours";
+import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 
 /** Minutes late vs appointment start (0 if not yet late). */
 export function lateMinutesSinceStart(
@@ -14,16 +9,6 @@ export function lateMinutesSinceStart(
   const start = new Date(startTime).getTime();
   if (!Number.isFinite(start)) return 0;
   return Math.max(0, Math.floor((now.getTime() - start) / 60_000));
-}
-
-/** Shop close HH:mm for the Bangkok calendar day of `now`, or null if closed all day. */
-export function shopCloseHHmmForNow(
-  hours: ShopHours | null | undefined,
-  now: Date = new Date(),
-): string | null {
-  const dateISO = dateISOFromInstant(now);
-  const day = resolveShopHoursForDate(hours, dateISO);
-  return day?.close ?? null;
 }
 
 export type FreeStatusMode = "until_next" | "until_close";
@@ -62,8 +47,6 @@ function earlierIso(a: string, b: string): string {
 export function buildFreeStatusCopy(opts: {
   freeUntilIso: string;
   nextStartIso: string | null | undefined;
-  /** @deprecated unused for display — kept for call-site compatibility */
-  shopCloseHHmm?: string | null | undefined;
   now?: Date;
   labels: {
     /** "ว่าง {n} นาที · ถัดไป {time}" */
