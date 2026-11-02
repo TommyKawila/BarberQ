@@ -31,7 +31,7 @@ export function BarberSelector({ barbers, value, onChange }: BarberSelectorProps
             className={`flex min-h-[4.5rem] items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition ${
               selected
                 ? "border-amber-400 bg-zinc-900"
-                : "border-transparent bg-zinc-800 hover:bg-zinc-700"
+                : "border-transparent bg-zinc-800 hover:bg-cq-fill-strong"
             }`}
           >
             <BarberAvatar name={barber.name} imageUrl={photoUrl} size="md" />

@@ -459,7 +459,7 @@ function SetupContent() {
                     disabled={savingOwnerBookable}
                     onClick={() => void toggleOwnerBookable()}
                     className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${
-                      ownerBookable ? "bg-emerald-500" : "bg-zinc-700"
+                      ownerBookable ? "bg-emerald-500" : "bg-cq-fill-strong"
                     }`}
                   >
                     <span
@@ -688,7 +688,7 @@ function SetupContent() {
                               aria-checked={row.closed}
                               onClick={() => updateHour(day.value, { closed: !row.closed })}
                               className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${
-                                row.closed ? "bg-emerald-500" : "bg-zinc-700"
+                                row.closed ? "bg-emerald-500" : "bg-cq-fill-strong"
                               }`}
                             >
                               <span

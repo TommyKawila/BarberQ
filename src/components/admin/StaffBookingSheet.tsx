@@ -79,7 +79,7 @@ export function StaffBookingSheet({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong sm:hidden" />
         <div className="mb-3 flex items-start justify-between gap-2">
           <div>
             <h2 className="text-base font-semibold text-zinc-50">{t("admin.staffBook.title")}</h2>

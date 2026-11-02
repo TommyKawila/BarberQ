@@ -66,7 +66,7 @@ export function OverTierModal({
         className="relative z-10 w-full max-w-md rounded-t-2xl border border-zinc-800 bg-zinc-950 px-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] pt-4 shadow-xl sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong sm:hidden" />
         <h2 className="text-base font-semibold text-zinc-50">{copy.title}</h2>
         <div className="mt-2 space-y-2">
           {paragraphs.map((paragraph) => (

@@ -151,7 +151,7 @@ export function RescheduleFlow({
         aria-labelledby="reschedule-title"
         className="relative z-10 flex max-h-[92vh] w-full max-w-md flex-col overflow-hidden rounded-t-2xl bg-zinc-950 shadow-xl sm:rounded-2xl"
       >
-        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-cq-fill-strong sm:hidden" />
         <header className="shrink-0 border-b border-zinc-800 px-4 py-3">
           <h2 id="reschedule-title" className="text-lg font-semibold">
             {t("booking.reschedule")}
