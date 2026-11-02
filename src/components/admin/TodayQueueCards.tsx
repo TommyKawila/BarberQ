@@ -5,7 +5,6 @@ import { CqIcon } from "@/components/icons/CqIcon";
 import {
   buildFreeStatusCopy,
   lateMinutesSinceStart,
-  shopCloseHHmmForNow,
 } from "@/lib/admin/free-status-copy";
 import {
   bookedDisplayTimes,
@@ -116,7 +115,6 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
   const { locale, t } = useI18n();
   const now = new Date();
   const cards = deriveTodayQueueCards(props.columns, now, props.shopHours);
-  const shopClose = shopCloseHHmmForNow(props.shopHours, now);
   const sourceLabels = {
     line: t("admin.sourceLine"),
     walkIn: t("admin.sourceWalkIn"),
@@ -151,7 +149,6 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                 nextStartIso: card.next
                   ? (card.next.appointmentStart ?? card.next.startTime)
                   : null,
-                shopCloseHHmm: shopClose,
                 now,
                 labels: {
                   untilNext: t("admin.freeUntilNext"),
