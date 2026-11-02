@@ -325,7 +325,7 @@ function Step({
             ? "bg-emerald-500 text-white"
             : active
               ? "bg-amber-400 text-zinc-950"
-              : "bg-zinc-700 text-zinc-200"
+              : "bg-cq-fill-strong text-zinc-200"
         }`}
       >
         {done ? "✓" : n}

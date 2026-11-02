@@ -86,7 +86,7 @@ export function CompleteServicePicker({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-cq-fill-strong sm:hidden" />
         <header className="shrink-0 border-b border-zinc-800 px-4 py-3">
           <h2
             id="complete-service-picker-title"

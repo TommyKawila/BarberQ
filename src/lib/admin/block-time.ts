@@ -29,6 +29,7 @@ export function blockedSlotLabel(
   const closed = translate("admin.blockClosed");
   if (!reason || reason === "manual" || reason === "walk-in") return closed;
   if (reason === "break") return translate("admin.break");
+  if (reason === "day_off") return translate("admin.off");
   if (reason === "rest") return `${closed} · ${translate("admin.blockReason.rest")}`;
   if (reason === "errand") return `${closed} · ${translate("admin.blockReason.errand")}`;
   if (reason === "other") return `${closed} · ${translate("admin.blockReason.other")}`;

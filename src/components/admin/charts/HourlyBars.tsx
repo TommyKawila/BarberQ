@@ -30,7 +30,7 @@ export function HourlyBars({ rows, labels }: HourlyBarsProps) {
             <div key={row.hour} className="flex flex-1 flex-col items-center gap-1">
               <div className="flex w-full flex-col justify-end" style={{ height: 100 }}>
                 <div className="flex w-full flex-col overflow-hidden rounded-t" style={{ height: `${h}%` }}>
-                  {freeH > 0 ? <div className="bg-zinc-700" style={{ flex: freeH }} title={`${row.chairBusyPct}%`} /> : null}
+                  {freeH > 0 ? <div className="bg-cq-fill-strong" style={{ flex: freeH }} title={`${row.chairBusyPct}%`} /> : null}
                   {blockedH > 0 ? <div className="bg-red-700" style={{ flex: blockedH }} /> : null}
                   {busyH > 0 ? <div className="bg-amber-400" style={{ flex: busyH }} /> : null}
                 </div>
@@ -43,7 +43,7 @@ export function HourlyBars({ rows, labels }: HourlyBarsProps) {
       <div className="flex flex-wrap gap-3 text-[11px] text-zinc-400">
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-amber-400" />{labels.busy}</span>
         <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-red-700" />{labels.blocked}</span>
-        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-zinc-700" />{labels.free}</span>
+        <span className="flex items-center gap-1"><span className="h-2 w-2 rounded bg-cq-fill-strong" />{labels.free}</span>
       </div>
     </div>
   );

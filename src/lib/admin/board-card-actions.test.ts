@@ -128,21 +128,23 @@ describe("board cancel UX wiring", () => {
     assert.doesNotMatch(grid, /staffCancellable && !markable/);
   });
 
-  it("gated Walk-in stays tappable (aria-disabled) with visible reason — no native disabled/title tooltip", () => {
+  it("Round 1 schedule: no per-column Walk-in; shop banner + free tap + pre-open row remain", () => {
     const grid = readFileSync(
       resolve(root, "components/admin/QuickBlockGrid.tsx"),
       "utf8",
     );
     const page = readFileSync(resolve(root, "app/admin/page.tsx"), "utf8");
-    assert.match(grid, /aria-disabled=\{gated\}/);
+    // Per-column Walk-in removed — sticky Walk-in on the page remains.
+    assert.doesNotMatch(grid, /onWalkInQuick\(column\.barber\.id\)/);
+    assert.doesNotMatch(grid, /walk-in-reason-/);
     assert.match(grid, /walk-in-shop-banner/);
-    assert.match(grid, /walk-in-reason-/);
-    assert.match(grid, /onWalkInQuick\(column\.barber\.id\)/);
-    // Native `disabled={gated}` would block taps on iPad — only aria-disabled is OK.
-    assert.doesNotMatch(grid, /(?<!aria-)disabled=\{gated\}/);
-    assert.doesNotMatch(grid, /\btitle=\{disabledReason\}/);
+    assert.match(grid, /pre-open-row/);
+    assert.match(grid, /admin\.freeSlotPlus/);
+    assert.match(grid, /border-dashed/);
+    assert.match(grid, /onFreeSlot/);
     assert.match(page, /walkInShopBanner=\{walkInShopBanner\}/);
-    assert.match(page, /walkInDisabledReason=\{walkInButtonDisabledReason\}/);
+    // Sticky Walk-in still wired on the page (not per column).
+    assert.match(page, /onWalkInQuick/);
   });
 
   it("sheet picks LINE vs non-LINE confirm copy", () => {

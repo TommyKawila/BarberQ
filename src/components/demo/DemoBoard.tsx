@@ -20,7 +20,7 @@ type BoardState =
 
 function slotClass(kind: string): string {
   if (kind === "booked") return "bg-sky-800 text-sky-50";
-  if (kind === "blocked") return "bg-zinc-700 text-zinc-300";
+  if (kind === "blocked") return "bg-cq-fill-strong text-zinc-300";
   return "bg-emerald-800/80 text-emerald-50";
 }
 
@@ -141,7 +141,7 @@ export function DemoBoard() {
                 <span className="h-3 w-3 rounded bg-sky-800" /> จองแล้ว
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <span className="h-3 w-3 rounded bg-zinc-700" /> บล็อก
+                <span className="h-3 w-3 rounded bg-cq-fill-strong" /> บล็อก
               </span>
             </div>
 

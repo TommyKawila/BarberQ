@@ -129,7 +129,7 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
                   ? "cursor-not-allowed bg-zinc-900 text-zinc-500"
                   : selected
                     ? "bg-amber-400 text-zinc-950"
-                    : "bg-zinc-800 text-zinc-100 hover:bg-zinc-700"
+                    : "bg-zinc-800 text-zinc-100 hover:bg-cq-fill-strong"
               }`}
             >
               <span className="text-xs font-medium">
@@ -173,7 +173,7 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
             className="relative z-10 w-full max-w-md rounded-t-2xl bg-zinc-950 px-4 pb-8 pt-3 shadow-xl sm:rounded-2xl"
             data-testid="booking-date-calendar"
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong sm:hidden" />
 
             <div className="mb-3 flex items-center justify-between gap-2">
               <h2
@@ -266,7 +266,7 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
                         : selected
                           ? "bg-amber-400 font-semibold text-zinc-950"
                           : isToday
-                            ? "bg-zinc-800 font-medium text-amber-300 hover:bg-zinc-700"
+                            ? "bg-zinc-800 font-medium text-amber-300 hover:bg-cq-fill-strong"
                             : "bg-zinc-900 text-zinc-100 hover:bg-zinc-800"
                     }`}
                   >
