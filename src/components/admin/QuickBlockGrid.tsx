@@ -70,9 +70,9 @@ function slotClass(slot: AdminSlot, pending: boolean): string {
     return "bg-zinc-900 text-zinc-600";
   }
   if (slot.kind === "booked") {
-    if (slot.status === "completed") return "bg-zinc-600 text-zinc-100";
+    if (slot.status === "completed") return "bg-cq-fill-outline text-zinc-100";
     if (slot.status === "no_show") return "bg-orange-700 text-white";
-    if (slot.status === "left") return "bg-zinc-700 text-zinc-300 line-through";
+    if (slot.status === "left") return "bg-cq-fill-strong text-zinc-300 line-through";
     if (slot.isLate) return "bg-yellow-500 text-zinc-950";
     if (slot.source === "walk_in") return "bg-rose-700 text-white";
     if (slot.source === "phone") return "bg-teal-700 text-white";

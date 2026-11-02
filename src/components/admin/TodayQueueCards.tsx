@@ -135,7 +135,7 @@ export function TodayQueueCards(props: TodayQueueCardsProps) {
                       ? "bg-amber-400"
                       : card.state === "free"
                         ? "bg-emerald-400"
-                        : "bg-zinc-600"
+                        : "bg-cq-fill-outline"
                   }`}
                   aria-hidden
                 />

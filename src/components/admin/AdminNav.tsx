@@ -342,7 +342,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             aria-describedby={subtitleId}
             className={`absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-zinc-800 bg-zinc-950 px-4 pt-3 md:mx-auto md:max-w-[640px] ${ADMIN_NAV_BAR_PADDING_CLASS}`}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong" />
             <h2 id={titleId} className="font-heading text-base font-semibold">
               {t("admin.moreMenuTitle")}
             </h2>

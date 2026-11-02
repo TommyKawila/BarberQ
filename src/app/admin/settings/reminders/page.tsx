@@ -219,7 +219,7 @@ export default function ReminderSettingsPage() {
                 disabled={busy}
                 onChange={(e) => onToggle(e.target.checked)}
               />
-              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
+              <span className="h-7 w-12 rounded-full bg-cq-fill-strong after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
             </label>
           </div>
         </section>
@@ -242,7 +242,7 @@ export default function ReminderSettingsPage() {
                   void save({ bookingConfirmPushEnabled: next });
                 }}
               />
-              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
+              <span className="h-7 w-12 rounded-full bg-cq-fill-strong after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
             </label>
           </div>
         </section>
@@ -265,7 +265,7 @@ export default function ReminderSettingsPage() {
                   void save({ showFlexBrandFooter: next });
                 }}
               />
-              <span className="h-7 w-12 rounded-full bg-zinc-700 after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
+              <span className="h-7 w-12 rounded-full bg-cq-fill-strong after:absolute after:left-0.5 after:top-0.5 after:h-6 after:w-6 after:rounded-full after:bg-white after:transition peer-checked:bg-amber-400 peer-checked:after:translate-x-5" />
             </label>
           </div>
           {flexBrandFooter ? (

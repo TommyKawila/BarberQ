@@ -6,9 +6,14 @@
   --cq-surface: #1f1c19;
   --cq-charcoal: #2a2622;
   --cq-border: #2e2a25;
-  --cq-border-strong: #3a342e;
-  /* AA text on ink (#111): #8a8174 ≈ 4.92:1 */
-  --cq-outline: #8a8174;
+  /* Borders / dividers / muted text (Tommy-approved 2026-11) */
+  --cq-border-strong: #857c70;
+  /* AA text on ink (#111): #a39a8c ≈ 5.5:1+ */
+  --cq-outline: #a39a8c;
+  /* Fill-only: keep pre-change solid fills (queue chips, toggles, sheet grips).
+     Do not use for borders — those use --cq-outline / --cq-border-strong. */
+  --cq-fill-strong: #3a342e;
+  --cq-fill-outline: #8a8174;
   --cq-cream: #f3eee3;
   --cq-muted: #b9b0a2;
   --cq-subtle: #a39a8c;
@@ -36,8 +41,8 @@
   --color-zinc-950: var(--cq-ink);
   --color-zinc-900: var(--cq-surface);
   --color-zinc-800: var(--cq-charcoal);
+  /* zinc-700/600 = border + muted text (new outline / border-strong) */
   --color-zinc-700: var(--cq-border-strong);
-  /* Was #4a433c (~1.94:1 on ink); remap to AA outline-tier for muted text */
   --color-zinc-600: var(--cq-outline);
   --color-zinc-500: var(--cq-subtle);
   --color-zinc-400: var(--cq-muted);
@@ -45,6 +50,10 @@
   --color-zinc-200: var(--cq-cream);
   --color-zinc-100: var(--cq-cream);
   --color-zinc-50: var(--cq-cream);
+
+  /* Solid fills that must stay at pre-outline-change darkness */
+  --color-cq-fill-strong: var(--cq-fill-strong);
+  --color-cq-fill-outline: var(--cq-fill-outline);
 
   --color-amber-300: #f8c15a;
   --color-amber-400: var(--cq-amber);
