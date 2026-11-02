@@ -1,6 +1,6 @@
 const RETURN_KEY = "barberq_liff_return";
 export const LIFF_RETURN_COOKIE = RETURN_KEY;
-/** Session flag: at most one automatic OAuth callback redirect per tab. */
+/** Session flag: at most one automatic OAuth callback redirect per tab (bound to OAuth `code`). */
 export const LIFF_CALLBACK_GUARD_KEY = "barberq_liff_cb_guard";
 /** Query flag shown when Safari→Chrome (or any cookie-less) OAuth callback fails. */
 export const LIFF_LOGIN_ERROR_PARAM = "login_error";
@@ -43,6 +43,8 @@ export function buildOwnerEntryLoginRedirectUri(pageOrigin?: string): string {
 
 export function saveLiffReturnPath(pathname: string) {
   if (!isSafeReturnPath(pathname)) return;
+  // New login attempt — drop any prior callback guard so a later hop can forward.
+  clearLiffCallbackGuard();
   try {
     sessionStorage.setItem(RETURN_KEY, pathname);
   } catch {
@@ -80,17 +82,32 @@ export function isLiffOAuthCallback(search: string): boolean {
   return Boolean(params.get("code") && params.get("liffClientId"));
 }
 
-export function hasLiffCallbackGuard(): boolean {
+/** OAuth `code` from a LIFF callback query string (or null). */
+export function oauthCodeFromSearch(search: string): string | null {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  return params.get("code");
+}
+
+/**
+ * True when this tab already auto-forwarded the same OAuth `code`.
+ * Bound to `code` so a later login (new code) in the same tab can still forward.
+ */
+export function hasLiffCallbackGuard(oauthCode?: string | null): boolean {
   try {
-    return sessionStorage.getItem(LIFF_CALLBACK_GUARD_KEY) === "1";
+    const stored = sessionStorage.getItem(LIFF_CALLBACK_GUARD_KEY);
+    if (!stored) return false;
+    if (oauthCode) return stored === oauthCode;
+    return true;
   } catch {
     return false;
   }
 }
 
-export function setLiffCallbackGuard(): void {
+/** Record that we already auto-forwarded this OAuth `code` (max one hop per code). */
+export function setLiffCallbackGuard(oauthCode?: string | null): void {
+  if (!oauthCode) return;
   try {
-    sessionStorage.setItem(LIFF_CALLBACK_GUARD_KEY, "1");
+    sessionStorage.setItem(LIFF_CALLBACK_GUARD_KEY, oauthCode);
   } catch {
     /* ignore */
   }
@@ -104,6 +121,7 @@ export function clearLiffCallbackGuard(): void {
   }
 }
 
+/** Owner-only mismatch URL — used when `/owner` OAuth cannot complete cross-browser. */
 export function ownerBrowserMismatchHref(): string {
   return `${FALLBACK_MISMATCH_PATH}?${LIFF_LOGIN_ERROR_PARAM}=${LIFF_LOGIN_ERROR_BROWSER}`;
 }
@@ -122,6 +140,9 @@ export type LiffCallbackAction =
  * Decide navigation for a LIFF OAuth callback landing on `/` (SalesPage).
  * Never forwards to the same URL with the same OAuth query (that loops forever
  * when the return-path cookie is missing after a Safari→Chrome handoff).
+ *
+ * Missing return path → stop (do NOT send customer/admin/claim to /owner).
+ * Owner browser-mismatch UX lives on `/owner` via path-specific redirectUri.
  */
 export function resolveLiffCallbackAction(input: {
   search: string;
@@ -140,6 +161,7 @@ export function resolveLiffCallbackAction(input: {
     return { type: "forward", href: qs ? `${path}?${qs}` : path };
   }
 
-  // Missing cookie/session (cross-browser) — one-shot escape hatch, no OAuth params.
-  return { type: "browser_mismatch", href: ownerBrowserMismatchHref() };
+  // Missing cookie/session on `/`: stop without self-replace loop.
+  // Do not redirect customer/admin/other flows to /owner?login_error=browser.
+  return { type: "stop" };
 }
