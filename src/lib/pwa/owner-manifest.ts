@@ -13,6 +13,8 @@ export const ownerPwaMetadata = {
   appleWebApp: {
     capable: true,
     title: "ClipperQ ร้านของฉัน",
-    statusBarStyle: "black-translucent",
+    // Opaque black bar: content stays below the status bar. Do not use
+    // "black-translucent" until AppHeader/AdminChrome/OwnerEntry pad safe-area-top.
+    statusBarStyle: "black",
   },
 } as const satisfies Partial<Metadata>;

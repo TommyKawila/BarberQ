@@ -40,4 +40,22 @@ describe("owner PWA manifest", () => {
     assert.match(root, /site\.webmanifest/);
     assert.doesNotMatch(root, /owner\.webmanifest/);
   });
+
+  it("statusBarStyle is black (not translucent) without safe-area-top padding", () => {
+    assert.equal(ownerPwaMetadata.appleWebApp.statusBarStyle, "black");
+    assert.notEqual(ownerPwaMetadata.appleWebApp.statusBarStyle, "black-translucent");
+    for (const rel of [
+      "src/components/layout/AppHeader.tsx",
+      "src/components/admin/AdminChrome.tsx",
+      "src/components/owner/OwnerEntry.tsx",
+    ]) {
+      const src = readFileSync(resolve(process.cwd(), rel), "utf8");
+      assert.doesNotMatch(
+        src,
+        /safe-area-inset-top/,
+        `${rel} has no safe-area-top — translucent status bar would cover content`,
+      );
+    }
+  });
 });
+
