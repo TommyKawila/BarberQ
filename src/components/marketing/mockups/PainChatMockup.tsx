@@ -24,7 +24,7 @@ export function PainChatMockup({
         {/* Chat header */}
         <div className="flex items-center gap-3 border-b border-zinc-800 bg-zinc-900/90 px-4 py-3.5">
           <div className="relative shrink-0">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-zinc-700 text-sm font-bold text-zinc-200">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cq-fill-strong text-sm font-bold text-zinc-200">
               LINE
             </div>
             <span className="absolute -right-1.5 -top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-bold leading-none text-white shadow-[0_0_0_2px_#09090b]">

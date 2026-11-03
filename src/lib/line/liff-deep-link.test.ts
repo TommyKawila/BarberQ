@@ -68,6 +68,24 @@ describe("liff deep-link path resolution", () => {
     assert.equal(resolveLiffStateTarget("/", "bookings"), "/bookings");
   });
 
+  it("keeps global /owner when LIFF endpoint already includes shop (rich menu D)", () => {
+    assert.equal(shopSlugFromPath("/owner"), null);
+    assert.equal(resolveLiffStateTarget("/", "owner"), "/owner");
+    assert.equal(resolveLiffStateTarget("/", "/owner"), "/owner");
+    assert.equal(
+      resolveLiffStateTarget("/barberqpilottest", "owner"),
+      "/owner",
+    );
+    assert.equal(
+      resolveLiffStateTarget("/barberqpilottest", "/owner"),
+      "/owner",
+    );
+    assert.equal(
+      resolveLiffStateTarget("/clipperqdemo", "/owner"),
+      "/owner",
+    );
+  });
+
   it("maps bare /bookings onto last shop or default (never sales /)", () => {
     assert.equal(
       resolveBareShopPath("/bookings", "barberqpilottest", "phinxstudio"),

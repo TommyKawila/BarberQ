@@ -27,7 +27,7 @@ export function StaffActionsSheet({
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center">
       <button type="button" className="absolute inset-0" aria-label="Close" onClick={onClose} />
       <div className="relative z-10 w-full max-w-lg rounded-t-2xl bg-zinc-950 p-4 pb-8 sm:rounded-2xl">
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong" />
         <h2 className="font-heading text-base font-semibold">{barber.name}</h2>
         <div className="mt-3 flex flex-col gap-2">
           <button

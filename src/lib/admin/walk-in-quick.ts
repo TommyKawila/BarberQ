@@ -246,21 +246,3 @@ export function assessWalkInQuick(
 
   return { kind: "no_slot", barberId, barberName };
 }
-
-/** Short disabled-button reason when Walk-in should not fire. */
-export function walkInDisabledReason(
-  column: AdminColumn | undefined,
-  hours: ShopHours | null | undefined,
-  now: Date = new Date(),
-): WalkInAssessment | null {
-  const result = assessWalkInQuick(column, hours, now, null);
-  if (
-    result.kind === "shop_before_open" ||
-    result.kind === "shop_after_close" ||
-    result.kind === "shop_closed_day" ||
-    result.kind === "barber_off"
-  ) {
-    return result;
-  }
-  return null;
-}

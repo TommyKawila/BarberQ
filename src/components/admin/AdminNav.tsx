@@ -4,16 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 import {
-  BarChart3,
   Bell,
-  CalendarDays,
   ChevronRight,
   Clock3,
   ExternalLink,
-  MoreHorizontal,
   Store,
-  Users,
 } from "lucide-react";
+import { CqIcon } from "@/components/icons/CqIcon";
 import type { ShopStaffRole } from "@/lib/admin-auth";
 import {
   ADMIN_NAV_BAR_PADDING_CLASS,
@@ -54,26 +51,29 @@ const MORE_HINTS: Partial<Record<AdminNavDestinationId, MessageKey>> = {
 const ICON = { size: 20, strokeWidth: 2 } as const;
 
 function NavIcon({ id }: { id: AdminNavItemId }) {
-  if (id === "board") return <CalendarDays size={ICON.size} strokeWidth={ICON.strokeWidth} />;
-  if (id === "team") return <Users size={ICON.size} strokeWidth={ICON.strokeWidth} />;
-  if (id === "stats") return <BarChart3 size={ICON.size} strokeWidth={ICON.strokeWidth} />;
+  if (id === "board") return <CqIcon name="today" size={ICON.size} />;
+  if (id === "team") return <CqIcon name="team" size={ICON.size} />;
+  if (id === "stats") return <CqIcon name="summary" size={ICON.size} />;
   if (id === "schedule") return <Clock3 size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "settings") return <Store size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "notifications") return <Bell size={ICON.size} strokeWidth={ICON.strokeWidth} />;
   if (id === "booking") return <ExternalLink size={ICON.size} strokeWidth={ICON.strokeWidth} />;
-  return <MoreHorizontal size={ICON.size} strokeWidth={ICON.strokeWidth} />;
+  return <CqIcon name="more" size={ICON.size} />;
 }
 
 function navItemClass(active: boolean, side: boolean) {
   if (side) {
     return `cq-press flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium ${
       active
-        ? "bg-zinc-800 text-amber-400"
-        : "bg-transparent text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
+        ? "bg-amber-400 font-semibold text-zinc-950"
+        : "bg-transparent text-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
     }`;
   }
-  return `cq-press flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl mx-1 my-1.5 px-1 text-xs font-medium leading-tight ${
-    active ? "bg-zinc-800 text-amber-400" : "bg-transparent text-zinc-400"
+  // Round-1: active = gold pill + ink icon; inactive = subtle #A39A8C (zinc-500/outline)
+  return `cq-press flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl mx-1 my-1.5 px-1 text-xs leading-tight ${
+    active
+      ? "bg-amber-400 font-semibold text-zinc-950"
+      : "bg-transparent font-medium text-zinc-500"
   }`;
 }
 
@@ -342,7 +342,7 @@ export function AdminNav({ role }: { role: ShopStaffRole }) {
             aria-describedby={subtitleId}
             className={`absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-zinc-800 bg-zinc-950 px-4 pt-3 md:mx-auto md:max-w-[640px] ${ADMIN_NAV_BAR_PADDING_CLASS}`}
           >
-            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700" />
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong" />
             <h2 id={titleId} className="font-heading text-base font-semibold">
               {t("admin.moreMenuTitle")}
             </h2>

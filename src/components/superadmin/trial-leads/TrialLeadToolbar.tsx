@@ -149,7 +149,7 @@ function FilterChip({
       onClick={onClick}
       aria-pressed={active}
       className={`min-h-11 rounded-full px-3 text-sm font-medium ${
-        active ? "bg-amber-400 text-zinc-950" : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+        active ? "bg-amber-400 text-zinc-950" : "bg-zinc-800 text-zinc-300 hover:bg-cq-fill-strong"
       }`}
     >
       {label}
