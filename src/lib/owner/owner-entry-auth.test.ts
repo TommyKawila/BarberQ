@@ -2,6 +2,7 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { buildOwnerEntryLoginRedirectUri } from "@/lib/line/liff-return";
 import { ownerEntryPhase } from "@/lib/owner/owner-entry-auth";
 
 describe("ownerEntryPhase", () => {
@@ -91,16 +92,22 @@ describe("ownerEntryPhase", () => {
 });
 
 describe("OwnerEntry LIFF gate", () => {
-  it("gates on ready vs login vs shops; uses origin redirect_uri + handoff timeout", () => {
+  it("gates on ready vs login vs shops; uses buildOwnerEntryLoginRedirectUri for /owner", () => {
     const owner = readFileSync(
       resolve(process.cwd(), "src/components/owner/OwnerEntry.tsx"),
       "utf8",
     );
     assert.match(owner, /ownerEntryPhase/);
-    assert.match(owner, /buildLiffLoginRedirectUri/);
+    // Real decision: OwnerEntry uses the path-specific helper (not origin-only).
+    assert.match(owner, /buildOwnerEntryLoginRedirectUri/);
+    assert.doesNotMatch(owner, /buildLiffLoginRedirectUri/);
     assert.match(owner, /OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS/);
     assert.match(owner, /OWNER_LIFF_INIT_TIMEOUT_MS/);
     assert.match(owner, /isInClient/);
-    assert.doesNotMatch(owner, /redirectUri:\s*`\$\{window\.location\.origin\}\/owner`/);
+    // Helper returns origin + /owner (path-specific redirectUri).
+    assert.equal(
+      buildOwnerEntryLoginRedirectUri("https://barber-q-pi.vercel.app"),
+      "https://barber-q-pi.vercel.app/owner",
+    );
   });
 });
