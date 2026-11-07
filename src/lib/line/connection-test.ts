@@ -1,7 +1,8 @@
 import { createHmac } from "node:crypto";
-import { getBotInfo } from "@/lib/line/messaging-api";
+import { getBotInfo, getWebhookEndpoint } from "@/lib/line/messaging-api";
 import { pushTextForShop } from "@/lib/line/push-message";
 import {
+  getShopLineChannel,
   getShopLineChannelSecrets,
   upsertShopLineChannel,
   type ShopLineChannelPublic,
@@ -17,9 +18,17 @@ export type ConnectionCheckId =
   | "test_message"
   | "liff_rich_menu";
 
+/**
+ * `manual` = LINE Messaging API cannot report this setting; owner must confirm.
+ * Do not treat `manual` as a silent pass.
+ */
+export type ConnectionCheckStatus = "pass" | "fail" | "manual";
+
 export interface ConnectionCheck {
   id: ConnectionCheckId;
+  /** true only when status === "pass" (never fake a pass for manual). */
   ok: boolean;
+  status: ConnectionCheckStatus;
   labelKey: string;
 }
 
@@ -58,21 +67,85 @@ const ERRORS: Record<
     fixHintKey: "lineConnect.fix.encryptionKey",
     failCheck: "channel_secret",
   },
+  WEBHOOK_FAIL: {
+    message: "Webhook ยังไม่พร้อมหรือตรวจไม่ผ่าน",
+    fixHintKey: "lineConnect.fix.webhook",
+    failCheck: "webhook",
+  },
 };
+
+function check(
+  id: ConnectionCheckId,
+  status: ConnectionCheckStatus,
+  labelKey: string,
+): ConnectionCheck {
+  return { id, ok: status === "pass", status, labelKey };
+}
+
+/**
+ * LINE Messaging API cannot read OA Manager auto-reply / greeting toggles.
+ * Until the owner confirms manually, status stays `manual` (never a silent pass).
+ */
+export function resolveAutoReplyCheck(
+  autoReplyConfirmedAt: string | null | undefined,
+): ConnectionCheck {
+  if (autoReplyConfirmedAt) {
+    return check("auto_reply", "pass", "lineConnect.check.autoReply");
+  }
+  return check("auto_reply", "manual", "lineConnect.check.autoReplyManual");
+}
+
+/** Channel may be marked verified only when webhook passed in that test run. */
+export function webhookCheckPassed(checks: ConnectionCheck[]): boolean {
+  return checks.some((c) => c.id === "webhook" && c.status === "pass");
+}
+
+/**
+ * Checklist shown after reload (no in-memory test result).
+ * Never invent ✓ for webhook/test_message — verified implies webhook passed
+ * at save time; test_message is not persisted so it stays manual.
+ */
+export function buildReloadConnectionChecks(
+  channel: Pick<ShopLineChannelPublic, "status" | "autoReplyConfirmedAt">,
+): ConnectionCheck[] {
+  const verified = channel.status === "verified";
+  return [
+    check(
+      "channel_id",
+      verified ? "pass" : "fail",
+      "lineConnect.check.channelId",
+    ),
+    check("webhook", verified ? "pass" : "fail", "lineConnect.check.webhook"),
+    resolveAutoReplyCheck(channel.autoReplyConfirmedAt),
+    check(
+      "test_message",
+      "manual",
+      "lineConnect.check.testMessageReload",
+    ),
+    check(
+      "liff_rich_menu",
+      "manual",
+      "lineConnect.check.liffRichMenuManual",
+    ),
+  ];
+}
 
 export async function testShopLineConnection(
   shopId: string,
   opts?: { ownerLineId?: string | null },
 ): Promise<ConnectionTestResult> {
+  const existing = await getShopLineChannel(shopId);
   const secrets = await getShopLineChannelSecrets(shopId);
   const checks: ConnectionCheck[] = [
-    { id: "channel_id", ok: false, labelKey: "lineConnect.check.channelId" },
-    { id: "channel_secret", ok: false, labelKey: "lineConnect.check.channelSecret" },
-    { id: "access_token", ok: false, labelKey: "lineConnect.check.accessToken" },
-    { id: "webhook", ok: false, labelKey: "lineConnect.check.webhook" },
-    { id: "auto_reply", ok: true, labelKey: "lineConnect.check.autoReply" },
-    { id: "test_message", ok: false, labelKey: "lineConnect.check.testMessage" },
-    { id: "liff_rich_menu", ok: true, labelKey: "lineConnect.check.liffRichMenu" },
+    check("channel_id", "fail", "lineConnect.check.channelId"),
+    check("channel_secret", "fail", "lineConnect.check.channelSecret"),
+    check("access_token", "fail", "lineConnect.check.accessToken"),
+    check("webhook", "fail", "lineConnect.check.webhook"),
+    // Honest default: LINE cannot report auto-reply — never hardcode pass.
+    check("auto_reply", "manual", "lineConnect.check.autoReplyManual"),
+    check("test_message", "fail", "lineConnect.check.testMessage"),
+    // LINE has no API to verify LIFF/rich-menu setup — never silent-pass.
+    check("liff_rich_menu", "manual", "lineConnect.check.liffRichMenuManual"),
   ];
 
   if (!secrets.channelSecret || !secrets.accessToken) {
@@ -82,8 +155,8 @@ export async function testShopLineConnection(
   let bot;
   try {
     bot = await getBotInfo(secrets.accessToken);
-    setCheck(checks, "access_token", true);
-    setCheck(checks, "channel_id", true);
+    setCheck(checks, "access_token", "pass");
+    setCheck(checks, "channel_id", "pass");
   } catch {
     return fail(shopId, "TOKEN_INVALID", checks, null);
   }
@@ -96,8 +169,34 @@ export async function testShopLineConnection(
   if (!verifyLineSignature(probeBody, secrets.channelSecret, probeSig)) {
     return fail(shopId, "SIGNATURE_MISMATCH", checks, bot.displayName);
   }
-  setCheck(checks, "channel_secret", true);
-  setCheck(checks, "webhook", true);
+  setCheck(checks, "channel_secret", "pass");
+
+  // Prefer LINE's webhook endpoint API when available (active + URL set).
+  // If that API errors, never silent-pass — owner must retry.
+  try {
+    const hook = await getWebhookEndpoint(secrets.accessToken);
+    setCheck(
+      checks,
+      "webhook",
+      hook.active && Boolean(hook.endpoint?.trim()) ? "pass" : "fail",
+    );
+  } catch {
+    setCheck(
+      checks,
+      "webhook",
+      "fail",
+      "lineConnect.check.webhookUnavailable",
+    );
+  }
+
+  // Auto-reply / greeting: Messaging API has no read API — only owner confirm.
+  const autoReply = resolveAutoReplyCheck(existing?.autoReplyConfirmedAt);
+  const autoRow = checks.find((c) => c.id === "auto_reply");
+  if (autoRow) {
+    autoRow.status = autoReply.status;
+    autoRow.ok = autoReply.ok;
+    autoRow.labelKey = autoReply.labelKey;
+  }
 
   let testOk = true;
   if (opts?.ownerLineId) {
@@ -109,7 +208,30 @@ export async function testShopLineConnection(
     );
     testOk = push.sent || push.skippedReason === "quota_full";
   }
-  setCheck(checks, "test_message", testOk);
+  setCheck(checks, "test_message", testOk ? "pass" : "fail");
+
+  // Do not stamp verified (or show green after reload) unless webhook passed.
+  if (!webhookCheckPassed(checks)) {
+    const channel = await upsertShopLineChannel(shopId, {
+      botUserId: bot.userId,
+      botDisplayName: bot.displayName,
+      oaBasicId: bot.basicId,
+      status: "broken",
+      lastErrorCode: "WEBHOOK_FAIL",
+      lastErrorMessage: ERRORS.WEBHOOK_FAIL.message,
+      checklistStep: 3,
+    });
+    return {
+      ok: false,
+      status: "broken",
+      errorCode: "WEBHOOK_FAIL",
+      errorMessage: ERRORS.WEBHOOK_FAIL.message,
+      fixHintKey: ERRORS.WEBHOOK_FAIL.fixHintKey,
+      checks,
+      channel,
+      botDisplayName: bot.displayName,
+    };
+  }
 
   const channel = await upsertShopLineChannel(shopId, {
     botUserId: bot.userId,
@@ -141,7 +263,7 @@ async function fail(
   botDisplayName: string | null,
 ): Promise<ConnectionTestResult> {
   const meta = ERRORS[code] ?? ERRORS.MISSING_KEYS;
-  setCheck(checks, meta.failCheck, false);
+  setCheck(checks, meta.failCheck, "fail");
   const channel = await upsertShopLineChannel(shopId, {
     status: "broken",
     lastErrorCode: code,
@@ -160,7 +282,15 @@ async function fail(
   };
 }
 
-function setCheck(checks: ConnectionCheck[], id: ConnectionCheckId, ok: boolean) {
+function setCheck(
+  checks: ConnectionCheck[],
+  id: ConnectionCheckId,
+  status: ConnectionCheckStatus,
+  labelKey?: string,
+) {
   const row = checks.find((c) => c.id === id);
-  if (row) row.ok = ok;
+  if (!row) return;
+  row.status = status;
+  row.ok = status === "pass";
+  if (labelKey) row.labelKey = labelKey;
 }

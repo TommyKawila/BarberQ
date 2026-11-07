@@ -25,6 +25,8 @@ export interface ShopLineChannelPublic {
   lastErrorCode: string | null;
   lastErrorMessage: string | null;
   checklistStep: number;
+  /** Owner confirmed auto-reply/greeting off in OA Manager (LINE API cannot report this). */
+  autoReplyConfirmedAt: string | null;
   hasSecret: boolean;
   hasAccessToken: boolean;
 }
@@ -53,6 +55,8 @@ export interface UpsertShopLineChannelInput {
   lastErrorCode?: string | null;
   lastErrorMessage?: string | null;
   checklistStep?: number;
+  /** Set ISO timestamp, or null to clear. */
+  autoReplyConfirmedAt?: string | null;
 }
 
 const memoryChannels = new Map<string, ShopLineChannelRow>();
@@ -88,6 +92,7 @@ function emptyRow(shopId: string): ShopLineChannelRow {
     lastErrorCode: null,
     lastErrorMessage: null,
     checklistStep: 1,
+    autoReplyConfirmedAt: null,
     hasSecret: false,
     hasAccessToken: false,
   };
@@ -111,6 +116,7 @@ function mapDbRow(row: Record<string, unknown>): ShopLineChannelRow {
     lastErrorCode: (row.last_error_code as string | null) ?? null,
     lastErrorMessage: (row.last_error_message as string | null) ?? null,
     checklistStep: Number(row.checklist_step ?? 1),
+    autoReplyConfirmedAt: (row.auto_reply_confirmed_at as string | null) ?? null,
     hasSecret: Boolean(row.channel_secret_enc),
     hasAccessToken: Boolean(row.access_token_enc),
   };
@@ -194,6 +200,7 @@ export async function upsertShopLineChannel(
     lastErrorMessage:
       input.lastErrorMessage !== undefined ? input.lastErrorMessage : existing.lastErrorMessage,
     checklistStep: input.checklistStep ?? existing.checklistStep,
+    autoReplyConfirmedAt: existing.autoReplyConfirmedAt,
   };
 
   if (input.channelSecret !== undefined && input.channelSecret !== null) {
@@ -201,6 +208,8 @@ export async function upsertShopLineChannel(
     if (secret) {
       next.channelSecretEnc = encryptSecret(secret);
       next.channelSecretLast4 = maskSecretLast4(secret);
+      // New secret → owner must re-confirm auto-reply off for this OA.
+      next.autoReplyConfirmedAt = null;
     }
   }
   if (input.accessToken !== undefined && input.accessToken !== null) {
@@ -208,7 +217,12 @@ export async function upsertShopLineChannel(
     if (token) {
       next.accessTokenEnc = encryptSecret(token);
       next.accessTokenLast4 = maskSecretLast4(token);
+      next.autoReplyConfirmedAt = null;
     }
+  }
+  // Explicit confirm/clear wins after secret rotation side-effects.
+  if (input.autoReplyConfirmedAt !== undefined) {
+    next.autoReplyConfirmedAt = input.autoReplyConfirmedAt;
   }
 
   if (isPrototypeMode()) {
@@ -219,32 +233,46 @@ export async function upsertShopLineChannel(
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("shop_line_channels")
-    .upsert(
-      {
-        shop_id: shopId,
-        messaging_channel_id: next.messagingChannelId,
-        channel_secret_enc: next.channelSecretEnc,
-        channel_secret_last4: next.channelSecretLast4,
-        access_token_enc: next.accessTokenEnc,
-        access_token_last4: next.accessTokenLast4,
-        bot_user_id: next.botUserId,
-        bot_display_name: next.botDisplayName,
-        oa_basic_id: next.oaBasicId,
-        plan: next.plan,
-        monthly_push_budget: next.monthlyPushBudget,
-        status: next.status,
-        last_verified_at: next.lastVerifiedAt,
-        last_error_code: next.lastErrorCode,
-        last_error_message: next.lastErrorMessage,
-        checklist_step: next.checklistStep,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "shop_id" },
-    )
+    .upsert(buildShopLineChannelUpsertRow(existing, next), {
+      onConflict: "shop_id",
+    })
     .select("*")
     .single();
   if (error) throw new Error(error.message);
   return toPublic(mapDbRow(data as Record<string, unknown>));
+}
+
+/**
+ * Build the Supabase upsert payload. Omit `auto_reply_confirmed_at` unless the
+ * value actually changes so key-saves still work before migration 0051 runs.
+ */
+export function buildShopLineChannelUpsertRow(
+  existing: Pick<ShopLineChannelRow, "autoReplyConfirmedAt">,
+  next: ShopLineChannelRow,
+): Record<string, unknown> {
+  const row: Record<string, unknown> = {
+    shop_id: next.shopId,
+    messaging_channel_id: next.messagingChannelId,
+    channel_secret_enc: next.channelSecretEnc,
+    channel_secret_last4: next.channelSecretLast4,
+    access_token_enc: next.accessTokenEnc,
+    access_token_last4: next.accessTokenLast4,
+    bot_user_id: next.botUserId,
+    bot_display_name: next.botDisplayName,
+    oa_basic_id: next.oaBasicId,
+    plan: next.plan,
+    monthly_push_budget: next.monthlyPushBudget,
+    status: next.status,
+    last_verified_at: next.lastVerifiedAt,
+    last_error_code: next.lastErrorCode,
+    last_error_message: next.lastErrorMessage,
+    checklist_step: next.checklistStep,
+    updated_at: new Date().toISOString(),
+  };
+  if (next.autoReplyConfirmedAt !== existing.autoReplyConfirmedAt) {
+    row.auto_reply_confirmed_at = next.autoReplyConfirmedAt;
+  }
+  return row;
 }
 
 async function loadFullRow(shopId: string): Promise<ShopLineChannelRow> {

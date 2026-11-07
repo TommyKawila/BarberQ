@@ -9,7 +9,11 @@ import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { ShopLineChannelPublic } from "@/lib/line/shop-channel";
-import type { ConnectionCheck, ConnectionTestResult } from "@/lib/line/connection-test";
+import {
+  buildReloadConnectionChecks,
+  type ConnectionCheck,
+  type ConnectionTestResult,
+} from "@/lib/line/connection-test";
 
 type View = "checklist" | "keys" | "connected" | "error";
 
@@ -33,6 +37,7 @@ export default function LineConnectPage() {
   const [testResult, setTestResult] = useState<ConnectionTestResult | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingAutoReply, setConfirmingAutoReply] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -118,6 +123,45 @@ export default function LineConnectPage() {
       setError(t("admin.updateFailed"));
     } finally {
       setTesting(false);
+    }
+  }
+
+  async function confirmAutoReplyOff() {
+    setConfirmingAutoReply(true);
+    setError(null);
+    try {
+      const res = await fetch(shopApi("/line-channel"), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...authHeaders },
+        body: JSON.stringify({ autoReplyConfirmed: true }),
+      });
+      const json = (await res.json()) as {
+        channel?: ShopLineChannelPublic;
+        error?: { message?: string };
+      };
+      if (!res.ok) throw new Error(json.error?.message ?? "confirm_failed");
+      setChannel(json.channel ?? null);
+      setTestResult((prev) => {
+        if (!prev || !json.channel) return prev;
+        return {
+          ...prev,
+          channel: json.channel,
+          checks: prev.checks.map((c) =>
+            c.id === "auto_reply"
+              ? {
+                  ...c,
+                  ok: true,
+                  status: "pass" as const,
+                  labelKey: "lineConnect.check.autoReply",
+                }
+              : c,
+          ),
+        };
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("admin.updateFailed"));
+    } finally {
+      setConfirmingAutoReply(false);
     }
   }
 
@@ -245,6 +289,8 @@ export default function LineConnectPage() {
             channel={channel}
             checks={testResult?.checks}
             quotaHref={shopPath("/admin/settings/line/quota")}
+            confirmingAutoReply={confirmingAutoReply}
+            onConfirmAutoReply={() => void confirmAutoReplyOff()}
             t={t}
           />
         ) : null}
@@ -474,9 +520,13 @@ function ErrorCard({
       ) : null}
       <ul className="mt-3 space-y-1 text-sm">
         {result.checks
-          .filter((c) => ["channel_id", "channel_secret", "access_token"].includes(c.id))
+          .filter((c) =>
+            ["channel_id", "channel_secret", "access_token", "webhook", "test_message"].includes(
+              c.id,
+            ),
+          )
           .map((c) => (
-            <li key={c.id} className={c.ok ? "text-emerald-400" : "text-orange-400"}>
+            <li key={c.id} className={c.ok ? "text-emerald-400" : "text-red-400"}>
               {c.ok ? "✓" : "✗"} {checkLabel(c, t)}
             </li>
           ))}
@@ -489,22 +539,22 @@ function ConnectedCard({
   channel,
   checks,
   quotaHref,
+  confirmingAutoReply,
+  onConfirmAutoReply,
   t,
 }: {
   channel: ShopLineChannelPublic;
   checks?: ConnectionCheck[];
   quotaHref: string;
+  confirmingAutoReply: boolean;
+  onConfirmAutoReply: () => void;
   t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string;
 }) {
-  const list =
-    checks ??
-    ([
-      { id: "channel_id", ok: true, labelKey: "" },
-      { id: "webhook", ok: true, labelKey: "" },
-      { id: "auto_reply", ok: true, labelKey: "" },
-      { id: "test_message", ok: true, labelKey: "" },
-      { id: "liff_rich_menu", ok: true, labelKey: "" },
-    ] as ConnectionCheck[]);
+  // Reload: never invent ✓ for webhook/test_message — use persisted status only.
+  const list = checks ?? buildReloadConnectionChecks(channel);
+  const needsAutoReplyConfirm = list.some(
+    (c) => c.id === "auto_reply" && c.status === "manual",
+  );
   return (
     <>
       <section className="rounded-2xl border border-emerald-500/50 bg-zinc-900 p-4 text-center">
@@ -517,13 +567,42 @@ function ConnectedCard({
             {t("lineConnect.lastTested")}: {new Date(channel.lastVerifiedAt).toLocaleString()}
           </p>
         ) : null}
-        <ul className="mt-4 space-y-1 text-left text-sm text-emerald-400">
-          {list.map((c) => (
-            <li key={c.id}>
-              ✓ {checkLabel(c, t, channel.botDisplayName)}
-            </li>
-          ))}
+        <ul className="mt-4 space-y-1 text-left text-sm">
+          {list.map((c) => {
+            const manual = c.status === "manual";
+            return (
+              <li
+                key={c.id}
+                className={
+                  manual ? "text-amber-400" : c.ok ? "text-emerald-400" : "text-red-400"
+                }
+              >
+                {manual ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t, channel.botDisplayName)}
+              </li>
+            );
+          })}
         </ul>
+        {needsAutoReplyConfirm ? (
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-400/5 p-3 text-left">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4 accent-amber-400"
+              disabled={confirmingAutoReply}
+              checked={false}
+              onChange={(e) => {
+                if (e.target.checked) onConfirmAutoReply();
+              }}
+            />
+            <span>
+              <span className="block text-sm font-medium text-zinc-100">
+                {t("lineConnect.autoReplyConfirmLabel")}
+              </span>
+              <span className="mt-1 block text-xs text-zinc-400">
+                {t("lineConnect.autoReplyConfirmHint")}
+              </span>
+            </span>
+          </label>
+        ) : null}
       </section>
       <section className="rounded-2xl bg-zinc-900 p-4 text-sm">
         <div className="flex justify-between gap-2">
@@ -566,13 +645,21 @@ function checkLabel(
     case "access_token":
       return t("lineConnect.check.accessToken");
     case "webhook":
-      return t("lineConnect.check.webhook");
+      return c.labelKey
+        ? t(c.labelKey as never)
+        : t("lineConnect.check.webhook");
     case "auto_reply":
-      return t("lineConnect.check.autoReply");
+      return c.status === "manual"
+        ? t("lineConnect.check.autoReplyManual")
+        : t("lineConnect.check.autoReply");
     case "test_message":
-      return t("lineConnect.check.testMessage");
+      return c.labelKey
+        ? t(c.labelKey as never)
+        : t("lineConnect.check.testMessage");
     case "liff_rich_menu":
-      return t("lineConnect.check.liffRichMenu");
+      return c.status === "manual"
+        ? t("lineConnect.check.liffRichMenuManual")
+        : t("lineConnect.check.liffRichMenu");
     default:
       return c.id;
   }

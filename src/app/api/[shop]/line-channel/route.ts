@@ -53,28 +53,51 @@ export async function PUT(
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
     assertShopOperator(staff);
-    if (!hasAppEncryptionKey()) {
+    const body = await readJson<{
+      messagingChannelId?: string;
+      channelSecret?: string;
+      accessToken?: string;
+      checklistStep?: number;
+      /** Owner confirms auto-reply / greeting are off in OA Manager. */
+      autoReplyConfirmed?: boolean;
+    }>(req);
+
+    const writingSecrets = Boolean(
+      (body.channelSecret && body.channelSecret.trim()) ||
+        (body.accessToken && body.accessToken.trim()),
+    );
+    if (writingSecrets && !hasAppEncryptionKey()) {
       throw new BookingError(
         "MISCONFIGURED",
         "APP_ENCRYPTION_KEY is required to store LINE secrets",
         503,
       );
     }
-    const body = await readJson<{
-      messagingChannelId?: string;
-      channelSecret?: string;
-      accessToken?: string;
-      checklistStep?: number;
-    }>(req);
+
+    const confirmOnly =
+      body.autoReplyConfirmed === true &&
+      !writingSecrets &&
+      body.messagingChannelId === undefined &&
+      body.checklistStep === undefined;
 
     const channel = await upsertShopLineChannel(shop.id, {
       messagingChannelId: body.messagingChannelId,
       channelSecret: body.channelSecret,
       accessToken: body.accessToken,
       checklistStep: body.checklistStep,
-      status: "pending",
-      lastErrorCode: null,
-      lastErrorMessage: null,
+      autoReplyConfirmedAt:
+        body.autoReplyConfirmed === true
+          ? new Date().toISOString()
+          : body.autoReplyConfirmed === false
+            ? null
+            : undefined,
+      ...(confirmOnly
+        ? {}
+        : {
+            status: "pending" as const,
+            lastErrorCode: null,
+            lastErrorMessage: null,
+          }),
     });
     return NextResponse.json({ channel });
   } catch (error) {
