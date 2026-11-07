@@ -51,7 +51,7 @@ export function UnblockConfirmSheet({
         onClick={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong sm:hidden" />
         <h2 className="text-base font-semibold text-zinc-50">{t("admin.unblockTitle")}</h2>
         <p className="mt-2 text-sm text-zinc-300">{summary}</p>
         <p className="mt-1 text-xs text-zinc-500">{t("admin.unblockWholeHint")}</p>

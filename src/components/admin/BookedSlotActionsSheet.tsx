@@ -62,7 +62,7 @@ export function BookedSlotActionsSheet({
         aria-labelledby="booked-slot-sheet-title"
         className="relative z-10 w-full max-w-md rounded-t-2xl bg-zinc-950 px-4 pb-8 pt-4 shadow-xl sm:rounded-2xl"
       >
-        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-cq-fill-strong sm:hidden" />
         <div className="mb-4">
           <h2 id="booked-slot-sheet-title" className="text-base font-semibold text-zinc-50">
             {confirmCancel ? t("admin.confirmCancelTitle") : t("admin.bookingActionsTitle")}

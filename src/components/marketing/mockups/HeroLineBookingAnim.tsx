@@ -305,7 +305,7 @@ export function HeroLineBookingAnim({
           >
             <span
               className={`block h-2.5 w-2.5 rounded-full transition-colors ${
-                scene === dot ? "bg-amber-400" : "bg-zinc-600"
+                scene === dot ? "bg-amber-400" : "bg-cq-fill-outline"
               }`}
               aria-hidden
             />

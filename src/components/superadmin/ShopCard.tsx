@@ -276,7 +276,7 @@ export function ShopCard({ shop, superAdminToken, onRegenerated }: ShopCardProps
       ? "bg-emerald-700/30 text-emerald-300"
       : shop.status === "pending"
         ? "bg-amber-500/20 text-amber-300"
-        : "bg-zinc-700 text-zinc-300";
+        : "bg-cq-fill-strong text-zinc-300";
 
   return (
     <div

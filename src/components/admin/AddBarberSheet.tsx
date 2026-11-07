@@ -43,7 +43,7 @@ export function AddBarberSheet({
         className="relative z-10 flex max-h-[90dvh] w-full max-w-lg flex-col rounded-t-2xl border border-zinc-800 bg-zinc-950 shadow-xl sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-zinc-700 sm:hidden" />
+        <div className="mx-auto mt-3 h-1 w-10 shrink-0 rounded-full bg-cq-fill-strong sm:hidden" />
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pt-3">
           <h2 className="text-base font-semibold">{t("admin.addBarber")}</h2>
           <label className="mt-3 flex flex-col gap-1 text-sm">

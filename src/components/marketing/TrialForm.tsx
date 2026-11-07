@@ -48,6 +48,8 @@ export function TrialForm() {
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [successId, setSuccessId] = useState<string | null>(null);
+  /** Present only if trial-leads ever returns a shop slug; otherwise owner entry. */
+  const [successSlug, setSuccessSlug] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<TrialFormField, true>>>({});
   const startedRef = useRef(false);
@@ -134,7 +136,11 @@ export function TrialForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      const json = (await res.json()) as { id?: string; error?: { code?: string } };
+      const json = (await res.json()) as {
+        id?: string;
+        slug?: string;
+        error?: { code?: string };
+      };
 
       if (!res.ok) {
         const code =
@@ -150,6 +156,11 @@ export function TrialForm() {
 
       if (json.id) {
         setSuccessId(json.id);
+        const slug =
+          typeof json.slug === "string" && /^[a-z0-9-]{2,64}$/i.test(json.slug.trim())
+            ? json.slug.trim()
+            : null;
+        setSuccessSlug(slug);
         trackMarketingEvent("trial_form_success");
       }
     } catch {
@@ -161,6 +172,7 @@ export function TrialForm() {
   }
 
   if (successId) {
+    const enterShopHref = successSlug ? `/${successSlug}/admin` : "/owner";
     return (
       <div className="flex min-h-dvh flex-col bg-zinc-950 text-zinc-50">
         <ClarityMarketingScript />
@@ -172,12 +184,21 @@ export function TrialForm() {
             <p className="mt-3 text-[15px] leading-relaxed text-zinc-300">
               {t("marketing.trial.successBody")}
             </p>
+            <Link
+              href={enterShopHref}
+              className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950 hover:bg-amber-300"
+            >
+              {t("marketing.trial.enterShop")}
+            </Link>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-400">
+              {t("marketing.trial.enterShopHint")}
+            </p>
             <a
               href={supportUrl}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackMarketingEvent("support_line_click")}
-              className="mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-amber-400 px-6 py-3 font-semibold text-zinc-950"
+              className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-[#F6AD34]/60 bg-transparent px-6 py-3 text-[15px] font-semibold text-[#F6AD34] hover:bg-[#F6AD34]/10"
             >
               {t("marketing.trial.line")}
             </a>

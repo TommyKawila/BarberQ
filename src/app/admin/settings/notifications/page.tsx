@@ -424,7 +424,7 @@ function ToggleRow({
       <span
         aria-hidden
         className={`relative h-8 w-[52px] shrink-0 rounded-full transition ${
-          on ? "bg-amber-400" : "bg-zinc-700"
+          on ? "bg-amber-400" : "bg-cq-fill-strong"
         }`}
       >
         <span

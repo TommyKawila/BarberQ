@@ -8,81 +8,163 @@ import { MarketingFooter } from "@/components/marketing/MarketingFooter";
 import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
-import { saveLiffReturnPath } from "@/lib/line/liff-return";
+import {
+  buildLiffLoginRedirectUri,
+  saveLiffReturnPath,
+} from "@/lib/line/liff-return";
 import type { OwnerShopSummary } from "@/lib/owner/owner-shops";
+import {
+  OWNER_LIFF_INIT_TIMEOUT_MS,
+  OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS,
+  ownerEntryPhase,
+} from "@/lib/owner/owner-entry-auth";
 
-type Phase = "loading" | "login" | "empty" | "pick" | "error";
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
 
 export function OwnerEntry() {
   const router = useRouter();
   const liffId = process.env.NEXT_PUBLIC_LIFF_ID;
   const mockMode = !liffId;
-  const [phase, setPhase] = useState<Phase>("loading");
+
+  const [ready, setReady] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [shopsLoading, setShopsLoading] = useState(false);
   const [shops, setShops] = useState<OwnerShopSummary[]>([]);
+  const [shopCount, setShopCount] = useState<number | null>(null);
+  const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadShops = useCallback(async (lineId?: string) => {
-    const res = await fetch("/api/owner/shops", {
-      headers: getLineAuthHeaders(mockMode ? lineId ?? MOCK_OWNER_LINE_ID : undefined),
-    });
-    if (res.status === 401) {
-      setPhase("login");
-      return;
-    }
-    if (!res.ok) {
-      setError("โหลดร้านไม่สำเร็จ กรุณาลองใหม่");
-      setPhase("error");
-      return;
-    }
-    const data = (await res.json()) as { shops: OwnerShopSummary[] };
-    const list = data.shops ?? [];
-    setShops(list);
-    if (list.length === 0) {
-      setPhase("empty");
-      return;
-    }
-    if (list.length === 1) {
-      router.replace(`/${list[0].slug}/admin`);
-      return;
-    }
-    setPhase("pick");
-  }, [mockMode, router]);
+  const loadShops = useCallback(
+    async (lineId?: string) => {
+      setShopsLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/owner/shops", {
+          headers: getLineAuthHeaders(
+            mockMode ? (lineId ?? MOCK_OWNER_LINE_ID) : undefined,
+          ),
+        });
+        if (res.status === 401) {
+          setLoggedIn(false);
+          setShopCount(null);
+          setShops([]);
+          return;
+        }
+        if (!res.ok) {
+          setError("โหลดร้านไม่สำเร็จ กรุณาลองใหม่");
+          setShopCount(null);
+          return;
+        }
+        const data = (await res.json()) as { shops: OwnerShopSummary[] };
+        const list = data.shops ?? [];
+        setShops(list);
+        setShopCount(list.length);
+        if (list.length === 1) {
+          setRedirecting(true);
+          router.replace(`/${list[0].slug}/admin`);
+        }
+      } catch {
+        setError("โหลดร้านไม่สำเร็จ กรุณาลองใหม่");
+        setShopCount(null);
+      } finally {
+        setShopsLoading(false);
+      }
+    },
+    [mockMode, router],
+  );
 
   useEffect(() => {
     let cancelled = false;
+    let loginHandoffTimer: ReturnType<typeof setTimeout> | undefined;
+
     async function boot() {
       if (mockMode) {
+        setLoggedIn(true);
+        setReady(true);
         await loadShops(MOCK_OWNER_LINE_ID);
         return;
       }
+
       try {
-        await liff.init({ liffId: liffId! });
+        await withTimeout(
+          liff.init({ liffId: liffId! }),
+          OWNER_LIFF_INIT_TIMEOUT_MS,
+          "LIFF init timeout",
+        );
         if (cancelled) return;
-        if (!liff.isLoggedIn()) {
-          setPhase("login");
+
+        const inClient = liff.isInClient();
+        if (liff.isLoggedIn()) {
+          setLoggedIn(true);
+          setReady(true);
+          await loadShops();
           return;
         }
-        await loadShops();
+
+        // Plain web / desktop Chrome: show login CTA (QR / email). Never auto-login.
+        if (!inClient) {
+          setLoggedIn(false);
+          setReady(true);
+          return;
+        }
+
+        // Inside LINE LIFF: auto-login; if handoff stalls, unblock with CTA.
+        loginHandoffTimer = setTimeout(() => {
+          if (cancelled) return;
+          setLoggedIn(false);
+          setReady(true);
+        }, OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
+
+        saveLiffReturnPath("/owner");
+        liff.login({ redirectUri: buildLiffLoginRedirectUri() });
       } catch {
+        // Match My Bookings: init failure must not spin forever — show login CTA.
         if (cancelled) return;
-        setError("เริ่ม LINE Login ไม่สำเร็จ");
-        setPhase("error");
+        setLoggedIn(false);
+        setReady(true);
       }
     }
+
     void boot();
     return () => {
       cancelled = true;
+      if (loginHandoffTimer) clearTimeout(loginHandoffTimer);
     };
   }, [liffId, loadShops, mockMode]);
 
   function onLogin() {
     if (mockMode) {
+      setLoggedIn(true);
       void loadShops(MOCK_OWNER_LINE_ID);
       return;
     }
     saveLiffReturnPath("/owner");
-    liff.login({ redirectUri: `${window.location.origin}/owner` });
+    liff.login({ redirectUri: buildLiffLoginRedirectUri() });
   }
+
+  const phase = ownerEntryPhase({
+    ready,
+    loggedIn,
+    mockMode,
+    shopsLoading,
+    shopCount,
+    error,
+    redirecting,
+  });
 
   return (
     <div className="flex min-h-dvh flex-col bg-zinc-950 text-zinc-50">
@@ -93,24 +175,30 @@ export function OwnerEntry() {
           เข้าสู่ระบบด้วย LINE ของเจ้าของร้านหรือช่างที่ผูกไว้แล้ว ระบบจะพาไปบอร์ดคิวของร้านคุณ
         </p>
 
-        {phase === "loading" ? (
-          <p className="mt-8 text-sm text-zinc-500" role="status">
-            กำลังตรวจสอบ…
+        {phase === "auth-loading" || phase === "shops-loading" || phase === "redirecting" ? (
+          <p className="mt-8 text-sm text-zinc-500" role="status" data-testid="owner-entry-loading">
+            {phase === "redirecting" ? "กำลังเข้าหน้าร้าน…" : "กำลังตรวจสอบ…"}
           </p>
         ) : null}
 
         {phase === "login" ? (
-          <button
-            type="button"
-            onClick={onLogin}
-            className="mt-8 inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
-          >
-            เข้าสู่ระบบด้วย LINE
-          </button>
+          <div className="mt-8 space-y-3" data-testid="owner-entry-login">
+            <p className="text-sm text-zinc-400">
+              ล็อกอินด้วย LINE เพื่อเข้าบอร์ดร้าน (บนคอมพิวเตอร์สแกน QR หรือใช้อีเมลได้)
+            </p>
+            <button
+              type="button"
+              onClick={onLogin}
+              data-testid="owner-entry-line-login"
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
+            >
+              เข้าสู่ระบบด้วย LINE
+            </button>
+          </div>
         ) : null}
 
         {phase === "empty" ? (
-          <div className="mt-8 space-y-4">
+          <div className="mt-8 space-y-4" data-testid="owner-entry-empty">
             <p className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-[15px] text-zinc-300">
               ยังไม่พบร้านที่ผูกกับบัญชี LINE นี้ — ทดลองใช้ฟรี 30 วันได้เลย ไม่ต้องผูกบัตร
             </p>
@@ -124,7 +212,7 @@ export function OwnerEntry() {
         ) : null}
 
         {phase === "pick" ? (
-          <ul className="mt-8 space-y-3">
+          <ul className="mt-8 space-y-3" data-testid="owner-entry-pick">
             {shops.map((shop) => (
               <li key={shop.id}>
                 <Link
@@ -140,7 +228,7 @@ export function OwnerEntry() {
         ) : null}
 
         {phase === "error" ? (
-          <div className="mt-8 space-y-4">
+          <div className="mt-8 space-y-4" data-testid="owner-entry-error">
             <p className="text-sm text-red-400" role="alert">
               {error}
             </p>

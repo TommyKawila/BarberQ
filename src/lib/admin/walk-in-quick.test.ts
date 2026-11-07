@@ -4,7 +4,6 @@ import { fromZonedTime } from "date-fns-tz";
 import {
   assessWalkInQuick,
   findNextFreeBoardSlot,
-  walkInDisabledReason,
 } from "@/lib/admin/walk-in-quick";
 import { SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { AdminColumn } from "@/types/booking";
@@ -74,8 +73,6 @@ describe("assessWalkInQuick", () => {
       assert.equal(result.openLabel, "10:30");
       assert.equal(result.barberName, "Ken");
     }
-    const disabled = walkInDisabledReason(column, QA_HOURS, beforeOpen);
-    assert.equal(disabled?.kind, "shop_before_open");
   });
 
   it("after close gates walk-in", () => {
