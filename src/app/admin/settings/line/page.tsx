@@ -9,7 +9,11 @@ import { isShopOperatorRole } from "@/lib/admin-auth";
 import { useI18n } from "@/lib/i18n/locale-provider";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { ShopLineChannelPublic } from "@/lib/line/shop-channel";
-import type { ConnectionCheck, ConnectionTestResult } from "@/lib/line/connection-test";
+import {
+  buildReloadConnectionChecks,
+  type ConnectionCheck,
+  type ConnectionTestResult,
+} from "@/lib/line/connection-test";
 
 type View = "checklist" | "keys" | "connected" | "error";
 
@@ -516,7 +520,11 @@ function ErrorCard({
       ) : null}
       <ul className="mt-3 space-y-1 text-sm">
         {result.checks
-          .filter((c) => ["channel_id", "channel_secret", "access_token"].includes(c.id))
+          .filter((c) =>
+            ["channel_id", "channel_secret", "access_token", "webhook", "test_message"].includes(
+              c.id,
+            ),
+          )
           .map((c) => (
             <li key={c.id} className={c.ok ? "text-emerald-400" : "text-red-400"}>
               {c.ok ? "✓" : "✗"} {checkLabel(c, t)}
@@ -542,28 +550,8 @@ function ConnectedCard({
   onConfirmAutoReply: () => void;
   t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string;
 }) {
-  const autoConfirmed = Boolean(channel.autoReplyConfirmedAt);
-  const list =
-    checks ??
-    ([
-      { id: "channel_id", ok: true, status: "pass", labelKey: "" },
-      { id: "webhook", ok: true, status: "pass", labelKey: "" },
-      {
-        id: "auto_reply",
-        ok: autoConfirmed,
-        status: autoConfirmed ? "pass" : "manual",
-        labelKey: autoConfirmed
-          ? "lineConnect.check.autoReply"
-          : "lineConnect.check.autoReplyManual",
-      },
-      { id: "test_message", ok: true, status: "pass", labelKey: "" },
-      {
-        id: "liff_rich_menu",
-        ok: false,
-        status: "manual",
-        labelKey: "lineConnect.check.liffRichMenuManual",
-      },
-    ] as ConnectionCheck[]);
+  // Reload: never invent ✓ for webhook/test_message — use persisted status only.
+  const list = checks ?? buildReloadConnectionChecks(channel);
   const needsAutoReplyConfirm = list.some(
     (c) => c.id === "auto_reply" && c.status === "manual",
   );
@@ -665,7 +653,9 @@ function checkLabel(
         ? t("lineConnect.check.autoReplyManual")
         : t("lineConnect.check.autoReply");
     case "test_message":
-      return t("lineConnect.check.testMessage");
+      return c.labelKey
+        ? t(c.labelKey as never)
+        : t("lineConnect.check.testMessage");
     case "liff_rich_menu":
       return c.status === "manual"
         ? t("lineConnect.check.liffRichMenuManual")

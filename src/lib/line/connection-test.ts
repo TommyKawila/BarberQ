@@ -67,6 +67,11 @@ const ERRORS: Record<
     fixHintKey: "lineConnect.fix.encryptionKey",
     failCheck: "channel_secret",
   },
+  WEBHOOK_FAIL: {
+    message: "Webhook ยังไม่พร้อมหรือตรวจไม่ผ่าน",
+    fixHintKey: "lineConnect.fix.webhook",
+    failCheck: "webhook",
+  },
 };
 
 function check(
@@ -88,6 +93,41 @@ export function resolveAutoReplyCheck(
     return check("auto_reply", "pass", "lineConnect.check.autoReply");
   }
   return check("auto_reply", "manual", "lineConnect.check.autoReplyManual");
+}
+
+/** Channel may be marked verified only when webhook passed in that test run. */
+export function webhookCheckPassed(checks: ConnectionCheck[]): boolean {
+  return checks.some((c) => c.id === "webhook" && c.status === "pass");
+}
+
+/**
+ * Checklist shown after reload (no in-memory test result).
+ * Never invent ✓ for webhook/test_message — verified implies webhook passed
+ * at save time; test_message is not persisted so it stays manual.
+ */
+export function buildReloadConnectionChecks(
+  channel: Pick<ShopLineChannelPublic, "status" | "autoReplyConfirmedAt">,
+): ConnectionCheck[] {
+  const verified = channel.status === "verified";
+  return [
+    check(
+      "channel_id",
+      verified ? "pass" : "fail",
+      "lineConnect.check.channelId",
+    ),
+    check("webhook", verified ? "pass" : "fail", "lineConnect.check.webhook"),
+    resolveAutoReplyCheck(channel.autoReplyConfirmedAt),
+    check(
+      "test_message",
+      "manual",
+      "lineConnect.check.testMessageReload",
+    ),
+    check(
+      "liff_rich_menu",
+      "manual",
+      "lineConnect.check.liffRichMenuManual",
+    ),
+  ];
 }
 
 export async function testShopLineConnection(
@@ -169,6 +209,29 @@ export async function testShopLineConnection(
     testOk = push.sent || push.skippedReason === "quota_full";
   }
   setCheck(checks, "test_message", testOk ? "pass" : "fail");
+
+  // Do not stamp verified (or show green after reload) unless webhook passed.
+  if (!webhookCheckPassed(checks)) {
+    const channel = await upsertShopLineChannel(shopId, {
+      botUserId: bot.userId,
+      botDisplayName: bot.displayName,
+      oaBasicId: bot.basicId,
+      status: "broken",
+      lastErrorCode: "WEBHOOK_FAIL",
+      lastErrorMessage: ERRORS.WEBHOOK_FAIL.message,
+      checklistStep: 3,
+    });
+    return {
+      ok: false,
+      status: "broken",
+      errorCode: "WEBHOOK_FAIL",
+      errorMessage: ERRORS.WEBHOOK_FAIL.message,
+      fixHintKey: ERRORS.WEBHOOK_FAIL.fixHintKey,
+      checks,
+      channel,
+      botDisplayName: bot.displayName,
+    };
+  }
 
   const channel = await upsertShopLineChannel(shopId, {
     botUserId: bot.userId,

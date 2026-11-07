@@ -2,7 +2,12 @@ import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { resolveAutoReplyCheck } from "@/lib/line/connection-test";
+import {
+  buildReloadConnectionChecks,
+  resolveAutoReplyCheck,
+  webhookCheckPassed,
+  type ConnectionCheck,
+} from "@/lib/line/connection-test";
 import {
   __resetShopLineChannelsForTests,
   buildShopLineChannelUpsertRow,
@@ -50,6 +55,69 @@ describe("honest connection checklist defaults", () => {
       /check\("liff_rich_menu", "manual", "lineConnect\.check\.liffRichMenuManual"\)/,
     );
     assert.doesNotMatch(src, /check\("liff_rich_menu", "pass"/);
+    assert.match(src, /webhookCheckPassed\(checks\)/);
+    assert.match(src, /WEBHOOK_FAIL/);
+  });
+});
+
+describe("verified gate + reload honesty", () => {
+  it("webhook fail means not verified gate", () => {
+    const checks: ConnectionCheck[] = [
+      {
+        id: "webhook",
+        ok: false,
+        status: "fail",
+        labelKey: "lineConnect.check.webhookUnavailable",
+      },
+      {
+        id: "test_message",
+        ok: true,
+        status: "pass",
+        labelKey: "lineConnect.check.testMessage",
+      },
+    ];
+    assert.equal(webhookCheckPassed(checks), false);
+  });
+
+  it("webhook fail → reload does not show ✓ for webhook or test_message", () => {
+    const list = buildReloadConnectionChecks({
+      status: "broken",
+      autoReplyConfirmedAt: null,
+    });
+    const webhook = list.find((c) => c.id === "webhook");
+    const testMessage = list.find((c) => c.id === "test_message");
+    assert.ok(webhook);
+    assert.equal(webhook.status, "fail");
+    assert.equal(webhook.ok, false);
+    assert.ok(testMessage);
+    assert.notEqual(testMessage.status, "pass");
+    assert.equal(testMessage.ok, false);
+  });
+
+  it("verified reload may show webhook ✓ but never invents test_message ✓", () => {
+    const list = buildReloadConnectionChecks({
+      status: "verified",
+      autoReplyConfirmedAt: "2026-01-01T00:00:00.000Z",
+    });
+    assert.equal(list.find((c) => c.id === "webhook")?.status, "pass");
+    assert.equal(list.find((c) => c.id === "test_message")?.status, "manual");
+    assert.equal(list.find((c) => c.id === "test_message")?.ok, false);
+  });
+
+  it("ConnectedCard uses buildReloadConnectionChecks (no hardcoded webhook/test pass)", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
+      "utf8",
+    );
+    assert.match(src, /buildReloadConnectionChecks/);
+    assert.doesNotMatch(
+      src,
+      /id: "webhook", ok: true, status: "pass"/,
+    );
+    assert.doesNotMatch(
+      src,
+      /id: "test_message", ok: true, status: "pass"/,
+    );
   });
 });
 
