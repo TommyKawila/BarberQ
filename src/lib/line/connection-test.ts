@@ -104,7 +104,8 @@ export async function testShopLineConnection(
     // Honest default: LINE cannot report auto-reply — never hardcode pass.
     check("auto_reply", "manual", "lineConnect.check.autoReplyManual"),
     check("test_message", "fail", "lineConnect.check.testMessage"),
-    check("liff_rich_menu", "pass", "lineConnect.check.liffRichMenu"),
+    // LINE has no API to verify LIFF/rich-menu setup — never silent-pass.
+    check("liff_rich_menu", "manual", "lineConnect.check.liffRichMenuManual"),
   ];
 
   if (!secrets.channelSecret || !secrets.accessToken) {
@@ -131,6 +132,7 @@ export async function testShopLineConnection(
   setCheck(checks, "channel_secret", "pass");
 
   // Prefer LINE's webhook endpoint API when available (active + URL set).
+  // If that API errors, never silent-pass — owner must retry.
   try {
     const hook = await getWebhookEndpoint(secrets.accessToken);
     setCheck(
@@ -139,8 +141,12 @@ export async function testShopLineConnection(
       hook.active && Boolean(hook.endpoint?.trim()) ? "pass" : "fail",
     );
   } catch {
-    // Fall back to signature probe already done — secret is valid for webhook verify.
-    setCheck(checks, "webhook", "pass");
+    setCheck(
+      checks,
+      "webhook",
+      "fail",
+      "lineConnect.check.webhookUnavailable",
+    );
   }
 
   // Auto-reply / greeting: Messaging API has no read API — only owner confirm.

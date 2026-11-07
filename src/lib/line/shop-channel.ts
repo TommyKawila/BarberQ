@@ -233,33 +233,46 @@ export async function upsertShopLineChannel(
   const supabase = createServiceClient();
   const { data, error } = await supabase
     .from("shop_line_channels")
-    .upsert(
-      {
-        shop_id: shopId,
-        messaging_channel_id: next.messagingChannelId,
-        channel_secret_enc: next.channelSecretEnc,
-        channel_secret_last4: next.channelSecretLast4,
-        access_token_enc: next.accessTokenEnc,
-        access_token_last4: next.accessTokenLast4,
-        bot_user_id: next.botUserId,
-        bot_display_name: next.botDisplayName,
-        oa_basic_id: next.oaBasicId,
-        plan: next.plan,
-        monthly_push_budget: next.monthlyPushBudget,
-        status: next.status,
-        last_verified_at: next.lastVerifiedAt,
-        last_error_code: next.lastErrorCode,
-        last_error_message: next.lastErrorMessage,
-        checklist_step: next.checklistStep,
-        auto_reply_confirmed_at: next.autoReplyConfirmedAt,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "shop_id" },
-    )
+    .upsert(buildShopLineChannelUpsertRow(existing, next), {
+      onConflict: "shop_id",
+    })
     .select("*")
     .single();
   if (error) throw new Error(error.message);
   return toPublic(mapDbRow(data as Record<string, unknown>));
+}
+
+/**
+ * Build the Supabase upsert payload. Omit `auto_reply_confirmed_at` unless the
+ * value actually changes so key-saves still work before migration 0051 runs.
+ */
+export function buildShopLineChannelUpsertRow(
+  existing: Pick<ShopLineChannelRow, "autoReplyConfirmedAt">,
+  next: ShopLineChannelRow,
+): Record<string, unknown> {
+  const row: Record<string, unknown> = {
+    shop_id: next.shopId,
+    messaging_channel_id: next.messagingChannelId,
+    channel_secret_enc: next.channelSecretEnc,
+    channel_secret_last4: next.channelSecretLast4,
+    access_token_enc: next.accessTokenEnc,
+    access_token_last4: next.accessTokenLast4,
+    bot_user_id: next.botUserId,
+    bot_display_name: next.botDisplayName,
+    oa_basic_id: next.oaBasicId,
+    plan: next.plan,
+    monthly_push_budget: next.monthlyPushBudget,
+    status: next.status,
+    last_verified_at: next.lastVerifiedAt,
+    last_error_code: next.lastErrorCode,
+    last_error_message: next.lastErrorMessage,
+    checklist_step: next.checklistStep,
+    updated_at: new Date().toISOString(),
+  };
+  if (next.autoReplyConfirmedAt !== existing.autoReplyConfirmedAt) {
+    row.auto_reply_confirmed_at = next.autoReplyConfirmedAt;
+  }
+  return row;
 }
 
 async function loadFullRow(shopId: string): Promise<ShopLineChannelRow> {

@@ -1,9 +1,13 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { resolveAutoReplyCheck } from "@/lib/line/connection-test";
 import {
   __resetShopLineChannelsForTests,
+  buildShopLineChannelUpsertRow,
   upsertShopLineChannel,
+  type ShopLineChannelRow,
 } from "@/lib/line/shop-channel";
 
 const shopId = "11111111-1111-4111-8111-111111111111";
@@ -29,6 +33,26 @@ describe("resolveAutoReplyCheck", () => {
   });
 });
 
+describe("honest connection checklist defaults", () => {
+  it("webhook API errors become fail (not pass); LIFF+rich menu starts manual", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/lib/line/connection-test.ts"),
+      "utf8",
+    );
+    assert.match(src, /lineConnect\.check\.webhookUnavailable/);
+    assert.match(src, /setCheck\(\s*checks,\s*"webhook",\s*"fail"/);
+    assert.doesNotMatch(
+      src,
+      /catch \{\s*\/\/ Fall back[\s\S]*?setCheck\(\s*checks,\s*"webhook",\s*"pass"/,
+    );
+    assert.match(
+      src,
+      /check\("liff_rich_menu", "manual", "lineConnect\.check\.liffRichMenuManual"\)/,
+    );
+    assert.doesNotMatch(src, /check\("liff_rich_menu", "pass"/);
+  });
+});
+
 describe("auto-reply confirm persistence", () => {
   it("stores and clears autoReplyConfirmedAt around secret rotation", async () => {
     process.env.APP_ENCRYPTION_KEY = "0123456789abcdef0123456789abcdef";
@@ -49,5 +73,60 @@ describe("auto-reply confirm persistence", () => {
       autoReplyConfirmedAt: "2026-02-01T00:00:00.000Z",
     });
     assert.equal(confirmed.autoReplyConfirmedAt, "2026-02-01T00:00:00.000Z");
+  });
+});
+
+describe("buildShopLineChannelUpsertRow", () => {
+  const base = {
+    shopId,
+    messagingChannelId: "1",
+    channelSecretLast4: "cret",
+    accessTokenLast4: "oken",
+    botUserId: null,
+    botDisplayName: null,
+    oaBasicId: null,
+    plan: "free" as const,
+    monthlyPushBudget: 300,
+    status: "pending" as const,
+    lastVerifiedAt: null,
+    lastErrorCode: null,
+    lastErrorMessage: null,
+    checklistStep: 0,
+    autoReplyConfirmedAt: null,
+    hasSecret: true,
+    hasAccessToken: true,
+    channelSecretEnc: "enc",
+    accessTokenEnc: "enc",
+  } satisfies ShopLineChannelRow;
+
+  it("omits auto_reply_confirmed_at when unchanged (safe before migration 0051)", () => {
+    const existing = { ...base, autoReplyConfirmedAt: null };
+    const next = { ...base, autoReplyConfirmedAt: null, status: "verified" as const };
+    const row = buildShopLineChannelUpsertRow(existing, next);
+    assert.equal("auto_reply_confirmed_at" in row, false);
+    assert.equal(row.status, "verified");
+  });
+
+  it("includes auto_reply_confirmed_at only when the value changes", () => {
+    const existing = { ...base, autoReplyConfirmedAt: null };
+    const next = {
+      ...base,
+      autoReplyConfirmedAt: "2026-03-01T00:00:00.000Z",
+    };
+    const row = buildShopLineChannelUpsertRow(existing, next);
+    assert.equal(row.auto_reply_confirmed_at, "2026-03-01T00:00:00.000Z");
+  });
+});
+
+describe("line settings checklist colors", () => {
+  it("failed items use danger token mapping; manual uses amber token", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
+      "utf8",
+    );
+    assert.match(src, /text-red-400/);
+    assert.match(src, /text-amber-400/);
+    assert.doesNotMatch(src, /text-orange-400/);
+    assert.doesNotMatch(src, /text-amber-300/);
   });
 });

@@ -518,7 +518,7 @@ function ErrorCard({
         {result.checks
           .filter((c) => ["channel_id", "channel_secret", "access_token"].includes(c.id))
           .map((c) => (
-            <li key={c.id} className={c.ok ? "text-emerald-400" : "text-orange-400"}>
+            <li key={c.id} className={c.ok ? "text-emerald-400" : "text-red-400"}>
               {c.ok ? "✓" : "✗"} {checkLabel(c, t)}
             </li>
           ))}
@@ -557,7 +557,12 @@ function ConnectedCard({
           : "lineConnect.check.autoReplyManual",
       },
       { id: "test_message", ok: true, status: "pass", labelKey: "" },
-      { id: "liff_rich_menu", ok: true, status: "pass", labelKey: "" },
+      {
+        id: "liff_rich_menu",
+        ok: false,
+        status: "manual",
+        labelKey: "lineConnect.check.liffRichMenuManual",
+      },
     ] as ConnectionCheck[]);
   const needsAutoReplyConfirm = list.some(
     (c) => c.id === "auto_reply" && c.status === "manual",
@@ -580,7 +585,9 @@ function ConnectedCard({
             return (
               <li
                 key={c.id}
-                className={manual ? "text-amber-300" : c.ok ? "text-emerald-400" : "text-orange-400"}
+                className={
+                  manual ? "text-amber-400" : c.ok ? "text-emerald-400" : "text-red-400"
+                }
               >
                 {manual ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t, channel.botDisplayName)}
               </li>
@@ -650,7 +657,9 @@ function checkLabel(
     case "access_token":
       return t("lineConnect.check.accessToken");
     case "webhook":
-      return t("lineConnect.check.webhook");
+      return c.labelKey
+        ? t(c.labelKey as never)
+        : t("lineConnect.check.webhook");
     case "auto_reply":
       return c.status === "manual"
         ? t("lineConnect.check.autoReplyManual")
@@ -658,7 +667,9 @@ function checkLabel(
     case "test_message":
       return t("lineConnect.check.testMessage");
     case "liff_rich_menu":
-      return t("lineConnect.check.liffRichMenu");
+      return c.status === "manual"
+        ? t("lineConnect.check.liffRichMenuManual")
+        : t("lineConnect.check.liffRichMenu");
     default:
       return c.id;
   }
