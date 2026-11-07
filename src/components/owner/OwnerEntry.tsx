@@ -9,7 +9,10 @@ import { MarketingNav } from "@/components/marketing/MarketingNav";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import {
-  buildLiffLoginRedirectUri,
+  buildOwnerEntryLoginRedirectUri,
+  clearLiffCallbackGuard,
+  isLiffOAuthCallback,
+  isOwnerBrowserMismatchSearch,
   saveLiffReturnPath,
 } from "@/lib/line/liff-return";
 import type { OwnerShopSummary } from "@/lib/owner/owner-shops";
@@ -18,6 +21,9 @@ import {
   OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS,
   ownerEntryPhase,
 } from "@/lib/owner/owner-entry-auth";
+
+const BROWSER_MISMATCH_MESSAGE =
+  "ล็อกอินไม่สำเร็จ เพราะเปิดคนละเบราว์เซอร์ กดล็อกอินใหม่ในเบราว์เซอร์เดียวกัน";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -47,6 +53,8 @@ export function OwnerEntry() {
   const [shopCount, setShopCount] = useState<number | null>(null);
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Safari→Chrome OAuth handoff: show mismatch + single retry CTA (no auto re-login). */
+  const [browserMismatch, setBrowserMismatch] = useState(false);
 
   const loadShops = useCallback(
     async (lineId?: string) => {
@@ -92,6 +100,18 @@ export function OwnerEntry() {
     let loginHandoffTimer: ReturnType<typeof setTimeout> | undefined;
 
     async function boot() {
+      if (typeof window !== "undefined" && isOwnerBrowserMismatchSearch(window.location.search)) {
+        setBrowserMismatch(true);
+        setError(BROWSER_MISMATCH_MESSAGE);
+        setLoggedIn(false);
+        setReady(true);
+        // Drop the flag so a successful retry does not stick on this screen.
+        const url = new URL(window.location.href);
+        url.searchParams.delete("login_error");
+        window.history.replaceState({}, "", url.pathname + url.search);
+        return;
+      }
+
       if (mockMode) {
         setLoggedIn(true);
         setReady(true);
@@ -100,6 +120,7 @@ export function OwnerEntry() {
       }
 
       try {
+        const hadOAuthCallback = isLiffOAuthCallback(window.location.search);
         await withTimeout(
           liff.init({ liffId: liffId! }),
           OWNER_LIFF_INIT_TIMEOUT_MS,
@@ -112,6 +133,16 @@ export function OwnerEntry() {
           setLoggedIn(true);
           setReady(true);
           await loadShops();
+          return;
+        }
+
+        // OAuth landed here (or was forwarded) but session is missing —
+        // typical when LINE opened the callback in a different browser.
+        if (hadOAuthCallback) {
+          setBrowserMismatch(true);
+          setError(BROWSER_MISMATCH_MESSAGE);
+          setLoggedIn(false);
+          setReady(true);
           return;
         }
 
@@ -130,10 +161,18 @@ export function OwnerEntry() {
         }, OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
 
         saveLiffReturnPath("/owner");
-        liff.login({ redirectUri: buildLiffLoginRedirectUri() });
+        // Path-specific /owner redirectUri — keep #50 cross-browser resilience.
+        liff.login({ redirectUri: buildOwnerEntryLoginRedirectUri() });
       } catch {
         // Match My Bookings: init failure must not spin forever — show login CTA.
         if (cancelled) return;
+        if (isLiffOAuthCallback(window.location.search)) {
+          setBrowserMismatch(true);
+          setError(BROWSER_MISMATCH_MESSAGE);
+          setLoggedIn(false);
+          setReady(true);
+          return;
+        }
         setLoggedIn(false);
         setReady(true);
       }
@@ -148,12 +187,19 @@ export function OwnerEntry() {
 
   function onLogin() {
     if (mockMode) {
+      setBrowserMismatch(false);
       setLoggedIn(true);
       void loadShops(MOCK_OWNER_LINE_ID);
       return;
     }
+    clearLiffCallbackGuard();
+    setBrowserMismatch(false);
+    setError(null);
+    setReady(false);
     saveLiffReturnPath("/owner");
-    liff.login({ redirectUri: buildLiffLoginRedirectUri() });
+    // Path-specific redirectUri: callback can complete on /owner without the
+    // Safari cookie when LINE honors this URI (Endpoint URL + /owner).
+    liff.login({ redirectUri: buildOwnerEntryLoginRedirectUri() });
   }
 
   const phase = ownerEntryPhase({
@@ -162,7 +208,8 @@ export function OwnerEntry() {
     mockMode,
     shopsLoading,
     shopCount,
-    error,
+    // Do not treat browser-mismatch copy as a generic error phase.
+    error: browserMismatch ? null : error,
     redirecting,
   });
 
@@ -175,13 +222,33 @@ export function OwnerEntry() {
           เข้าสู่ระบบด้วย LINE ของเจ้าของร้านหรือช่างที่ผูกไว้แล้ว ระบบจะพาไปบอร์ดคิวของร้านคุณ
         </p>
 
-        {phase === "auth-loading" || phase === "shops-loading" || phase === "redirecting" ? (
+        {browserMismatch ? (
+          <div className="mt-8 space-y-4" data-testid="owner-entry-browser-mismatch">
+            <p
+              className="rounded-xl border border-amber-500/40 bg-amber-400/10 p-4 text-[15px] text-amber-100"
+              role="alert"
+            >
+              {error ?? BROWSER_MISMATCH_MESSAGE}
+            </p>
+            <button
+              type="button"
+              onClick={onLogin}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
+              data-testid="owner-entry-line-login-retry"
+            >
+              เข้าสู่ระบบด้วย LINE
+            </button>
+          </div>
+        ) : null}
+
+        {!browserMismatch &&
+        (phase === "auth-loading" || phase === "shops-loading" || phase === "redirecting") ? (
           <p className="mt-8 text-sm text-zinc-500" role="status" data-testid="owner-entry-loading">
             {phase === "redirecting" ? "กำลังเข้าหน้าร้าน…" : "กำลังตรวจสอบ…"}
           </p>
         ) : null}
 
-        {phase === "login" ? (
+        {!browserMismatch && phase === "login" ? (
           <div className="mt-8 space-y-3" data-testid="owner-entry-login">
             <p className="text-sm text-zinc-400">
               ล็อกอินด้วย LINE เพื่อเข้าบอร์ดร้าน (บนคอมพิวเตอร์สแกน QR หรือใช้อีเมลได้)
@@ -197,7 +264,7 @@ export function OwnerEntry() {
           </div>
         ) : null}
 
-        {phase === "empty" ? (
+        {!browserMismatch && phase === "empty" ? (
           <div className="mt-8 space-y-4" data-testid="owner-entry-empty">
             <p className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-[15px] text-zinc-300">
               ยังไม่พบร้านที่ผูกกับบัญชี LINE นี้ — ทดลองใช้ฟรี 30 วันได้เลย ไม่ต้องผูกบัตร
@@ -211,7 +278,7 @@ export function OwnerEntry() {
           </div>
         ) : null}
 
-        {phase === "pick" ? (
+        {!browserMismatch && phase === "pick" ? (
           <ul className="mt-8 space-y-3" data-testid="owner-entry-pick">
             {shops.map((shop) => (
               <li key={shop.id}>
@@ -227,7 +294,7 @@ export function OwnerEntry() {
           </ul>
         ) : null}
 
-        {phase === "error" ? (
+        {!browserMismatch && phase === "error" ? (
           <div className="mt-8 space-y-4" data-testid="owner-entry-error">
             <p className="text-sm text-red-400" role="alert">
               {error}
