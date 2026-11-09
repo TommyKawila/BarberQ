@@ -1,11 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
-  allowsPlatformAddFriendFallback,
   buildLineAddFriendUrl,
   resolveShopAddFriendUrl,
 } from "@/lib/line/add-friend-url";
-import { FOUNDER_QA_MANIFEST } from "@/lib/founder-qa/manifest";
 
 describe("buildLineAddFriendUrl", () => {
   it("builds line.me add-friend URL from @basicId", () => {
@@ -32,67 +32,27 @@ describe("buildLineAddFriendUrl", () => {
 });
 
 describe("resolveShopAddFriendUrl", () => {
-  it("prefers shop oaBasicId over global fallback", () => {
+  it("uses shop oaBasicId only", () => {
     assert.equal(
-      resolveShopAddFriendUrl({
-        oaBasicId: "@shopoa",
-        globalFallback: "https://line.me/R/ti/p/@global",
-        allowGlobalFallback: true,
-      }),
+      resolveShopAddFriendUrl({ oaBasicId: "@shopoa" }),
       "https://line.me/R/ti/p/@shopoa",
     );
   });
 
-  it("falls back to global only when allowGlobalFallback is true (demo/test)", () => {
-    assert.equal(
-      resolveShopAddFriendUrl({
-        oaBasicId: null,
-        globalFallback: "https://line.me/R/ti/p/@demo",
-        allowGlobalFallback: true,
-      }),
-      "https://line.me/R/ti/p/@demo",
-    );
+  it("returns null without oaBasicId — no platform OA fallback", () => {
+    assert.equal(resolveShopAddFriendUrl({ oaBasicId: null }), null);
+    assert.equal(resolveShopAddFriendUrl({ oaBasicId: "" }), null);
+    assert.equal(resolveShopAddFriendUrl({}), null);
   });
 
-  it("real shop with no basicId gets null — never platform OA URL", () => {
-    assert.equal(
-      resolveShopAddFriendUrl({
-        oaBasicId: null,
-        globalFallback: "https://line.me/R/ti/p/@platform",
-        allowGlobalFallback: false,
-      }),
-      null,
+  it("module has no platform fallback helpers or NEXT_PUBLIC_LINE_OA_ADD_URL", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/lib/line/add-friend-url.ts"),
+      "utf8",
     );
-    assert.equal(
-      resolveShopAddFriendUrl({
-        oaBasicId: null,
-        globalFallback: "https://line.me/R/ti/p/@platform",
-      }),
-      null,
-    );
-  });
-
-  it("returns null when neither is available", () => {
-    assert.equal(
-      resolveShopAddFriendUrl({
-        oaBasicId: null,
-        globalFallback: "  ",
-        allowGlobalFallback: true,
-      }),
-      null,
-    );
-  });
-});
-
-describe("allowsPlatformAddFriendFallback", () => {
-  it("allows demo flag / demo slug and Founder QA pilot slug only", () => {
-    assert.equal(allowsPlatformAddFriendFallback({ slug: "clipperqdemo", is_demo: true }), true);
-    assert.equal(allowsPlatformAddFriendFallback({ slug: "clipperqdemo" }), true);
-    assert.equal(
-      allowsPlatformAddFriendFallback({ slug: FOUNDER_QA_MANIFEST.shop.slug }),
-      true,
-    );
-    assert.equal(allowsPlatformAddFriendFallback({ slug: "realsalon" }), false);
-    assert.equal(allowsPlatformAddFriendFallback({ slug: "phinxstudio" }), false);
+    assert.doesNotMatch(src, /allowsPlatformAddFriendFallback/);
+    assert.doesNotMatch(src, /NEXT_PUBLIC_LINE_OA_ADD_URL/);
+    assert.doesNotMatch(src, /globalFallback/);
+    assert.doesNotMatch(src, /allowGlobalFallback/);
   });
 });

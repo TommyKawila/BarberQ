@@ -21,7 +21,7 @@ interface ShopBrandContextValue {
   remindersEnabled: boolean;
   reminderLeadMinutes: number;
   bookingAdvanceDays: number;
-  /** Shop OA add-friend link (basicId), else global demo fallback. */
+  /** Shop OA add-friend link from that shop's oa_basic_id only (null hides CTA). */
   lineAddFriendUrl: string | null;
   loading: boolean;
   setLogoDataUrl: (value: string | null) => void;

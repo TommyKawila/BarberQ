@@ -600,6 +600,15 @@ function ConnectedCard({
               <span className="mt-1 block text-xs text-zinc-400">
                 {t("lineConnect.autoReplyConfirmHint")}
               </span>
+              <a
+                href="https://developers.line.biz/en/docs/messaging-api/building-bot/#greeting-messages-and-auto-reply-messages"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 inline-block text-xs text-amber-400 underline underline-offset-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {t("lineConnect.autoReplyHelpLink")}
+              </a>
             </span>
           </label>
         ) : null}
@@ -635,6 +644,17 @@ function checkLabel(
   t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string,
   sender?: string | null,
 ) {
+  if (c.status === "manual" && c.labelKey === "lineConnect.check.notCheckedYet") {
+    const name =
+      c.id === "webhook"
+        ? t("lineConnect.check.webhook")
+        : c.id === "test_message"
+          ? t("lineConnect.check.testMessage")
+          : c.id === "channel_id"
+            ? t("lineConnect.check.channelId")
+            : c.id;
+    return `${name} — ${t("lineConnect.check.notCheckedYet")}`;
+  }
   switch (c.id) {
     case "channel_id":
       return sender

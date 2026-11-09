@@ -81,27 +81,34 @@ describe("verified gate + reload honesty", () => {
 
   it("webhook fail → reload does not show ✓ for webhook or test_message", () => {
     const list = buildReloadConnectionChecks({
-      status: "broken",
       autoReplyConfirmedAt: null,
     });
     const webhook = list.find((c) => c.id === "webhook");
     const testMessage = list.find((c) => c.id === "test_message");
     assert.ok(webhook);
-    assert.equal(webhook.status, "fail");
+    assert.notEqual(webhook.status, "pass");
     assert.equal(webhook.ok, false);
+    assert.equal(webhook.status, "manual");
+    assert.equal(webhook.labelKey, "lineConnect.check.notCheckedYet");
     assert.ok(testMessage);
     assert.notEqual(testMessage.status, "pass");
     assert.equal(testMessage.ok, false);
   });
 
-  it("verified reload may show webhook ✓ but never invents test_message ✓", () => {
+  it("verified reload never invents webhook/test_message ✓ — shows ยังไม่ได้ตรวจ", () => {
     const list = buildReloadConnectionChecks({
-      status: "verified",
       autoReplyConfirmedAt: "2026-01-01T00:00:00.000Z",
     });
-    assert.equal(list.find((c) => c.id === "webhook")?.status, "pass");
+    assert.equal(list.find((c) => c.id === "webhook")?.status, "manual");
+    assert.equal(list.find((c) => c.id === "webhook")?.ok, false);
+    assert.equal(
+      list.find((c) => c.id === "webhook")?.labelKey,
+      "lineConnect.check.notCheckedYet",
+    );
     assert.equal(list.find((c) => c.id === "test_message")?.status, "manual");
     assert.equal(list.find((c) => c.id === "test_message")?.ok, false);
+    assert.equal(list.find((c) => c.id === "channel_id")?.status, "manual");
+    assert.equal(list.find((c) => c.id === "auto_reply")?.status, "pass");
   });
 
   it("ConnectedCard uses buildReloadConnectionChecks (no hardcoded webhook/test pass)", () => {
@@ -118,6 +125,7 @@ describe("verified gate + reload honesty", () => {
       src,
       /id: "test_message", ok: true, status: "pass"/,
     );
+    assert.match(src, /lineConnect\.autoReplyHelpLink/);
   });
 });
 

@@ -1,16 +1,9 @@
-import { afterEach, describe, it } from "node:test";
+import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { resolvePublicLineAddFriendUrl } from "@/lib/line/shop-add-friend";
 import type { ShopLineChannelPublic } from "@/lib/line/shop-channel";
-
-const originalEnv = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL;
-
-afterEach(() => {
-  if (originalEnv === undefined) delete process.env.NEXT_PUBLIC_LINE_OA_ADD_URL;
-  else process.env.NEXT_PUBLIC_LINE_OA_ADD_URL = originalEnv;
-});
 
 function channelStub(
   oaBasicId: string | null,
@@ -38,7 +31,6 @@ function channelStub(
 
 describe("resolvePublicLineAddFriendUrl", () => {
   it("real shop without oa_basic_id returns null (hides add-friend)", async () => {
-    process.env.NEXT_PUBLIC_LINE_OA_ADD_URL = "https://line.me/R/ti/p/@platform";
     const url = await resolvePublicLineAddFriendUrl(
       { id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", slug: "realsalon", is_demo: false },
       { getChannel: async () => channelStub(null) },
@@ -47,7 +39,6 @@ describe("resolvePublicLineAddFriendUrl", () => {
   });
 
   it("returns null when getShopLineChannel throws (booking settings still usable)", async () => {
-    process.env.NEXT_PUBLIC_LINE_OA_ADD_URL = "https://line.me/R/ti/p/@platform";
     const url = await resolvePublicLineAddFriendUrl(
       { id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", slug: "realsalon", is_demo: false },
       {
@@ -59,9 +50,8 @@ describe("resolvePublicLineAddFriendUrl", () => {
     assert.equal(url, null);
   });
 
-  it("demo shop may use platform fallback when channel has no basicId", async () => {
-    process.env.NEXT_PUBLIC_LINE_OA_ADD_URL = "https://line.me/R/ti/p/@demo";
-    const url = await resolvePublicLineAddFriendUrl(
+  it("demo/test shop without oa_basic_id also returns null — no platform OA", async () => {
+    const demo = await resolvePublicLineAddFriendUrl(
       {
         id: "c1a55e00-d300-4000-a000-000000000001",
         slug: "clipperqdemo",
@@ -69,11 +59,20 @@ describe("resolvePublicLineAddFriendUrl", () => {
       },
       { getChannel: async () => channelStub(null) },
     );
-    assert.equal(url, "https://line.me/R/ti/p/@demo");
+    assert.equal(demo, null);
+
+    const qa = await resolvePublicLineAddFriendUrl(
+      {
+        id: "c1a55e00-d300-4000-a000-000000000002",
+        slug: "barberqpilottest",
+        is_demo: false,
+      },
+      { getChannel: async () => channelStub(null) },
+    );
+    assert.equal(qa, null);
   });
 
   it("uses shop oa_basic_id when present", async () => {
-    process.env.NEXT_PUBLIC_LINE_OA_ADD_URL = "https://line.me/R/ti/p/@platform";
     const url = await resolvePublicLineAddFriendUrl(
       { id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", slug: "realsalon", is_demo: false },
       { getChannel: async () => channelStub("@myshop") },
@@ -81,12 +80,21 @@ describe("resolvePublicLineAddFriendUrl", () => {
     assert.equal(url, "https://line.me/R/ti/p/@myshop");
   });
 
-  it("public settings route uses the safe helper", () => {
+  it("helper and settings route have no platform fallback path", () => {
+    const helper = readFileSync(
+      resolve(process.cwd(), "src/lib/line/shop-add-friend.ts"),
+      "utf8",
+    );
+    assert.doesNotMatch(helper, /NEXT_PUBLIC_LINE_OA_ADD_URL/);
+    assert.doesNotMatch(helper, /allowsPlatformAddFriendFallback/);
+    assert.doesNotMatch(helper, /globalFallback/);
+
     const src = readFileSync(
       resolve(process.cwd(), "src/app/api/[shop]/settings/route.ts"),
       "utf8",
     );
     assert.match(src, /resolvePublicLineAddFriendUrl/);
     assert.doesNotMatch(src, /getShopLineChannel/);
+    assert.doesNotMatch(src, /NEXT_PUBLIC_LINE_OA_ADD_URL/);
   });
 });

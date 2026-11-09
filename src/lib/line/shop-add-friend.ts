@@ -1,7 +1,4 @@
-import {
-  allowsPlatformAddFriendFallback,
-  resolveShopAddFriendUrl,
-} from "@/lib/line/add-friend-url";
+import { resolveShopAddFriendUrl } from "@/lib/line/add-friend-url";
 import {
   getShopLineChannel,
   type ShopLineChannelPublic,
@@ -12,6 +9,7 @@ type ChannelLookup = (shopId: string) => Promise<ShopLineChannelPublic | null>;
 /**
  * Public booking settings helper: never throw if LINE channel lookup fails —
  * hide the add-friend button instead of 500-ing the whole page.
+ * Only returns a URL when the shop has its own oa_basic_id.
  */
 export async function resolvePublicLineAddFriendUrl(
   shop: {
@@ -29,9 +27,5 @@ export async function resolvePublicLineAddFriendUrl(
   } catch {
     oaBasicId = null;
   }
-  return resolveShopAddFriendUrl({
-    oaBasicId,
-    globalFallback: process.env.NEXT_PUBLIC_LINE_OA_ADD_URL,
-    allowGlobalFallback: allowsPlatformAddFriendFallback(shop),
-  });
+  return resolveShopAddFriendUrl({ oaBasicId });
 }

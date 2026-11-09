@@ -101,27 +101,19 @@ export function webhookCheckPassed(checks: ConnectionCheck[]): boolean {
 }
 
 /**
- * Checklist shown after reload (no in-memory test result).
- * Never invent ✓ for webhook/test_message — verified implies webhook passed
- * at save time; test_message is not persisted so it stays manual.
+ * Checklist shown after reload (no in-memory / latest test result).
+ * Never invent ✓/✗ for webhook or test_message — those marks exist only from
+ * the latest real connection test. Show "ยังไม่ได้ตรวจ" (manual) instead;
+ * auto_reply may stay pass only because the owner confirm is persisted.
  */
 export function buildReloadConnectionChecks(
-  channel: Pick<ShopLineChannelPublic, "status" | "autoReplyConfirmedAt">,
+  channel: Pick<ShopLineChannelPublic, "autoReplyConfirmedAt">,
 ): ConnectionCheck[] {
-  const verified = channel.status === "verified";
   return [
-    check(
-      "channel_id",
-      verified ? "pass" : "fail",
-      "lineConnect.check.channelId",
-    ),
-    check("webhook", verified ? "pass" : "fail", "lineConnect.check.webhook"),
+    check("channel_id", "manual", "lineConnect.check.notCheckedYet"),
+    check("webhook", "manual", "lineConnect.check.notCheckedYet"),
     resolveAutoReplyCheck(channel.autoReplyConfirmedAt),
-    check(
-      "test_message",
-      "manual",
-      "lineConnect.check.testMessageReload",
-    ),
+    check("test_message", "manual", "lineConnect.check.notCheckedYet"),
     check(
       "liff_rich_menu",
       "manual",
