@@ -524,7 +524,11 @@ function ErrorCard({
   return (
     <section className="rounded-2xl border border-orange-500/60 bg-zinc-900 p-4">
       <p className="text-base font-semibold text-zinc-50">{t("lineConnect.errorTitle")}</p>
-      <p className="mt-1 text-sm text-zinc-300">{result.errorMessage}</p>
+      <p className="mt-1 text-sm text-zinc-300">
+        {result.errorMessage?.startsWith("lineConnect.")
+          ? t(result.errorMessage as never)
+          : result.errorMessage}
+      </p>
       {result.fixHintKey ? (
         <p className="mt-2 text-sm text-amber-400">{t(result.fixHintKey as never)}</p>
       ) : null}
@@ -540,11 +544,23 @@ function ErrorCard({
               c.id,
             ),
           )
-          .map((c) => (
-            <li key={c.id} className={c.ok ? "text-emerald-400" : "text-red-400"}>
-              {c.ok ? "✓" : "✗"} {checkLabel(c, t)}
-            </li>
-          ))}
+          .map((c) => {
+            const skipped = c.status === "skipped" || c.status === "manual";
+            return (
+              <li
+                key={c.id}
+                className={
+                  skipped
+                    ? "text-zinc-400"
+                    : c.ok
+                      ? "text-emerald-400"
+                      : "text-red-400"
+                }
+              >
+                {skipped ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t)}
+              </li>
+            );
+          })}
       </ul>
     </section>
   );
@@ -585,15 +601,22 @@ function ConnectedCard({
         ) : null}
         <ul className="mt-4 space-y-1 text-left text-sm">
           {list.map((c) => {
-            const manual = c.status === "manual";
+            const pending = c.status === "manual" || c.status === "skipped";
             return (
               <li
                 key={c.id}
                 className={
-                  manual ? "text-amber-400" : c.ok ? "text-emerald-400" : "text-red-400"
+                  c.status === "skipped"
+                    ? "text-zinc-400"
+                    : c.status === "manual"
+                      ? "text-amber-400"
+                      : c.ok
+                        ? "text-emerald-400"
+                        : "text-red-400"
                 }
               >
-                {manual ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t, channel.botDisplayName)}
+                {pending ? "○" : c.ok ? "✓" : "✗"}{" "}
+                {checkLabel(c, t, channel.botDisplayName)}
               </li>
             );
           })}
@@ -661,13 +684,16 @@ function checkLabel(
   sender?: string | null,
 ) {
   if (
-    c.status === "manual" &&
-    (c.labelKey === "lineConnect.check.channelIdNotChecked" ||
-      c.labelKey === "lineConnect.check.webhookNotChecked" ||
-      c.labelKey === "lineConnect.check.testMessageNotChecked" ||
-      c.labelKey === "lineConnect.check.notCheckedYet")
+    c.status === "skipped" ||
+    (c.status === "manual" &&
+      (c.labelKey === "lineConnect.check.channelIdNotChecked" ||
+        c.labelKey === "lineConnect.check.channelSecretNotChecked" ||
+        c.labelKey === "lineConnect.check.accessTokenNotChecked" ||
+        c.labelKey === "lineConnect.check.webhookNotChecked" ||
+        c.labelKey === "lineConnect.check.testMessageNotChecked" ||
+        c.labelKey === "lineConnect.check.notCheckedYet"))
   ) {
-    return t(c.labelKey as never);
+    return t((c.labelKey || "lineConnect.check.notCheckedYet") as never);
   }
   switch (c.id) {
     case "channel_id":
@@ -675,8 +701,14 @@ function checkLabel(
         ? t("lineConnect.check.keysOk").replace("{name}", sender)
         : t("lineConnect.check.channelId");
     case "channel_secret":
+      if (c.labelKey === "lineConnect.check.channelSecretMissing") {
+        return t(c.labelKey as never);
+      }
       return c.ok ? t("lineConnect.check.channelSecret") : t("lineConnect.check.secretBad");
     case "access_token":
+      if (c.labelKey === "lineConnect.check.accessTokenMissing") {
+        return t(c.labelKey as never);
+      }
       return t("lineConnect.check.accessToken");
     case "webhook":
       return c.labelKey
