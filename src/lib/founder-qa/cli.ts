@@ -9,7 +9,7 @@ import { evaluateVerify } from "@/lib/founder-qa/verify";
 
 export const RESET_BANNER = [
   "Founder QA reset",
-  "Target: BarberQ Pilot Test (barberqpilottest)",
+  "Target: ClipperQ Pilot Test (barberqpilottest)",
   "Scope: QA fixture data for this tenant only",
   "Production and PHINX are not targets",
   "Preserves: Founder Owner relationship and isolation sentinel",
@@ -19,7 +19,7 @@ export const OWNER_CLAIM_BANNER = [
   "Founder QA Owner-claim reset",
   "This is not the normal daily reset.",
   "",
-  "Target: BarberQ Pilot Test (barberqpilottest)",
+  "Target: ClipperQ Pilot Test (barberqpilottest)",
   "Resulting state: no active Founder Owner relationship",
   "Next step: complete real Owner claim using Founder Owner LINE",
   "Production and PHINX are not targets",

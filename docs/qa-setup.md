@@ -5,7 +5,7 @@
 
 | | |
 |---|---|
-| ร้านทดสอบใน QA | slug `barberqpilottest` (ชื่อ BarberQ Pilot Test) |
+| ร้านทดสอบใน QA | slug `barberqpilottest` (ชื่อ ClipperQ Pilot Test) |
 | โค้ด bootstrap | `supabase/founder-qa/bootstrap.sql` |
 | คำสั่งเช็คพร้อม | `npm run qa:verify` (ต้องตั้ง `BARBERQ_ENV=founder_qa`) |
 | Runbook ละเอียด | `docs/barberqx-os/runbooks/FQA-00-21-FOUNDER-QA.md` |
@@ -166,7 +166,6 @@ Endpoint URL ใน Console ต้องชี้ไปที่ **โดเม�
 | `BARBERQ_ENV` | ใช่สำหรับ QA tooling | ใส่ค่าคงที่ `founder_qa` | **ใช่** (Production ใช้ `production` หรือว่างตามที่ตั้ง) | บังคับก่อน `qa:verify` / `qa:reset` |
 | `QA_E2E_SECRET` | สำหรับ UI crawl (admin) | สร้างรหัสสุ่มยาว ๆ | **ใช่ — ห้ามใส่ Production** | เปิด `POST /api/qa/e2e-session` เมื่อโปรเจกต์คือ barberq-qa เท่านั้น |
 | `LINE_CHANNEL_ACCESS_TOKEN` | ไม่บังคับ | Messaging API QA | **ใช่** ถ้าใช้ | ไม่มี = จองได้แต่ไม่ส่ง LINE |
-| `NEXT_PUBLIC_LINE_OA_ADD_URL` | ไม่บังคับ | ลิงก์ Add Friend ของ OA QA | ควรเป็นของ QA | ไม่มี = ซ่อนปุ่มเพิ่มเพื่อน |
 | `NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL` | ไม่บังคับ | ลิงก์ซัพพอร์ต | ตามต้องการ | หน้า marketing / trial |
 | `ADMIN_SECRET_KEY` | ไม่ใช้ | — | — | ประกาศใน `.env.example` แต่โค้ดไม่ได้อ่าน |
 | `LINE_CHANNEL_SECRET` | ไม่ใช้ | — | — | ยังไม่มี webhook |
@@ -174,7 +173,7 @@ Endpoint URL ใน Console ต้องชี้ไปที่ **โดเม�
 | `NODE_ENV` | อัตโนมัติ | Next/Vercel ใส่ `production` ตอน build | — | ไม่ต้องตั้งเอง |
 
 ค่าที่ **ต้องต่างจาก Production เสมอ:**  
-`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_LIFF_ID`, `NEXT_PUBLIC_APP_URL`, `SUPERADMIN_TOKEN`, `BARBERQ_ENV`, และถ้ามี `LINE_CHANNEL_ACCESS_TOKEN` / `NEXT_PUBLIC_LINE_OA_ADD_URL`
+`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_LIFF_ID`, `NEXT_PUBLIC_APP_URL`, `SUPERADMIN_TOKEN`, `BARBERQ_ENV`, และถ้ามี `LINE_CHANNEL_ACCESS_TOKEN`
 
 ### 3.4 Deploy แล้วเช็คหน้าเว็บ
 
@@ -204,7 +203,7 @@ Endpoint URL ใน Console ต้องชี้ไปที่ **โดเม�
 ### 4.1 Owner claim (ครั้งแรก)
 
 1. เข้า `/superadmin` บนโดเมน QA ด้วย token ของ QA  
-2. หา/สร้าง Invite ของร้าน **BarberQ Pilot Test** (`barberqpilottest`)  
+2. หา/สร้าง Invite ของร้าน **ClipperQ Pilot Test** (`barberqpilottest`)  
 3. เปิดลิงก์ claim ด้วยบัญชี LINE ที่จะเป็น **Owner ทดสอบ** (ใน LINE ที่มี LIFF QA)  
 4. หลัง claim สำเร็จ ร้านควรเป็น `active`
 

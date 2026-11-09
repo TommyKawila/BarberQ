@@ -109,7 +109,7 @@ export const PILOT_STEPS: PilotStep[] = [
   {
     id: "create-shop",
     title: "4) สร้างร้านใหม่จาก Super Admin",
-    instruction: "สร้างร้าน BarberQ Pilot Test แล้วเริ่มจับเวลา",
+    instruction: "สร้างร้าน ClipperQ Pilot Test แล้วเริ่มจับเวลา",
     items: [
       { id: "shop-created", label: "shop ถูกสร้าง" },
       { id: "shop-pending", label: "status เป็น pending" },

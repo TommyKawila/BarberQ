@@ -166,7 +166,7 @@ export async function runDailyReset(observed: ObservedTarget): Promise<number> {
   printSafe(
     [
       "Founder QA reset: PASS",
-      "BarberQ Pilot Test restored to daily baseline",
+      "ClipperQ Pilot Test restored to daily baseline",
       "Post-reset verification: PASS",
     ].join("\n"),
   );
@@ -195,7 +195,7 @@ export async function runOwnerClaimReset(
   printSafe(
     [
       "Founder QA Owner-claim reset: PASS",
-      "BarberQ Pilot Test prepared for Owner claim (BC)",
+      "ClipperQ Pilot Test prepared for Owner claim (BC)",
       "Post-reset verification: PASS",
       "Copy the Owner invite once from Super Admin on the QA host. Do not use daily qa:reset for this scenario.",
     ].join("\n"),

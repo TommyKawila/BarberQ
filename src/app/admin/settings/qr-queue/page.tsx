@@ -87,7 +87,7 @@ export default function QrQueueSettingsPage() {
     if (!qrDataUrl) return;
     const a = document.createElement("a");
     a.href = qrDataUrl;
-    a.download = `barberqx-qr-queue-${shopSlug}.png`;
+    a.download = `clipperq-qr-queue-${shopSlug}.png`;
     a.click();
   }
 

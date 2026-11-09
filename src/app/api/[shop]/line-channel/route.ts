@@ -7,6 +7,7 @@ import {
   getShopLineChannel,
   upsertShopLineChannel,
 } from "@/lib/line/shop-channel";
+import { shopLineSetupEmail } from "@/lib/line/webhook-url";
 import { BookingError } from "@/lib/services/booking-service";
 
 export const runtime = "nodejs";
@@ -14,11 +15,6 @@ export const runtime = "nodejs";
 function webhookUrl(shopId: string): string {
   const base = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
   return `${base || ""}/api/line/webhook/${shopId}`;
-}
-
-function setupEmail(shopId: string): string {
-  const domain = process.env.BARBERQX_SETUP_EMAIL_DOMAIN?.trim() || "barberqx.com";
-  return `setup+${shopId}@${domain}`;
 }
 
 export async function GET(
@@ -34,7 +30,7 @@ export async function GET(
     return NextResponse.json({
       channel,
       webhookUrl: webhookUrl(shop.id),
-      setupEmail: setupEmail(shop.id),
+      setupEmail: shopLineSetupEmail(shop.id),
       encryptionReady: hasAppEncryptionKey(),
       shopId: shop.id,
       shopName: shop.name,
