@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  buildInitialConnectionChecks,
   buildReloadConnectionChecks,
   formatLineLastTestedAt,
   resolveAutoReplyCheck,
@@ -266,5 +267,72 @@ describe("line settings checklist colors", () => {
     assert.match(src, /text-amber-400/);
     assert.doesNotMatch(src, /text-orange-400/);
     assert.doesNotMatch(src, /text-amber-300/);
+  });
+});
+
+describe("skipped checks on early failure (error card)", () => {
+  it("initial checks start as skipped with ยังไม่ได้ตรวจ labels (not pass wording)", () => {
+    const list = buildInitialConnectionChecks();
+    const skippedIds = [
+      "channel_id",
+      "channel_secret",
+      "access_token",
+      "webhook",
+      "test_message",
+    ] as const;
+    for (const id of skippedIds) {
+      const row = list.find((c) => c.id === id);
+      assert.ok(row);
+      assert.equal(row.status, "skipped");
+      assert.equal(row.ok, false);
+      assert.match(row.labelKey, /NotChecked$/);
+      assert.doesNotMatch(dictionary.th[row.labelKey as keyof typeof dictionary.th], /พบแล้ว|ตรง|ใช้ได้|รับข้อความได้|ส่งข้อความทดสอบถึงเจ้าของร้านแล้ว/);
+      assert.match(
+        dictionary.th[row.labelKey as keyof typeof dictionary.th],
+        /ยังไม่ได้ตรวจ/,
+      );
+    }
+    assert.equal(list.find((c) => c.id === "auto_reply")?.status, "manual");
+    assert.equal(list.find((c) => c.id === "liff_rich_menu")?.status, "manual");
+  });
+
+  it("ErrorCard renders skipped neutrally (zinc ○) not green/pass", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
+      "utf8",
+    );
+    assert.match(src, /status === "skipped"/);
+    assert.match(src, /text-zinc-400/);
+    assert.match(src, /skipped \? "○"/);
+    // ErrorCard must not treat skipped as red fail with only ok ? green : red
+    const errorCard = src.slice(
+      src.indexOf("function ErrorCard"),
+      src.indexOf("function ConnectedCard"),
+    );
+    assert.match(errorCard, /skipped/);
+    assert.match(errorCard, /text-zinc-400/);
+    assert.doesNotMatch(
+      errorCard,
+      /className=\{c\.ok \? "text-emerald-400" : "text-red-400"\}/,
+    );
+  });
+
+  it("Thai not-checked keys for secret/token exist with ยังไม่ได้ตรวจ", () => {
+    assert.equal(
+      dictionary.th["lineConnect.check.channelSecretNotChecked"],
+      "Channel Secret — ยังไม่ได้ตรวจ",
+    );
+    assert.equal(
+      dictionary.th["lineConnect.check.accessTokenNotChecked"],
+      "Access token — ยังไม่ได้ตรวจ",
+    );
+    assert.equal(
+      dictionary.en["lineConnect.check.channelSecretNotChecked"],
+      "Channel Secret — not checked yet",
+    );
+    assert.equal(
+      dictionary.en["lineConnect.check.accessTokenNotChecked"],
+      "Access token — not checked yet",
+    );
   });
 });

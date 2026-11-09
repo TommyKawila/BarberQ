@@ -540,11 +540,23 @@ function ErrorCard({
               c.id,
             ),
           )
-          .map((c) => (
-            <li key={c.id} className={c.ok ? "text-emerald-400" : "text-red-400"}>
-              {c.ok ? "✓" : "✗"} {checkLabel(c, t)}
-            </li>
-          ))}
+          .map((c) => {
+            const skipped = c.status === "skipped" || c.status === "manual";
+            return (
+              <li
+                key={c.id}
+                className={
+                  skipped
+                    ? "text-zinc-400"
+                    : c.ok
+                      ? "text-emerald-400"
+                      : "text-red-400"
+                }
+              >
+                {skipped ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t)}
+              </li>
+            );
+          })}
       </ul>
     </section>
   );
@@ -585,15 +597,22 @@ function ConnectedCard({
         ) : null}
         <ul className="mt-4 space-y-1 text-left text-sm">
           {list.map((c) => {
-            const manual = c.status === "manual";
+            const pending = c.status === "manual" || c.status === "skipped";
             return (
               <li
                 key={c.id}
                 className={
-                  manual ? "text-amber-400" : c.ok ? "text-emerald-400" : "text-red-400"
+                  c.status === "skipped"
+                    ? "text-zinc-400"
+                    : c.status === "manual"
+                      ? "text-amber-400"
+                      : c.ok
+                        ? "text-emerald-400"
+                        : "text-red-400"
                 }
               >
-                {manual ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t, channel.botDisplayName)}
+                {pending ? "○" : c.ok ? "✓" : "✗"}{" "}
+                {checkLabel(c, t, channel.botDisplayName)}
               </li>
             );
           })}
@@ -661,13 +680,16 @@ function checkLabel(
   sender?: string | null,
 ) {
   if (
-    c.status === "manual" &&
-    (c.labelKey === "lineConnect.check.channelIdNotChecked" ||
-      c.labelKey === "lineConnect.check.webhookNotChecked" ||
-      c.labelKey === "lineConnect.check.testMessageNotChecked" ||
-      c.labelKey === "lineConnect.check.notCheckedYet")
+    c.status === "skipped" ||
+    (c.status === "manual" &&
+      (c.labelKey === "lineConnect.check.channelIdNotChecked" ||
+        c.labelKey === "lineConnect.check.channelSecretNotChecked" ||
+        c.labelKey === "lineConnect.check.accessTokenNotChecked" ||
+        c.labelKey === "lineConnect.check.webhookNotChecked" ||
+        c.labelKey === "lineConnect.check.testMessageNotChecked" ||
+        c.labelKey === "lineConnect.check.notCheckedYet"))
   ) {
-    return t(c.labelKey as never);
+    return t((c.labelKey || "lineConnect.check.notCheckedYet") as never);
   }
   switch (c.id) {
     case "channel_id":
