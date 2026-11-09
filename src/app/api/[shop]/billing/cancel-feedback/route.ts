@@ -5,6 +5,7 @@ import {
   isCancelFeedbackReason,
 } from "@/lib/billing/cancel-feedback";
 import { countBookableBarberSeats } from "@/lib/billing/barber-tier";
+import { isBillingEnabled } from "@/lib/billing/feature-flag";
 import {
   buildTierBillingNoticeCopy,
 } from "@/lib/billing/tier-notice";
@@ -23,6 +24,13 @@ export async function POST(
   { params }: { params: Promise<{ shop: string }> },
 ) {
   try {
+    if (!isBillingEnabled()) {
+      return NextResponse.json(
+        { disabled: true, error: "Billing disabled" },
+        { status: 403 },
+      );
+    }
+
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
