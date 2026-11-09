@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { LineOaInstallRequestStatus } from "@/lib/onboarding/line-oa-install";
 import { LINE_OA_INSTALL_STATUSES } from "@/lib/onboarding/line-oa-install";
+import { useI18n } from "@/lib/i18n/locale-provider";
 
 interface LineSupportRow {
   id: string;
@@ -18,9 +19,11 @@ interface LineSupportRow {
 }
 
 export function LineSupportInbox({ token }: { token: string }) {
+  const { t, locale } = useI18n();
   const [rows, setRows] = useState<LineSupportRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const dateLocale = locale === "th" ? "th-TH" : "en-GB";
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,14 +33,14 @@ export function LineSupportInbox({ token }: { token: string }) {
         headers: { "x-superadmin-token": token },
       });
       const json = (await res.json()) as { requests?: LineSupportRow[]; error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Failed to load");
+      if (!res.ok) throw new Error(json.error ?? t("superadmin.lineSupportFail"));
       setRows(json.requests ?? []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load");
+      setError(err instanceof Error ? err.message : t("superadmin.lineSupportFail"));
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
     void load();
@@ -60,7 +63,7 @@ export function LineSupportInbox({ token }: { token: string }) {
     );
   }
 
-  if (loading) return <p className="text-sm text-zinc-500">Loading requests…</p>;
+  if (loading) return <p className="text-sm text-zinc-500">{t("superadmin.lineSupportLoading")}</p>;
   if (error) return <p className="text-sm text-red-400">{error}</p>;
 
   return (
@@ -68,19 +71,21 @@ export function LineSupportInbox({ token }: { token: string }) {
       <table className="w-full min-w-[720px] text-left text-sm">
         <thead className="border-b border-zinc-800 bg-zinc-900/80 text-zinc-400">
           <tr>
-            <th className="px-3 py-2 font-medium">Shop</th>
-            <th className="px-3 py-2 font-medium">Submitted</th>
-            <th className="px-3 py-2 font-medium">LINE OA</th>
-            <th className="px-3 py-2 font-medium">Rich menu</th>
-            <th className="px-3 py-2 font-medium">Help</th>
-            <th className="px-3 py-2 font-medium">Phone</th>
-            <th className="px-3 py-2 font-medium">Status</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColShop")}</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColSubmitted")}</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColOa")}</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColRich")}</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColHelp")}</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColPhone")}</th>
+            <th className="px-3 py-2 font-medium">{t("superadmin.lineSupportColStatus")}</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={7} className="px-3 py-4 text-zinc-500">No requests yet</td>
+              <td colSpan={7} className="px-3 py-4 text-zinc-500">
+                {t("superadmin.lineSupportEmpty")}
+              </td>
             </tr>
           ) : (
             rows.map((row) => (
@@ -92,7 +97,7 @@ export function LineSupportInbox({ token }: { token: string }) {
                   ) : null}
                 </td>
                 <td className="px-3 py-2 text-zinc-400">
-                  {new Date(row.created_at).toLocaleString()}
+                  {new Date(row.created_at).toLocaleString(dateLocale)}
                 </td>
                 <td className="px-3 py-2">{row.line_oa}</td>
                 <td className="px-3 py-2 text-zinc-400">{row.rich_menu_state}</td>
