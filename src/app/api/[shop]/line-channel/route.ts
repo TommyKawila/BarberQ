@@ -75,7 +75,7 @@ export async function PUT(
     }
 
     const confirmOnly =
-      body.autoReplyConfirmed === true &&
+      (body.autoReplyConfirmed === true || body.autoReplyConfirmed === false) &&
       !writingSecrets &&
       body.messagingChannelId === undefined &&
       body.checklistStep === undefined;
