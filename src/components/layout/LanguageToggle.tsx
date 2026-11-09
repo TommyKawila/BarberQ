@@ -2,6 +2,7 @@
 
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { Locale } from "@/lib/i18n/dictionary";
+import { isEnglishEnabled } from "@/lib/i18n/feature-flag";
 
 const OPTIONS: { value: Locale; label: string }[] = [
   { value: "th", label: "ไทย" },
@@ -10,6 +11,8 @@ const OPTIONS: { value: Locale; label: string }[] = [
 
 export function LanguageToggle() {
   const { locale, setLocale } = useI18n();
+
+  if (!isEnglishEnabled()) return null;
 
   return (
     <div className="flex min-h-11 items-center rounded-lg bg-zinc-800 p-0.5">

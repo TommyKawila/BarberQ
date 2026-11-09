@@ -24,16 +24,16 @@ export default function TrialLeadsPage() {
       });
       if (!res.ok) {
         const json = (await res.json()) as { error?: string };
-        throw new Error(json.error ?? "Invalid token");
+        throw new Error(json.error ?? t("superadmin.invalidToken"));
       }
       setIsAuthenticated(true);
       writeOperatorToken(authToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : t("superadmin.loginFailed"));
       setIsAuthenticated(false);
       writeOperatorToken(null);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const stored = readOperatorToken();
@@ -53,7 +53,7 @@ export default function TrialLeadsPage() {
         <h1 className="text-2xl font-semibold">{t("superadmin.crm.loginTitle")}</h1>
         <input
           type="password"
-          placeholder="Super Admin Token"
+          placeholder={t("superadmin.tokenPlaceholder")}
           value={token}
           onChange={(e) => setToken(e.target.value)}
           className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 outline-none"

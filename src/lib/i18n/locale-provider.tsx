@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo } from "react";
 import { useBrowserStorage } from "@/lib/browser-storage";
 import { dictionary, type Locale, type MessageKey } from "./dictionary";
+import { resolveLocale } from "./resolve-locale";
 
 const LOCALE_KEY = "barberq_locale";
 
@@ -14,13 +15,10 @@ interface LocaleContextValue {
 
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
-function parseLocale(value: string | null): Locale {
-  return value === "en" ? "en" : "th";
-}
-
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
   const [stored, setStored] = useBrowserStorage(LOCALE_KEY);
-  const locale = parseLocale(stored);
+  // Does not erase localStorage — resolveLocale ignores stored "en" when flag is off.
+  const locale = resolveLocale(stored);
 
   useEffect(() => {
     document.documentElement.lang = locale;
