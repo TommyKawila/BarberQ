@@ -19,7 +19,7 @@ describe("ClipperQ brand leftovers (PLAN-1 PR-B)", () => {
     assert.doesNotMatch(src, /BarberQ|BarberQx/);
   });
 
-  it("LINE contact-team copy has no BarberQ/BarberQx", () => {
+  it("LINE contact-team copy has no BarberQ/BarberQx and is a tappable support link", () => {
     assert.equal(dictionary.th["lineConnect.contactTeamViaLine"], "ติดต่อทีมทาง LINE");
     assert.equal(
       dictionary.en["lineConnect.contactTeamViaLine"],
@@ -27,6 +27,9 @@ describe("ClipperQ brand leftovers (PLAN-1 PR-B)", () => {
     );
     assert.doesNotMatch(dictionary.th["lineConnect.contactTeamViaLine"], /BarberQ|BarberQx/i);
     assert.doesNotMatch(dictionary.en["lineConnect.contactTeamViaLine"], /BarberQ|BarberQx/i);
+    const linePage = read("src/app/admin/settings/line/page.tsx");
+    assert.match(linePage, /href=\{SUPPORT_LINE_URL\}/);
+    assert.match(linePage, /SUPPORT_LINE_URL \? \([\s\S]*contactTeamViaLine[\s\S]*\) : null/);
   });
 
   it("pilot checklist and founder-qa display name are ClipperQ Pilot Test", () => {

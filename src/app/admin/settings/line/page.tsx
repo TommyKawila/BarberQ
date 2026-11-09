@@ -18,6 +18,9 @@ import {
 
 type View = "checklist" | "keys" | "connected" | "error";
 
+/** Literal NEXT_PUBLIC_* so Next.js inlines into the client bundle. */
+const SUPPORT_LINE_URL = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL?.trim() || null;
+
 export default function LineConnectPage() {
   const { t } = useI18n();
   const { ready, profile, authHeaders } = useAdminPageAuth();
@@ -339,11 +342,16 @@ function ChecklistCard({
           copyLabel={copied === "email" ? t("lineConnect.copied") : t("lineConnect.copy")}
           onCopy={() => onCopy(setupEmail, "email")}
         />
-      ) : (
-        <p className="border-b border-zinc-800 py-3 text-sm text-zinc-300 last:border-0">
+      ) : SUPPORT_LINE_URL ? (
+        <a
+          href={SUPPORT_LINE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 flex min-h-11 items-center border-b border-zinc-800 py-3 text-sm font-medium text-amber-400 last:border-0"
+        >
           {t("lineConnect.contactTeamViaLine")}
-        </p>
-      )}
+        </a>
+      ) : null}
       <button type="button" onClick={onManual} className="mt-4 text-sm font-medium text-amber-400">
         {t("lineConnect.manualKeys")}
       </button>

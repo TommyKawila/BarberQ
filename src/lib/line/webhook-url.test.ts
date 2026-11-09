@@ -74,13 +74,23 @@ describe("shopLineSetupEmail", () => {
     assert.doesNotMatch(src, /BARBERQX_SETUP_EMAIL_DOMAIN/);
   });
 
-  it("LINE settings UI hides email invite when setup email is null", () => {
+  it("LINE settings UI: email step or support link; hide when both missing", () => {
     const src = readFileSync(
       resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
       "utf8",
     );
+    assert.match(
+      src,
+      /NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL/,
+    );
+    assert.match(src, /const SUPPORT_LINE_URL = process\.env\.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL/);
     assert.match(src, /setupEmail \? \(/);
+    assert.match(src, /SUPPORT_LINE_URL \? \(/);
+    assert.match(src, /href=\{SUPPORT_LINE_URL\}/);
+    assert.match(src, /min-h-11/);
     assert.match(src, /lineConnect\.contactTeamViaLine/);
+    assert.match(src, /: null\}/);
     assert.doesNotMatch(src, /barberqx\.com/);
+    assert.doesNotMatch(src, /setup@[a-z0-9.-]+\.(com|net|org)/i);
   });
 });
