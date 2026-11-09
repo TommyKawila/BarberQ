@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { LineSupportInbox } from "@/components/superadmin/LineSupportInbox";
 import { QuickAddShopForm } from "@/components/superadmin/QuickAddShopForm";
 import { ShopCard } from "@/components/superadmin/ShopCard";
+import { useI18n } from "@/lib/i18n/locale-provider";
 import {
   readOperatorToken,
   writeOperatorToken,
@@ -35,6 +36,7 @@ type CancelFeedbackRow = {
 };
 
 export default function SuperAdminPage() {
+  const { t } = useI18n();
   const [token, setToken] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [shops, setShops] = useState<SuperadminShop[]>([]);
@@ -66,7 +68,7 @@ export default function SuperAdminPage() {
         shops?: SuperadminShop[];
         error?: string;
       };
-      if (!shopsRes.ok) throw new Error(shopsJson.error ?? "Invalid token");
+      if (!shopsRes.ok) throw new Error(shopsJson.error ?? t("superadmin.invalidToken"));
       setShops(shopsJson.shops ?? []);
       if (feedbackRes.ok) {
         const fbJson = (await feedbackRes.json()) as {
@@ -79,13 +81,13 @@ export default function SuperAdminPage() {
       setIsAuthenticated(true);
       writeOperatorToken(authToken);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : t("superadmin.loginFailed"));
       setIsAuthenticated(false);
       writeOperatorToken(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const stored = readOperatorToken();
@@ -102,11 +104,13 @@ export default function SuperAdminPage() {
   if (!isAuthenticated) {
     return (
       <section className="flex min-h-[70vh] flex-col items-center justify-center gap-4 px-4 py-16">
-        <h1 className="font-heading text-2xl font-semibold text-zinc-100">ClipperQ Super Admin</h1>
-        <p className="text-sm text-zinc-400">Platform operator</p>
+        <h1 className="font-heading text-2xl font-semibold text-zinc-100">
+          {t("superadmin.loginTitle")}
+        </h1>
+        <p className="text-sm text-zinc-400">{t("superadmin.loginSubtitle")}</p>
         <input
           type="password"
-          placeholder="Super Admin Token"
+          placeholder={t("superadmin.tokenPlaceholder")}
           value={token}
           onChange={(e) => setToken(e.target.value)}
           className="w-full max-w-sm rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-base text-zinc-100 outline-none"
@@ -118,7 +122,7 @@ export default function SuperAdminPage() {
           disabled={loading || !token}
           className="min-h-12 w-full max-w-sm rounded-xl bg-amber-400 font-semibold text-zinc-950 disabled:opacity-50"
         >
-          {loading ? "Loading..." : "Login"}
+          {loading ? t("common.loading") : t("superadmin.login")}
         </button>
       </section>
     );
@@ -128,14 +132,16 @@ export default function SuperAdminPage() {
     <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-8 md:px-6">
       <header className="flex items-start justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold">Shops Management</h1>
-          <p className="text-sm text-zinc-400">Active shops: {shops.length}</p>
+          <h1 className="text-2xl font-semibold">{t("superadmin.shopsTitle")}</h1>
+          <p className="text-sm text-zinc-400">
+            {t("superadmin.activeShops").replace("{n}", String(shops.length))}
+          </p>
         </div>
         <Link
           href="/pilot"
           className="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-medium text-amber-400"
         >
-          Pilot Test
+          {t("superadmin.pilotTest")}
         </Link>
       </header>
 

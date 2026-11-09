@@ -218,7 +218,7 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
                   setViewMonth(format(addMonths(parseISO(`${viewMonth}-01T12:00:00`), -1), "yyyy-MM"))
                 }
                 className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-900 text-zinc-100 disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label="Previous month"
+                aria-label={t("common.prevMonth")}
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
@@ -230,7 +230,7 @@ export function DateSelector({ dates, value, barber, hours, onChange }: DateSele
                   setViewMonth(format(addMonths(parseISO(`${viewMonth}-01T12:00:00`), 1), "yyyy-MM"))
                 }
                 className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-900 text-zinc-100 disabled:cursor-not-allowed disabled:opacity-30"
-                aria-label="Next month"
+                aria-label={t("common.nextMonth")}
               >
                 <ChevronRight className="h-5 w-5" />
               </button>
