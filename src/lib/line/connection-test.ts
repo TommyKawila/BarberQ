@@ -110,16 +110,32 @@ export function buildReloadConnectionChecks(
   channel: Pick<ShopLineChannelPublic, "autoReplyConfirmedAt">,
 ): ConnectionCheck[] {
   return [
-    check("channel_id", "manual", "lineConnect.check.notCheckedYet"),
-    check("webhook", "manual", "lineConnect.check.notCheckedYet"),
+    check("channel_id", "manual", "lineConnect.check.channelIdNotChecked"),
+    check("webhook", "manual", "lineConnect.check.webhookNotChecked"),
     resolveAutoReplyCheck(channel.autoReplyConfirmedAt),
-    check("test_message", "manual", "lineConnect.check.notCheckedYet"),
+    check("test_message", "manual", "lineConnect.check.testMessageNotChecked"),
     check(
       "liff_rich_menu",
       "manual",
       "lineConnect.check.liffRichMenuManual",
     ),
   ];
+}
+
+/** Last-tested stamp for Thai shop owners (Bangkok, Buddhist year). */
+export function formatLineLastTestedAt(
+  iso: string,
+  locale: "th" | "en" = "th",
+): string {
+  return new Intl.DateTimeFormat(locale === "th" ? "th-TH" : "en-GB", {
+    timeZone: "Asia/Bangkok",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(iso));
 }
 
 export async function testShopLineConnection(

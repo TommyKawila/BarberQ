@@ -4,10 +4,12 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   buildReloadConnectionChecks,
+  formatLineLastTestedAt,
   resolveAutoReplyCheck,
   webhookCheckPassed,
   type ConnectionCheck,
 } from "@/lib/line/connection-test";
+import { dictionary } from "@/lib/i18n/dictionary";
 import {
   __resetShopLineChannelsForTests,
   buildShopLineChannelUpsertRow,
@@ -89,13 +91,17 @@ describe("verified gate + reload honesty", () => {
     assert.notEqual(webhook.status, "pass");
     assert.equal(webhook.ok, false);
     assert.equal(webhook.status, "manual");
-    assert.equal(webhook.labelKey, "lineConnect.check.notCheckedYet");
+    assert.equal(webhook.labelKey, "lineConnect.check.webhookNotChecked");
     assert.ok(testMessage);
     assert.notEqual(testMessage.status, "pass");
     assert.equal(testMessage.ok, false);
+    assert.equal(
+      testMessage.labelKey,
+      "lineConnect.check.testMessageNotChecked",
+    );
   });
 
-  it("verified reload never invents webhook/test_message ✓ — shows ยังไม่ได้ตรวจ", () => {
+  it("verified reload never invents webhook/test_message ✓ — neutral unchecked labels", () => {
     const list = buildReloadConnectionChecks({
       autoReplyConfirmedAt: "2026-01-01T00:00:00.000Z",
     });
@@ -103,15 +109,54 @@ describe("verified gate + reload honesty", () => {
     assert.equal(list.find((c) => c.id === "webhook")?.ok, false);
     assert.equal(
       list.find((c) => c.id === "webhook")?.labelKey,
-      "lineConnect.check.notCheckedYet",
+      "lineConnect.check.webhookNotChecked",
     );
     assert.equal(list.find((c) => c.id === "test_message")?.status, "manual");
     assert.equal(list.find((c) => c.id === "test_message")?.ok, false);
+    assert.equal(
+      list.find((c) => c.id === "test_message")?.labelKey,
+      "lineConnect.check.testMessageNotChecked",
+    );
     assert.equal(list.find((c) => c.id === "channel_id")?.status, "manual");
+    assert.equal(
+      list.find((c) => c.id === "channel_id")?.labelKey,
+      "lineConnect.check.channelIdNotChecked",
+    );
     assert.equal(list.find((c) => c.id === "auto_reply")?.status, "pass");
   });
 
-  it("ConnectedCard uses buildReloadConnectionChecks (no hardcoded webhook/test pass)", () => {
+  it("Thai dictionary unchecked labels use neutral names (not pass-result wording)", () => {
+    assert.equal(
+      dictionary.th["lineConnect.check.channelIdNotChecked"],
+      "Channel ID — ยังไม่ได้ตรวจ",
+    );
+    assert.equal(
+      dictionary.th["lineConnect.check.webhookNotChecked"],
+      "Webhook — ยังไม่ได้ตรวจ",
+    );
+    assert.equal(
+      dictionary.th["lineConnect.check.testMessageNotChecked"],
+      "ข้อความทดสอบ — ยังไม่ได้ตรวจ",
+    );
+    assert.doesNotMatch(
+      dictionary.th["lineConnect.check.channelIdNotChecked"],
+      /พบแล้ว/,
+    );
+    assert.doesNotMatch(
+      dictionary.th["lineConnect.check.webhookNotChecked"],
+      /รับข้อความได้/,
+    );
+    assert.doesNotMatch(
+      dictionary.th["lineConnect.check.testMessageNotChecked"],
+      /ส่งข้อความทดสอบถึงเจ้าของร้านแล้ว/,
+    );
+    assert.equal(
+      dictionary.en["lineConnect.check.channelIdNotChecked"],
+      "Channel ID — not checked yet",
+    );
+  });
+
+  it("ConnectedCard uses buildReloadConnectionChecks + Thai help link + Bangkok last-tested", () => {
     const src = readFileSync(
       resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
       "utf8",
@@ -126,6 +171,23 @@ describe("verified gate + reload honesty", () => {
       /id: "test_message", ok: true, status: "pass"/,
     );
     assert.match(src, /lineConnect\.autoReplyHelpLink/);
+    assert.match(
+      src,
+      /help2\.line\.me\/official_account_th\/web\/categoryId\/200000662/,
+    );
+    assert.doesNotMatch(src, /developers\.line\.biz/);
+    assert.match(src, /inline-flex min-h-11 items-center/);
+    assert.match(src, /formatLineLastTestedAt/);
+    assert.doesNotMatch(src, /toLocaleString\(\)/);
+  });
+
+  it("formatLineLastTestedAt uses th-TH Asia/Bangkok (not US month/day)", () => {
+    const formatted = formatLineLastTestedAt("2026-11-07T14:42:01.000Z", "th");
+    assert.match(formatted, /7/);
+    assert.match(formatted, /พ\.ย\.|พย/);
+    assert.match(formatted, /2569/);
+    assert.doesNotMatch(formatted, /11\/7\/2026/);
+    assert.doesNotMatch(formatted, /PM|AM/);
   });
 });
 

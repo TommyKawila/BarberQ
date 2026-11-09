@@ -11,6 +11,7 @@ import { useShopSlug } from "@/lib/shop/shop-slug-context";
 import type { ShopLineChannelPublic } from "@/lib/line/shop-channel";
 import {
   buildReloadConnectionChecks,
+  formatLineLastTestedAt,
   type ConnectionCheck,
   type ConnectionTestResult,
 } from "@/lib/line/connection-test";
@@ -564,7 +565,8 @@ function ConnectedCard({
         <p className="mt-3 text-lg font-semibold">{t("lineConnect.connected")}</p>
         {channel.lastVerifiedAt ? (
           <p className="mt-1 text-xs text-zinc-400">
-            {t("lineConnect.lastTested")}: {new Date(channel.lastVerifiedAt).toLocaleString()}
+            {t("lineConnect.lastTested")}:{" "}
+            {formatLineLastTestedAt(channel.lastVerifiedAt, "th")}
           </p>
         ) : null}
         <ul className="mt-4 space-y-1 text-left text-sm">
@@ -601,10 +603,10 @@ function ConnectedCard({
                 {t("lineConnect.autoReplyConfirmHint")}
               </span>
               <a
-                href="https://developers.line.biz/en/docs/messaging-api/building-bot/#greeting-messages-and-auto-reply-messages"
+                href="https://help2.line.me/official_account_th/web/categoryId/200000662/3/pc?lang=th"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-block text-xs text-amber-400 underline underline-offset-2"
+                className="mt-2 inline-flex min-h-11 items-center text-xs text-amber-400 underline underline-offset-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("lineConnect.autoReplyHelpLink")}
@@ -644,16 +646,14 @@ function checkLabel(
   t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string,
   sender?: string | null,
 ) {
-  if (c.status === "manual" && c.labelKey === "lineConnect.check.notCheckedYet") {
-    const name =
-      c.id === "webhook"
-        ? t("lineConnect.check.webhook")
-        : c.id === "test_message"
-          ? t("lineConnect.check.testMessage")
-          : c.id === "channel_id"
-            ? t("lineConnect.check.channelId")
-            : c.id;
-    return `${name} — ${t("lineConnect.check.notCheckedYet")}`;
+  if (
+    c.status === "manual" &&
+    (c.labelKey === "lineConnect.check.channelIdNotChecked" ||
+      c.labelKey === "lineConnect.check.webhookNotChecked" ||
+      c.labelKey === "lineConnect.check.testMessageNotChecked" ||
+      c.labelKey === "lineConnect.check.notCheckedYet")
+  ) {
+    return t(c.labelKey as never);
   }
   switch (c.id) {
     case "channel_id":
