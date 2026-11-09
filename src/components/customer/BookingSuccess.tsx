@@ -33,6 +33,8 @@ export function BookingSuccess({
   barber,
   friendship,
   onBackToShop,
+  /** Per-shop OA add-friend URL (from brand/settings); empty hides the CTA. */
+  addFriendUrl = "",
   /** Marketing/preview: gray Thai placeholder until /sale/booking-success-barber.webp lands. */
   useMarketingAvatarSlot = false,
 }: {
@@ -42,11 +44,11 @@ export function BookingSuccess({
   barber: Barber | null;
   friendship: LineFriendship;
   onBackToShop: () => void;
+  addFriendUrl?: string;
   useMarketingAvatarSlot?: boolean;
 }) {
   const { t, locale } = useI18n();
   const { shopPath } = useShopSlug();
-  const addFriendUrl = process.env.NEXT_PUBLIC_LINE_OA_ADD_URL?.trim() ?? "";
   const showLine = shouldShowLineReminder(addFriendUrl, friendship);
   const dateLabel = formatInTimeZone(
     new Date(appointment.start_time),

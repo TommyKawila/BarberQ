@@ -5,7 +5,6 @@ import {
   assertProductionConfig,
   getMissingProductionKeys,
   getOptionalBarberqSupportLineUrl,
-  getOptionalLineOaAddUrl,
   getOptionalLinePushToken,
   isProductionRuntime,
 } from "@/lib/env";
@@ -40,7 +39,6 @@ function saveEnv() {
   for (const key of [
     ...PROD_KEYS,
     "LINE_CHANNEL_ACCESS_TOKEN",
-    "NEXT_PUBLIC_LINE_OA_ADD_URL",
     "NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL",
   ]) {
     savedEnv[key] = process.env[key];
@@ -174,10 +172,9 @@ describe("optional env", () => {
     assert.equal(result, false);
   });
 
-  it("missing OA add URL is valid", () => {
+  it("missing LINE push token is valid", () => {
     saveEnv();
-    delete process.env.NEXT_PUBLIC_LINE_OA_ADD_URL;
-    assert.equal(getOptionalLineOaAddUrl(), undefined);
+    delete process.env.LINE_CHANNEL_ACCESS_TOKEN;
     assert.equal(getOptionalLinePushToken(), undefined);
   });
 
