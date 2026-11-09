@@ -6,26 +6,33 @@ import { isBillingEnabled } from "@/lib/billing/feature-flag";
 
 describe("isBillingEnabled", () => {
   it("is on only for exact string true", () => {
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "true" }), true);
+    assert.equal(isBillingEnabled("true"), true);
   });
 
   it("is off when unset", () => {
-    assert.equal(isBillingEnabled({}), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: undefined }), false);
+    assert.equal(isBillingEnabled(undefined), false);
   });
 
   it("is off for any other value", () => {
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "True" }), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "TRUE" }), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "1" }), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "false" }), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: " true" }), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "true " }), false);
-    assert.equal(isBillingEnabled({ NEXT_PUBLIC_ENABLE_BILLING: "" }), false);
+    assert.equal(isBillingEnabled("True"), false);
+    assert.equal(isBillingEnabled("TRUE"), false);
+    assert.equal(isBillingEnabled("1"), false);
+    assert.equal(isBillingEnabled("false"), false);
+    assert.equal(isBillingEnabled(" true"), false);
+    assert.equal(isBillingEnabled("true "), false);
+    assert.equal(isBillingEnabled(""), false);
   });
 });
 
 describe("billing feature flag wiring", () => {
+  it("feature-flag.ts contains literal process.env.NEXT_PUBLIC_ENABLE_BILLING", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/lib/billing/feature-flag.ts"),
+      "utf8",
+    );
+    assert.ok(src.includes("process.env.NEXT_PUBLIC_ENABLE_BILLING"));
+  });
+
   it("AdminChrome gates TierBillingNotice behind isBillingEnabled", () => {
     const src = readFileSync(
       resolve(process.cwd(), "src/components/admin/AdminChrome.tsx"),
