@@ -7,7 +7,7 @@ export const FOUNDER_QA_MANIFEST = {
   qaAppHostname: "unprovisioned-founder-qa.example.invalid",
   shop: {
     id: "c0a1b2c3-d4e5-4f60-8a11-00000000f001",
-    name: "BarberQ Pilot Test",
+    name: "ClipperQ Pilot Test",
     slug: "barberqpilottest",
   },
   sentinel: {

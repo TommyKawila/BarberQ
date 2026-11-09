@@ -18,7 +18,7 @@ export function formatVerifySuccess(checks: QaCheck[]): string {
   return [
     "Founder QA verification: PASS",
     "Environment: founder_qa",
-    "Target shop: BarberQ Pilot Test (barberqpilottest)",
+    "Target shop: ClipperQ Pilot Test (barberqpilottest)",
     `Fixture baseline: ${fixture?.pass ? "compatible" : "incompatible"}`,
   ].join("\n");
 }

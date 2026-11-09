@@ -27,7 +27,7 @@ export default function LineConnectPage() {
   const [view, setView] = useState<View>("checklist");
   const [channel, setChannel] = useState<ShopLineChannelPublic | null>(null);
   const [webhookUrl, setWebhookUrl] = useState("");
-  const [setupEmail, setSetupEmail] = useState("");
+  const [setupEmail, setSetupEmail] = useState<string | null>(null);
   const [channelId, setChannelId] = useState("");
   const [secret, setSecret] = useState("");
   const [token, setToken] = useState("");
@@ -49,12 +49,12 @@ export default function LineConnectPage() {
       const json = (await res.json()) as {
         channel?: ShopLineChannelPublic | null;
         webhookUrl?: string;
-        setupEmail?: string;
+        setupEmail?: string | null;
         shopId?: string;
       };
       setChannel(json.channel ?? null);
       setWebhookUrl(json.webhookUrl ?? "");
-      setSetupEmail(json.setupEmail ?? "");
+      setSetupEmail(json.setupEmail?.trim() ? json.setupEmail : null);
       setChannelId(json.channel?.messagingChannelId ?? "");
       if (json.channel?.status === "verified") setView("connected");
       else if (json.channel?.status === "broken") setView("error");
@@ -311,7 +311,7 @@ function ChecklistCard({
   t,
 }: {
   webhookUrl: string;
-  setupEmail: string;
+  setupEmail: string | null;
   copied: string | null;
   onCopy: (v: string, k: string) => void;
   onManual: () => void;
@@ -330,14 +330,20 @@ function ChecklistCard({
         onCopy={() => onCopy(webhookUrl, "webhook")}
       />
       <Step n={3} title={t("lineConnect.step3Title")} body={t("lineConnect.step3Body")} />
-      <Step
-        n={4}
-        title={t("lineConnect.step4Title")}
-        body={t("lineConnect.step4Body")}
-        copyValue={setupEmail}
-        copyLabel={copied === "email" ? t("lineConnect.copied") : t("lineConnect.copy")}
-        onCopy={() => onCopy(setupEmail, "email")}
-      />
+      {setupEmail ? (
+        <Step
+          n={4}
+          title={t("lineConnect.step4Title")}
+          body={t("lineConnect.step4Body")}
+          copyValue={setupEmail}
+          copyLabel={copied === "email" ? t("lineConnect.copied") : t("lineConnect.copy")}
+          onCopy={() => onCopy(setupEmail, "email")}
+        />
+      ) : (
+        <p className="border-b border-zinc-800 py-3 text-sm text-zinc-300 last:border-0">
+          {t("lineConnect.contactTeamViaLine")}
+        </p>
+      )}
       <button type="button" onClick={onManual} className="mt-4 text-sm font-medium text-amber-400">
         {t("lineConnect.manualKeys")}
       </button>
