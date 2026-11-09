@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertShopOperator, assertStaffForShop } from "@/lib/admin-auth";
 import { jsonError } from "@/lib/api-response";
 import { countBookableBarberSeats } from "@/lib/billing/barber-tier";
+import { isBillingEnabled } from "@/lib/billing/feature-flag";
 import {
   buildTierBillingNoticeCopy,
   shouldShowTierBillingNotice,
@@ -18,6 +19,10 @@ export async function GET(
   { params }: { params: Promise<{ shop: string }> },
 ) {
   try {
+    if (!isBillingEnabled()) {
+      return NextResponse.json({ show: false, disabled: true });
+    }
+
     const { shop: shopSlug } = await params;
     const shop = await resolveShopParam(shopSlug);
     const staff = await assertStaffForShop(req, shop.id);
@@ -30,6 +35,7 @@ export async function GET(
 
     return NextResponse.json({
       show,
+      disabled: false,
       ...copy,
     });
   } catch (error) {
