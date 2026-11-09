@@ -1,7 +1,7 @@
 {
   "name": "ClipperQ",
   "short_name": "ClipperQ",
-  "description": "Queue booking for barber shops",
+  "description": "ระบบจองคิวร้านตัดผมผ่าน LINE",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0B0B0B",
