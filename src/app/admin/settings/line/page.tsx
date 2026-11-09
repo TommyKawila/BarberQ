@@ -524,7 +524,11 @@ function ErrorCard({
   return (
     <section className="rounded-2xl border border-orange-500/60 bg-zinc-900 p-4">
       <p className="text-base font-semibold text-zinc-50">{t("lineConnect.errorTitle")}</p>
-      <p className="mt-1 text-sm text-zinc-300">{result.errorMessage}</p>
+      <p className="mt-1 text-sm text-zinc-300">
+        {result.errorMessage?.startsWith("lineConnect.")
+          ? t(result.errorMessage as never)
+          : result.errorMessage}
+      </p>
       {result.fixHintKey ? (
         <p className="mt-2 text-sm text-amber-400">{t(result.fixHintKey as never)}</p>
       ) : null}
@@ -697,8 +701,14 @@ function checkLabel(
         ? t("lineConnect.check.keysOk").replace("{name}", sender)
         : t("lineConnect.check.channelId");
     case "channel_secret":
+      if (c.labelKey === "lineConnect.check.channelSecretMissing") {
+        return t(c.labelKey as never);
+      }
       return c.ok ? t("lineConnect.check.channelSecret") : t("lineConnect.check.secretBad");
     case "access_token":
+      if (c.labelKey === "lineConnect.check.accessTokenMissing") {
+        return t(c.labelKey as never);
+      }
       return t("lineConnect.check.accessToken");
     case "webhook":
       return c.labelKey

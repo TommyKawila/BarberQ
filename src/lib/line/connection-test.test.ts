@@ -7,6 +7,7 @@ import {
   buildReloadConnectionChecks,
   formatLineLastTestedAt,
   resolveAutoReplyCheck,
+  resolveMissingKeyFailures,
   webhookCheckPassed,
   type ConnectionCheck,
 } from "@/lib/line/connection-test";
@@ -336,3 +337,78 @@ describe("skipped checks on early failure (error card)", () => {
     );
   });
 });
+
+describe("MISSING_KEYS attributes only the missing secret/token", () => {
+  function applyMissing(checks: ConnectionCheck[], secrets: {
+    channelSecret: string | null;
+    accessToken: string | null;
+  }) {
+    const missing = resolveMissingKeyFailures(secrets);
+    assert.ok(missing);
+    for (const id of missing.failIds) {
+      const row = checks.find((c) => c.id === id);
+      assert.ok(row);
+      row.status = "fail";
+      row.ok = false;
+    }
+    return missing;
+  }
+
+  it("secret-only missing → fail channel_secret; Channel ID stays skipped", () => {
+    const checks = buildInitialConnectionChecks();
+    const missing = applyMissing(checks, {
+      channelSecret: null,
+      accessToken: "tok",
+    });
+    assert.deepEqual(missing.failIds, ["channel_secret"]);
+    assert.equal(missing.messageKey, "lineConnect.error.missingSecret");
+    assert.match(dictionary.th[missing.messageKey as keyof typeof dictionary.th], /Channel Secret/);
+    assert.doesNotMatch(
+      dictionary.th[missing.messageKey as keyof typeof dictionary.th],
+      /Access Token/,
+    );
+    assert.equal(checks.find((c) => c.id === "channel_secret")?.status, "fail");
+    assert.equal(checks.find((c) => c.id === "channel_id")?.status, "skipped");
+    assert.equal(checks.find((c) => c.id === "access_token")?.status, "skipped");
+    assert.equal(checks.find((c) => c.id === "webhook")?.status, "skipped");
+  });
+
+  it("token-only missing → fail access_token; Channel ID stays skipped", () => {
+    const checks = buildInitialConnectionChecks();
+    const missing = applyMissing(checks, {
+      channelSecret: "sec",
+      accessToken: null,
+    });
+    assert.deepEqual(missing.failIds, ["access_token"]);
+    assert.equal(missing.messageKey, "lineConnect.error.missingToken");
+    assert.match(dictionary.th[missing.messageKey as keyof typeof dictionary.th], /Access Token/);
+    assert.doesNotMatch(
+      dictionary.th[missing.messageKey as keyof typeof dictionary.th],
+      /Channel Secret/,
+    );
+    assert.equal(checks.find((c) => c.id === "access_token")?.status, "fail");
+    assert.equal(checks.find((c) => c.id === "channel_id")?.status, "skipped");
+    assert.equal(checks.find((c) => c.id === "channel_secret")?.status, "skipped");
+  });
+
+  it("both missing → fail secret + token; Channel ID stays skipped", () => {
+    const checks = buildInitialConnectionChecks();
+    const missing = applyMissing(checks, {
+      channelSecret: null,
+      accessToken: "",
+    });
+    assert.deepEqual(missing.failIds, ["channel_secret", "access_token"]);
+    assert.equal(missing.messageKey, "lineConnect.error.missingSecretAndToken");
+    assert.match(
+      dictionary.th[missing.messageKey as keyof typeof dictionary.th],
+      /Channel Secret และ Access Token/,
+    );
+    assert.equal(dictionary.en[missing.messageKey as keyof typeof dictionary.en].includes("Channel Secret"), true);
+    assert.equal(checks.find((c) => c.id === "channel_secret")?.status, "fail");
+    assert.equal(checks.find((c) => c.id === "access_token")?.status, "fail");
+    assert.equal(checks.find((c) => c.id === "channel_id")?.status, "skipped");
+    assert.equal(checks.find((c) => c.id === "webhook")?.status, "skipped");
+    assert.equal(checks.find((c) => c.id === "test_message")?.status, "skipped");
+  });
+});
+

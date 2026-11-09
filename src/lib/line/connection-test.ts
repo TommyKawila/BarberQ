@@ -48,11 +48,6 @@ const ERRORS: Record<
   string,
   { message: string; fixHintKey: string; failCheck: ConnectionCheckId }
 > = {
-  MISSING_KEYS: {
-    message: "กรุณากรอก Channel ID, Channel Secret และ Access Token",
-    fixHintKey: "lineConnect.fix.missingKeys",
-    failCheck: "channel_id",
-  },
   TOKEN_INVALID: {
     message: "Access token ใช้ไม่ได้ หรือหมดอายุ",
     fixHintKey: "lineConnect.fix.tokenInvalid",
@@ -74,6 +69,40 @@ const ERRORS: Record<
     failCheck: "webhook",
   },
 };
+
+/** Which stored secrets are missing — Channel ID is not inferred without an API call. */
+export function resolveMissingKeyFailures(secrets: {
+  channelSecret: string | null;
+  accessToken: string | null;
+}): {
+  failIds: Array<"channel_secret" | "access_token">;
+  /** Dictionary key (th/en) naming only the missing field(s). */
+  messageKey: string;
+  fixHintKey: string;
+} | null {
+  const missingSecret = !secrets.channelSecret?.trim();
+  const missingToken = !secrets.accessToken?.trim();
+  if (!missingSecret && !missingToken) return null;
+  if (missingSecret && missingToken) {
+    return {
+      failIds: ["channel_secret", "access_token"],
+      messageKey: "lineConnect.error.missingSecretAndToken",
+      fixHintKey: "lineConnect.fix.missingSecretAndToken",
+    };
+  }
+  if (missingSecret) {
+    return {
+      failIds: ["channel_secret"],
+      messageKey: "lineConnect.error.missingSecret",
+      fixHintKey: "lineConnect.fix.missingSecret",
+    };
+  }
+  return {
+    failIds: ["access_token"],
+    messageKey: "lineConnect.error.missingToken",
+    fixHintKey: "lineConnect.fix.missingToken",
+  };
+}
 
 function check(
   id: ConnectionCheckId,
@@ -174,13 +203,42 @@ export async function testShopLineConnection(
   const secrets = await getShopLineChannelSecrets(shopId);
   const checks = buildInitialConnectionChecks();
 
-  if (!secrets.channelSecret || !secrets.accessToken) {
-    return fail(shopId, "MISSING_KEYS", checks, null);
+  const missing = resolveMissingKeyFailures(secrets);
+  if (missing) {
+    for (const id of missing.failIds) {
+      setCheck(
+        checks,
+        id,
+        "fail",
+        id === "channel_secret"
+          ? "lineConnect.check.channelSecretMissing"
+          : "lineConnect.check.accessTokenMissing",
+      );
+    }
+    // Channel ID was never looked up — stay skipped (ยังไม่ได้ตรวจ).
+    const channel = await upsertShopLineChannel(shopId, {
+      status: "broken",
+      lastErrorCode: "MISSING_KEYS",
+      lastErrorMessage: missing.messageKey,
+    });
+    return {
+      ok: false,
+      status: "broken",
+      errorCode: "MISSING_KEYS",
+      errorMessage: missing.messageKey,
+      fixHintKey: missing.fixHintKey,
+      checks,
+      channel,
+      botDisplayName: null,
+    };
   }
+
+  const channelSecret = secrets.channelSecret!;
+  const accessToken = secrets.accessToken!;
 
   let bot;
   try {
-    bot = await getBotInfo(secrets.accessToken);
+    bot = await getBotInfo(accessToken);
     setCheck(checks, "access_token", "pass", "lineConnect.check.accessToken");
     setCheck(checks, "channel_id", "pass", "lineConnect.check.channelId");
   } catch {
@@ -189,10 +247,10 @@ export async function testShopLineConnection(
 
   // Self-check: HMAC with this secret must verify a known body.
   const probeBody = JSON.stringify({ destination: bot.userId, events: [] });
-  const probeSig = createHmac("sha256", secrets.channelSecret)
+  const probeSig = createHmac("sha256", channelSecret)
     .update(probeBody)
     .digest("base64");
-  if (!verifyLineSignature(probeBody, secrets.channelSecret, probeSig)) {
+  if (!verifyLineSignature(probeBody, channelSecret, probeSig)) {
     return fail(shopId, "SIGNATURE_MISMATCH", checks, bot.displayName);
   }
   setCheck(
@@ -205,7 +263,7 @@ export async function testShopLineConnection(
   // Prefer LINE's webhook endpoint API when available (active + URL set).
   // If that API errors, never silent-pass — owner must retry.
   try {
-    const hook = await getWebhookEndpoint(secrets.accessToken);
+    const hook = await getWebhookEndpoint(accessToken);
     setCheck(
       checks,
       "webhook",
@@ -311,7 +369,7 @@ async function fail(
   checks: ConnectionCheck[],
   botDisplayName: string | null,
 ): Promise<ConnectionTestResult> {
-  const meta = ERRORS[code] ?? ERRORS.MISSING_KEYS;
+  const meta = ERRORS[code] ?? ERRORS.TOKEN_INVALID;
   // Attribute the failing step; leave later steps as `skipped` (ยังไม่ได้ตรวจ).
   setCheck(
     checks,
