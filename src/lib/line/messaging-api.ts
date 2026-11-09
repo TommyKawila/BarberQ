@@ -41,6 +41,22 @@ export async function getBotInfo(accessToken: string): Promise<LineBotInfo> {
   return (await res.json()) as LineBotInfo;
 }
 
+/** GET /v2/bot/channel/webhook/endpoint — webhook URL + active flag. */
+export interface LineWebhookEndpointInfo {
+  endpoint: string;
+  active: boolean;
+}
+
+export async function getWebhookEndpoint(
+  accessToken: string,
+): Promise<LineWebhookEndpointInfo> {
+  const res = await lineFetch("/v2/bot/channel/webhook/endpoint", accessToken);
+  if (!res.ok) {
+    throw new Error(`LINE_WEBHOOK_ENDPOINT_${res.status}`);
+  }
+  return (await res.json()) as LineWebhookEndpointInfo;
+}
+
 export async function getMessageQuota(accessToken: string): Promise<LineQuota> {
   const res = await lineFetch("/v2/bot/message/quota", accessToken);
   if (!res.ok) {
