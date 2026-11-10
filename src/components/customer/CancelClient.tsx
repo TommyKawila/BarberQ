@@ -12,6 +12,7 @@ import {
 import { useI18n } from "@/lib/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/dictionary";
 import { normalizeShopHours, type ShopHours } from "@/lib/shop/shop-hours";
+import { ShopBrandProvider } from "@/lib/brand/shop-brand";
 import { ShopSlugProvider } from "@/lib/shop/shop-slug-context";
 import {
   CANCEL_LEAD_MINUTES,
@@ -193,5 +194,9 @@ export function CancelClient({
   );
 
   if (!shopSlug) return body;
-  return <ShopSlugProvider shopSlug={shopSlug}>{body}</ShopSlugProvider>;
+  return (
+    <ShopSlugProvider shopSlug={shopSlug}>
+      <ShopBrandProvider shopSlug={shopSlug}>{body}</ShopBrandProvider>
+    </ShopSlugProvider>
+  );
 }
