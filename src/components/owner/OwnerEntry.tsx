@@ -270,7 +270,7 @@ export function OwnerEntry() {
             }
           >
             <p
-              className="rounded-xl border border-amber-500/40 bg-amber-400/10 p-4 text-[15px] text-amber-100"
+              className="rounded-xl border border-cq-amber/40 bg-cq-amber/10 p-4 text-[15px] text-amber-100"
               role="alert"
             >
               {error ??
@@ -281,7 +281,7 @@ export function OwnerEntry() {
                 href="/owner"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-zinc-600 px-6 py-3 text-base font-semibold text-zinc-100"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-cq-outline px-6 py-3 text-base font-semibold text-zinc-100"
                 data-testid="owner-entry-open-safari"
               >
                 เปิดใน Safari
@@ -354,7 +354,7 @@ export function OwnerEntry() {
 
         {!browserMismatch && !standaloneHint && phase === "error" ? (
           <div className="mt-8 space-y-4" data-testid="owner-entry-error">
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-cq-danger" role="alert">
               {error}
             </p>
             <button

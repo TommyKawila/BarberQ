@@ -284,6 +284,11 @@ describe("P6 customer self-reschedule", () => {
     assert.match(flow, /reschedule-confirm/);
     assert.match(flow, /BarberSelector/);
     assert.match(flow, /SlotPicker/);
+    assert.match(flow, /fetchSlots/);
+    assert.match(flow, /reschedule-dates-empty/);
+    assert.match(flow, /booking\.noBookableDates/);
+    assert.match(flow, /booking\.slotsLoadFailed/);
+    assert.doesNotMatch(flow, /admin\.loadFailed/);
     assert.doesNotMatch(flow, /<select/);
   });
 

@@ -1,4 +1,5 @@
 import type { ShopLineChannelPublic } from "@/lib/line/shop-channel";
+import type { ConnectionTestResult } from "@/lib/line/connection-test";
 
 export type LineSettingsView = "checklist" | "keys" | "connected" | "error";
 
@@ -27,4 +28,16 @@ export function resolveLineSettingsView(
 
   if (channel.hasSecret || channel.hasAccessToken) return "keys";
   return "checklist";
+}
+
+/**
+ * Show the latest failed connection test above the wizard when a keyless
+ * shop stays on checklist (so ✗ Channel ID / Secret / Token remain visible).
+ * Reload clears in-memory testResult → no auto-redirect / no sticky error.
+ */
+export function shouldShowLineTestErrorOnChecklist(
+  view: LineSettingsView,
+  testResult: Pick<ConnectionTestResult, "ok"> | null | undefined,
+): boolean {
+  return view === "checklist" && Boolean(testResult && !testResult.ok);
 }

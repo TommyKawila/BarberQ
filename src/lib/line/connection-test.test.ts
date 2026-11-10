@@ -272,8 +272,8 @@ describe("line settings checklist colors", () => {
       resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
       "utf8",
     );
-    assert.match(src, /text-red-400/);
-    assert.match(src, /text-amber-400/);
+    assert.match(src, /text-cq-danger/);
+    assert.match(src, /text-cq-amber/);
     assert.doesNotMatch(src, /text-orange-400/);
     assert.doesNotMatch(src, /text-amber-300/);
   });

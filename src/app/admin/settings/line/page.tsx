@@ -17,6 +17,7 @@ import {
 } from "@/lib/line/connection-test";
 import {
   resolveLineSettingsView,
+  shouldShowLineTestErrorOnChecklist,
   type LineSettingsView,
 } from "@/lib/line/line-settings-view";
 import { resolveLineChecklistSteps } from "@/lib/line/line-checklist-steps";
@@ -185,8 +186,8 @@ export default function LineConnectPage() {
   if (!isShopOperatorRole(profile.role)) {
     return (
       <section className="flex flex-col gap-3 px-4 py-10">
-        <p className="text-sm text-red-400">{t("admin.forbiddenOwnerOnly")}</p>
-        <Link href={shopPath("/admin")} className="text-sm text-amber-400 underline">
+        <p className="text-sm text-cq-danger">{t("admin.forbiddenOwnerOnly")}</p>
+        <Link href={shopPath("/admin")} className="text-sm text-cq-amber underline">
           {t("admin.backToBoard")}
         </Link>
       </section>
@@ -200,7 +201,7 @@ export default function LineConnectPage() {
           type="button"
           disabled={testing}
           onClick={() => void runTest()}
-          className="min-h-12 w-full rounded-xl border border-zinc-700 font-semibold text-zinc-100 disabled:opacity-50"
+          className="min-h-12 w-full rounded-xl border border-cq-outline font-semibold text-zinc-100 disabled:opacity-50"
         >
           {t("lineConnect.testAgain")}
         </button>
@@ -257,7 +258,17 @@ export default function LineConnectPage() {
             {t("common.loading")}
           </p>
         ) : null}
-        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-cq-danger">{error}</p>
+        ) : null}
+
+        {!loading &&
+        shouldShowLineTestErrorOnChecklist(view, testResult) &&
+        testResult ? (
+          <div data-testid="line-settings-checklist-error">
+            <ErrorCard result={testResult} t={t} />
+          </div>
+        ) : null}
 
         {!loading && view === "checklist" ? (
           <ChecklistCard
@@ -296,8 +307,11 @@ export default function LineConnectPage() {
             />
             <button
               type="button"
-              className="min-h-11 text-left text-sm text-amber-400"
-              onClick={() => setView("checklist")}
+              className="min-h-11 text-left text-sm text-cq-amber"
+              onClick={() => {
+                setView("checklist");
+                // Keep testResult so ErrorCard can still show above wizard until dismiss/reload.
+              }}
               data-testid="line-settings-back-to-checklist"
             >
               ← {t("lineConnect.backToChecklist")}
@@ -386,12 +400,12 @@ function ChecklistCard({
           href={SUPPORT_LINE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 flex min-h-11 items-center border-b border-zinc-800 py-3 text-sm font-medium text-amber-400 last:border-0"
+          className="mt-1 flex min-h-11 items-center border-b border-zinc-800 py-3 text-sm font-medium text-cq-amber last:border-0"
         >
           {t("lineConnect.contactTeamViaLine")}
         </a>
       ) : null}
-      <button type="button" onClick={onManual} className="mt-4 text-sm font-medium text-amber-400">
+      <button type="button" onClick={onManual} className="mt-4 text-sm font-medium text-cq-amber">
         {t("lineConnect.manualKeys")}
       </button>
     </section>
@@ -569,7 +583,7 @@ function ErrorCard({
           : result.errorMessage}
       </p>
       {result.fixHintKey ? (
-        <p className="mt-2 text-sm text-amber-400">{t(result.fixHintKey as never)}</p>
+        <p className="mt-2 text-sm text-cq-amber">{t(result.fixHintKey as never)}</p>
       ) : null}
       {result.errorCode ? (
         <p className="mt-2 text-xs text-zinc-500">
@@ -593,7 +607,7 @@ function ErrorCard({
                     ? "text-zinc-400"
                     : c.ok
                       ? "text-emerald-400"
-                      : "text-red-400"
+                      : "text-cq-danger"
                 }
               >
                 {skipped ? "○" : c.ok ? "✓" : "✗"} {checkLabel(c, t)}
@@ -648,10 +662,10 @@ function ConnectedCard({
                   c.status === "skipped"
                     ? "text-zinc-400"
                     : c.status === "manual"
-                      ? "text-amber-400"
+                      ? "text-cq-amber"
                       : c.ok
                         ? "text-emerald-400"
-                        : "text-red-400"
+                        : "text-cq-danger"
                 }
               >
                 {pending ? "○" : c.ok ? "✓" : "✗"}{" "}
@@ -682,7 +696,7 @@ function ConnectedCard({
                 href="https://help2.line.me/official_account_th/web/categoryId/200000662/3/pc?lang=th"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-2 inline-flex min-h-11 items-center text-xs text-amber-400 underline underline-offset-2"
+                className="mt-2 inline-flex min-h-11 items-center text-xs text-cq-amber underline underline-offset-2"
                 onClick={(e) => e.stopPropagation()}
               >
                 {t("lineConnect.autoReplyHelpLink")}
@@ -700,7 +714,7 @@ function ConnectedCard({
           <span className="text-zinc-400">Channel ID</span>
           <span>{channel.messagingChannelId ?? "—"}</span>
         </div>
-        <Link href={quotaHref} className="mt-3 inline-block text-sm text-amber-400">
+        <Link href={quotaHref} className="mt-3 inline-block text-sm text-cq-amber">
           {t("lineConnect.viewQuota")} →
         </Link>
       </section>
@@ -715,10 +729,10 @@ function HelpCard({ t }: { t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]
       href={SUPPORT_LINE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex min-h-11 flex-col justify-center rounded-2xl bg-zinc-900/80 p-4 ring-1 ring-amber-400/40"
+      className="flex min-h-11 flex-col justify-center rounded-2xl bg-zinc-900/80 p-4 ring-1 ring-cq-amber/40"
       data-testid="line-settings-help-card"
     >
-      <span className="text-sm font-semibold text-amber-400 underline underline-offset-2">
+      <span className="text-sm font-semibold text-cq-amber underline underline-offset-2">
         {t("lineConnect.helpTitle")}
       </span>
       <span className="mt-1 text-xs text-zinc-400">{t("lineConnect.helpBody")}</span>
