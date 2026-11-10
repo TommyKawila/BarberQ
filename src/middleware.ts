@@ -5,10 +5,14 @@ import {
   resolveLiffStateTarget,
   shopSlugFromPath,
 } from "@/lib/line/liff-deep-link";
-import { isSafeReturnPath, LIFF_RETURN_COOKIE } from "@/lib/line/liff-return";
+import {
+  isSafeReturnPath,
+  LAST_SHOP_COOKIE,
+  LIFF_RETURN_COOKIE,
+  peekLastShopReturnPath,
+} from "@/lib/line/liff-return";
 
 const DEFAULT_SHOP = "phinxstudio";
-const LAST_SHOP_COOKIE = "barberq_last_shop";
 
 function redirectWithoutLiffParams(request: NextRequest, pathname: string) {
   const url = new URL(pathname, request.url);
@@ -51,7 +55,9 @@ export function middleware(request: NextRequest) {
     url.searchParams.get("code") &&
     url.searchParams.get("liffClientId")
   ) {
-    const returnPath = liffReturnPathFromCookie(request);
+    const returnPath =
+      liffReturnPathFromCookie(request) ??
+      peekLastShopReturnPath(request.cookies.get(LAST_SHOP_COOKIE)?.value);
     if (returnPath) {
       const dest = new URL(returnPath, request.url);
       url.searchParams.forEach((value, key) => {
@@ -59,6 +65,8 @@ export function middleware(request: NextRequest) {
       });
       const res = NextResponse.redirect(dest);
       res.cookies.set(LIFF_RETURN_COOKIE, "", { path: "/", maxAge: 0 });
+      const shop = shopSlugFromPath(returnPath);
+      if (shop) return withLastShopCookie(res, shop);
       return res;
     }
   }

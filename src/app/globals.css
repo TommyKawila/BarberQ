@@ -54,6 +54,10 @@
   /* Solid fills that must stay at pre-outline-change darkness */
   --color-cq-fill-strong: var(--cq-fill-strong);
   --color-cq-fill-outline: var(--cq-fill-outline);
+  /* Explicit ClipperQ tokens for new UI (prefer over amber-/red-/zinc- aliases) */
+  --color-cq-amber: var(--cq-amber);
+  --color-cq-danger: var(--cq-danger);
+  --color-cq-outline: var(--cq-outline);
 
   --color-amber-300: #f8c15a;
   --color-amber-400: var(--cq-amber);

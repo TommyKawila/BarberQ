@@ -5,7 +5,7 @@ import {
 } from "@/lib/qa-e2e/allowlist";
 
 /**
- * Capture/review routes under `/preview/*` (hero booking + booking-success).
+ * Capture/review routes under `/preview/*` (hero booking, booking-success, LINE settings QA).
  *
  * Default:
  * - enabled on local (`BARBERQ_ENV=local` or non-production NODE_ENV)

@@ -284,6 +284,15 @@ describe("P6 customer self-reschedule", () => {
     assert.match(flow, /reschedule-confirm/);
     assert.match(flow, /BarberSelector/);
     assert.match(flow, /SlotPicker/);
+    assert.match(flow, /fetchSlots/);
+    assert.match(flow, /reschedule-dates-empty/);
+    assert.match(flow, /booking\.noBookableDates/);
+    assert.match(flow, /booking\.slotsLoadFailed/);
+    assert.match(
+      flow,
+      /disabled=\{!selectedStart \|\| submitting \|\| noBookableDates\}/,
+    );
+    assert.doesNotMatch(flow, /admin\.loadFailed/);
     assert.doesNotMatch(flow, /<select/);
   });
 
@@ -316,6 +325,7 @@ describe("P6 customer self-reschedule", () => {
     assert.match(auth, /isInClient\(\)/);
     assert.match(auth, /setReady\(true\)/);
     assert.match(auth, /LIFF_LOGIN_HANDOFF_TIMEOUT_MS/);
+    assert.match(auth, /readQaE2eClientSession/);
   });
 
   it("customer self-reschedule route pushes ticket (separate from shop flex)", () => {

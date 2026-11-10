@@ -70,35 +70,76 @@ const ERRORS: Record<
   },
 };
 
-/** Which stored secrets are missing — Channel ID is not inferred without an API call. */
+/**
+ * Which stored keys are missing.
+ * Empty Channel ID is a real missing field (not "ยังไม่ได้ตรวจ").
+ * When Channel ID is present but secret/token fail earlier, Channel ID stays
+ * skipped because it was never looked up via the Messaging API.
+ */
 export function resolveMissingKeyFailures(secrets: {
   channelSecret: string | null;
   accessToken: string | null;
+  messagingChannelId?: string | null;
 }): {
-  failIds: Array<"channel_secret" | "access_token">;
+  failIds: Array<"channel_id" | "channel_secret" | "access_token">;
   /** Dictionary key (th/en) naming only the missing field(s). */
   messageKey: string;
   fixHintKey: string;
 } | null {
+  const missingChannelId = !secrets.messagingChannelId?.trim();
   const missingSecret = !secrets.channelSecret?.trim();
   const missingToken = !secrets.accessToken?.trim();
-  if (!missingSecret && !missingToken) return null;
+  if (!missingChannelId && !missingSecret && !missingToken) return null;
+
+  const failIds: Array<"channel_id" | "channel_secret" | "access_token"> = [];
+  if (missingChannelId) failIds.push("channel_id");
+  if (missingSecret) failIds.push("channel_secret");
+  if (missingToken) failIds.push("access_token");
+
+  if (failIds.length === 3) {
+    return {
+      failIds,
+      messageKey: "lineConnect.error.missingAllKeys",
+      fixHintKey: "lineConnect.fix.missingAllKeys",
+    };
+  }
+  if (missingChannelId && missingSecret) {
+    return {
+      failIds,
+      messageKey: "lineConnect.error.missingChannelIdAndSecret",
+      fixHintKey: "lineConnect.fix.missingChannelIdAndSecret",
+    };
+  }
+  if (missingChannelId && missingToken) {
+    return {
+      failIds,
+      messageKey: "lineConnect.error.missingChannelIdAndToken",
+      fixHintKey: "lineConnect.fix.missingChannelIdAndToken",
+    };
+  }
   if (missingSecret && missingToken) {
     return {
-      failIds: ["channel_secret", "access_token"],
+      failIds,
       messageKey: "lineConnect.error.missingSecretAndToken",
       fixHintKey: "lineConnect.fix.missingSecretAndToken",
     };
   }
+  if (missingChannelId) {
+    return {
+      failIds,
+      messageKey: "lineConnect.error.missingChannelId",
+      fixHintKey: "lineConnect.fix.missingChannelId",
+    };
+  }
   if (missingSecret) {
     return {
-      failIds: ["channel_secret"],
+      failIds,
       messageKey: "lineConnect.error.missingSecret",
       fixHintKey: "lineConnect.fix.missingSecret",
     };
   }
   return {
-    failIds: ["access_token"],
+    failIds,
     messageKey: "lineConnect.error.missingToken",
     fixHintKey: "lineConnect.fix.missingToken",
   };
@@ -203,19 +244,24 @@ export async function testShopLineConnection(
   const secrets = await getShopLineChannelSecrets(shopId);
   const checks = buildInitialConnectionChecks();
 
-  const missing = resolveMissingKeyFailures(secrets);
+  const missing = resolveMissingKeyFailures({
+    ...secrets,
+    messagingChannelId: existing?.messagingChannelId ?? null,
+  });
   if (missing) {
     for (const id of missing.failIds) {
       setCheck(
         checks,
         id,
         "fail",
-        id === "channel_secret"
-          ? "lineConnect.check.channelSecretMissing"
-          : "lineConnect.check.accessTokenMissing",
+        id === "channel_id"
+          ? "lineConnect.check.channelIdMissing"
+          : id === "channel_secret"
+            ? "lineConnect.check.channelSecretMissing"
+            : "lineConnect.check.accessTokenMissing",
       );
     }
-    // Channel ID was never looked up — stay skipped (ยังไม่ได้ตรวจ).
+    // Channel ID present but not API-checked stays skipped (ยังไม่ได้ตรวจ).
     const channel = await upsertShopLineChannel(shopId, {
       status: "broken",
       lastErrorCode: "MISSING_KEYS",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { enUS, th } from "date-fns/locale";
 import { BarberSelector } from "@/components/customer/BarberSelector";
@@ -8,6 +8,7 @@ import { DateSelector } from "@/components/customer/DateSelector";
 import { SlotPicker } from "@/components/customer/SlotPicker";
 import {
   bookingErrorI18nKey,
+  isCustomerDateDisabled,
   isShopClosedOnDate,
 } from "@/lib/booking/customer-flow";
 import { useShopBrand } from "@/lib/brand/shop-brand";
@@ -48,6 +49,7 @@ export function RescheduleFlow({
   const [dateISO, setDateISO] = useState<string | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -63,35 +65,64 @@ export function RescheduleFlow({
   const shopHours = normalizeShopHours(hours);
   const barber = barbers.find((b) => b.id === barberId) ?? null;
   const dateLocale = locale === "th" ? th : enUS;
+  const offDays = barber?.off_days ?? [];
+  const firstOpen = useMemo(
+    () =>
+      barberId
+        ? dates.find((d) => !isCustomerDateDisabled(d, shopHours, offDays))
+        : undefined,
+    [barberId, dates, shopHours, offDays],
+  );
+  const noBookableDates = Boolean(barberId && dates.length > 0 && !firstOpen);
+
+  const fetchSlots = useCallback(
+    async (opts: { barberId: string; dateISO: string; signal?: AbortSignal }) => {
+      setSlotsLoading(true);
+      setSlotsError(false);
+      setSelectedStart(null);
+      try {
+        const params = new URLSearchParams({
+          date: opts.dateISO,
+          barberId: opts.barberId,
+          excludeAppointmentId: appointment.id,
+        });
+        const res = await fetch(`${shopApi("/slots")}?${params.toString()}`, {
+          signal: opts.signal,
+        });
+        if (!res.ok) throw new Error("slots_failed");
+        const json = (await res.json()) as { slots?: Slot[] };
+        if (opts.signal?.aborted) return;
+        setSlots(json.slots ?? []);
+        setSlotsError(false);
+      } catch (err) {
+        if (opts.signal?.aborted) return;
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setSlots([]);
+        setSlotsError(true);
+      } finally {
+        if (!opts.signal?.aborted) setSlotsLoading(false);
+      }
+    },
+    [appointment.id, shopApi],
+  );
+
+  // Sync parent dateISO with DateSelector's visual "today" so SlotPicker mounts
+  // (DateSelector highlights today when value is null without calling onChange).
+  useEffect(() => {
+    if (dateISO || !barberId) return;
+    if (firstOpen) setDateISO(firstOpen);
+  }, [barberId, dateISO, firstOpen]);
 
   useEffect(() => {
     if (!barberId || !dateISO) {
       setSlots([]);
+      setSlotsError(false);
       return;
     }
-    let cancelled = false;
-    setSlotsLoading(true);
-    setSelectedStart(null);
-    void (async () => {
-      try {
-        const params = new URLSearchParams({
-          date: dateISO,
-          barberId,
-          excludeAppointmentId: appointment.id,
-        });
-        const res = await fetch(`${shopApi("/slots")}?${params.toString()}`);
-        const json = (await res.json()) as { slots?: Slot[] };
-        if (!cancelled) setSlots(json.slots ?? []);
-      } catch {
-        if (!cancelled) setSlots([]);
-      } finally {
-        if (!cancelled) setSlotsLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [appointment.id, barberId, dateISO, shopApi]);
+    const ac = new AbortController();
+    void fetchSlots({ barberId, dateISO, signal: ac.signal });
+    return () => ac.abort();
+  }, [barberId, dateISO, fetchSlots]);
 
   async function handleConfirm() {
     if (!appointment.cancel_token || !barberId || !selectedStart) return;
@@ -160,7 +191,9 @@ export function RescheduleFlow({
         </header>
 
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {message ? <p className="mb-3 text-sm text-red-400">{message}</p> : null}
+          {message ? (
+            <p className="mb-3 text-sm text-cq-danger">{message}</p>
+          ) : null}
 
           {confirming && selectedStart && selectedBarber ? (
             <div className="flex flex-col gap-3" data-testid="reschedule-confirm">
@@ -188,28 +221,43 @@ export function RescheduleFlow({
                 type="button"
                 disabled={submitting}
                 onClick={() => setConfirming(false)}
-                className="min-h-11 rounded-xl border border-zinc-700 text-sm text-zinc-200 disabled:opacity-50"
+                className="min-h-11 rounded-xl border border-cq-outline text-sm text-zinc-200 disabled:opacity-50"
               >
                 {t("common.back")}
               </button>
             </div>
           ) : (
             <div className="flex flex-col gap-5">
-              <section>
-                <h3 className="mb-2 text-sm font-medium">{t("booking.stepBarber")}</h3>
-                <BarberSelector
-                  barbers={barbers}
-                  value={barberId}
-                  onChange={(id) => {
-                    setBarberId(id);
-                    setDateISO(null);
-                    setSelectedStart(null);
-                    setConfirming(false);
-                  }}
-                />
-              </section>
+              {barbers.length === 0 ? (
+                <p className="text-sm text-zinc-400" data-testid="reschedule-empty-barbers">
+                  {t("onboarding.noBarbers")}
+                </p>
+              ) : (
+                <section>
+                  <h3 className="mb-2 text-sm font-medium">{t("booking.stepBarber")}</h3>
+                  <BarberSelector
+                    barbers={barbers}
+                    value={barberId}
+                    onChange={(id) => {
+                      setBarberId(id);
+                      setDateISO(null);
+                      setSelectedStart(null);
+                      setConfirming(false);
+                    }}
+                  />
+                </section>
+              )}
 
-              {barberId ? (
+              {barberId && noBookableDates ? (
+                <p
+                  className="text-sm text-zinc-400"
+                  data-testid="reschedule-dates-empty"
+                >
+                  {t("booking.noBookableDates")}
+                </p>
+              ) : null}
+
+              {barberId && !noBookableDates ? (
                 <section data-testid="reschedule-date-section">
                   <h3 className="mb-2 text-sm font-medium">{t("booking.stepDate")}</h3>
                   <DateSelector
@@ -225,17 +273,38 @@ export function RescheduleFlow({
                 </section>
               ) : null}
 
-              {barberId && dateISO ? (
+              {barberId && dateISO && !noBookableDates ? (
                 <section data-testid="reschedule-time-section">
                   <h3 className="mb-2 text-sm font-medium">{t("booking.stepTime")}</h3>
-                  <SlotPicker
-                    slots={slots}
-                    value={selectedStart}
-                    loading={slotsLoading}
-                    shopClosed={shopClosed}
-                    onChange={setSelectedStart}
-                  />
+                  {slotsError ? (
+                    <div className="space-y-2" data-testid="reschedule-slots-error">
+                      <p className="text-sm text-cq-danger">
+                        {t("booking.slotsLoadFailed")}
+                      </p>
+                      <button
+                        type="button"
+                        className="min-h-11 rounded-xl border border-cq-outline px-3 text-sm text-zinc-200"
+                        onClick={() => {
+                          void fetchSlots({ barberId, dateISO });
+                        }}
+                      >
+                        {t("owner.retry")}
+                      </button>
+                    </div>
+                  ) : (
+                    <SlotPicker
+                      slots={slots}
+                      value={selectedStart}
+                      loading={slotsLoading}
+                      shopClosed={shopClosed}
+                      onChange={setSelectedStart}
+                    />
+                  )}
                 </section>
+              ) : barberId && !noBookableDates && !dateISO ? (
+                <p className="text-sm text-zinc-500" data-testid="reschedule-date-loading">
+                  {t("common.loading")}
+                </p>
               ) : null}
             </div>
           )}
@@ -245,7 +314,7 @@ export function RescheduleFlow({
           <footer className="shrink-0 space-y-2 border-t border-zinc-800 px-4 py-3">
             <button
               type="button"
-              disabled={!selectedStart || submitting}
+              disabled={!selectedStart || submitting || noBookableDates}
               onClick={() => setConfirming(true)}
               className="w-full min-h-12 rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950 disabled:opacity-50"
               data-testid="reschedule-continue"

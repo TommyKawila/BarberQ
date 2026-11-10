@@ -11,6 +11,7 @@ import {
   __resetSharedLiffInitForTests,
   ensureLiffInit,
 } from "@/lib/line/liff-init";
+import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
 
 const REF_KEY = "barberq_customer_ref";
 
@@ -91,6 +92,17 @@ export function useLineAuth() {
   const [isInClient, setIsInClient] = useState(false);
 
   useEffect(() => {
+    // QA E2E shortcut (barberq-qa only): same bearer used by getLineAuthHeaders.
+    const qa = readQaE2eClientSession();
+    if (qa?.token) {
+      setProfile({
+        userId: qa.lineUserId || "qa-e2e",
+        displayName: "QA E2E",
+      });
+      setReady(true);
+      return;
+    }
+
     if (mockMode) {
       setProfile(loadMockProfile());
       setReady(true);

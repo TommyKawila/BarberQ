@@ -16,6 +16,7 @@ import {
 import { isBlockingStatus } from "@/lib/appointment-status";
 import { selectAdminBoardBarbers } from "@/lib/barber/board-visibility";
 import { runBookingSideEffect } from "@/lib/booking/booking-side-effects";
+import { closeQrQueueForAppointment } from "@/lib/queue/qr-queue-store";
 import { scheduleBookingReminder } from "@/lib/reminders/schedule-booking";
 import { normalizeShopHours } from "@/lib/shop/shop-hours";
 import { isShopOperatorRole, type StaffAuth } from "@/lib/admin-auth";
@@ -32,6 +33,18 @@ import type {
   Slot,
   TimeBlock,
 } from "@/types/booking";
+
+/** Close linked walk-in queue row after appointment ends; never fail the booking op. */
+async function closeLinkedQrQueue(appointment: Appointment): Promise<Appointment> {
+  return runBookingSideEffect(
+    appointment,
+    async () => {
+      await closeQrQueueForAppointment(appointment.id);
+      return appointment;
+    },
+    { appointmentId: appointment.id, event: "qr_queue_close_on_appointment_end" },
+  );
+}
 
 export class BookingError extends Error {
   readonly code: string;
@@ -523,7 +536,8 @@ export async function cancelBooking(
         400,
       );
     }
-    return await store.cancelAppointment(appointmentId, customerRef.trim());
+    const cancelled = await store.cancelAppointment(appointmentId, customerRef.trim());
+    return closeLinkedQrQueue(cancelled);
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
@@ -535,7 +549,8 @@ export async function staffCancelBooking(appointmentId: string): Promise<Appoint
     throw new BookingError("INVALID_ID", "Invalid appointment id", 400);
   }
   try {
-    return await getStore().staffCancelAppointment(appointmentId);
+    const cancelled = await getStore().staffCancelAppointment(appointmentId);
+    return closeLinkedQrQueue(cancelled);
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
@@ -596,7 +611,8 @@ export async function cancelBookingByToken(token: string): Promise<Appointment> 
         400,
       );
     }
-    return await getStore().cancelAppointmentByToken(trimmed);
+    const cancelled = await getStore().cancelAppointmentByToken(trimmed);
+    return closeLinkedQrQueue(cancelled);
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);
@@ -805,7 +821,12 @@ export async function markAppointmentOutcome(
     if (outcome === "no_show" && existing.source === "walk_in") {
       throw new BookingError("INVALID_OUTCOME", "Walk-in cannot be marked no-show", 400);
     }
-    return await getStore().markAppointmentOutcome(appointmentId, outcome, options);
+    const updated = await getStore().markAppointmentOutcome(
+      appointmentId,
+      outcome,
+      options,
+    );
+    return closeLinkedQrQueue(updated);
   } catch (error) {
     if (error instanceof BookingError) throw error;
     throw mapStoreError(error);

@@ -30,22 +30,35 @@ export async function notifyCustomerShopReschedule(
   after: Appointment,
   reason?: string | null,
 ): Promise<void> {
-  if (!shouldSendLineReschedulePush(after)) return;
-  const lineId = after.customer_line_id!.trim();
+  // Prefer after; fall back to before when RPC payload omits LINE id (seen on
+  // cross-barber moves when the returned row is incomplete).
+  const lineId =
+    after.customer_line_id?.trim() || before.customer_line_id?.trim() || "";
+  if (!lineId) return;
 
   const store = getStore();
-  const barber = await store.getBarber(after.barber_id);
+  // Re-fetch so barber_id / cancel_token are canonical after a barber change.
+  const fresh = (await store.getAppointment(after.id)) ?? after;
+  const barber = await store.getBarber(fresh.barber_id);
   const settings = await store.getShopSettings(shop.id);
   const bookingsUrl = shopRescheduleBookingsUrl(shop.slug);
-  const cancelUrl = after.cancel_token
-    ? buildCustomerCancelUrl(after.cancel_token)
+  const cancelUrl = fresh.cancel_token
+    ? buildCustomerCancelUrl(fresh.cancel_token)
     : bookingsUrl;
+
+  let barberName = barber?.name ?? "—";
+  if (before.barber_id !== fresh.barber_id) {
+    const oldBarber = await store.getBarber(before.barber_id);
+    if (oldBarber?.name && barber?.name && oldBarber.name !== barber.name) {
+      barberName = `${oldBarber.name} → ${barber.name}`;
+    }
+  }
 
   const flex = buildShopRescheduleFlex({
     shopName: shop.name,
     oldStartTime: before.start_time,
-    newStartTime: after.start_time,
-    barberName: barber?.name ?? "—",
+    newStartTime: fresh.start_time,
+    barberName,
     reason: reason ?? null,
     acceptUrl: bookingsUrl,
     pickUrl: bookingsUrl,
@@ -58,6 +71,6 @@ export async function notifyCustomerShopReschedule(
     lineId,
     [flex],
     "push_reschedule",
-    after.id,
+    fresh.id,
   );
 }

@@ -109,9 +109,32 @@ export function QrQueueMine() {
     );
   }
 
-  const barberLabel =
-    view.preferredBarberName ??
-    (view.entry.preferred_barber_id ? "ช่างที่เลือก" : "ช่างที่ว่างก่อน");
+  const serving = view.entry.status === "started";
+  const barberLabel = serving
+    ? (view.assignedBarberName ??
+      view.preferredBarberName ??
+      (view.entry.assigned_barber_id || view.entry.preferred_barber_id
+        ? "ช่างที่เลือก"
+        : "ช่างที่ว่างก่อน"))
+    : (view.preferredBarberName ??
+      (view.entry.preferred_barber_id ? "ช่างที่เลือก" : "ช่างที่ว่างก่อน"));
+
+  if (serving) {
+    return (
+      <div className="flex flex-col gap-5 px-4 py-6" data-testid="qr-queue-serving">
+        <div>
+          <p className="text-xs text-zinc-500">คิวของฉัน · อัปเดตอัตโนมัติ</p>
+          <h1 className="mt-1 text-2xl font-semibold">กำลังตัด</h1>
+        </div>
+        <div className="rounded-2xl bg-zinc-900 p-6 text-center">
+          <p className="text-sm text-zinc-400">ร้านกำลังตัดให้คุณอยู่</p>
+          <p className="mt-3 text-lg font-semibold text-amber-400">กำลังตัด</p>
+          <p className="mt-2 text-xs text-zinc-500">ช่าง: {barberLabel}</p>
+        </div>
+        {error ? <p className="text-sm text-red-400">{error}</p> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5 px-4 py-6">

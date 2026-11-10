@@ -1,8 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { memoryStore } from "@/lib/data/memory-store";
 import {
   cancelQrQueueEntry,
+  getMyQrQueue,
   joinQrQueue,
   listShopWaitingQueue,
   markQrQueueLeft,
@@ -11,7 +14,18 @@ import {
 } from "@/lib/queue/qr-queue-service";
 import type { StaffAuth } from "@/lib/admin-auth";
 import { pickFirstAvailableBarber } from "@/lib/queue/qr-queue-logic";
+import {
+  __backdateQrQueueEntryForTests,
+  getQrQueueEntry,
+} from "@/lib/queue/qr-queue-store";
+import {
+  markAppointmentOutcome,
+  staffCancelBooking,
+} from "@/lib/services/booking-service";
+import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { ShopHours } from "@/lib/shop/shop-hours";
+import { fromZonedTime } from "date-fns-tz";
+import { addDays } from "date-fns";
 
 const ALL_DAY_OPEN: ShopHours = Array.from({ length: 7 }, () => ({
   closed: false,
@@ -99,6 +113,166 @@ describe("qr-queue service ordering", () => {
     assert.equal(afterLeft.length, 1);
     assert.equal(afterLeft[0].entry.customer_line_id, c.entry.customer_line_id);
     assert.equal(afterLeft[0].position, 1);
+  });
+});
+
+describe("qr-queue one active walk-in per customer", () => {
+  it("migration 0052 indexes waiting+started and closes stale started", () => {
+    const sql = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/0052_qr_queue_one_active_per_customer.sql"),
+      "utf8",
+    );
+    const precheck = readFileSync(
+      resolve(process.cwd(), "docs/sql/0052-precheck.sql"),
+      "utf8",
+    );
+    assert.match(sql, /qr_queue_one_active_per_customer/);
+    assert.match(sql, /status in \('waiting', 'started'\)/);
+    assert.match(sql, /drop index if exists qr_queue_one_waiting_per_customer/);
+    assert.match(sql, /status = 'left'/);
+    assert.match(sql, /Asia\/Bangkok/);
+    assert.match(sql, /'completed', 'no_show', 'cancelled', 'left'/);
+    assert.match(precheck, /started_total/);
+    assert.match(precheck, /count\(\*\) as started_total/);
+  });
+
+  it("blocks a second join while waiting", async () => {
+    const { shop } = await freshShop("dup-wait");
+    const lineId = `dup-${shop.id}`;
+    const first = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "One",
+    });
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "One again",
+    });
+    assert.equal(again.entry.id, first.entry.id);
+    assert.equal(again.entry.status, "waiting");
+  });
+
+  it("blocks a second join while started (being served)", async () => {
+    const { shop, barber, staff } = await freshShop("dup-started");
+    const lineId = `started-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Serving",
+      preferredBarberId: barber.id,
+    });
+    await startQrQueueEntry(shop.id, joined.entry.id, staff, { now: new Date() });
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Serving again",
+    });
+    assert.equal(again.entry.id, joined.entry.id);
+    assert.equal(again.entry.status, "started");
+  });
+
+  it("getMyQrQueue still returns the entry after เริ่มตัด (started)", async () => {
+    const { shop, barber, staff } = await freshShop("mine-started");
+    const lineId = `mine-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Mine",
+      preferredBarberId: barber.id,
+    });
+    await startQrQueueEntry(shop.id, joined.entry.id, staff, { now: new Date() });
+    const mine = await getMyQrQueue(shop.id, lineId);
+    assert.ok(mine);
+    assert.equal(mine.entry.status, "started");
+    assert.equal(mine.entry.id, joined.entry.id);
+  });
+
+  it("after เสร็จ, same customer can rejoin and คิวของฉัน clears", async () => {
+    const { shop, barber, staff } = await freshShop("rejoin-done");
+    const lineId = `rejoin-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Repeat",
+      preferredBarberId: barber.id,
+    });
+    const started = await startQrQueueEntry(shop.id, joined.entry.id, staff, {
+      now: new Date(),
+    });
+    await markAppointmentOutcome(started.appointment.id, "completed");
+
+    const closed = await getQrQueueEntry(joined.entry.id);
+    assert.equal(closed?.status, "left");
+    assert.equal(await getMyQrQueue(shop.id, lineId), null);
+
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Repeat again",
+    });
+    assert.notEqual(again.entry.id, joined.entry.id);
+    assert.equal(again.entry.status, "waiting");
+    const mine = await getMyQrQueue(shop.id, lineId);
+    assert.ok(mine);
+    assert.equal(mine.entry.id, again.entry.id);
+    assert.equal(mine.entry.status, "waiting");
+  });
+
+  it("after staff cancel of started walk-in, customer can rejoin", async () => {
+    const { shop, barber, staff } = await freshShop("rejoin-cancel");
+    const lineId = `cancel-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "CancelMe",
+      preferredBarberId: barber.id,
+    });
+    const started = await startQrQueueEntry(shop.id, joined.entry.id, staff, {
+      now: new Date(),
+    });
+    await staffCancelBooking(started.appointment.id);
+    assert.equal((await getQrQueueEntry(joined.entry.id))?.status, "left");
+    assert.equal(await getMyQrQueue(shop.id, lineId), null);
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "CancelMe again",
+    });
+    assert.equal(again.entry.status, "waiting");
+    assert.notEqual(again.entry.id, joined.entry.id);
+  });
+
+  it("yesterday เริ่มตัด without เสร็จ → today same customer can rejoin; คิวของฉัน clears", async () => {
+    const { shop, barber, staff } = await freshShop("stale-started");
+    const lineId = `stale-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "ForgotDone",
+      preferredBarberId: barber.id,
+    });
+    await startQrQueueEntry(shop.id, joined.entry.id, staff, { now: new Date() });
+
+    const today = dateISOFromInstant(new Date());
+    const yesterday = dateISOFromInstant(
+      addDays(fromZonedTime(`${today}T12:00:00`, SHOP_TIMEZONE), -1),
+    );
+    __backdateQrQueueEntryForTests(
+      joined.entry.id,
+      fromZonedTime(`${yesterday}T12:00:00`, SHOP_TIMEZONE).toISOString(),
+    );
+
+    assert.equal(await getMyQrQueue(shop.id, lineId), null);
+    assert.equal((await getQrQueueEntry(joined.entry.id))?.status, "left");
+
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "ForgotDone again",
+    });
+    assert.notEqual(again.entry.id, joined.entry.id);
+    assert.equal(again.entry.status, "waiting");
   });
 });
 

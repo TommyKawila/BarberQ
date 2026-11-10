@@ -97,7 +97,9 @@ export function LineSupportInbox({ token }: { token: string }) {
                   ) : null}
                 </td>
                 <td className="px-3 py-2 text-zinc-400">
-                  {new Date(row.created_at).toLocaleString(dateLocale)}
+                  {new Date(row.created_at).toLocaleString(dateLocale, {
+                    timeZone: "Asia/Bangkok",
+                  })}
                 </td>
                 <td className="px-3 py-2">{row.line_oa}</td>
                 <td className="px-3 py-2 text-zinc-400">{row.rich_menu_state}</td>

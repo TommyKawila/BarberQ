@@ -35,6 +35,17 @@ export function __resetQrQueueStoreForTests() {
   memoryEntries.length = 0;
 }
 
+/** Prototype/tests only: backdate created_at (e.g. yesterday "เริ่มตัด" without เสร็จ). */
+export function __backdateQrQueueEntryForTests(id: string, createdAt: string): void {
+  const idx = memoryEntries.findIndex((e) => e.id === id);
+  if (idx < 0) throw new Error("NOT_FOUND");
+  memoryEntries[idx] = {
+    ...memoryEntries[idx],
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+}
+
 export async function insertQrQueueEntry(input: JoinQrQueueInput): Promise<QrQueueEntry> {
   const preferred =
     input.preferredBarberId && input.preferredBarberId.trim()
@@ -48,7 +59,7 @@ export async function insertQrQueueEntry(input: JoinQrQueueInput): Promise<QrQue
       (e) =>
         e.shop_id === input.shopId &&
         e.customer_line_id === lineId &&
-        e.status === "waiting",
+        (e.status === "waiting" || e.status === "started"),
     );
     if (existing) {
       const err = new Error("ALREADY_WAITING");
@@ -155,6 +166,78 @@ export async function getWaitingQrQueueForCustomer(
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? mapRow(data as Record<string, unknown>) : null;
+}
+
+/** Active = waiting in line OR currently being served (started). */
+export async function getActiveQrQueueForCustomer(
+  shopId: string,
+  customerLineId: string,
+): Promise<QrQueueEntry | null> {
+  const lineId = customerLineId.trim();
+  if (isPrototypeMode()) {
+    const active = memoryEntries.filter(
+      (e) =>
+        e.shop_id === shopId &&
+        e.customer_line_id === lineId &&
+        (e.status === "waiting" || e.status === "started"),
+    );
+    // Prefer started (being served) over a stale waiting row if both somehow exist.
+    return (
+      active.find((e) => e.status === "started") ??
+      active.find((e) => e.status === "waiting") ??
+      null
+    );
+  }
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("qr_queue_entries")
+    .select("*")
+    .eq("shop_id", shopId)
+    .eq("customer_line_id", lineId)
+    .in("status", ["waiting", "started"])
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data as Record<string, unknown>) : null;
+}
+
+/**
+ * When a linked appointment ends (done / no-show / cancelled / left), close the
+ * active walk-in row so the customer can join again and "คิวของฉัน" clears.
+ */
+export async function closeQrQueueForAppointment(
+  appointmentId: string,
+): Promise<QrQueueEntry | null> {
+  const id = appointmentId.trim();
+  if (!id) return null;
+
+  if (isPrototypeMode()) {
+    const idx = memoryEntries.findIndex(
+      (e) =>
+        e.appointment_id === id &&
+        (e.status === "waiting" || e.status === "started"),
+    );
+    if (idx < 0) return null;
+    const next: QrQueueEntry = {
+      ...memoryEntries[idx],
+      status: "left",
+      updated_at: nowIso(),
+    };
+    memoryEntries[idx] = next;
+    return next;
+  }
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("qr_queue_entries")
+    .update({ status: "left", updated_at: nowIso() })
+    .eq("appointment_id", id)
+    .in("status", ["waiting", "started"])
+    .select("*");
+  if (error) throw new Error(error.message);
+  const row = (data ?? [])[0];
+  return row ? mapRow(row as Record<string, unknown>) : null;
 }
 
 export async function updateQrQueueEntry(

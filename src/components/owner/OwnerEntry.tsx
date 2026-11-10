@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import liff from "@line/liff";
 import { MarketingFooter } from "@/components/marketing/MarketingFooter";
@@ -21,9 +21,13 @@ import {
   OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS,
   ownerEntryPhase,
 } from "@/lib/owner/owner-entry-auth";
+import { isStandaloneDisplay } from "@/lib/pwa/standalone-display";
 
 const BROWSER_MISMATCH_MESSAGE =
   "ล็อกอินไม่สำเร็จ เพราะเปิดคนละเบราว์เซอร์ กดล็อกอินใหม่ในเบราว์เซอร์เดียวกัน";
+
+const STANDALONE_LOGIN_MESSAGE =
+  "ล็อกอินจากแอปหน้าจอโฮมค้างได้ เปิดลิงก์นี้ใน Safari แล้วกดเข้าสู่ระบบด้วย LINE อีกครั้ง";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -55,6 +59,8 @@ export function OwnerEntry() {
   const [error, setError] = useState<string | null>(null);
   /** Safari→Chrome OAuth handoff: show mismatch + single retry CTA (no auto re-login). */
   const [browserMismatch, setBrowserMismatch] = useState(false);
+  const [standaloneHint, setStandaloneHint] = useState(false);
+  const manualLoginTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const loadShops = useCallback(
     async (lineId?: string) => {
@@ -188,19 +194,53 @@ export function OwnerEntry() {
   function onLogin() {
     if (mockMode) {
       setBrowserMismatch(false);
+      setStandaloneHint(false);
       setLoggedIn(true);
       void loadShops(MOCK_OWNER_LINE_ID);
       return;
     }
     clearLiffCallbackGuard();
     setBrowserMismatch(false);
+    setStandaloneHint(false);
     setError(null);
+
+    // Home Screen / standalone WKWebView often never returns from liff.login.
+    // Never leave ready=false forever — restore CTA with a clear Safari hint.
+    if (manualLoginTimerRef.current) clearTimeout(manualLoginTimerRef.current);
     setReady(false);
+    manualLoginTimerRef.current = setTimeout(() => {
+      setReady(true);
+      setLoggedIn(false);
+      if (isStandaloneDisplay()) {
+        setStandaloneHint(true);
+        setError(STANDALONE_LOGIN_MESSAGE);
+      } else {
+        setBrowserMismatch(true);
+        setError(BROWSER_MISMATCH_MESSAGE);
+      }
+    }, OWNER_LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
+
     saveLiffReturnPath("/owner");
     // Path-specific redirectUri: callback can complete on /owner without the
     // Safari cookie when LINE honors this URI (Endpoint URL + /owner).
-    liff.login({ redirectUri: buildOwnerEntryLoginRedirectUri() });
+    try {
+      liff.login({ redirectUri: buildOwnerEntryLoginRedirectUri() });
+    } catch {
+      if (manualLoginTimerRef.current) clearTimeout(manualLoginTimerRef.current);
+      setReady(true);
+      setStandaloneHint(isStandaloneDisplay());
+      setError(
+        isStandaloneDisplay() ? STANDALONE_LOGIN_MESSAGE : BROWSER_MISMATCH_MESSAGE,
+      );
+      setBrowserMismatch(!isStandaloneDisplay());
+    }
   }
+
+  useEffect(() => {
+    return () => {
+      if (manualLoginTimerRef.current) clearTimeout(manualLoginTimerRef.current);
+    };
+  }, []);
 
   const phase = ownerEntryPhase({
     ready,
@@ -222,14 +262,31 @@ export function OwnerEntry() {
           เข้าสู่ระบบด้วย LINE ของเจ้าของร้านหรือช่างที่ผูกไว้แล้ว ระบบจะพาไปบอร์ดคิวของร้านคุณ
         </p>
 
-        {browserMismatch ? (
-          <div className="mt-8 space-y-4" data-testid="owner-entry-browser-mismatch">
+        {browserMismatch || standaloneHint ? (
+          <div
+            className="mt-8 space-y-4"
+            data-testid={
+              standaloneHint ? "owner-entry-standalone-hint" : "owner-entry-browser-mismatch"
+            }
+          >
             <p
-              className="rounded-xl border border-amber-500/40 bg-amber-400/10 p-4 text-[15px] text-amber-100"
+              className="rounded-xl border border-cq-amber/40 bg-cq-amber/10 p-4 text-[15px] text-amber-100"
               role="alert"
             >
-              {error ?? BROWSER_MISMATCH_MESSAGE}
+              {error ??
+                (standaloneHint ? STANDALONE_LOGIN_MESSAGE : BROWSER_MISMATCH_MESSAGE)}
             </p>
+            {standaloneHint ? (
+              <a
+                href="/owner"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-cq-outline px-6 py-3 text-base font-semibold text-zinc-100"
+                data-testid="owner-entry-open-safari"
+              >
+                เปิดใน Safari
+              </a>
+            ) : null}
             <button
               type="button"
               onClick={onLogin}
@@ -242,13 +299,14 @@ export function OwnerEntry() {
         ) : null}
 
         {!browserMismatch &&
+        !standaloneHint &&
         (phase === "auth-loading" || phase === "shops-loading" || phase === "redirecting") ? (
           <p className="mt-8 text-sm text-zinc-500" role="status" data-testid="owner-entry-loading">
             {phase === "redirecting" ? "กำลังเข้าหน้าร้าน…" : "กำลังตรวจสอบ…"}
           </p>
         ) : null}
 
-        {!browserMismatch && phase === "login" ? (
+        {!browserMismatch && !standaloneHint && phase === "login" ? (
           <div className="mt-8 space-y-3" data-testid="owner-entry-login">
             <p className="text-sm text-zinc-400">
               ล็อกอินด้วย LINE เพื่อเข้าบอร์ดร้าน (บนคอมพิวเตอร์สแกน QR หรือใช้อีเมลได้)
@@ -264,7 +322,7 @@ export function OwnerEntry() {
           </div>
         ) : null}
 
-        {!browserMismatch && phase === "empty" ? (
+        {!browserMismatch && !standaloneHint && phase === "empty" ? (
           <div className="mt-8 space-y-4" data-testid="owner-entry-empty">
             <p className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-4 text-[15px] text-zinc-300">
               ยังไม่พบร้านที่ผูกกับบัญชี LINE นี้ — ทดลองใช้ฟรี 30 วันได้เลย ไม่ต้องผูกบัตร
@@ -278,7 +336,7 @@ export function OwnerEntry() {
           </div>
         ) : null}
 
-        {!browserMismatch && phase === "pick" ? (
+        {!browserMismatch && !standaloneHint && phase === "pick" ? (
           <ul className="mt-8 space-y-3" data-testid="owner-entry-pick">
             {shops.map((shop) => (
               <li key={shop.id}>
@@ -294,9 +352,9 @@ export function OwnerEntry() {
           </ul>
         ) : null}
 
-        {!browserMismatch && phase === "error" ? (
+        {!browserMismatch && !standaloneHint && phase === "error" ? (
           <div className="mt-8 space-y-4" data-testid="owner-entry-error">
-            <p className="text-sm text-red-400" role="alert">
+            <p className="text-sm text-cq-danger" role="alert">
               {error}
             </p>
             <button

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after as afterResponse, NextResponse } from "next/server";
 import { jsonError, readJson } from "@/lib/api-response";
 import { notifyCustomerSelfRescheduleTicket } from "@/lib/line/customer-reschedule-notify";
 import {
@@ -34,17 +34,34 @@ export async function POST(req: Request) {
     );
     const shop = await resolveShopFromAppointment(after);
     if (shop) {
-      // Fire-and-forget: reschedule already committed; push failure must not fail the API.
-      void notifyCustomerSelfRescheduleTicket(shop, before, after).catch(() => {});
-      void notifyStaffWebPush({
-        shopId: shop.id,
-        shopSlug: shop.slug,
-        shopName: shop.name,
-        appointment: after,
-        event: "reschedule",
-        previousBarberId: before.barber_id,
-        previousStartTime: before.start_time,
-      }).catch(() => {});
+      // Keep isolate alive so cross-barber notify (extra barber lookups) finishes.
+      afterResponse(async () => {
+        try {
+          await notifyCustomerSelfRescheduleTicket(shop, before, after);
+        } catch (err) {
+          console.warn(
+            JSON.stringify({
+              event: "customer_reschedule_notify_failed",
+              appointmentId: after.id,
+              barberChanged: before.barber_id !== after.barber_id,
+              error: err instanceof Error ? err.message : String(err),
+            }),
+          );
+        }
+        try {
+          await notifyStaffWebPush({
+            shopId: shop.id,
+            shopSlug: shop.slug,
+            shopName: shop.name,
+            appointment: after,
+            event: "reschedule",
+            previousBarberId: before.barber_id,
+            previousStartTime: before.start_time,
+          });
+        } catch {
+          /* ignore webpush */
+        }
+      });
     }
     return NextResponse.json({ appointment: after, previous: before });
   } catch (error) {

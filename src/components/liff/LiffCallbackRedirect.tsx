@@ -5,6 +5,7 @@ import {
   consumeLiffReturnPath,
   hasLiffCallbackGuard,
   oauthCodeFromSearch,
+  peekLastShopReturnPath,
   resolveLiffCallbackAction,
   setLiffCallbackGuard,
 } from "@/lib/line/liff-return";
@@ -13,11 +14,8 @@ import {
  * LIFF authorize often redirects to the Endpoint URL (`/`) with ?code=&liffClientId=.
  * We then forward to the path saved in cookie/session before login.
  *
- * If that cookie is missing (Safari started login, Chrome opened the callback),
- * NEVER replace with `/?code=…` again — that refreshes forever. Stop on `/`
- * for customer/admin/claim; owner mismatch UX is handled on `/owner` itself
- * (path-specific redirectUri). Guard is bound to OAuth `code` and cleared on
- * each new `saveLiffReturnPath` so a later login in the same tab can forward.
+ * If that cookie is missing (Safari Private / browser switch), try last-shop
+ * cookie before stopping on marketing `/`. Never self-replace with `/?code=…`.
  */
 export function LiffCallbackRedirect() {
   useEffect(() => {
@@ -26,6 +24,7 @@ export function LiffCallbackRedirect() {
     const action = resolveLiffCallbackAction({
       search,
       returnPath: consumeLiffReturnPath(),
+      fallbackShopPath: peekLastShopReturnPath(),
       guardAlreadySet: hasLiffCallbackGuard(oauthCode),
     });
     if (action.type === "stop") return;

@@ -30,6 +30,9 @@ describe("ClipperQ brand leftovers (PLAN-1 PR-B)", () => {
     const linePage = read("src/app/admin/settings/line/page.tsx");
     assert.match(linePage, /href=\{SUPPORT_LINE_URL\}/);
     assert.match(linePage, /SUPPORT_LINE_URL \? \([\s\S]*contactTeamViaLine[\s\S]*\) : null/);
+    assert.match(linePage, /data-testid="line-settings-help-card"/);
+    assert.match(linePage, /if \(!SUPPORT_LINE_URL\) return null/);
+    assert.equal(dictionary.th["lineConnect.helpTitle"], "ติดตรงไหน? ให้ทีมช่วย");
   });
 
   it("pilot checklist and founder-qa display name are ClipperQ Pilot Test", () => {

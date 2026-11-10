@@ -183,6 +183,14 @@ describe("verified gate + reload honesty", () => {
     assert.doesNotMatch(src, /toLocaleString\(\)/);
   });
 
+  it("LineSupportInbox toLocaleString uses Asia/Bangkok", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/components/superadmin/LineSupportInbox.tsx"),
+      "utf8",
+    );
+    assert.match(src, /toLocaleString\(dateLocale,\s*\{\s*timeZone:\s*"Asia\/Bangkok"/);
+  });
+
   it("formatLineLastTestedAt uses th-TH Asia/Bangkok (not US month/day)", () => {
     const formatted = formatLineLastTestedAt("2026-11-07T14:42:01.000Z", "th");
     assert.match(formatted, /7/);
@@ -264,8 +272,8 @@ describe("line settings checklist colors", () => {
       resolve(process.cwd(), "src/app/admin/settings/line/page.tsx"),
       "utf8",
     );
-    assert.match(src, /text-red-400/);
-    assert.match(src, /text-amber-400/);
+    assert.match(src, /text-cq-danger/);
+    assert.match(src, /text-cq-amber/);
     assert.doesNotMatch(src, /text-orange-400/);
     assert.doesNotMatch(src, /text-amber-300/);
   });
@@ -338,11 +346,15 @@ describe("skipped checks on early failure (error card)", () => {
   });
 });
 
-describe("MISSING_KEYS attributes only the missing secret/token", () => {
-  function applyMissing(checks: ConnectionCheck[], secrets: {
-    channelSecret: string | null;
-    accessToken: string | null;
-  }) {
+describe("MISSING_KEYS attributes only the missing fields", () => {
+  function applyMissing(
+    checks: ConnectionCheck[],
+    secrets: {
+      channelSecret: string | null;
+      accessToken: string | null;
+      messagingChannelId?: string | null;
+    },
+  ) {
     const missing = resolveMissingKeyFailures(secrets);
     assert.ok(missing);
     for (const id of missing.failIds) {
@@ -350,15 +362,22 @@ describe("MISSING_KEYS attributes only the missing secret/token", () => {
       assert.ok(row);
       row.status = "fail";
       row.ok = false;
+      row.labelKey =
+        id === "channel_id"
+          ? "lineConnect.check.channelIdMissing"
+          : id === "channel_secret"
+            ? "lineConnect.check.channelSecretMissing"
+            : "lineConnect.check.accessTokenMissing";
     }
     return missing;
   }
 
-  it("secret-only missing → fail channel_secret; Channel ID stays skipped", () => {
+  it("secret-only missing → fail channel_secret; Channel ID stays skipped when present", () => {
     const checks = buildInitialConnectionChecks();
     const missing = applyMissing(checks, {
       channelSecret: null,
       accessToken: "tok",
+      messagingChannelId: "2000",
     });
     assert.deepEqual(missing.failIds, ["channel_secret"]);
     assert.equal(missing.messageKey, "lineConnect.error.missingSecret");
@@ -373,11 +392,12 @@ describe("MISSING_KEYS attributes only the missing secret/token", () => {
     assert.equal(checks.find((c) => c.id === "webhook")?.status, "skipped");
   });
 
-  it("token-only missing → fail access_token; Channel ID stays skipped", () => {
+  it("token-only missing → fail access_token; Channel ID stays skipped when present", () => {
     const checks = buildInitialConnectionChecks();
     const missing = applyMissing(checks, {
       channelSecret: "sec",
       accessToken: null,
+      messagingChannelId: "2000",
     });
     assert.deepEqual(missing.failIds, ["access_token"]);
     assert.equal(missing.messageKey, "lineConnect.error.missingToken");
@@ -391,11 +411,12 @@ describe("MISSING_KEYS attributes only the missing secret/token", () => {
     assert.equal(checks.find((c) => c.id === "channel_secret")?.status, "skipped");
   });
 
-  it("both missing → fail secret + token; Channel ID stays skipped", () => {
+  it("secret+token missing with Channel ID present → Channel ID stays skipped", () => {
     const checks = buildInitialConnectionChecks();
     const missing = applyMissing(checks, {
       channelSecret: null,
       accessToken: "",
+      messagingChannelId: "2000",
     });
     assert.deepEqual(missing.failIds, ["channel_secret", "access_token"]);
     assert.equal(missing.messageKey, "lineConnect.error.missingSecretAndToken");
@@ -409,6 +430,46 @@ describe("MISSING_KEYS attributes only the missing secret/token", () => {
     assert.equal(checks.find((c) => c.id === "channel_id")?.status, "skipped");
     assert.equal(checks.find((c) => c.id === "webhook")?.status, "skipped");
     assert.equal(checks.find((c) => c.id === "test_message")?.status, "skipped");
+  });
+
+  it("empty Channel ID → fail channel_id (not ยังไม่ได้ตรวจ)", () => {
+    const checks = buildInitialConnectionChecks();
+    const missing = applyMissing(checks, {
+      channelSecret: "sec",
+      accessToken: "tok",
+      messagingChannelId: null,
+    });
+    assert.deepEqual(missing.failIds, ["channel_id"]);
+    assert.equal(missing.messageKey, "lineConnect.error.missingChannelId");
+    assert.equal(checks.find((c) => c.id === "channel_id")?.status, "fail");
+    assert.equal(
+      checks.find((c) => c.id === "channel_id")?.labelKey,
+      "lineConnect.check.channelIdMissing",
+    );
+    assert.match(
+      dictionary.th["lineConnect.check.channelIdMissing"],
+      /ยังไม่ได้กรอก/,
+    );
+    assert.doesNotMatch(
+      dictionary.th["lineConnect.check.channelIdMissing"],
+      /ยังไม่ได้ตรวจ/,
+    );
+  });
+
+  it("all keys empty → fail channel_id + secret + token", () => {
+    const checks = buildInitialConnectionChecks();
+    const missing = applyMissing(checks, {
+      channelSecret: null,
+      accessToken: null,
+      messagingChannelId: "",
+    });
+    assert.deepEqual(missing.failIds, [
+      "channel_id",
+      "channel_secret",
+      "access_token",
+    ]);
+    assert.equal(missing.messageKey, "lineConnect.error.missingAllKeys");
+    assert.equal(checks.find((c) => c.id === "channel_id")?.status, "fail");
   });
 });
 

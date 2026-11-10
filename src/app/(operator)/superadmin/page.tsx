@@ -206,7 +206,9 @@ export default function SuperAdminPage() {
                   <p className="mt-1 text-xs text-zinc-300">{row.detail}</p>
                 ) : null}
                 <p className="mt-1 text-[11px] text-zinc-500">
-                  {new Date(row.created_at).toLocaleString("th-TH")}
+                  {new Date(row.created_at).toLocaleString("th-TH", {
+                    timeZone: "Asia/Bangkok",
+                  })}
                   {row.bookable_count != null
                     ? ` · จองได้ ${row.bookable_count} คน`
                     : ""}

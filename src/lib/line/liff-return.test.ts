@@ -10,6 +10,7 @@ import {
   isOwnerBrowserMismatchSearch,
   isSafeReturnPath,
   ownerBrowserMismatchHref,
+  peekLastShopReturnPath,
   resolveLiffCallbackAction,
   saveLiffReturnPath,
   setLiffCallbackGuard,
@@ -57,6 +58,25 @@ describe("liff return path / OAuth callback", () => {
       guardAlreadySet: false,
     });
     assert.deepEqual(action, { type: "stop" });
+  });
+
+  it("recovers via last-shop path when return path was lost (Safari Private)", () => {
+    const action = resolveLiffCallbackAction({
+      search: "?code=abc&liffClientId=1",
+      returnPath: null,
+      fallbackShopPath: "/phinxstudio",
+      guardAlreadySet: false,
+    });
+    assert.deepEqual(action, {
+      type: "forward",
+      href: "/phinxstudio?code=abc&liffClientId=1",
+    });
+  });
+
+  it("peekLastShopReturnPath builds safe /{slug}", () => {
+    assert.equal(peekLastShopReturnPath("myshop"), "/myshop");
+    assert.equal(peekLastShopReturnPath("evil/path"), null);
+    assert.equal(peekLastShopReturnPath(null), null);
   });
 
   it("owner mismatch href stays available for /owner flow only", () => {
