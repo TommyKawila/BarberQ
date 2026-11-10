@@ -314,7 +314,7 @@ export function RescheduleFlow({
           <footer className="shrink-0 space-y-2 border-t border-zinc-800 px-4 py-3">
             <button
               type="button"
-              disabled={!selectedStart || submitting}
+              disabled={!selectedStart || submitting || noBookableDates}
               onClick={() => setConfirming(true)}
               className="w-full min-h-12 rounded-xl bg-amber-400 text-sm font-semibold text-zinc-950 disabled:opacity-50"
               data-testid="reschedule-continue"

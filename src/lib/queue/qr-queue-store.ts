@@ -191,6 +191,44 @@ export async function getActiveQrQueueForCustomer(
   return data ? mapRow(data as Record<string, unknown>) : null;
 }
 
+/**
+ * When a linked appointment ends (done / no-show / cancelled / left), close the
+ * active walk-in row so the customer can join again and "คิวของฉัน" clears.
+ */
+export async function closeQrQueueForAppointment(
+  appointmentId: string,
+): Promise<QrQueueEntry | null> {
+  const id = appointmentId.trim();
+  if (!id) return null;
+
+  if (isPrototypeMode()) {
+    const idx = memoryEntries.findIndex(
+      (e) =>
+        e.appointment_id === id &&
+        (e.status === "waiting" || e.status === "started"),
+    );
+    if (idx < 0) return null;
+    const next: QrQueueEntry = {
+      ...memoryEntries[idx],
+      status: "left",
+      updated_at: nowIso(),
+    };
+    memoryEntries[idx] = next;
+    return next;
+  }
+
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("qr_queue_entries")
+    .update({ status: "left", updated_at: nowIso() })
+    .eq("appointment_id", id)
+    .in("status", ["waiting", "started"])
+    .select("*");
+  if (error) throw new Error(error.message);
+  const row = (data ?? [])[0];
+  return row ? mapRow(row as Record<string, unknown>) : null;
+}
+
 export async function updateQrQueueEntry(
   id: string,
   patch: Partial<{

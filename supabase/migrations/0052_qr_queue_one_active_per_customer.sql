@@ -2,10 +2,32 @@
 -- Previously uniqueness was only for status = 'waiting', so after "เริ่มตัด"
 -- (status → started) the same LINE user could join again.
 --
+-- Also close stale `started` rows before creating the unique index: once an
+-- appointment ends the app sets qr status to `left`, but older rows may still
+-- be `started` and would permanently lock that customer out of walk-in.
+--
 -- Tommy: run docs/sql/0052-precheck.sql (read-only check + optional cleanup)
 -- on the target DB before/with this migration. Production by Tommy only.
 
 begin;
+
+-- Close started rows whose linked appointment already ended, or that are older
+-- than today in Asia/Bangkok (orphan / abandoned "กำลังตัด").
+update qr_queue_entries q
+set
+  status = 'left',
+  updated_at = now()
+where q.status = 'started'
+  and (
+    exists (
+      select 1
+      from appointments a
+      where a.id = q.appointment_id
+        and a.status in ('completed', 'no_show', 'cancelled', 'left')
+    )
+    or (q.created_at at time zone 'Asia/Bangkok')::date
+      < (timezone('Asia/Bangkok', now()))::date
+  );
 
 -- Prefer started over waiting: cancel waiting rows that duplicate a started entry.
 update qr_queue_entries q

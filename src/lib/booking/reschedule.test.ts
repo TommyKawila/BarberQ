@@ -288,6 +288,10 @@ describe("P6 customer self-reschedule", () => {
     assert.match(flow, /reschedule-dates-empty/);
     assert.match(flow, /booking\.noBookableDates/);
     assert.match(flow, /booking\.slotsLoadFailed/);
+    assert.match(
+      flow,
+      /disabled=\{!selectedStart \|\| submitting \|\| noBookableDates\}/,
+    );
     assert.doesNotMatch(flow, /admin\.loadFailed/);
     assert.doesNotMatch(flow, /<select/);
   });
