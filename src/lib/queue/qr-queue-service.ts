@@ -25,12 +25,42 @@ import {
   createStaffBooking,
   findNextConflictEnd,
 } from "@/lib/services/booking-service";
+import { dateISOFromInstant } from "@/lib/services/slot-service";
 import type { StaffAuth } from "@/lib/admin-auth";
 import { addMinutes } from "date-fns";
 import type { Appointment } from "@/types/booking";
 
 function qrErr(code: string, status: number): BookingError {
   return new BookingError(code, thaiQrQueueError(code), status);
+}
+
+/**
+ * Stale "เริ่มตัด" with no "เสร็จ": created before today (Bangkok) OR linked
+ * appointment end already passed. Close to `left` so rejoin / คิวของฉัน work.
+ */
+async function isStaleStartedEntry(
+  entry: QrQueueEntry,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (entry.status !== "started") return false;
+  if (dateISOFromInstant(new Date(entry.created_at)) < dateISOFromInstant(now)) {
+    return true;
+  }
+  if (!entry.appointment_id) return false;
+  const apt = await getStore().getAppointment(entry.appointment_id);
+  if (!apt) return false;
+  return new Date(apt.end_time).getTime() <= now.getTime();
+}
+
+async function expireStaleStartedForCustomer(
+  shopId: string,
+  customerLineId: string,
+  now: Date = new Date(),
+): Promise<void> {
+  const existing = await getActiveQrQueueForCustomer(shopId, customerLineId);
+  if (!existing || existing.status !== "started") return;
+  if (!(await isStaleStartedEntry(existing, now))) return;
+  await updateQrQueueEntry(existing.id, { status: "left" });
 }
 
 async function defaultSlotMinutes(shopId: string): Promise<number> {
@@ -78,6 +108,7 @@ export async function joinQrQueue(input: JoinQrQueueInput): Promise<QrQueuePubli
       throw qrErr("INVALID_BARBER", 404);
     }
   }
+  await expireStaleStartedForCustomer(input.shopId, lineId);
   try {
     const entry = await insertQrQueueEntry(input);
     const view = await buildQrQueueView(input.shopId, entry);
@@ -86,7 +117,17 @@ export async function joinQrQueue(input: JoinQrQueueInput): Promise<QrQueuePubli
   } catch (error) {
     if (error instanceof Error && (error as Error & { code?: string }).code === "ALREADY_WAITING") {
       const existing = await getActiveQrQueueForCustomer(input.shopId, lineId);
-      if (existing) return buildQrQueueView(input.shopId, existing);
+      if (existing) {
+        // Race: started may have gone stale between expire and insert.
+        if (await isStaleStartedEntry(existing)) {
+          await updateQrQueueEntry(existing.id, { status: "left" });
+          const retried = await insertQrQueueEntry(input);
+          const view = await buildQrQueueView(input.shopId, retried);
+          void notifyQueueAheadForShop(input.shopId).catch(() => {});
+          return view;
+        }
+        return buildQrQueueView(input.shopId, existing);
+      }
       throw qrErr("ALREADY_WAITING", 409);
     }
     throw error;
@@ -97,7 +138,9 @@ export async function getMyQrQueue(
   shopId: string,
   customerLineId: string,
 ): Promise<QrQueuePublicView | null> {
-  const entry = await getActiveQrQueueForCustomer(shopId, customerLineId);
+  const lineId = customerLineId.trim();
+  await expireStaleStartedForCustomer(shopId, lineId);
+  const entry = await getActiveQrQueueForCustomer(shopId, lineId);
   if (!entry) return null;
   return buildQrQueueView(shopId, entry);
 }

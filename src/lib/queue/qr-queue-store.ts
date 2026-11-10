@@ -35,6 +35,17 @@ export function __resetQrQueueStoreForTests() {
   memoryEntries.length = 0;
 }
 
+/** Prototype/tests only: backdate created_at (e.g. yesterday "เริ่มตัด" without เสร็จ). */
+export function __backdateQrQueueEntryForTests(id: string, createdAt: string): void {
+  const idx = memoryEntries.findIndex((e) => e.id === id);
+  if (idx < 0) throw new Error("NOT_FOUND");
+  memoryEntries[idx] = {
+    ...memoryEntries[idx],
+    created_at: createdAt,
+    updated_at: createdAt,
+  };
+}
+
 export async function insertQrQueueEntry(input: JoinQrQueueInput): Promise<QrQueueEntry> {
   const preferred =
     input.preferredBarberId && input.preferredBarberId.trim()

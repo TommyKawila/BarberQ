@@ -14,12 +14,18 @@ import {
 } from "@/lib/queue/qr-queue-service";
 import type { StaffAuth } from "@/lib/admin-auth";
 import { pickFirstAvailableBarber } from "@/lib/queue/qr-queue-logic";
-import { getQrQueueEntry } from "@/lib/queue/qr-queue-store";
+import {
+  __backdateQrQueueEntryForTests,
+  getQrQueueEntry,
+} from "@/lib/queue/qr-queue-store";
 import {
   markAppointmentOutcome,
   staffCancelBooking,
 } from "@/lib/services/booking-service";
+import { dateISOFromInstant, SHOP_TIMEZONE } from "@/lib/services/slot-service";
 import type { ShopHours } from "@/lib/shop/shop-hours";
+import { fromZonedTime } from "date-fns-tz";
+import { addDays } from "date-fns";
 
 const ALL_DAY_OPEN: ShopHours = Array.from({ length: 7 }, () => ({
   closed: false,
@@ -235,6 +241,38 @@ describe("qr-queue one active walk-in per customer", () => {
     });
     assert.equal(again.entry.status, "waiting");
     assert.notEqual(again.entry.id, joined.entry.id);
+  });
+
+  it("yesterday เริ่มตัด without เสร็จ → today same customer can rejoin; คิวของฉัน clears", async () => {
+    const { shop, barber, staff } = await freshShop("stale-started");
+    const lineId = `stale-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "ForgotDone",
+      preferredBarberId: barber.id,
+    });
+    await startQrQueueEntry(shop.id, joined.entry.id, staff, { now: new Date() });
+
+    const today = dateISOFromInstant(new Date());
+    const yesterday = dateISOFromInstant(
+      addDays(fromZonedTime(`${today}T12:00:00`, SHOP_TIMEZONE), -1),
+    );
+    __backdateQrQueueEntryForTests(
+      joined.entry.id,
+      fromZonedTime(`${yesterday}T12:00:00`, SHOP_TIMEZONE).toISOString(),
+    );
+
+    assert.equal(await getMyQrQueue(shop.id, lineId), null);
+    assert.equal((await getQrQueueEntry(joined.entry.id))?.status, "left");
+
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "ForgotDone again",
+    });
+    assert.notEqual(again.entry.id, joined.entry.id);
+    assert.equal(again.entry.status, "waiting");
   });
 });
 
