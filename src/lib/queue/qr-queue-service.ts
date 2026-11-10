@@ -11,6 +11,7 @@ import {
   type FirstAvailableCandidate,
 } from "@/lib/queue/qr-queue-logic";
 import {
+  getActiveQrQueueForCustomer,
   getQrQueueEntry,
   getWaitingQrQueueForCustomer,
   insertQrQueueEntry,
@@ -84,7 +85,7 @@ export async function joinQrQueue(input: JoinQrQueueInput): Promise<QrQueuePubli
     return view;
   } catch (error) {
     if (error instanceof Error && (error as Error & { code?: string }).code === "ALREADY_WAITING") {
-      const existing = await getWaitingQrQueueForCustomer(input.shopId, lineId);
+      const existing = await getActiveQrQueueForCustomer(input.shopId, lineId);
       if (existing) return buildQrQueueView(input.shopId, existing);
       throw qrErr("ALREADY_WAITING", 409);
     }
@@ -96,7 +97,7 @@ export async function getMyQrQueue(
   shopId: string,
   customerLineId: string,
 ): Promise<QrQueuePublicView | null> {
-  const entry = await getWaitingQrQueueForCustomer(shopId, customerLineId);
+  const entry = await getActiveQrQueueForCustomer(shopId, customerLineId);
   if (!entry) return null;
   return buildQrQueueView(shopId, entry);
 }

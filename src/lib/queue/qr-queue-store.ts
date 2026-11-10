@@ -48,7 +48,7 @@ export async function insertQrQueueEntry(input: JoinQrQueueInput): Promise<QrQue
       (e) =>
         e.shop_id === input.shopId &&
         e.customer_line_id === lineId &&
-        e.status === "waiting",
+        (e.status === "waiting" || e.status === "started"),
     );
     if (existing) {
       const err = new Error("ALREADY_WAITING");
@@ -152,6 +152,40 @@ export async function getWaitingQrQueueForCustomer(
     .eq("shop_id", shopId)
     .eq("customer_line_id", lineId)
     .eq("status", "waiting")
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data ? mapRow(data as Record<string, unknown>) : null;
+}
+
+/** Active = waiting in line OR currently being served (started). */
+export async function getActiveQrQueueForCustomer(
+  shopId: string,
+  customerLineId: string,
+): Promise<QrQueueEntry | null> {
+  const lineId = customerLineId.trim();
+  if (isPrototypeMode()) {
+    const active = memoryEntries.filter(
+      (e) =>
+        e.shop_id === shopId &&
+        e.customer_line_id === lineId &&
+        (e.status === "waiting" || e.status === "started"),
+    );
+    // Prefer started (being served) over a stale waiting row if both somehow exist.
+    return (
+      active.find((e) => e.status === "started") ??
+      active.find((e) => e.status === "waiting") ??
+      null
+    );
+  }
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("qr_queue_entries")
+    .select("*")
+    .eq("shop_id", shopId)
+    .eq("customer_line_id", lineId)
+    .in("status", ["waiting", "started"])
+    .order("updated_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   if (error) throw new Error(error.message);
   return data ? mapRow(data as Record<string, unknown>) : null;

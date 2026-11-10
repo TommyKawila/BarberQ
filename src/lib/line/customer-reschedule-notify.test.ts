@@ -116,6 +116,7 @@ describe("customer self-reschedule LINE ticket", () => {
       start_time: "2030-06-01T12:00:00.000Z",
       end_time: "2030-06-01T12:30:00.000Z",
       reschedule_count: 0,
+      customer_line_id: null,
     });
     const after = apt({ customer_line_id: null });
     const result = await notifyCustomerSelfRescheduleTicket(shop(), before, after);
@@ -182,13 +183,35 @@ describe("customer self-reschedule LINE ticket", () => {
     assert.equal(result.skippedReason, "quota_full");
   });
 
-  it("customer reschedule route fires ticket notify after commit", () => {
+  it("customer reschedule route schedules ticket notify via afterResponse", () => {
     const route = readFileSync(
       resolve(root, "app/api/reschedule/route.ts"),
       "utf8",
     );
     assert.match(route, /notifyCustomerSelfRescheduleTicket/);
-    assert.match(route, /void notifyCustomerSelfRescheduleTicket/);
+    assert.match(route, /after as afterResponse/);
+    assert.match(route, /afterResponse\(async/);
+    assert.match(route, /barberChanged/);
+  });
+
+  it("falls back to before.customer_line_id when after omits it (cross-barber)", async () => {
+    const before = apt({
+      barber_id: "11111111-1111-4111-8111-111111111111",
+      customer_line_id: "U-customer",
+      start_time: "2030-06-01T12:00:00.000Z",
+      end_time: "2030-06-01T12:30:00.000Z",
+      reschedule_count: 0,
+    });
+    // after missing LINE id — previously skipped notify entirely
+    const after = apt({
+      barber_id: "22222222-2222-4222-8222-222222222222",
+      customer_line_id: null,
+      reschedule_count: 1,
+    });
+    const result = await notifyCustomerSelfRescheduleTicket(shop(), before, after);
+    // Without a channel token this won't send, but must not treat as invalid_input
+    // solely because after.customer_line_id is null.
+    assert.notEqual(result.skippedReason, "invalid_input");
   });
 
   it("migration 0037 adds push_reschedule_ticket kind", () => {

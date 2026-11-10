@@ -41,6 +41,55 @@ export function buildOwnerEntryLoginRedirectUri(pageOrigin?: string): string {
   return origin ? `${origin}/owner` : "/owner";
 }
 
+function writeLiffReturnCookie(pathname: string) {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${RETURN_KEY}=${encodeURIComponent(pathname)}; Path=/; Max-Age=600; SameSite=Lax${secure}`;
+}
+
+function clearLiffReturnCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${RETURN_KEY}=; Path=/; Max-Age=0`;
+}
+
+/** Cookie fallback when sessionStorage is unavailable (Safari Private). */
+export function readLiffReturnCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${RETURN_KEY}=([^;]*)`));
+  if (!match?.[1]) return null;
+  try {
+    const path = decodeURIComponent(match[1]);
+    if (path && isSafeReturnPath(path) && path !== "/") return path;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/** Last shop slug cookie set by middleware — recover booking flow when return path is lost. */
+export const LAST_SHOP_COOKIE = "barberq_last_shop";
+
+export function peekLastShopReturnPath(
+  cookieValue?: string | null,
+): string | null {
+  const raw =
+    cookieValue ??
+    (typeof document !== "undefined"
+      ? document.cookie.match(new RegExp(`(?:^|; )${LAST_SHOP_COOKIE}=([^;]*)`))?.[1]
+      : null);
+  if (!raw) return null;
+  let slug = raw;
+  try {
+    slug = decodeURIComponent(raw);
+  } catch {
+    return null;
+  }
+  slug = slug.trim();
+  if (!slug || slug.includes("/") || slug.includes(".")) return null;
+  const path = `/${slug}`;
+  return isSafeReturnPath(path) ? path : null;
+}
+
 export function saveLiffReturnPath(pathname: string) {
   if (!isSafeReturnPath(pathname)) return;
   // New login attempt — drop any prior callback guard so a later hop can forward.
@@ -48,33 +97,37 @@ export function saveLiffReturnPath(pathname: string) {
   try {
     sessionStorage.setItem(RETURN_KEY, pathname);
   } catch {
-    /* ignore */
+    /* ignore — Safari Private may throw */
   }
-  if (typeof document === "undefined") return;
-  const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${RETURN_KEY}=${encodeURIComponent(pathname)}; Path=/; Max-Age=600; SameSite=Lax${secure}`;
+  writeLiffReturnCookie(pathname);
 }
 
 export function peekLiffReturnPath(): string | null {
   try {
     const stored = sessionStorage.getItem(RETURN_KEY);
-    if (stored && isSafeReturnPath(stored)) return stored;
+    if (stored && isSafeReturnPath(stored) && stored !== "/") return stored;
   } catch {
     /* ignore */
   }
-  return null;
+  return readLiffReturnCookie();
 }
 
-/** Consume stored return path. Returns null when missing (do NOT invent `/`). */
+/** Consume stored return path (session first, then cookie). Returns null when missing. */
 export function consumeLiffReturnPath(): string | null {
+  let stored: string | null = null;
   try {
-    const stored = sessionStorage.getItem(RETURN_KEY);
+    stored = sessionStorage.getItem(RETURN_KEY);
     sessionStorage.removeItem(RETURN_KEY);
-    if (stored && isSafeReturnPath(stored)) return stored;
   } catch {
     /* ignore */
   }
-  return null;
+  if (stored && isSafeReturnPath(stored) && stored !== "/") {
+    clearLiffReturnCookie();
+    return stored;
+  }
+  const fromCookie = readLiffReturnCookie();
+  clearLiffReturnCookie();
+  return fromCookie;
 }
 
 export function isLiffOAuthCallback(search: string): boolean {
@@ -141,19 +194,27 @@ export type LiffCallbackAction =
  * Never forwards to the same URL with the same OAuth query (that loops forever
  * when the return-path cookie is missing after a Safari→Chrome handoff).
  *
- * Missing return path → stop (do NOT send customer/admin/claim to /owner).
- * Owner browser-mismatch UX lives on `/owner` via path-specific redirectUri.
+ * Prefer stored return path; else last-shop path (Private mode recovery).
+ * Still never invent `/owner` for customer/admin flows.
  */
 export function resolveLiffCallbackAction(input: {
   search: string;
   returnPath: string | null;
   guardAlreadySet: boolean;
+  /** e.g. `/{shopSlug}` from barberq_last_shop when return path was lost. */
+  fallbackShopPath?: string | null;
 }): LiffCallbackAction {
   if (!isLiffOAuthCallback(input.search)) return { type: "stop" };
   if (input.guardAlreadySet) return { type: "stop" };
 
-  const path = input.returnPath;
-  if (path && path !== "/") {
+  const path =
+    input.returnPath && input.returnPath !== "/"
+      ? input.returnPath
+      : input.fallbackShopPath && input.fallbackShopPath !== "/"
+        ? input.fallbackShopPath
+        : null;
+
+  if (path) {
     const params = new URLSearchParams(
       input.search.startsWith("?") ? input.search.slice(1) : input.search,
     );
@@ -161,7 +222,6 @@ export function resolveLiffCallbackAction(input: {
     return { type: "forward", href: qs ? `${path}?${qs}` : path };
   }
 
-  // Missing cookie/session on `/`: stop without self-replace loop.
-  // Do not redirect customer/admin/other flows to /owner?login_error=browser.
+  // Missing cookie/session/last-shop on `/`: stop without self-replace loop.
   return { type: "stop" };
 }

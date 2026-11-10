@@ -1,8 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { memoryStore } from "@/lib/data/memory-store";
 import {
   cancelQrQueueEntry,
+  getMyQrQueue,
   joinQrQueue,
   listShopWaitingQueue,
   markQrQueueLeft,
@@ -99,6 +102,70 @@ describe("qr-queue service ordering", () => {
     assert.equal(afterLeft.length, 1);
     assert.equal(afterLeft[0].entry.customer_line_id, c.entry.customer_line_id);
     assert.equal(afterLeft[0].position, 1);
+  });
+});
+
+describe("qr-queue one active walk-in per customer", () => {
+  it("migration 0052 indexes waiting+started", () => {
+    const sql = readFileSync(
+      resolve(process.cwd(), "supabase/migrations/0052_qr_queue_one_active_per_customer.sql"),
+      "utf8",
+    );
+    assert.match(sql, /qr_queue_one_active_per_customer/);
+    assert.match(sql, /status in \('waiting', 'started'\)/);
+    assert.match(sql, /drop index if exists qr_queue_one_waiting_per_customer/);
+  });
+
+  it("blocks a second join while waiting", async () => {
+    const { shop } = await freshShop("dup-wait");
+    const lineId = `dup-${shop.id}`;
+    const first = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "One",
+    });
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "One again",
+    });
+    assert.equal(again.entry.id, first.entry.id);
+    assert.equal(again.entry.status, "waiting");
+  });
+
+  it("blocks a second join while started (being served)", async () => {
+    const { shop, barber, staff } = await freshShop("dup-started");
+    const lineId = `started-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Serving",
+      preferredBarberId: barber.id,
+    });
+    await startQrQueueEntry(shop.id, joined.entry.id, staff, { now: new Date() });
+    const again = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Serving again",
+    });
+    assert.equal(again.entry.id, joined.entry.id);
+    assert.equal(again.entry.status, "started");
+  });
+
+  it("getMyQrQueue still returns the entry after เริ่มตัด (started)", async () => {
+    const { shop, barber, staff } = await freshShop("mine-started");
+    const lineId = `mine-${shop.id}`;
+    const joined = await joinQrQueue({
+      shopId: shop.id,
+      customerLineId: lineId,
+      customerName: "Mine",
+      preferredBarberId: barber.id,
+    });
+    await startQrQueueEntry(shop.id, joined.entry.id, staff, { now: new Date() });
+    const mine = await getMyQrQueue(shop.id, lineId);
+    assert.ok(mine);
+    assert.equal(mine.entry.status, "started");
+    assert.equal(mine.entry.id, joined.entry.id);
   });
 });
 

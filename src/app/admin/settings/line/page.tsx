@@ -15,8 +15,12 @@ import {
   type ConnectionCheck,
   type ConnectionTestResult,
 } from "@/lib/line/connection-test";
+import {
+  resolveLineSettingsView,
+  type LineSettingsView,
+} from "@/lib/line/line-settings-view";
 
-type View = "checklist" | "keys" | "connected" | "error";
+type View = LineSettingsView;
 
 /** Literal NEXT_PUBLIC_* so Next.js inlines into the client bundle. */
 const SUPPORT_LINE_URL = process.env.NEXT_PUBLIC_BARBERQ_SUPPORT_LINE_URL?.trim() || null;
@@ -59,10 +63,7 @@ export default function LineConnectPage() {
       setWebhookUrl(json.webhookUrl ?? "");
       setSetupEmail(json.setupEmail?.trim() ? json.setupEmail : null);
       setChannelId(json.channel?.messagingChannelId ?? "");
-      if (json.channel?.status === "verified") setView("connected");
-      else if (json.channel?.status === "broken") setView("error");
-      else if (json.channel?.hasSecret) setView("keys");
-      else setView("checklist");
+      setView(resolveLineSettingsView(json.channel ?? null));
     } catch {
       setError(t("admin.loadFailed"));
     } finally {
@@ -122,7 +123,13 @@ export default function LineConnectPage() {
       const json = (await res.json()) as ConnectionTestResult;
       setTestResult(json);
       setChannel(json.channel);
-      setView(json.ok ? "connected" : "error");
+      if (json.ok) {
+        setView("connected");
+      } else {
+        // Keyless MISSING_KEYS → stay on wizard; otherwise show error/keys.
+        const next = resolveLineSettingsView(json.channel);
+        setView(next === "checklist" ? "checklist" : "error");
+      }
     } catch {
       setError(t("admin.updateFailed"));
     } finally {
@@ -239,10 +246,14 @@ export default function LineConnectPage() {
           ) : null}
         </header>
 
-        {loading ? <p className="text-sm text-zinc-400">{t("common.loading")}</p> : null}
+        {loading ? (
+          <p className="text-sm text-zinc-400" data-testid="line-settings-loading">
+            {t("common.loading")}
+          </p>
+        ) : null}
         {error ? <p className="text-sm text-red-400">{error}</p> : null}
 
-        {view === "checklist" ? (
+        {!loading && view === "checklist" ? (
           <ChecklistCard
             webhookUrl={webhookUrl}
             setupEmail={setupEmail}
@@ -253,7 +264,7 @@ export default function LineConnectPage() {
           />
         ) : null}
 
-        {view === "keys" || view === "error" ? (
+        {!loading && (view === "keys" || view === "error") ? (
           <>
             {view === "error" && testResult ? (
               <ErrorCard result={testResult} t={t} />
@@ -276,19 +287,18 @@ export default function LineConnectPage() {
               onSubmit={() => void (secret || token || channelId ? saveKeys() : runTest())}
               t={t}
             />
-            {view === "keys" ? (
-              <button
-                type="button"
-                className="text-left text-sm text-amber-400"
-                onClick={() => setView("checklist")}
-              >
-                ← {t("lineConnect.backToChecklist")}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="min-h-11 text-left text-sm text-amber-400"
+              onClick={() => setView("checklist")}
+              data-testid="line-settings-back-to-checklist"
+            >
+              ← {t("lineConnect.backToChecklist")}
+            </button>
           </>
         ) : null}
 
-        {view === "connected" && channel ? (
+        {!loading && view === "connected" && channel ? (
           <ConnectedCard
             channel={channel}
             checks={testResult?.checks}
@@ -299,7 +309,7 @@ export default function LineConnectPage() {
           />
         ) : null}
 
-        <HelpCard t={t} />
+        {!loading ? <HelpCard t={t} /> : null}
       </div>
     </AdminShell>
   );
@@ -670,11 +680,18 @@ function ConnectedCard({
 }
 
 function HelpCard({ t }: { t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string }) {
+  if (!SUPPORT_LINE_URL) return null;
   return (
-    <section className="rounded-2xl bg-zinc-900/80 p-4">
-      <p className="text-sm font-semibold text-zinc-100">{t("lineConnect.helpTitle")}</p>
-      <p className="mt-1 text-xs text-zinc-400">{t("lineConnect.helpBody")}</p>
-    </section>
+    <a
+      href={SUPPORT_LINE_URL}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex min-h-11 flex-col justify-center rounded-2xl bg-zinc-900/80 p-4"
+      data-testid="line-settings-help-card"
+    >
+      <span className="text-sm font-semibold text-zinc-100">{t("lineConnect.helpTitle")}</span>
+      <span className="mt-1 text-xs text-zinc-400">{t("lineConnect.helpBody")}</span>
+    </a>
   );
 }
 
@@ -697,6 +714,9 @@ function checkLabel(
   }
   switch (c.id) {
     case "channel_id":
+      if (c.labelKey === "lineConnect.check.channelIdMissing") {
+        return t(c.labelKey as never);
+      }
       return sender
         ? t("lineConnect.check.keysOk").replace("{name}", sender)
         : t("lineConnect.check.channelId");

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after as afterResponse, NextResponse } from "next/server";
 import { assertStaff, assertCanManageAppointment } from "@/lib/admin-auth";
 import { jsonError, readJson } from "@/lib/api-response";
 import { notifyCustomerShopReschedule } from "@/lib/line/shop-reschedule-notify";
@@ -30,16 +30,34 @@ export async function PATCH(
     const { before, after } = await staffRescheduleBooking(id, barberId, startTime);
     const shop = await resolveShopFromAppointment(after);
     if (shop) {
-      void notifyCustomerShopReschedule(shop, before, after).catch(() => {});
-      void notifyStaffWebPush({
-        shopId: shop.id,
-        shopSlug: shop.slug,
-        shopName: shop.name,
-        appointment: after,
-        event: "reschedule",
-        previousBarberId: before.barber_id,
-        previousStartTime: before.start_time,
-      }).catch(() => {});
+      // Keep isolate alive so cross-barber notify (extra barber lookups) finishes.
+      afterResponse(async () => {
+        try {
+          await notifyCustomerShopReschedule(shop, before, after);
+        } catch (err) {
+          console.warn(
+            JSON.stringify({
+              event: "shop_reschedule_notify_failed",
+              appointmentId: after.id,
+              barberChanged: before.barber_id !== after.barber_id,
+              error: err instanceof Error ? err.message : String(err),
+            }),
+          );
+        }
+        try {
+          await notifyStaffWebPush({
+            shopId: shop.id,
+            shopSlug: shop.slug,
+            shopName: shop.name,
+            appointment: after,
+            event: "reschedule",
+            previousBarberId: before.barber_id,
+            previousStartTime: before.start_time,
+          });
+        } catch {
+          /* ignore webpush */
+        }
+      });
     }
     return NextResponse.json({ appointment: after, previous: before });
   } catch (error) {

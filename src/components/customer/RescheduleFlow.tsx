@@ -8,6 +8,7 @@ import { DateSelector } from "@/components/customer/DateSelector";
 import { SlotPicker } from "@/components/customer/SlotPicker";
 import {
   bookingErrorI18nKey,
+  isCustomerDateDisabled,
   isShopClosedOnDate,
 } from "@/lib/booking/customer-flow";
 import { useShopBrand } from "@/lib/brand/shop-brand";
@@ -48,6 +49,7 @@ export function RescheduleFlow({
   const [dateISO, setDateISO] = useState<string | null>(null);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
   const [selectedStart, setSelectedStart] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -64,13 +66,26 @@ export function RescheduleFlow({
   const barber = barbers.find((b) => b.id === barberId) ?? null;
   const dateLocale = locale === "th" ? th : enUS;
 
+  // Sync parent dateISO with DateSelector's visual "today" so SlotPicker mounts
+  // (DateSelector highlights today when value is null without calling onChange).
+  useEffect(() => {
+    if (dateISO || !barberId || dates.length === 0) return;
+    const offDays = barber?.off_days ?? [];
+    const firstOpen = dates.find(
+      (d) => !isCustomerDateDisabled(d, shopHours, offDays),
+    );
+    if (firstOpen) setDateISO(firstOpen);
+  }, [barberId, dateISO, dates, shopHours, barber]);
+
   useEffect(() => {
     if (!barberId || !dateISO) {
       setSlots([]);
+      setSlotsError(false);
       return;
     }
     let cancelled = false;
     setSlotsLoading(true);
+    setSlotsError(false);
     setSelectedStart(null);
     void (async () => {
       try {
@@ -80,10 +95,17 @@ export function RescheduleFlow({
           excludeAppointmentId: appointment.id,
         });
         const res = await fetch(`${shopApi("/slots")}?${params.toString()}`);
+        if (!res.ok) throw new Error("slots_failed");
         const json = (await res.json()) as { slots?: Slot[] };
-        if (!cancelled) setSlots(json.slots ?? []);
+        if (!cancelled) {
+          setSlots(json.slots ?? []);
+          setSlotsError(false);
+        }
       } catch {
-        if (!cancelled) setSlots([]);
+        if (!cancelled) {
+          setSlots([]);
+          setSlotsError(true);
+        }
       } finally {
         if (!cancelled) setSlotsLoading(false);
       }
@@ -195,19 +217,25 @@ export function RescheduleFlow({
             </div>
           ) : (
             <div className="flex flex-col gap-5">
-              <section>
-                <h3 className="mb-2 text-sm font-medium">{t("booking.stepBarber")}</h3>
-                <BarberSelector
-                  barbers={barbers}
-                  value={barberId}
-                  onChange={(id) => {
-                    setBarberId(id);
-                    setDateISO(null);
-                    setSelectedStart(null);
-                    setConfirming(false);
-                  }}
-                />
-              </section>
+              {barbers.length === 0 ? (
+                <p className="text-sm text-zinc-400" data-testid="reschedule-empty-barbers">
+                  {t("onboarding.noBarbers")}
+                </p>
+              ) : (
+                <section>
+                  <h3 className="mb-2 text-sm font-medium">{t("booking.stepBarber")}</h3>
+                  <BarberSelector
+                    barbers={barbers}
+                    value={barberId}
+                    onChange={(id) => {
+                      setBarberId(id);
+                      setDateISO(null);
+                      setSelectedStart(null);
+                      setConfirming(false);
+                    }}
+                  />
+                </section>
+              )}
 
               {barberId ? (
                 <section data-testid="reschedule-date-section">
@@ -228,14 +256,55 @@ export function RescheduleFlow({
               {barberId && dateISO ? (
                 <section data-testid="reschedule-time-section">
                   <h3 className="mb-2 text-sm font-medium">{t("booking.stepTime")}</h3>
-                  <SlotPicker
-                    slots={slots}
-                    value={selectedStart}
-                    loading={slotsLoading}
-                    shopClosed={shopClosed}
-                    onChange={setSelectedStart}
-                  />
+                  {slotsError ? (
+                    <div className="space-y-2" data-testid="reschedule-slots-error">
+                      <p className="text-sm text-red-400">{t("admin.loadFailed")}</p>
+                      <button
+                        type="button"
+                        className="min-h-11 rounded-xl border border-zinc-700 px-3 text-sm text-zinc-200"
+                        onClick={() => {
+                          setSlotsError(false);
+                          setSlotsLoading(true);
+                          void (async () => {
+                            try {
+                              const params = new URLSearchParams({
+                                date: dateISO,
+                                barberId: barberId!,
+                                excludeAppointmentId: appointment.id,
+                              });
+                              const res = await fetch(
+                                `${shopApi("/slots")}?${params.toString()}`,
+                              );
+                              if (!res.ok) throw new Error("slots_failed");
+                              const json = (await res.json()) as { slots?: Slot[] };
+                              setSlots(json.slots ?? []);
+                              setSlotsError(false);
+                            } catch {
+                              setSlots([]);
+                              setSlotsError(true);
+                            } finally {
+                              setSlotsLoading(false);
+                            }
+                          })();
+                        }}
+                      >
+                        {t("owner.retry")}
+                      </button>
+                    </div>
+                  ) : (
+                    <SlotPicker
+                      slots={slots}
+                      value={selectedStart}
+                      loading={slotsLoading}
+                      shopClosed={shopClosed}
+                      onChange={setSelectedStart}
+                    />
+                  )}
                 </section>
+              ) : barberId ? (
+                <p className="text-sm text-zinc-500" data-testid="reschedule-date-loading">
+                  {t("common.loading")}
+                </p>
               ) : null}
             </div>
           )}

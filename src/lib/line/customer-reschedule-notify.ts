@@ -26,34 +26,47 @@ export async function notifyCustomerSelfRescheduleTicket(
   before: Appointment,
   after: Appointment,
 ): Promise<PushResult> {
-  if (!shouldSendCustomerRescheduleTicket(after)) {
+  const store = getStore();
+  const fresh = (await store.getAppointment(after.id)) ?? after;
+  const lineId =
+    fresh.customer_line_id?.trim() ||
+    after.customer_line_id?.trim() ||
+    before.customer_line_id?.trim() ||
+    "";
+  if (!shouldSendCustomerRescheduleTicket({ ...fresh, customer_line_id: lineId })) {
     return { sent: false, skippedReason: "invalid_input" };
   }
-  const lineId = after.customer_line_id!.trim();
 
-  const settings = await getStore().getShopSettings(shop.id);
+  const settings = await store.getShopSettings(shop.id);
   if (!settings.bookingConfirmPushEnabled) {
     return { sent: false, skippedReason: "disabled" };
   }
 
-  if (await hasSuccessfulCustomerRescheduleTicket(shop.id, after.id)) {
+  if (await hasSuccessfulCustomerRescheduleTicket(shop.id, fresh.id)) {
     return { sent: false, skippedReason: "already_delivered" };
   }
 
-  const store = getStore();
-  const barber = await store.getBarber(after.barber_id);
+  const barber = await store.getBarber(fresh.barber_id);
   const myBookingsUrl = buildShopBookingsCustomerUrl(shop.slug);
-  const cancelUrl = after.cancel_token
-    ? buildCustomerCancelUrl(after.cancel_token)
+  const cancelUrl = fresh.cancel_token
+    ? buildCustomerCancelUrl(fresh.cancel_token)
     : null;
+
+  let barberName = barber?.name ?? "—";
+  if (before.barber_id !== fresh.barber_id) {
+    const oldBarber = await store.getBarber(before.barber_id);
+    if (oldBarber?.name && barber?.name && oldBarber.name !== barber.name) {
+      barberName = `${oldBarber.name} → ${barber.name}`;
+    }
+  }
 
   const flex = buildCustomerRescheduleTicketFlex({
     shopName: shop.name,
     oldStartTime: before.start_time,
     oldEndTime: before.end_time,
-    newStartTime: after.start_time,
-    newEndTime: after.end_time,
-    barberName: barber?.name ?? "—",
+    newStartTime: fresh.start_time,
+    newEndTime: fresh.end_time,
+    barberName,
     myBookingsUrl,
     cancelUrl,
     showBrandFooter: settings.showFlexBrandFooter !== false,
@@ -64,6 +77,6 @@ export async function notifyCustomerSelfRescheduleTicket(
     lineId,
     [flex],
     "push_reschedule_ticket",
-    after.id,
+    fresh.id,
   );
 }
