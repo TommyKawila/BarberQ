@@ -17,6 +17,7 @@ describe("cancel page UI wiring (/c/{token})", () => {
     assert.match(src, /data-testid="cancel-page-reschedule"/);
     assert.match(src, /data-testid="cancel-page-cancel"/);
     assert.match(src, /ShopSlugProvider/);
+    assert.match(src, /ShopBrandProvider/);
     // Primary amber reschedule, secondary cancel when both available
     assert.match(src, /bg-amber-400/);
     assert.match(src, /border-zinc-600/);
