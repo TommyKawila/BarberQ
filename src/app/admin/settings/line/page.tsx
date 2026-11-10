@@ -19,6 +19,7 @@ import {
   resolveLineSettingsView,
   type LineSettingsView,
 } from "@/lib/line/line-settings-view";
+import { resolveLineChecklistSteps } from "@/lib/line/line-checklist-steps";
 
 type View = LineSettingsView;
 
@@ -230,7 +231,12 @@ export default function LineConnectPage() {
           </h1>
           <AdminSessionBadge name={profile.displayName || profile.barberName} role={profile.role} />
           {view === "checklist" ? (
-            <p className="mt-1 text-sm text-zinc-400">{t("lineConnect.checklistProgress")}</p>
+            <p className="mt-1 text-sm text-zinc-400">
+              {t("lineConnect.checklistProgress").replace(
+                "{n}",
+                String(resolveLineChecklistSteps(channel).currentStep),
+              )}
+            </p>
           ) : null}
           {view === "keys" ? (
             <p className="mt-1 text-sm text-zinc-400">{t("lineConnect.keysHint")}</p>
@@ -255,6 +261,7 @@ export default function LineConnectPage() {
 
         {!loading && view === "checklist" ? (
           <ChecklistCard
+            channel={channel}
             webhookUrl={webhookUrl}
             setupEmail={setupEmail}
             copied={copied}
@@ -316,6 +323,7 @@ export default function LineConnectPage() {
 }
 
 function ChecklistCard({
+  channel,
   webhookUrl,
   setupEmail,
   copied,
@@ -323,6 +331,7 @@ function ChecklistCard({
   onManual,
   t,
 }: {
+  channel: ShopLineChannelPublic | null;
   webhookUrl: string;
   setupEmail: string | null;
   copied: string | null;
@@ -330,22 +339,42 @@ function ChecklistCard({
   onManual: () => void;
   t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]) => string;
 }) {
+  const { steps } = resolveLineChecklistSteps(channel);
+  const s1 = steps[0];
+  const s2 = steps[1];
+  const s3 = steps[2];
+  const s4 = steps[3];
   return (
-    <section className="rounded-2xl bg-zinc-900 p-4">
-      <Step n={1} done title={t("lineConnect.step1Title")} body={t("lineConnect.step1Body")} />
+    <section className="rounded-2xl bg-zinc-900 p-4" data-testid="line-checklist">
+      <Step
+        n={1}
+        done={s1.done}
+        active={s1.active}
+        title={t("lineConnect.step1Title")}
+        body={t("lineConnect.step1Body")}
+      />
       <Step
         n={2}
-        active
+        done={s2.done}
+        active={s2.active}
         title={t("lineConnect.step2Title")}
         body={t("lineConnect.step2Body")}
         copyValue={webhookUrl}
         copyLabel={copied === "webhook" ? t("lineConnect.copied") : t("lineConnect.copy")}
         onCopy={() => onCopy(webhookUrl, "webhook")}
       />
-      <Step n={3} title={t("lineConnect.step3Title")} body={t("lineConnect.step3Body")} />
+      <Step
+        n={3}
+        done={s3.done}
+        active={s3.active}
+        title={t("lineConnect.step3Title")}
+        body={t("lineConnect.step3Body")}
+      />
       {setupEmail ? (
         <Step
           n={4}
+          done={s4.done}
+          active={s4.active}
           title={t("lineConnect.step4Title")}
           body={t("lineConnect.step4Body")}
           copyValue={setupEmail}
@@ -686,10 +715,12 @@ function HelpCard({ t }: { t: (k: Parameters<ReturnType<typeof useI18n>["t"]>[0]
       href={SUPPORT_LINE_URL}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex min-h-11 flex-col justify-center rounded-2xl bg-zinc-900/80 p-4"
+      className="flex min-h-11 flex-col justify-center rounded-2xl bg-zinc-900/80 p-4 ring-1 ring-amber-400/40"
       data-testid="line-settings-help-card"
     >
-      <span className="text-sm font-semibold text-zinc-100">{t("lineConnect.helpTitle")}</span>
+      <span className="text-sm font-semibold text-amber-400 underline underline-offset-2">
+        {t("lineConnect.helpTitle")}
+      </span>
       <span className="mt-1 text-xs text-zinc-400">{t("lineConnect.helpBody")}</span>
     </a>
   );

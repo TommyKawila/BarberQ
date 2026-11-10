@@ -1305,7 +1305,7 @@ export const dictionary = {
     "admin.reminderRunFailed": "รันแจ้งเตือนไม่สำเร็จ",
 
     "lineConnect.checklistTitle": "เชื่อม LINE OA ของร้าน",
-    "lineConnect.checklistProgress": "2 จาก 4 ขั้น · ใช้เวลาราว 15-40 นาที",
+    "lineConnect.checklistProgress": "{n} จาก 4 ขั้น · ใช้เวลาราว 15-40 นาที",
     "lineConnect.keysTitle": "คีย์ของ LINE OA",
     "lineConnect.keysHint": "ดูได้ที่ LINE Developers → Messaging API",
     "lineConnect.connectedTitle": "LINE OA ของร้าน",
@@ -2765,7 +2765,7 @@ export const dictionary = {
     "admin.reminderRunFailed": "Could not run reminders",
 
     "lineConnect.checklistTitle": "Connect your shop LINE OA",
-    "lineConnect.checklistProgress": "2 of 4 steps · about 15–40 minutes",
+    "lineConnect.checklistProgress": "{n} of 4 steps · about 15–40 minutes",
     "lineConnect.keysTitle": "LINE OA keys",
     "lineConnect.keysHint": "Find them in LINE Developers → Messaging API",
     "lineConnect.connectedTitle": "Shop LINE OA",
