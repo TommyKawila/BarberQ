@@ -321,6 +321,7 @@ describe("P6 customer self-reschedule", () => {
     assert.match(auth, /isInClient\(\)/);
     assert.match(auth, /setReady\(true\)/);
     assert.match(auth, /LIFF_LOGIN_HANDOFF_TIMEOUT_MS/);
+    assert.match(auth, /readQaE2eClientSession/);
   });
 
   it("customer self-reschedule route pushes ticket (separate from shop flex)", () => {
