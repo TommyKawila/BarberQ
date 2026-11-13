@@ -18,7 +18,7 @@ import {
   thaiLiffAuthError,
 } from "@/lib/line/liff-auth-errors";
 import { ensureLiffInit } from "@/lib/line/liff-init";
-import { startPathAwareLiffLogin } from "@/lib/line/liff-login";
+import { retryCustomerLiffLogin } from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -40,6 +40,7 @@ export function useAdminLineAuth() {
   const [profile, setProfile] = useState<AdminProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [qaE2eMode, setQaE2eMode] = useState(false);
+  const [isInClient, setIsInClient] = useState(false);
 
   const loadProfile = useCallback(
     async (lineId: string, displayName = "", pictureUrl?: string) => {
@@ -94,6 +95,7 @@ export function useAdminLineAuth() {
       try {
         await ensureLiffInit(liffId);
         if (cancelled) return;
+        setIsInClient(liff.isInClient());
         if (!liff.isLoggedIn()) {
           setReady(true);
           return;
@@ -109,6 +111,7 @@ export function useAdminLineAuth() {
         if (cancelled) return;
         // Already-initialized / remount: try session before failing closed.
         try {
+          setIsInClient(liff.isInClient());
           if (liff.isLoggedIn()) {
             const lineProfile = await liff.getProfile();
             if (cancelled) return;
@@ -138,11 +141,12 @@ export function useAdminLineAuth() {
     if (!ready || mockMode || qaE2eMode) return;
     setError(null);
     try {
-      startPathAwareLiffLogin();
+      // Same as customer: in LIFF, clear + reset + reload; outside, path-aware OAuth.
+      retryCustomerLiffLogin({ isInClient });
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }
-  }, [mockMode, qaE2eMode, ready]);
+  }, [mockMode, qaE2eMode, ready, isInClient]);
 
   const authHeaders = useMemo(
     () => getLineAuthHeaders(mockMode ? profile?.lineId : profile?.lineId),
@@ -156,6 +160,7 @@ export function useAdminLineAuth() {
     login,
     authHeaders,
     mockMode: mockMode || qaE2eMode,
+    isInClient,
   };
 }
 

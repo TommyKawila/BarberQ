@@ -75,7 +75,7 @@ function installBrowserShims(pathname = "/barberqpilottest") {
 }
 
 describe("path-aware LIFF login wiring", () => {
-  it("customer login uses retryCustomerLiffLogin (in-LIFF reload path)", () => {
+  it("customer + admin login use retryCustomerLiffLogin (in-LIFF reload path)", () => {
     const customer = readFileSync(
       resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
       "utf8",
@@ -90,7 +90,8 @@ describe("path-aware LIFF login wiring", () => {
     );
     assert.match(customer, /retryCustomerLiffLogin/);
     assert.match(customer, /isInClient/);
-    assert.match(admin, /startPathAwareLiffLogin/);
+    assert.match(admin, /retryCustomerLiffLogin/);
+    assert.match(admin, /isInClient/);
     assert.match(admin, /ADMIN_NO_SHOP_ACCESS_TH/);
     assert.match(qr, /ล็อกอิน LINE อีกครั้ง/);
     assert.match(qr, /onClick=\{\(\) => login\(\)\}/);
