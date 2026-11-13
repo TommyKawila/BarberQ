@@ -59,7 +59,10 @@ export function markLiffInitFailReloadGuard(
   }
 }
 
-/** @internal tests */
+/**
+ * Clear the init-fail reload guard (call when LIFF init succeeds so a later
+ * network drop in the same tab can reload again).
+ */
 export function clearLiffInitFailReloadGuard(
   storage?: LiffLoginStorage | null,
 ): void {

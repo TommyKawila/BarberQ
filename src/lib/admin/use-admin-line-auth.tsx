@@ -15,6 +15,7 @@ import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
 import {
   ADMIN_NO_SHOP_ACCESS_TH,
+  LIFF_INIT_FAIL_GUARD_TH,
   thaiLiffAuthError,
 } from "@/lib/line/liff-auth-errors";
 import {
@@ -22,7 +23,10 @@ import {
   resolveLiffLoginInClient,
 } from "@/lib/line/liff-in-client";
 import { ensureLiffInit } from "@/lib/line/liff-init";
-import { retryCustomerLiffLogin } from "@/lib/line/liff-login";
+import {
+  clearLiffInitFailReloadGuard,
+  retryCustomerLiffLogin,
+} from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -101,6 +105,7 @@ export function useAdminLineAuth() {
       try {
         await ensureLiffInit(liffId);
         if (cancelled) return;
+        clearLiffInitFailReloadGuard();
         setLiffInitOk(true);
         setIsInClient(
           resolveLiffLoginInClient({
@@ -126,6 +131,7 @@ export function useAdminLineAuth() {
           if (liff.isLoggedIn()) {
             const lineProfile = await liff.getProfile();
             if (cancelled) return;
+            clearLiffInitFailReloadGuard();
             setLiffInitOk(true);
             setIsInClient(
               resolveLiffLoginInClient({
@@ -176,7 +182,14 @@ export function useAdminLineAuth() {
         userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       });
       // In LINE / init-fail: clear + reset + reload. Outside + init OK: path-aware OAuth.
-      retryCustomerLiffLogin({ isInClient: inClient, initOk: liffInitOk });
+      const mode = retryCustomerLiffLogin({
+        isInClient: inClient,
+        initOk: liffInitOk,
+      });
+      // Guard already used: never go silent — tell the user what to do next.
+      if (mode === "guarded") {
+        setError(LIFF_INIT_FAIL_GUARD_TH);
+      }
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }

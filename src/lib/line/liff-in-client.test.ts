@@ -2,12 +2,15 @@ import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { LIFF_INIT_FAIL_GUARD_TH } from "@/lib/line/liff-auth-errors";
 import {
   readLiffSdkInClient,
   resolveLiffLoginInClient,
 } from "@/lib/line/liff-in-client";
 import {
   clearLiffInitFailReloadGuard,
+  hasLiffInitFailReloadGuard,
+  markLiffInitFailReloadGuard,
   retryCustomerLiffLogin,
   type LiffLoginApi,
 } from "@/lib/line/liff-login";
@@ -298,7 +301,7 @@ describe("customer / admin login routing after init failure (fake liff)", () => 
     assert.equal(apiOut.loginCalls, 1);
   });
 
-  it("init-fail reload guard: second retry does not reload or call liff.login", () => {
+  it("guard used -> Thai message, no reload, no liff.login", () => {
     const api = fakeLiff({ loggedIn: false, inClient: false });
     const storage = memoryStorage();
     let reloads = 0;
@@ -328,6 +331,41 @@ describe("customer / admin login routing after init failure (fake liff)", () => 
     assert.equal(second, "guarded");
     assert.equal(reloads, 1);
     assert.equal(api.loginCalls, 0);
+    // Hooks must surface this Thai copy (not go silent like bug k).
+    assert.match(LIFF_INIT_FAIL_GUARD_TH, /[\u0E00-\u0E7F]/);
+    assert.match(LIFF_INIT_FAIL_GUARD_TH, /ปิด.*เปิด|อินเทอร์เน็ต|ลองอีกครั้ง/);
+    assert.equal(
+      // Same path customer + admin login() take when mode === "guarded"
+      second === "guarded" ? LIFF_INIT_FAIL_GUARD_TH : null,
+      LIFF_INIT_FAIL_GUARD_TH,
+    );
+  });
+
+  it("init success clears once-per-session reload guard", () => {
+    const storage = memoryStorage();
+    markLiffInitFailReloadGuard(storage);
+    assert.equal(hasLiffInitFailReloadGuard(storage), true);
+    clearLiffInitFailReloadGuard(storage);
+    assert.equal(hasLiffInitFailReloadGuard(storage), false);
+
+    // After clear, a later init-fail can reload again.
+    const api = fakeLiff({ loggedIn: false, inClient: false });
+    let reloads = 0;
+    assert.equal(
+      retryCustomerLiffLogin({
+        isInClient: false,
+        initOk: false,
+        api,
+        storage,
+        reload: () => {
+          reloads += 1;
+        },
+        resetInit: () => {},
+      }),
+      "reload",
+    );
+    assert.equal(reloads, 1);
+    assert.equal(api.loginCalls, 0);
   });
 
   it("hooks recompute resolveLiffLoginInClient on login with liffInitOk", () => {
@@ -343,7 +381,10 @@ describe("customer / admin login routing after init failure (fake liff)", () => 
       assert.match(src, /resolveLiffLoginInClient/);
       assert.match(src, /readLiffSdkInClient/);
       assert.match(src, /liffInitOk/);
-      assert.match(src, /retryCustomerLiffLogin\(\{ isInClient: inClient, initOk: liffInitOk \}/);
+      assert.match(src, /retryCustomerLiffLogin\(\{[\s\S]*?initOk: liffInitOk/);
+      assert.match(src, /LIFF_INIT_FAIL_GUARD_TH/);
+      assert.match(src, /mode === "guarded"/);
+      assert.match(src, /clearLiffInitFailReloadGuard\(\)/);
     }
   });
 });

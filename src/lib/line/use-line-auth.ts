@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
 import {
   isExpiredLiffTokenError,
+  LIFF_INIT_FAIL_GUARD_TH,
   thaiLiffAuthError,
 } from "@/lib/line/liff-auth-errors";
 import {
@@ -16,6 +17,7 @@ import {
   resolveLiffLoginInClient,
 } from "@/lib/line/liff-in-client";
 import {
+  clearLiffInitFailReloadGuard,
   clearStaleLiffSession,
   retryCustomerLiffLogin,
   startPathAwareLiffLogin,
@@ -131,6 +133,7 @@ export function useLineAuth() {
       try {
         await ensureLiffInit(liffId);
         if (cancelled) return;
+        clearLiffInitFailReloadGuard();
         setLiffInitOk(true);
         const session = await resolveCustomerSession();
         if (cancelled) return;
@@ -167,6 +170,7 @@ export function useLineAuth() {
         try {
           const session = await resolveCustomerSession();
           if (cancelled) return;
+          clearLiffInitFailReloadGuard();
           setLiffInitOk(true);
           setIsInClient(
             resolveLiffLoginInClient({
@@ -232,7 +236,14 @@ export function useLineAuth() {
         userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       });
       // In LIFF / init-fail: clear + reload. Outside + init OK: path-aware OAuth.
-      retryCustomerLiffLogin({ isInClient: inClient, initOk: liffInitOk });
+      const mode = retryCustomerLiffLogin({
+        isInClient: inClient,
+        initOk: liffInitOk,
+      });
+      // Guard already used: never go silent — tell the user what to do next.
+      if (mode === "guarded") {
+        setError(LIFF_INIT_FAIL_GUARD_TH);
+      }
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }

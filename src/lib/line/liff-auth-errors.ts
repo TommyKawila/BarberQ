@@ -13,6 +13,13 @@ const EXPIRED_TH =
 export const ADMIN_NO_SHOP_ACCESS_TH =
   "บัญชี LINE นี้ไม่มีสิทธิ์เข้าหลังบ้านร้านนี้";
 
+/**
+ * LIFF init already reloaded once this tab — do not go silent on the next tap.
+ * Tell the user to close/reopen the page or check the network, then try again.
+ */
+export const LIFF_INIT_FAIL_GUARD_TH =
+  "เข้าสู่ระบบ LINE ไม่สำเร็จ กรุณาปิดแล้วเปิดหน้านี้ใหม่ หรือตรวจสอบอินเทอร์เน็ต แล้วลองอีกครั้ง";
+
 const THAI_CHAR = /[\u0E00-\u0E7F]/;
 
 export function isExpiredLiffTokenError(err: unknown): boolean {
