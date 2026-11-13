@@ -17,6 +17,10 @@ import {
   ADMIN_NO_SHOP_ACCESS_TH,
   thaiLiffAuthError,
 } from "@/lib/line/liff-auth-errors";
+import {
+  readLiffSdkInClient,
+  resolveAdminLoginInClient,
+} from "@/lib/admin/admin-liff-in-client";
 import { ensureLiffInit } from "@/lib/line/liff-init";
 import { retryCustomerLiffLogin } from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
@@ -41,6 +45,8 @@ export function useAdminLineAuth() {
   const [error, setError] = useState<string | null>(null);
   const [qaE2eMode, setQaE2eMode] = useState(false);
   const [isInClient, setIsInClient] = useState(false);
+  /** False when LIFF init failed — login then also checks LINE UA. */
+  const [liffInitOk, setLiffInitOk] = useState(false);
 
   const loadProfile = useCallback(
     async (lineId: string, displayName = "", pictureUrl?: string) => {
@@ -95,7 +101,13 @@ export function useAdminLineAuth() {
       try {
         await ensureLiffInit(liffId);
         if (cancelled) return;
-        setIsInClient(liff.isInClient());
+        setLiffInitOk(true);
+        setIsInClient(
+          resolveAdminLoginInClient({
+            initOk: true,
+            sdkInClient: readLiffSdkInClient(liff),
+          }),
+        );
         if (!liff.isLoggedIn()) {
           setReady(true);
           return;
@@ -109,12 +121,18 @@ export function useAdminLineAuth() {
         if (!cancelled) setReady(true);
       } catch (err: unknown) {
         if (cancelled) return;
-        // Already-initialized / remount: try session before failing closed.
+        // Init failed or remount race — prefer session if still readable.
         try {
-          setIsInClient(liff.isInClient());
           if (liff.isLoggedIn()) {
             const lineProfile = await liff.getProfile();
             if (cancelled) return;
+            setLiffInitOk(true);
+            setIsInClient(
+              resolveAdminLoginInClient({
+                initOk: true,
+                sdkInClient: readLiffSdkInClient(liff),
+              }),
+            );
             await loadProfile(
               lineProfile.userId,
               lineProfile.displayName,
@@ -124,8 +142,18 @@ export function useAdminLineAuth() {
             return;
           }
         } catch {
-          /* fall through */
+          /* fall through — treat as init failure for login routing */
         }
+        // Init never finished: use SDK isInClient if true, else LINE UA.
+        setLiffInitOk(false);
+        setIsInClient(
+          resolveAdminLoginInClient({
+            initOk: false,
+            sdkInClient: readLiffSdkInClient(liff),
+            userAgent:
+              typeof navigator !== "undefined" ? navigator.userAgent : "",
+          }),
+        );
         if (cancelled) return;
         setError(thaiLiffAuthError(err));
         setReady(true);
@@ -141,12 +169,18 @@ export function useAdminLineAuth() {
     if (!ready || mockMode || qaE2eMode) return;
     setError(null);
     try {
-      // Same as customer: in LIFF, clear + reset + reload; outside, path-aware OAuth.
-      retryCustomerLiffLogin({ isInClient });
+      // Re-resolve at click time: init may have failed before isInClient was known.
+      const inClient = resolveAdminLoginInClient({
+        initOk: liffInitOk,
+        sdkInClient: readLiffSdkInClient(liff),
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      });
+      // In LINE / LIFF: clear + reset + reload. Outside: path-aware OAuth.
+      retryCustomerLiffLogin({ isInClient: inClient });
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }
-  }, [mockMode, qaE2eMode, ready, isInClient]);
+  }, [mockMode, qaE2eMode, ready, liffInitOk]);
 
   const authHeaders = useMemo(
     () => getLineAuthHeaders(mockMode ? profile?.lineId : profile?.lineId),
