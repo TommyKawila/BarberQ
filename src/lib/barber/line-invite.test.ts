@@ -205,7 +205,7 @@ describe("barber line invite session + status", () => {
     assert.doesNotMatch(hook, /startPathAwareLiffLogin/);
   });
 
-  it("admin + customer login use path-aware redirectUri (Private-safe return)", () => {
+  it("admin + customer login use path-aware retry helper (Private-safe return)", () => {
     const admin = readFileSync(
       resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.tsx"),
       "utf8",
@@ -214,7 +214,9 @@ describe("barber line invite session + status", () => {
       resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
       "utf8",
     );
-    assert.match(admin, /startPathAwareLiffLogin/);
+    assert.match(admin, /retryCustomerLiffLogin/);
+    assert.match(customer, /retryCustomerLiffLogin/);
+    // Customer still path-aware on first in-client handoff; admin login uses retry helper only.
     assert.match(customer, /startPathAwareLiffLogin/);
     assert.doesNotMatch(admin, /buildLiffLoginRedirectUri\(\)/);
   });
