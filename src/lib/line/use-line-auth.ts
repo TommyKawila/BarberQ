@@ -3,14 +3,19 @@
 import { useCallback, useEffect, useState } from "react";
 import liff from "@line/liff";
 import {
-  buildLiffLoginRedirectUri,
-  saveLiffReturnPath,
-} from "@/lib/line/liff-return";
-import { canUseCustomerBookingSession } from "@/lib/line/line-auth-session";
+  isExpiredLiffTokenError,
+  thaiLiffAuthError,
+} from "@/lib/line/liff-auth-errors";
 import {
   __resetSharedLiffInitForTests,
   ensureLiffInit,
+  resetSharedLiffInit,
 } from "@/lib/line/liff-init";
+import {
+  clearStaleLiffSession,
+  startPathAwareLiffLogin,
+} from "@/lib/line/liff-login";
+import { canUseCustomerBookingSession } from "@/lib/line/line-auth-session";
 import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
 
 const REF_KEY = "barberq_customer_ref";
@@ -40,11 +45,6 @@ function loadMockProfile(): LineProfile {
   }
 }
 
-function startLiffLogin() {
-  saveLiffReturnPath(window.location.pathname);
-  liff.login({ redirectUri: buildLiffLoginRedirectUri() });
-}
-
 function readLiffAccessToken(): string | null {
   try {
     return liff.getAccessToken() || null;
@@ -55,7 +55,7 @@ function readLiffAccessToken(): string | null {
 
 async function resolveCustomerSession(): Promise<
   | { ok: true; profile: LineProfile; isInClient: boolean }
-  | { ok: false; isInClient: boolean; needsLoginHandoff: boolean }
+  | { ok: false; isInClient: boolean; needsLoginHandoff: boolean; expired?: boolean }
 > {
   const isInClient = liff.isInClient();
   const loggedIn = liff.isLoggedIn();
@@ -67,16 +67,24 @@ async function resolveCustomerSession(): Promise<
       accessToken,
     })
   ) {
-    const p = await liff.getProfile();
-    return {
-      ok: true,
-      isInClient,
-      profile: {
-        userId: p.userId,
-        displayName: p.displayName,
-        pictureUrl: p.pictureUrl,
-      },
-    };
+    try {
+      const p = await liff.getProfile();
+      return {
+        ok: true,
+        isInClient,
+        profile: {
+          userId: p.userId,
+          displayName: p.displayName,
+          pictureUrl: p.pictureUrl,
+        },
+      };
+    } catch (err: unknown) {
+      if (isExpiredLiffTokenError(err)) {
+        clearStaleLiffSession();
+        return { ok: false, isInClient, needsLoginHandoff: isInClient, expired: true };
+      }
+      throw err;
+    }
   }
   // Flex / plain web: show login CTA. In-client: redirect handoff.
   return { ok: false, isInClient, needsLoginHandoff: isInClient };
@@ -124,6 +132,13 @@ export function useLineAuth() {
           setReady(true);
           return;
         }
+        if (session.expired) {
+          setError(
+            thaiLiffAuthError(new Error("The access token expired")),
+          );
+          setReady(true);
+          return;
+        }
         if (!session.needsLoginHandoff) {
           setReady(true);
           return;
@@ -132,7 +147,7 @@ export function useLineAuth() {
           if (cancelled) return;
           setReady(true);
         }, LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
-        startLiffLogin();
+        startPathAwareLiffLogin();
       } catch (err: unknown) {
         if (cancelled) return;
         // Re-init after remount often rejects "already initialized" — still try session.
@@ -145,6 +160,11 @@ export function useLineAuth() {
             setReady(true);
             return;
           }
+          if (session.expired) {
+            setError(thaiLiffAuthError(err));
+            setReady(true);
+            return;
+          }
           if (!session.needsLoginHandoff) {
             setReady(true);
             return;
@@ -153,13 +173,16 @@ export function useLineAuth() {
             if (cancelled) return;
             setReady(true);
           }, LIFF_LOGIN_HANDOFF_TIMEOUT_MS);
-          startLiffLogin();
+          startPathAwareLiffLogin();
           return;
-        } catch {
-          /* fall through to logged-out ready */
+        } catch (inner: unknown) {
+          if (isExpiredLiffTokenError(err) || isExpiredLiffTokenError(inner)) {
+            clearStaleLiffSession();
+            resetSharedLiffInit();
+          }
         }
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "LIFF init failed");
+        setError(thaiLiffAuthError(err));
         setReady(true);
       }
     })();
@@ -172,7 +195,12 @@ export function useLineAuth() {
 
   const login = useCallback(() => {
     if (mockMode) return;
-    startLiffLogin();
+    setError(null);
+    try {
+      startPathAwareLiffLogin();
+    } catch (err: unknown) {
+      setError(thaiLiffAuthError(err));
+    }
   }, [mockMode]);
 
   const logout = useCallback(() => {

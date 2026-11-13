@@ -88,12 +88,15 @@ export function QrQueueJoin() {
 
   if (authError) {
     return (
-      <div className="flex flex-col gap-3 px-4 py-8">
-        <p className="text-sm text-red-400">{authError}</p>
+      <div className="flex flex-col gap-3 px-4 py-8" data-testid="qr-queue-auth-error">
+        <p className="text-sm text-red-400" role="alert">
+          {authError}
+        </p>
         <button
           type="button"
           onClick={() => login()}
           className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950"
+          data-testid="qr-queue-line-login-retry"
         >
           ล็อกอิน LINE อีกครั้ง
         </button>

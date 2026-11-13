@@ -192,21 +192,31 @@ describe("barber line invite session + status", () => {
     assert.doesNotMatch(uri, /barber\/join|invite=/);
   });
 
-  it("barber login hook uses shared origin redirect_uri like admin", () => {
+  it("barber login hook keeps origin-only redirect_uri (invite in cookie)", () => {
     const hook = readFileSync(
       resolve(process.cwd(), "src/lib/barber/use-barber-line-claim.ts"),
       "utf8",
     );
-    const admin = readFileSync(
-      resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.tsx"),
-      "utf8",
-    );
     assert.match(hook, /buildLiffLoginRedirectUri\(\)/);
-    assert.match(admin, /buildLiffLoginRedirectUri\(\)/);
     assert.match(hook, /saveBarberLineInviteCode/);
     assert.match(hook, /saveLiffReturnPath\(BARBER_LINE_JOIN_PATH\)/);
     assert.doesNotMatch(hook, /buildBarberLineLiffLoginRedirectUri/);
     assert.doesNotMatch(hook, /\/barber\/join\?invite=/);
+    assert.doesNotMatch(hook, /startPathAwareLiffLogin/);
+  });
+
+  it("admin + customer login use path-aware redirectUri (Private-safe return)", () => {
+    const admin = readFileSync(
+      resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.tsx"),
+      "utf8",
+    );
+    const customer = readFileSync(
+      resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
+      "utf8",
+    );
+    assert.match(admin, /startPathAwareLiffLogin/);
+    assert.match(customer, /startPathAwareLiffLogin/);
+    assert.doesNotMatch(admin, /buildLiffLoginRedirectUri\(\)/);
   });
 });
 

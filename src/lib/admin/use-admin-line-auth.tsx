@@ -13,11 +13,9 @@ import liff from "@line/liff";
 import type { ShopStaffRole } from "@/lib/admin-auth";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
-import {
-  buildLiffLoginRedirectUri,
-  saveLiffReturnPath,
-} from "@/lib/line/liff-return";
+import { thaiLiffAuthError } from "@/lib/line/liff-auth-errors";
 import { ensureLiffInit } from "@/lib/line/liff-init";
+import { startPathAwareLiffLogin } from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -123,7 +121,7 @@ export function useAdminLineAuth() {
           /* fall through */
         }
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "LIFF init failed");
+        setError(thaiLiffAuthError(err));
         setReady(true);
       }
     })();
@@ -135,8 +133,12 @@ export function useAdminLineAuth() {
 
   const login = useCallback(() => {
     if (!ready || mockMode || qaE2eMode) return;
-    saveLiffReturnPath(window.location.pathname);
-liff.login({ redirectUri: buildLiffLoginRedirectUri() });
+    setError(null);
+    try {
+      startPathAwareLiffLogin();
+    } catch (err: unknown) {
+      setError(thaiLiffAuthError(err));
+    }
   }, [mockMode, qaE2eMode, ready]);
 
   const authHeaders = useMemo(

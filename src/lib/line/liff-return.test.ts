@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  buildLiffLoginRedirectUriForPath,
   buildOwnerEntryLoginRedirectUri,
   clearLiffCallbackGuard,
   hasLiffCallbackGuard,
@@ -98,6 +99,31 @@ describe("liff return path / OAuth callback", () => {
     assert.equal(
       buildOwnerEntryLoginRedirectUri("https://barber-q-pi.vercel.app/foo"),
       "https://barber-q-pi.vercel.app/owner",
+    );
+  });
+
+  it("path-specific redirectUri preserves shop/admin return without cookie (Private)", () => {
+    assert.equal(
+      buildLiffLoginRedirectUriForPath(
+        "/barberqpilottest",
+        "https://barberq-qa.vercel.app",
+      ),
+      "https://barberq-qa.vercel.app/barberqpilottest",
+    );
+    assert.equal(
+      buildLiffLoginRedirectUriForPath(
+        "/barberqpilottest/admin/login?x=1",
+        "https://barberq-qa.vercel.app/",
+      ),
+      "https://barberq-qa.vercel.app/barberqpilottest/admin/login",
+    );
+    assert.equal(
+      buildLiffLoginRedirectUriForPath("/", "https://barberq-qa.vercel.app"),
+      "https://barberq-qa.vercel.app",
+    );
+    assert.equal(
+      buildLiffLoginRedirectUriForPath("//evil", "https://barberq-qa.vercel.app"),
+      "https://barberq-qa.vercel.app",
     );
   });
 
