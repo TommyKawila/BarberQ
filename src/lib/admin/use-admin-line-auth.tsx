@@ -14,10 +14,11 @@ import type { ShopStaffRole } from "@/lib/admin-auth";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
 import {
-  buildLiffLoginRedirectUri,
-  saveLiffReturnPath,
-} from "@/lib/line/liff-return";
+  ADMIN_NO_SHOP_ACCESS_TH,
+  thaiLiffAuthError,
+} from "@/lib/line/liff-auth-errors";
 import { ensureLiffInit } from "@/lib/line/liff-init";
+import { startPathAwareLiffLogin } from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
 import { useShopSlug } from "@/lib/shop/shop-slug-context";
 
@@ -46,7 +47,7 @@ export function useAdminLineAuth() {
         headers: getLineAuthHeaders(mockMode ? lineId : undefined),
       });
       if (!res.ok) {
-        throw new Error("Not authorized");
+        throw new Error(ADMIN_NO_SHOP_ACCESS_TH);
       }
       const data = (await res.json()) as {
         barberId: string | null;
@@ -73,7 +74,7 @@ export function useAdminLineAuth() {
       setQaE2eMode(true);
       void loadProfile(qa.lineUserId || "qa-e2e", "QA E2E")
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : "Auth failed");
+          setError(thaiLiffAuthError(err));
         })
         .finally(() => setReady(true));
       return;
@@ -82,7 +83,7 @@ export function useAdminLineAuth() {
     if (mockMode) {
       void loadProfile(MOCK_OWNER_LINE_ID, "Owner (Mock)")
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : "Auth failed");
+          setError(thaiLiffAuthError(err));
         })
         .finally(() => setReady(true));
       return;
@@ -123,7 +124,7 @@ export function useAdminLineAuth() {
           /* fall through */
         }
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "LIFF init failed");
+        setError(thaiLiffAuthError(err));
         setReady(true);
       }
     })();
@@ -135,8 +136,12 @@ export function useAdminLineAuth() {
 
   const login = useCallback(() => {
     if (!ready || mockMode || qaE2eMode) return;
-    saveLiffReturnPath(window.location.pathname);
-liff.login({ redirectUri: buildLiffLoginRedirectUri() });
+    setError(null);
+    try {
+      startPathAwareLiffLogin();
+    } catch (err: unknown) {
+      setError(thaiLiffAuthError(err));
+    }
   }, [mockMode, qaE2eMode, ready]);
 
   const authHeaders = useMemo(

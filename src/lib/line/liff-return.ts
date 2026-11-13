@@ -13,13 +13,11 @@ export function isSafeReturnPath(path: string): boolean {
 }
 
 /**
- * LINE Login / LIFF authorize `redirect_uri` — must match the registered
- * callback (site origin only). Carry return path + invite tokens in
- * cookie/session via {@link saveLiffReturnPath}, not in this URL.
- * Same builder admin + customer login use (`window.location.origin`).
- *
- * Prefer a path-specific redirectUri (e.g. `/owner`) when starting login from
- * that page so a browser switch still lands on the right route without the cookie.
+ * LINE Login / LIFF authorize base `redirect_uri` origin.
+ * Must stay under the registered LIFF Endpoint URL origin.
+ * Prefer {@link buildLiffLoginRedirectUriForPath} for customer/admin login so
+ * Safari Private / app-switch OAuth still lands on the started page without
+ * relying only on sessionStorage or the return-path cookie.
  */
 export function buildLiffLoginRedirectUri(pageOrigin?: string): string {
   if (pageOrigin) {
@@ -35,10 +33,27 @@ export function buildLiffLoginRedirectUri(pageOrigin?: string): string {
   return "";
 }
 
+/**
+ * Origin + safe pathname redirectUri (no query/hash).
+ * Survives Private mode when cookies/sessionStorage are wiped during the
+ * LINE ↔ browser handoff — OAuth returns directly to the original page.
+ */
+export function buildLiffLoginRedirectUriForPath(
+  pathname: string,
+  pageOrigin?: string,
+): string {
+  const origin = buildLiffLoginRedirectUri(pageOrigin);
+  const raw = (pathname || "/").split("?")[0]?.split("#")[0] || "/";
+  const path = raw.startsWith("/") ? raw : `/${raw}`;
+  if (!isSafeReturnPath(path) || path === "/") {
+    return origin || "/";
+  }
+  return origin ? `${origin}${path}` : path;
+}
+
 /** Origin + `/owner` redirectUri so OAuth can complete without the return-path cookie. */
 export function buildOwnerEntryLoginRedirectUri(pageOrigin?: string): string {
-  const origin = buildLiffLoginRedirectUri(pageOrigin);
-  return origin ? `${origin}/owner` : "/owner";
+  return buildLiffLoginRedirectUriForPath("/owner", pageOrigin);
 }
 
 function writeLiffReturnCookie(pathname: string) {

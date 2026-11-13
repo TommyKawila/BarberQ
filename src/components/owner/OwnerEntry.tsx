@@ -27,7 +27,7 @@ const BROWSER_MISMATCH_MESSAGE =
   "ล็อกอินไม่สำเร็จ เพราะเปิดคนละเบราว์เซอร์ กดล็อกอินใหม่ในเบราว์เซอร์เดียวกัน";
 
 const STANDALONE_LOGIN_MESSAGE =
-  "ล็อกอินจากแอปหน้าจอโฮมค้างได้ เปิดลิงก์นี้ใน Safari แล้วกดเข้าสู่ระบบด้วย LINE อีกครั้ง";
+  "บนแอปหน้าจอโฮม iPhone ระบบล็อกอิน LINE ต้องเปิดใน Safari (ข้อจำกัดของ iOS) — กด “เปิดใน Safari เพื่อล็อกอิน” แล้วล็อกอินครั้งเดียว ล็อกอินจะอยู่ที่ Safari ไม่กลับมาในไอคอนโฮม";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -153,7 +153,13 @@ export function OwnerEntry() {
         }
 
         // Plain web / desktop Chrome: show login CTA (QR / email). Never auto-login.
+        // iOS Home Screen (standalone): OAuth cannot return into this WKWebView —
+        // surface Safari handoff immediately instead of a dead login loop.
         if (!inClient) {
+          if (isStandaloneDisplay()) {
+            setStandaloneHint(true);
+            setError(STANDALONE_LOGIN_MESSAGE);
+          }
           setLoggedIn(false);
           setReady(true);
           return;
@@ -281,19 +287,23 @@ export function OwnerEntry() {
                 href="/owner"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-cq-outline px-6 py-3 text-base font-semibold text-zinc-100"
+                className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
                 data-testid="owner-entry-open-safari"
               >
-                เปิดใน Safari
+                เปิดใน Safari เพื่อล็อกอิน
               </a>
             ) : null}
             <button
               type="button"
               onClick={onLogin}
-              className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
+              className={
+                standaloneHint
+                  ? "inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-cq-outline px-6 py-3 text-base font-semibold text-zinc-100"
+                  : "inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-[#F6AD34] px-6 py-3 text-base font-semibold text-[#111111]"
+              }
               data-testid="owner-entry-line-login-retry"
             >
-              เข้าสู่ระบบด้วย LINE
+              {standaloneHint ? "ลองล็อกอินในแอปนี้" : "เข้าสู่ระบบด้วย LINE"}
             </button>
           </div>
         ) : null}
