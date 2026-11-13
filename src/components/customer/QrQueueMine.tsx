@@ -11,7 +11,7 @@ const POLL_MS = 5_000;
 
 export function QrQueueMine() {
   const { shopApi, shopPath } = useShopSlug();
-  const { ready, profile, login } = useLineAuth();
+  const { ready, profile, error: authError, login } = useLineAuth();
   const [view, setView] = useState<QrQueuePublicView | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -75,13 +75,32 @@ export function QrQueueMine() {
     }
   }
 
-  if (!ready || loading) {
+  // Match QrQueueJoin: never couple queue loading to the login CTA / auth error.
+  if (!ready) {
     return <p className="px-4 py-10 text-sm text-zinc-400">กำลังโหลดคิว…</p>;
+  }
+
+  if (authError) {
+    return (
+      <div className="flex flex-col gap-3 px-4 py-8" data-testid="qr-queue-mine-auth-error">
+        <p className="text-sm text-red-400" role="alert">
+          {authError}
+        </p>
+        <button
+          type="button"
+          onClick={() => login()}
+          className="min-h-12 rounded-xl bg-amber-400 font-semibold text-zinc-950"
+          data-testid="qr-queue-mine-line-login-retry"
+        >
+          ล็อกอิน LINE อีกครั้ง
+        </button>
+      </div>
+    );
   }
 
   if (!profile) {
     return (
-      <div className="flex flex-col gap-3 px-4 py-8">
+      <div className="flex flex-col gap-3 px-4 py-8" data-testid="qr-queue-mine-login">
         <p className="text-sm text-zinc-300">ต้องล็อกอิน LINE เพื่อดูคิว</p>
         <button
           type="button"
@@ -92,6 +111,10 @@ export function QrQueueMine() {
         </button>
       </div>
     );
+  }
+
+  if (loading) {
+    return <p className="px-4 py-10 text-sm text-zinc-400">กำลังโหลดคิว…</p>;
   }
 
   if (gone || !view) {
