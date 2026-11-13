@@ -83,6 +83,18 @@ describe("BookingApp auth gate wiring", () => {
     assert.match(src, /authPhase === "login"/);
   });
 
+  it("shows useLineAuth error near login button (role=alert, red-400)", () => {
+    const src = readFileSync(
+      resolve(process.cwd(), "src/components/customer/BookingApp.tsx"),
+      "utf8",
+    );
+    assert.match(src, /error:\s*authError/);
+    assert.match(src, /role="alert"/);
+    assert.match(src, /text-red-400/);
+    assert.match(src, /data-testid="booking-line-login-error"/);
+    assert.match(src, /\{authError\}/);
+  });
+
   it("customer LIFF init is shared (no remount re-init login flash)", () => {
     const src = readFileSync(
       resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
