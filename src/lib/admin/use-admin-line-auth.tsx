@@ -19,8 +19,8 @@ import {
 } from "@/lib/line/liff-auth-errors";
 import {
   readLiffSdkInClient,
-  resolveAdminLoginInClient,
-} from "@/lib/admin/admin-liff-in-client";
+  resolveLiffLoginInClient,
+} from "@/lib/line/liff-in-client";
 import { ensureLiffInit } from "@/lib/line/liff-init";
 import { retryCustomerLiffLogin } from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
@@ -103,7 +103,7 @@ export function useAdminLineAuth() {
         if (cancelled) return;
         setLiffInitOk(true);
         setIsInClient(
-          resolveAdminLoginInClient({
+          resolveLiffLoginInClient({
             initOk: true,
             sdkInClient: readLiffSdkInClient(liff),
           }),
@@ -128,7 +128,7 @@ export function useAdminLineAuth() {
             if (cancelled) return;
             setLiffInitOk(true);
             setIsInClient(
-              resolveAdminLoginInClient({
+              resolveLiffLoginInClient({
                 initOk: true,
                 sdkInClient: readLiffSdkInClient(liff),
               }),
@@ -147,7 +147,7 @@ export function useAdminLineAuth() {
         // Init never finished: use SDK isInClient if true, else LINE UA.
         setLiffInitOk(false);
         setIsInClient(
-          resolveAdminLoginInClient({
+          resolveLiffLoginInClient({
             initOk: false,
             sdkInClient: readLiffSdkInClient(liff),
             userAgent:
@@ -170,13 +170,13 @@ export function useAdminLineAuth() {
     setError(null);
     try {
       // Re-resolve at click time: init may have failed before isInClient was known.
-      const inClient = resolveAdminLoginInClient({
+      const inClient = resolveLiffLoginInClient({
         initOk: liffInitOk,
         sdkInClient: readLiffSdkInClient(liff),
         userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       });
-      // In LINE / LIFF: clear + reset + reload. Outside: path-aware OAuth.
-      retryCustomerLiffLogin({ isInClient: inClient });
+      // In LINE / init-fail: clear + reset + reload. Outside + init OK: path-aware OAuth.
+      retryCustomerLiffLogin({ isInClient: inClient, initOk: liffInitOk });
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }

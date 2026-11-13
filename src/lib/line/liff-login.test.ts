@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  clearLiffInitFailReloadGuard,
   clearStaleLiffSession,
+  LIFF_INIT_FAIL_RELOAD_KEY,
   retryCustomerLiffLogin,
   startPathAwareLiffLogin,
   type LiffLoginApi,
@@ -146,6 +148,7 @@ describe("retryCustomerLiffLogin in LIFF (fake liff)", () => {
     let resets = 0;
     const mode = retryCustomerLiffLogin({
       isInClient: true,
+      initOk: true,
       api,
       reload: () => {
         reloads += 1;
@@ -157,6 +160,52 @@ describe("retryCustomerLiffLogin in LIFF (fake liff)", () => {
     assert.equal(mode, "reload");
     assert.equal(api.logoutCalls, 1);
     assert.equal(resets, 1);
+    assert.equal(reloads, 1);
+    assert.equal(api.loginCalls.length, 0);
+  });
+
+  it("init fail outside LINE: reload once, then guarded (no liff.login)", () => {
+    installBrowserShims("/barberqpilottest");
+    const api = fakeLiff({ loggedIn: false, inClient: false });
+    const storage = {
+      getItem: (k: string) => memory.get(k) ?? null,
+      setItem: (k: string, v: string) => {
+        memory.set(k, v);
+      },
+      removeItem: (k: string) => {
+        memory.delete(k);
+      },
+    };
+    clearLiffInitFailReloadGuard(storage);
+    let reloads = 0;
+    assert.equal(
+      retryCustomerLiffLogin({
+        isInClient: false,
+        initOk: false,
+        api,
+        storage,
+        reload: () => {
+          reloads += 1;
+        },
+        resetInit: () => {},
+      }),
+      "reload",
+    );
+    assert.equal(reloads, 1);
+    assert.equal(memory.get(LIFF_INIT_FAIL_RELOAD_KEY), "1");
+    assert.equal(
+      retryCustomerLiffLogin({
+        isInClient: false,
+        initOk: false,
+        api,
+        storage,
+        reload: () => {
+          reloads += 1;
+        },
+        resetInit: () => {},
+      }),
+      "guarded",
+    );
     assert.equal(reloads, 1);
     assert.equal(api.loginCalls.length, 0);
   });

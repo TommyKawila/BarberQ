@@ -4,14 +4,27 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
   readLiffSdkInClient,
-  resolveAdminLoginInClient,
-} from "@/lib/admin/admin-liff-in-client";
-import { retryCustomerLiffLogin, type LiffLoginApi } from "@/lib/line/liff-login";
+  resolveLiffLoginInClient,
+} from "@/lib/line/liff-in-client";
+import {
+  clearLiffInitFailReloadGuard,
+  retryCustomerLiffLogin,
+  type LiffLoginApi,
+} from "@/lib/line/liff-login";
 
 const memory = new Map<string, string>();
 
 afterEach(() => {
   memory.clear();
+  clearLiffInitFailReloadGuard({
+    getItem: (k) => memory.get(k) ?? null,
+    setItem: (k, v) => {
+      memory.set(k, v);
+    },
+    removeItem: (k) => {
+      memory.delete(k);
+    },
+  });
   delete (globalThis as { sessionStorage?: Storage }).sessionStorage;
   delete (globalThis as { window?: unknown }).window;
   delete (globalThis as { document?: unknown }).document;
@@ -83,14 +96,26 @@ function fakeLiff(partial: {
   };
 }
 
-describe("resolveAdminLoginInClient", () => {
+function memoryStorage() {
+  return {
+    getItem: (k: string) => memory.get(k) ?? null,
+    setItem: (k: string, v: string) => {
+      memory.set(k, v);
+    },
+    removeItem: (k: string) => {
+      memory.delete(k);
+    },
+  };
+}
+
+describe("resolveLiffLoginInClient", () => {
   it("init OK: trusts sdk isInClient only (unchanged)", () => {
     assert.equal(
-      resolveAdminLoginInClient({ initOk: true, sdkInClient: true, userAgent: LINE_UA }),
+      resolveLiffLoginInClient({ initOk: true, sdkInClient: true, userAgent: LINE_UA }),
       true,
     );
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: true,
         sdkInClient: false,
         userAgent: LINE_UA,
@@ -99,7 +124,7 @@ describe("resolveAdminLoginInClient", () => {
       "init OK + not in LIFF must not flip to reload via UA",
     );
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: true,
         sdkInClient: null,
         userAgent: LINE_UA,
@@ -110,7 +135,7 @@ describe("resolveAdminLoginInClient", () => {
 
   it("init fails inside LINE: reload path (sdk false/null + LINE UA)", () => {
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: false,
         sdkInClient: false,
         userAgent: LINE_UA,
@@ -118,7 +143,7 @@ describe("resolveAdminLoginInClient", () => {
       true,
     );
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: false,
         sdkInClient: null,
         userAgent: LINE_UA,
@@ -126,7 +151,7 @@ describe("resolveAdminLoginInClient", () => {
       true,
     );
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: false,
         sdkInClient: true,
         userAgent: SAFARI_UA,
@@ -135,9 +160,9 @@ describe("resolveAdminLoginInClient", () => {
     );
   });
 
-  it("init fails outside LINE: web login path", () => {
+  it("init fails outside LINE: not in-client (caller still reloads via initOk)", () => {
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: false,
         sdkInClient: false,
         userAgent: SAFARI_UA,
@@ -145,7 +170,7 @@ describe("resolveAdminLoginInClient", () => {
       false,
     );
     assert.equal(
-      resolveAdminLoginInClient({
+      resolveLiffLoginInClient({
         initOk: false,
         sdkInClient: null,
         userAgent: SAFARI_UA,
@@ -155,10 +180,10 @@ describe("resolveAdminLoginInClient", () => {
   });
 });
 
-describe("admin login routing after init failure (fake liff)", () => {
-  it("init fails inside LINE -> retryCustomerLiffLogin reload (no liff.login)", () => {
+describe("customer / admin login routing after init failure (fake liff)", () => {
+  it("customer init fails inside LINE -> reload (no liff.login)", () => {
     const api = fakeLiff({ loggedIn: true, inClient: false, inClientThrows: true });
-    const inClient = resolveAdminLoginInClient({
+    const inClient = resolveLiffLoginInClient({
       initOk: false,
       sdkInClient: readLiffSdkInClient(api),
       userAgent: LINE_UA,
@@ -167,7 +192,9 @@ describe("admin login routing after init failure (fake liff)", () => {
     let reloads = 0;
     const mode = retryCustomerLiffLogin({
       isInClient: inClient,
+      initOk: false,
       api,
+      storage: memoryStorage(),
       reload: () => {
         reloads += 1;
       },
@@ -178,35 +205,66 @@ describe("admin login routing after init failure (fake liff)", () => {
     assert.equal(api.loginCalls, 0);
   });
 
-  it("init fails outside LINE -> path-aware web login", () => {
-    installBrowserShims("/shop/admin/login");
+  it("customer init fails outside LINE -> reload (not liff.login)", () => {
+    installBrowserShims("/barberqpilottest");
     const api = fakeLiff({ loggedIn: false, inClient: false });
-    const inClient = resolveAdminLoginInClient({
+    const inClient = resolveLiffLoginInClient({
       initOk: false,
       sdkInClient: readLiffSdkInClient(api),
       userAgent: SAFARI_UA,
     });
     assert.equal(inClient, false);
+    let reloads = 0;
     const mode = retryCustomerLiffLogin({
       isInClient: inClient,
-      pathname: "/shop/admin/login",
+      initOk: false,
+      pathname: "/barberqpilottest",
       api,
+      storage: memoryStorage(),
       reload: () => {
-        throw new Error("should not reload");
+        reloads += 1;
       },
+      resetInit: () => {},
     });
-    assert.equal(mode, "login");
-    assert.equal(api.loginCalls, 1);
+    assert.equal(mode, "reload");
+    assert.equal(reloads, 1);
+    assert.equal(api.loginCalls, 0);
   });
 
-  it("init OK -> unchanged (sdk isInClient drives path)", () => {
+  it("admin init fails outside LINE -> reload (not liff.login)", () => {
     installBrowserShims("/shop/admin/login");
-    const inLiff = resolveAdminLoginInClient({
+    const api = fakeLiff({ loggedIn: false, inClient: false });
+    const inClient = resolveLiffLoginInClient({
+      initOk: false,
+      sdkInClient: readLiffSdkInClient(api),
+      userAgent: SAFARI_UA,
+    });
+    assert.equal(inClient, false);
+    let reloads = 0;
+    const mode = retryCustomerLiffLogin({
+      isInClient: inClient,
+      initOk: false,
+      pathname: "/shop/admin/login",
+      api,
+      storage: memoryStorage(),
+      reload: () => {
+        reloads += 1;
+      },
+      resetInit: () => {},
+    });
+    assert.equal(mode, "reload");
+    assert.equal(reloads, 1);
+    assert.equal(api.loginCalls, 0);
+  });
+
+  it("init OK -> unchanged for both (sdk isInClient drives path)", () => {
+    installBrowserShims("/shop/admin/login");
+    const inLiff = resolveLiffLoginInClient({
       initOk: true,
       sdkInClient: true,
       userAgent: LINE_UA,
     });
-    const outLiff = resolveAdminLoginInClient({
+    const outLiff = resolveLiffLoginInClient({
       initOk: true,
       sdkInClient: false,
       userAgent: LINE_UA,
@@ -218,6 +276,7 @@ describe("admin login routing after init failure (fake liff)", () => {
     assert.equal(
       retryCustomerLiffLogin({
         isInClient: inLiff,
+        initOk: true,
         api: apiIn,
         reload: () => {},
         resetInit: () => {},
@@ -230,6 +289,7 @@ describe("admin login routing after init failure (fake liff)", () => {
     assert.equal(
       retryCustomerLiffLogin({
         isInClient: outLiff,
+        initOk: true,
         pathname: "/shop/admin/login",
         api: apiOut,
       }),
@@ -238,14 +298,52 @@ describe("admin login routing after init failure (fake liff)", () => {
     assert.equal(apiOut.loginCalls, 1);
   });
 
-  it("use-admin-line-auth wires resolveAdminLoginInClient on login", () => {
-    const src = readFileSync(
+  it("init-fail reload guard: second retry does not reload or call liff.login", () => {
+    const api = fakeLiff({ loggedIn: false, inClient: false });
+    const storage = memoryStorage();
+    let reloads = 0;
+    const first = retryCustomerLiffLogin({
+      isInClient: false,
+      initOk: false,
+      api,
+      storage,
+      reload: () => {
+        reloads += 1;
+      },
+      resetInit: () => {},
+    });
+    assert.equal(first, "reload");
+    assert.equal(reloads, 1);
+
+    const second = retryCustomerLiffLogin({
+      isInClient: false,
+      initOk: false,
+      api,
+      storage,
+      reload: () => {
+        reloads += 1;
+      },
+      resetInit: () => {},
+    });
+    assert.equal(second, "guarded");
+    assert.equal(reloads, 1);
+    assert.equal(api.loginCalls, 0);
+  });
+
+  it("hooks recompute resolveLiffLoginInClient on login with liffInitOk", () => {
+    const customer = readFileSync(
+      resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
+      "utf8",
+    );
+    const admin = readFileSync(
       resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.tsx"),
       "utf8",
     );
-    assert.match(src, /resolveAdminLoginInClient/);
-    assert.match(src, /readLiffSdkInClient/);
-    assert.match(src, /liffInitOk/);
-    assert.match(src, /retryCustomerLiffLogin/);
+    for (const src of [customer, admin]) {
+      assert.match(src, /resolveLiffLoginInClient/);
+      assert.match(src, /readLiffSdkInClient/);
+      assert.match(src, /liffInitOk/);
+      assert.match(src, /retryCustomerLiffLogin\(\{ isInClient: inClient, initOk: liffInitOk \}/);
+    }
   });
 });

@@ -12,6 +12,10 @@ import {
   resetSharedLiffInit,
 } from "@/lib/line/liff-init";
 import {
+  readLiffSdkInClient,
+  resolveLiffLoginInClient,
+} from "@/lib/line/liff-in-client";
+import {
   clearStaleLiffSession,
   retryCustomerLiffLogin,
   startPathAwareLiffLogin,
@@ -99,6 +103,8 @@ export function useLineAuth() {
   const [profile, setProfile] = useState<LineProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isInClient, setIsInClient] = useState(false);
+  /** False when LIFF init failed — login then also checks LINE UA / reload. */
+  const [liffInitOk, setLiffInitOk] = useState(false);
 
   useEffect(() => {
     // QA E2E shortcut (barberq-qa only): same bearer used by getLineAuthHeaders.
@@ -125,9 +131,15 @@ export function useLineAuth() {
       try {
         await ensureLiffInit(liffId);
         if (cancelled) return;
+        setLiffInitOk(true);
         const session = await resolveCustomerSession();
         if (cancelled) return;
-        setIsInClient(session.isInClient);
+        setIsInClient(
+          resolveLiffLoginInClient({
+            initOk: true,
+            sdkInClient: session.isInClient,
+          }),
+        );
         if (session.ok) {
           setProfile(session.profile);
           setReady(true);
@@ -155,7 +167,13 @@ export function useLineAuth() {
         try {
           const session = await resolveCustomerSession();
           if (cancelled) return;
-          setIsInClient(session.isInClient);
+          setLiffInitOk(true);
+          setIsInClient(
+            resolveLiffLoginInClient({
+              initOk: true,
+              sdkInClient: session.isInClient,
+            }),
+          );
           if (session.ok) {
             setProfile(session.profile);
             setReady(true);
@@ -183,6 +201,15 @@ export function useLineAuth() {
           }
         }
         if (cancelled) return;
+        setLiffInitOk(false);
+        setIsInClient(
+          resolveLiffLoginInClient({
+            initOk: false,
+            sdkInClient: readLiffSdkInClient(liff),
+            userAgent:
+              typeof navigator !== "undefined" ? navigator.userAgent : "",
+          }),
+        );
         setError(thaiLiffAuthError(err));
         setReady(true);
       }
@@ -198,12 +225,18 @@ export function useLineAuth() {
     if (mockMode) return;
     setError(null);
     try {
-      // In LIFF: expired token makes liff.login() a no-op — clear + reload.
-      retryCustomerLiffLogin({ isInClient });
+      // Re-resolve at click time (same as admin): init may have failed before isInClient was known.
+      const inClient = resolveLiffLoginInClient({
+        initOk: liffInitOk,
+        sdkInClient: readLiffSdkInClient(liff),
+        userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
+      });
+      // In LIFF / init-fail: clear + reload. Outside + init OK: path-aware OAuth.
+      retryCustomerLiffLogin({ isInClient: inClient, initOk: liffInitOk });
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }
-  }, [mockMode, isInClient]);
+  }, [mockMode, liffInitOk]);
 
   const logout = useCallback(() => {
     if (!ready || mockMode) return;
