@@ -4,6 +4,7 @@ import {
   ADMIN_NO_SHOP_ACCESS_TH,
   isAdminNotAuthorizedError,
   isExpiredLiffTokenError,
+  LIFF_INIT_FAIL_GUARD_TH,
   thaiLiffAuthError,
 } from "@/lib/line/liff-auth-errors";
 
@@ -44,5 +45,12 @@ describe("liff auth errors (Thai + expiry)", () => {
 
   it("preserves ADMIN_NO_SHOP_ACCESS_TH when already Thai", () => {
     assert.equal(thaiLiffAuthError(ADMIN_NO_SHOP_ACCESS_TH), ADMIN_NO_SHOP_ACCESS_TH);
+  });
+
+  it("init-fail guard copy tells user to reopen / check network (Thai)", () => {
+    assert.match(LIFF_INIT_FAIL_GUARD_TH, /[\u0E00-\u0E7F]/);
+    assert.match(LIFF_INIT_FAIL_GUARD_TH, /LINE/);
+    assert.match(LIFF_INIT_FAIL_GUARD_TH, /ปิด.*เปิด|อินเทอร์เน็ต/);
+    assert.equal(thaiLiffAuthError(LIFF_INIT_FAIL_GUARD_TH), LIFF_INIT_FAIL_GUARD_TH);
   });
 });

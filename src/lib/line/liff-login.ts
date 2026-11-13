@@ -5,7 +5,10 @@ import {
   saveLiffReturnPath,
 } from "@/lib/line/liff-return";
 
-export type LiffLoginRetryMode = "reload" | "login";
+export type LiffLoginRetryMode = "reload" | "login" | "guarded";
+
+/** Session flag: at most one init-fail reload per tab (avoids infinite loops). */
+export const LIFF_INIT_FAIL_RELOAD_KEY = "barberq_liff_init_fail_reload";
 
 /** Minimal LIFF surface used by login helpers (injectable for tests). */
 export type LiffLoginApi = {
@@ -14,6 +17,63 @@ export type LiffLoginApi = {
   logout?: () => void;
   login?: (opts?: { redirectUri?: string }) => void;
 };
+
+export type LiffLoginStorage = {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem?(key: string): void;
+};
+
+function defaultSessionStorage(): LiffLoginStorage | null {
+  try {
+    if (typeof sessionStorage === "undefined") return null;
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** True when this tab already reloaded once for a LIFF init failure. */
+export function hasLiffInitFailReloadGuard(
+  storage?: LiffLoginStorage | null,
+): boolean {
+  const store = storage === undefined ? defaultSessionStorage() : storage;
+  if (!store) return false;
+  try {
+    return store.getItem(LIFF_INIT_FAIL_RELOAD_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** Mark that we are about to reload for a LIFF init failure. */
+export function markLiffInitFailReloadGuard(
+  storage?: LiffLoginStorage | null,
+): void {
+  const store = storage === undefined ? defaultSessionStorage() : storage;
+  if (!store) return;
+  try {
+    store.setItem(LIFF_INIT_FAIL_RELOAD_KEY, "1");
+  } catch {
+    /* Private / blocked storage */
+  }
+}
+
+/**
+ * Clear the init-fail reload guard (call when LIFF init succeeds so a later
+ * network drop in the same tab can reload again).
+ */
+export function clearLiffInitFailReloadGuard(
+  storage?: LiffLoginStorage | null,
+): void {
+  const store = storage === undefined ? defaultSessionStorage() : storage;
+  if (!store?.removeItem) return;
+  try {
+    store.removeItem(LIFF_INIT_FAIL_RELOAD_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 /**
  * Drop a stale LIFF session so `liff.login()` actually redirects.
@@ -48,20 +108,34 @@ export function startPathAwareLiffLogin(
 }
 
 /**
- * Customer re-login after expiry / error.
- * Inside real LIFF (`isInClient`), `liff.login()` is a no-op when a stale
- * session still looks logged-in — clear, reset shared init, and reload instead.
- * Outside LIFF (Safari / plain LINE WebView), start path-aware OAuth.
+ * Customer / admin re-login after expiry / error / init failure.
+ *
+ * - Inside LIFF (`isInClient`): clear, reset shared init, reload.
+ * - Init failed (`initOk: false`): reload to re-init — `liff.login()` throws
+ *   when the SDK never initialised. Guarded once per session to avoid loops.
+ * - Outside LIFF with init OK: path-aware OAuth.
  */
 export function retryCustomerLiffLogin(input: {
   isInClient: boolean;
+  /** False when LIFF init failed / never finished. Defaults to true. */
+  initOk?: boolean;
   pathname?: string;
   api?: LiffLoginApi;
   reload?: () => void;
   resetInit?: () => void;
+  storage?: LiffLoginStorage | null;
 }): LiffLoginRetryMode {
   const api = input.api ?? liff;
-  if (input.isInClient) {
+  const initOk = input.initOk !== false;
+  const needsReload = input.isInClient || !initOk;
+
+  if (needsReload) {
+    if (!initOk) {
+      if (hasLiffInitFailReloadGuard(input.storage)) {
+        return "guarded";
+      }
+      markLiffInitFailReloadGuard(input.storage);
+    }
     clearStaleLiffSession(api);
     (input.resetInit ?? resetSharedLiffInit)();
     const reload =
