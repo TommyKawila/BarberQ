@@ -43,5 +43,14 @@ describe("isStandaloneDisplay", () => {
     assert.match(src, /setStandaloneHint\(true\)/);
     assert.match(src, /เปิดใน Safari เพื่อล็อกอิน/);
     assert.match(src, /ข้อจำกัดของ iOS/);
+    assert.match(src, /ล็อกอินจะอยู่ที่ Safari/);
+    assert.doesNotMatch(src, /เซสชัน/);
+    assert.doesNotMatch(src, /「/);
+    assert.doesNotMatch(src, /」/);
+    // Message quotes the exact primary button label.
+    assert.match(
+      src,
+      /กด “เปิดใน Safari เพื่อล็อกอิน”/,
+    );
   });
 });

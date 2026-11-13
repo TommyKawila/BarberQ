@@ -13,6 +13,7 @@ import {
 } from "@/lib/line/liff-init";
 import {
   clearStaleLiffSession,
+  retryCustomerLiffLogin,
   startPathAwareLiffLogin,
 } from "@/lib/line/liff-login";
 import { canUseCustomerBookingSession } from "@/lib/line/line-auth-session";
@@ -197,11 +198,12 @@ export function useLineAuth() {
     if (mockMode) return;
     setError(null);
     try {
-      startPathAwareLiffLogin();
+      // In LIFF: expired token makes liff.login() a no-op — clear + reload.
+      retryCustomerLiffLogin({ isInClient });
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }
-  }, [mockMode]);
+  }, [mockMode, isInClient]);
 
   const logout = useCallback(() => {
     if (!ready || mockMode) return;

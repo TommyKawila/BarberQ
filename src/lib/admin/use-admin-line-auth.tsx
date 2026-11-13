@@ -13,7 +13,10 @@ import liff from "@line/liff";
 import type { ShopStaffRole } from "@/lib/admin-auth";
 import { MOCK_OWNER_LINE_ID } from "@/lib/auth/line-verify";
 import { readQaE2eClientSession } from "@/lib/qa-e2e/client-session";
-import { thaiLiffAuthError } from "@/lib/line/liff-auth-errors";
+import {
+  ADMIN_NO_SHOP_ACCESS_TH,
+  thaiLiffAuthError,
+} from "@/lib/line/liff-auth-errors";
 import { ensureLiffInit } from "@/lib/line/liff-init";
 import { startPathAwareLiffLogin } from "@/lib/line/liff-login";
 import { getLineAuthHeaders } from "@/lib/line/auth-headers";
@@ -44,7 +47,7 @@ export function useAdminLineAuth() {
         headers: getLineAuthHeaders(mockMode ? lineId : undefined),
       });
       if (!res.ok) {
-        throw new Error("Not authorized");
+        throw new Error(ADMIN_NO_SHOP_ACCESS_TH);
       }
       const data = (await res.json()) as {
         barberId: string | null;
@@ -71,7 +74,7 @@ export function useAdminLineAuth() {
       setQaE2eMode(true);
       void loadProfile(qa.lineUserId || "qa-e2e", "QA E2E")
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : "Auth failed");
+          setError(thaiLiffAuthError(err));
         })
         .finally(() => setReady(true));
       return;
@@ -80,7 +83,7 @@ export function useAdminLineAuth() {
     if (mockMode) {
       void loadProfile(MOCK_OWNER_LINE_ID, "Owner (Mock)")
         .catch((err: unknown) => {
-          setError(err instanceof Error ? err.message : "Auth failed");
+          setError(thaiLiffAuthError(err));
         })
         .finally(() => setReady(true));
       return;

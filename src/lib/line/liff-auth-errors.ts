@@ -9,6 +9,12 @@ const FALLBACK_TH =
 const EXPIRED_TH =
   "เซสชัน LINE หมดอายุแล้ว กรุณาล็อกอินอีกครั้ง";
 
+/** Shop admin: LINE logged in but not staff for this shop. */
+export const ADMIN_NO_SHOP_ACCESS_TH =
+  "บัญชี LINE นี้ไม่มีสิทธิ์เข้าหลังบ้านร้านนี้";
+
+const THAI_CHAR = /[\u0E00-\u0E7F]/;
+
 export function isExpiredLiffTokenError(err: unknown): boolean {
   const msg = messageOf(err).toLowerCase();
   return (
@@ -18,12 +24,24 @@ export function isExpiredLiffTokenError(err: unknown): boolean {
   );
 }
 
+export function isAdminNotAuthorizedError(err: unknown): boolean {
+  const msg = messageOf(err).trim().toLowerCase();
+  return msg === "not authorized" || msg.includes("not authorized");
+}
+
 export function thaiLiffAuthError(err: unknown): string {
   if (isExpiredLiffTokenError(err)) return EXPIRED_TH;
+  if (isAdminNotAuthorizedError(err)) return ADMIN_NO_SHOP_ACCESS_TH;
   const msg = messageOf(err).trim();
   if (!msg) return FALLBACK_TH;
-  // Keep already-Thai messages; replace English SDK / network noise.
-  if (/[A-Za-z]/.test(msg[0] ?? "") || /\b(liff|token|login|init|failed|error|unauthorized)\b/i.test(msg)) {
+  // Always keep messages that already contain Thai characters
+  // (e.g. "LINE …" Thai copy that starts with Latin letters).
+  if (THAI_CHAR.test(msg)) return msg;
+  // Replace English SDK / network noise.
+  if (
+    /^[A-Za-z]/.test(msg) ||
+    /\b(liff|token|login|init|failed|error|unauthorized)\b/i.test(msg)
+  ) {
     return FALLBACK_TH;
   }
   return msg;

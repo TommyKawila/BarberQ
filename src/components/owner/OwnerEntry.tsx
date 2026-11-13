@@ -27,7 +27,7 @@ const BROWSER_MISMATCH_MESSAGE =
   "ล็อกอินไม่สำเร็จ เพราะเปิดคนละเบราว์เซอร์ กดล็อกอินใหม่ในเบราว์เซอร์เดียวกัน";
 
 const STANDALONE_LOGIN_MESSAGE =
-  "บนแอปหน้าจอโฮม iPhone ระบบล็อกอิน LINE ต้องเปิดใน Safari (ข้อจำกัดของ iOS) — กด「เปิดใน Safari」แล้วล็อกอินครั้งเดียว เซสชันจะอยู่ที่ Safari ไม่กลับมาในไอคอนโฮม";
+  "บนแอปหน้าจอโฮม iPhone ระบบล็อกอิน LINE ต้องเปิดใน Safari (ข้อจำกัดของ iOS) — กด “เปิดใน Safari เพื่อล็อกอิน” แล้วล็อกอินครั้งเดียว ล็อกอินจะอยู่ที่ Safari ไม่กลับมาในไอคอนโฮม";
 
 function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   return new Promise((resolve, reject) => {

@@ -1,6 +1,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
+  ADMIN_NO_SHOP_ACCESS_TH,
+  isAdminNotAuthorizedError,
   isExpiredLiffTokenError,
   thaiLiffAuthError,
 } from "@/lib/line/liff-auth-errors";
@@ -24,7 +26,23 @@ describe("liff auth errors (Thai + expiry)", () => {
     assert.doesNotMatch(th, /LIFF init failed/);
   });
 
-  it("keeps Thai messages as-is", () => {
+  it("keeps Thai messages as-is even when they start with Latin letters", () => {
     assert.equal(thaiLiffAuthError("โหลดไม่สำเร็จ"), "โหลดไม่สำเร็จ");
+    const mixed = "LINE ของคุณยังไม่ได้ผูกกับร้านนี้";
+    assert.equal(thaiLiffAuthError(mixed), mixed);
+  });
+
+  it("maps Not authorized to clear shop-admin Thai copy", () => {
+    assert.equal(isAdminNotAuthorizedError(new Error("Not authorized")), true);
+    assert.equal(
+      thaiLiffAuthError(new Error("Not authorized")),
+      ADMIN_NO_SHOP_ACCESS_TH,
+    );
+    assert.match(ADMIN_NO_SHOP_ACCESS_TH, /ไม่มีสิทธิ์|หลังบ้าน/);
+    assert.doesNotMatch(thaiLiffAuthError(new Error("Not authorized")), /Not authorized/i);
+  });
+
+  it("preserves ADMIN_NO_SHOP_ACCESS_TH when already Thai", () => {
+    assert.equal(thaiLiffAuthError(ADMIN_NO_SHOP_ACCESS_TH), ADMIN_NO_SHOP_ACCESS_TH);
   });
 });
