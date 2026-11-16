@@ -88,7 +88,7 @@ export function BookingApp() {
   // Prefer brand (TTL-cached /settings) — no per-slot re-download of ~100KB logo.
   const remindersEnabled = brandRemindersEnabled;
   const shopReminderLead = brandReminderLead;
-  const { ready, profile, login, mockMode } = useLineAuth();
+  const { ready, profile, error: authError, login, mockMode } = useLineAuth();
   const dates = useMemo(
     () => getBookableDates(new Date(), bookingAdvanceDays),
     [bookingAdvanceDays],
@@ -595,12 +595,21 @@ export function BookingApp() {
     return (
       <section className="flex flex-col gap-4 px-4 py-8" data-testid="booking-line-login">
         <BookingHero shopName={shopName} coverImageUrl={coverImageUrl} prototypeMode={prototypeMode} />
-        <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
-        <p className="text-xs text-zinc-500">{t("booking.lineLoginHint")}</p>
+        {authError ? (
+          <p className="text-sm text-red-400" role="alert" data-testid="booking-line-login-error">
+            {authError}
+          </p>
+        ) : (
+          <>
+            <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
+            <p className="text-xs text-zinc-500">{t("booking.lineLoginHint")}</p>
+          </>
+        )}
         <button
           type="button"
           onClick={login}
           className="min-h-12 rounded-xl bg-[#06C755] font-semibold text-white"
+          data-testid="booking-line-login-retry"
         >
           {t("booking.loginWithLine")}
         </button>

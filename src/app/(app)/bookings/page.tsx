@@ -64,7 +64,7 @@ function statusLabel(
 
 export default function MyBookingsPage() {
   const { locale, t } = useI18n();
-  const { ready, profile, login, mockMode } = useLineAuth();
+  const { ready, profile, error: authError, login, mockMode } = useLineAuth();
   const { shopApi, shopPath } = useShopSlug();
   const {
     shopName,
@@ -343,7 +343,17 @@ export default function MyBookingsPage() {
         <section className="flex flex-col gap-4" data-testid="my-bookings-login">
           <h1 className="text-2xl font-semibold">{t("booking.myBookings")}</h1>
           {shopName ? <p className="text-sm text-zinc-400">{shopName}</p> : null}
-          <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
+          {authError ? (
+            <p
+              className="text-sm text-red-400"
+              role="alert"
+              data-testid="my-bookings-login-error"
+            >
+              {authError}
+            </p>
+          ) : (
+            <p className="text-sm text-zinc-400">{t("booking.lineLoginRequired")}</p>
+          )}
           <button
             type="button"
             onClick={login}

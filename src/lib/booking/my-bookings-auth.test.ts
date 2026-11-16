@@ -63,4 +63,16 @@ describe("MyBookingsPage auth gate", () => {
     assert.match(page, /myBookingsAuthPhase/);
     assert.doesNotMatch(page, /if\s*\(\s*!ready\s*\|\|\s*loading\s*\)/);
   });
+
+  it("shows useLineAuth error near login button (role=alert, red-400)", () => {
+    const page = readFileSync(
+      resolve(process.cwd(), "src/app/(app)/bookings/page.tsx"),
+      "utf8",
+    );
+    assert.match(page, /error:\s*authError/);
+    assert.match(page, /role="alert"/);
+    assert.match(page, /text-red-400/);
+    assert.match(page, /data-testid="my-bookings-login-error"/);
+    assert.match(page, /\{authError\}/);
+  });
 });

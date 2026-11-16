@@ -226,7 +226,8 @@ export function useLineAuth() {
   }, [liffId, mockMode]);
 
   const login = useCallback(() => {
-    if (mockMode) return;
+    // Match admin: do nothing until LIFF init finished (ready).
+    if (!ready || mockMode) return;
     setError(null);
     try {
       // Re-resolve at click time (same as admin): init may have failed before isInClient was known.
@@ -247,7 +248,7 @@ export function useLineAuth() {
     } catch (err: unknown) {
       setError(thaiLiffAuthError(err));
     }
-  }, [mockMode, liffInitOk]);
+  }, [ready, mockMode, liffInitOk]);
 
   const logout = useCallback(() => {
     if (!ready || mockMode) return;

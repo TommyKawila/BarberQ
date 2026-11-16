@@ -99,6 +99,19 @@ describe("path-aware LIFF login wiring", () => {
     assert.match(qr, /onClick=\{\(\) => login\(\)\}/);
   });
 
+  it("customer login() guards on !ready like admin", () => {
+    const customer = readFileSync(
+      resolve(process.cwd(), "src/lib/line/use-line-auth.ts"),
+      "utf8",
+    );
+    const admin = readFileSync(
+      resolve(process.cwd(), "src/lib/admin/use-admin-line-auth.tsx"),
+      "utf8",
+    );
+    assert.match(customer, /if\s*\(\s*!ready\s*\|\|\s*mockMode\s*\)\s*return/);
+    assert.match(admin, /if\s*\(\s*!ready\s*\|\|\s*mockMode/);
+  });
+
   it("failed shared LIFF init can be retried", () => {
     const src = readFileSync(
       resolve(process.cwd(), "src/lib/line/liff-init.ts"),
